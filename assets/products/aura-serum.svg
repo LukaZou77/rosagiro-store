@@ -1,0 +1,15 @@
+
+  <svg width="900" height="1100" viewBox="0 0 900 1100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="900" height="1100" fill="#f7f3ee"/>
+    <rect x="76" y="76" width="748" height="948" rx="38" fill="#fbfaf7"/>
+    <path d="M146 826 C246 724 390 786 490 662 C590 538 676 558 756 462 L756 1024 L146 1024 Z" fill="#d8b2a7" opacity=".32"/>
+    <ellipse cx="456" cy="842" rx="210" ry="36" fill="#1c2522" opacity=".12"/>
+    <rect x="374" y="236" width="170" height="510" rx="70" fill="#d8b2a7"/>
+    <rect x="394" y="176" width="130" height="90" rx="28" fill="#48605a"/>
+    <rect x="420" y="122" width="78" height="72" rx="16" fill="#48605a"/>
+    <rect x="410" y="388" width="98" height="178" rx="12" fill="#fbfaf7" opacity=".82"/>
+    <text x="459" y="460" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="4" fill="#48605a">SERUM</text>
+    <text x="459" y="512" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#48605a">BELA VIVA</text>
+    <path d="M274 224 C214 250 190 318 212 374 C278 348 304 284 274 224 Z" fill="#789480" opacity=".55"/>
+    <path d="M636 268 C696 292 728 354 714 416 C646 402 604 334 636 268 Z" fill="#b97974" opacity=".42"/>
+  </svg>
