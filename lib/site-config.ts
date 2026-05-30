@@ -7,19 +7,64 @@ export const siteConfig = {
   whatsappLabel: "+55 11 90000-0000",
   marketplace: "Brasil",
   hero: {
-    eyebrow: "Curadoria brasileira de beleza",
-    title: "Rotinas completas, marcas selecionadas e compra simples.",
-    body: "Uma loja multimarcas para descobrir skincare, maquiagem, perfumes e cuidados com entrega pensada para o Brasil.",
-    primaryCta: "Comprar curadoria",
-    secondaryCta: "Ver destaque"
+    eyebrow: "Atacado e varejo de beleza",
+    title: "Multimarcas para montar kits, repor estoque e vender mais.",
+    body: "Skincare, maquiagem, perfumes, cabelo e acessorios organizados para compras rapidas, reposicao de bancada e pedidos de teste.",
+    primaryCta: "Ver catalogo completo",
+    secondaryCta: "Comprar destaque"
   },
   homeSections: {
     categoriesEyebrow: "Categorias",
-    categoriesTitle: "Compre por ritual",
-    brandsEyebrow: "Marcas em destaque",
-    brandsTitle: "Selecionadas por textura, acabamento e rotina real.",
-    featuredEyebrow: "Mais desejados",
-    featuredTitle: "Produtos para testar o fluxo"
+    categoriesTitle: "Entre rapido na prateleira certa",
+    brandsEyebrow: "Multimarcas",
+    brandsTitle: "Marcas para combinar em kits, vitrines e reposicoes.",
+    featuredEyebrow: "Pronta entrega",
+    featuredTitle: "Produtos com boa saida para testar pedidos"
+  },
+  homePromotions: {
+    promoBar: {
+      label: "Campanha piloto",
+      text: "Monte pedidos multimarcas com Pix, cartao ou pagamento simulado enquanto a loja esta em preparacao.",
+      cta: "Explorar ofertas",
+      href: "/categoria/all?sort=price-asc"
+    },
+    searchPlaceholder: "Buscar serum, batom, perfume, pincel...",
+    stats: {
+      productsLabel: "produtos ativos",
+      categoriesLabel: "categorias de beleza",
+      brandsLabel: "marcas no catalogo"
+    },
+    trustPoints: [
+      "Pedido multimarcas em um carrinho",
+      "Precos recalculados no servidor",
+      "Pix e cartao preparados para a proxima fase",
+      "Estoque visivel antes da confirmacao"
+    ],
+    quickActions: [
+      {
+        label: "Ofertas",
+        description: "Itens com preco comparativo para compras de oportunidade.",
+        href: "/categoria/all?sort=price-asc"
+      },
+      {
+        label: "Reposicao rapida",
+        description: "Skincare, make e corpo para completar prateleira.",
+        href: "/categoria/all"
+      },
+      {
+        label: "Kits por categoria",
+        description: "Combine produtos por rotina sem sair do catalogo.",
+        href: "/categoria/skincare"
+      }
+    ],
+    wholesaleBand: {
+      eyebrow: "Compra com volume",
+      title: "Base pronta para evoluir para atacado, combos e campanhas reais.",
+      body: "Nesta primeira versao, a vitrine ja separa ofertas, categorias e disponibilidade. Depois podemos adicionar preco por quantidade, cupons e tabelas de atacado sem refazer a experiencia.",
+      primaryCta: "Ver todos os produtos",
+      secondaryCta: "Falar com atendimento"
+    },
+    shelfNote: "Use a importacao CSV para trocar nomes, precos, estoque e descricao quando os produtos reais chegarem."
   }
 };
 

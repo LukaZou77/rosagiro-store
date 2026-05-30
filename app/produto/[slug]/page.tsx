@@ -16,6 +16,7 @@ export default async function ProductPage({ params }: PageProps) {
   if (!product || !product.active) notFound();
 
   const [categories, related] = await Promise.all([getCategories(), getRelatedProducts(product.category.slug, product.slug)]);
+  const available = (product.inventory?.quantity || 0) > 0;
 
   return (
     <StoreShell categories={categories}>
@@ -32,7 +33,7 @@ export default async function ProductPage({ params }: PageProps) {
           </p>
           <h1>{product.name}</h1>
           <div className="rating">
-            ★ {product.rating.toFixed(1)} <span>({product.reviewCount} avaliacoes)</span>
+            Nota {product.rating.toFixed(1)} <span>({product.reviewCount} avaliacoes)</span>
           </div>
           <p className="description">{product.descriptionPt}</p>
           <div className="price-line">
@@ -40,7 +41,7 @@ export default async function ProductPage({ params }: PageProps) {
             {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : null}
           </div>
           <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{badge}</span>)}</div>
-          <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" wide />
+          <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />
           <dl className="spec-list">
             <div>
               <dt>Tipo</dt>
@@ -56,7 +57,7 @@ export default async function ProductPage({ params }: PageProps) {
             </div>
             <div>
               <dt>Status</dt>
-              <dd>{(product.inventory?.quantity || 0) > 0 ? product.stockStatus : "Esgotado"}</dd>
+              <dd>{available ? product.stockStatus : "Esgotado"}</dd>
             </div>
           </dl>
         </div>
