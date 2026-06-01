@@ -161,9 +161,20 @@ export function CheckoutClient({ products }: { products: Product[] }) {
 
     const controller = new AbortController();
     let active = true;
+    let timedOut = false;
+    let timeoutId: number | undefined;
     const debounce = window.setTimeout(() => {
       setAddressSearchStatus("loading");
       setAddressSearchMessage("Buscando enderecos...");
+      timeoutId = window.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+        if (!active) return;
+        setAddressSuggestions([]);
+        setActiveSuggestionIndex(-1);
+        setAddressSearchStatus("error");
+        setAddressSearchMessage("Busca demorou demais. Use o CEP ou preencha manualmente.");
+      }, 6000);
 
       fetch("/api/address/autocomplete", {
         method: "POST",
@@ -177,6 +188,7 @@ export function CheckoutClient({ products }: { products: Product[] }) {
         .then(async (response) => {
           const result = (await response.json()) as AddressAutocompleteResponse;
           if (!active) return;
+          if (timeoutId) window.clearTimeout(timeoutId);
 
           if (result.status === "DISABLED") {
             setAddressSuggestions([]);
@@ -201,17 +213,19 @@ export function CheckoutClient({ products }: { products: Product[] }) {
         })
         .catch((autocompleteError: unknown) => {
           if (!active) return;
-          if (autocompleteError instanceof DOMException && autocompleteError.name === "AbortError") return;
+          if (timeoutId) window.clearTimeout(timeoutId);
+          if (autocompleteError instanceof DOMException && autocompleteError.name === "AbortError" && !timedOut) return;
           setAddressSuggestions([]);
           setActiveSuggestionIndex(-1);
           setAddressSearchStatus("error");
-          setAddressSearchMessage("Nao foi possivel buscar sugestoes agora. Preencha manualmente.");
+          setAddressSearchMessage(timedOut ? "Busca demorou demais. Use o CEP ou preencha manualmente." : "Nao foi possivel buscar sugestoes agora. Preencha manualmente.");
         });
     }, 450);
 
     return () => {
       active = false;
       window.clearTimeout(debounce);
+      if (timeoutId) window.clearTimeout(timeoutId);
       controller.abort();
     };
   }, [addressSearch]);
