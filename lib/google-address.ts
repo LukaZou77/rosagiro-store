@@ -1,5 +1,7 @@
 import "server-only";
 
+import { lookupCep, makeViaCepPlaceId, searchViaCepAddress, viaCepDigitsFromPlaceId } from "@/lib/cep";
+
 export type AddressSuggestion = {
   placeId: string;
   mainText: string;
@@ -122,7 +124,7 @@ function googleApiKey() {
   return process.env.GOOGLE_MAPS_API_KEY?.trim() || "";
 }
 
-function hasGoogleApiKey() {
+export function hasGoogleAddressApiKey() {
   return Boolean(googleApiKey());
 }
 
@@ -185,6 +187,101 @@ function disabledDetails(): AddressDetailsResult {
     status: "DISABLED",
     message: "Busca por endereco indisponivel agora. Use o CEP ou preencha manualmente."
   };
+}
+
+export async function autocompleteViaCepAddress({
+  input,
+  state,
+  city
+}: {
+  input: string;
+  state?: string;
+  city?: string;
+}): Promise<AddressAutocompleteResult> {
+  try {
+    const result = await searchViaCepAddress({
+      state: state || "",
+      city: city || "",
+      street: input
+    });
+
+    if (result.status === "invalid") {
+      return {
+        status: "DISABLED",
+        suggestions: [],
+        message: result.message
+      };
+    }
+
+    if (result.status === "empty") {
+      return {
+        status: "OK",
+        suggestions: [],
+        message: result.message
+      };
+    }
+
+    if (result.status === "error") {
+      return {
+        status: "ERROR",
+        suggestions: [],
+        message: result.message
+      };
+    }
+
+    return {
+      status: "OK",
+      message: "Selecione um endereco ViaCEP para preencher os dados.",
+      suggestions: result.addresses.map((address) => ({
+        placeId: makeViaCepPlaceId(address.cep),
+        mainText: address.street || `CEP ${address.cep}`,
+        secondaryText: [address.district, `${address.city} - ${address.state}`, `CEP ${address.cep}`].filter(Boolean).join(" / "),
+        fullText: [address.street, address.district, `${address.city} - ${address.state}`, `CEP ${address.cep}`].filter(Boolean).join(", "),
+        types: ["viacep"]
+      }))
+    };
+  } catch {
+    return {
+      status: "ERROR",
+      suggestions: [],
+      message: "Nao foi possivel consultar o ViaCEP agora. Preencha manualmente."
+    };
+  }
+}
+
+export async function getViaCepPlaceDetails(placeId: string): Promise<AddressDetailsResult | null> {
+  const digits = viaCepDigitsFromPlaceId(placeId);
+  if (!digits) return null;
+
+  try {
+    const result = await lookupCep(digits);
+    if (result.status !== "found") {
+      return {
+        status: "ERROR",
+        message: "Nao foi possivel carregar o endereco ViaCEP selecionado. Preencha manualmente."
+      };
+    }
+
+    const formattedCep = `${digits.slice(0, 5)}-${digits.slice(5)}`;
+
+    return {
+      status: "OK",
+      placeId,
+      formattedAddress: `${result.address.street}, ${result.address.district}, ${result.address.city} - ${result.address.state}, CEP ${formattedCep}`,
+      address: {
+        cep: formattedCep,
+        state: result.address.state,
+        city: result.address.city,
+        district: result.address.district,
+        street: result.address.street
+      }
+    };
+  } catch {
+    return {
+      status: "ERROR",
+      message: "Nao foi possivel carregar o endereco ViaCEP selecionado. Preencha manualmente."
+    };
+  }
 }
 
 export async function autocompleteAddress(input: string, sessionToken?: string): Promise<AddressAutocompleteResult> {
@@ -296,7 +393,7 @@ export async function validateCheckoutAddress(address: CheckoutAddressForValidat
   const checkedAt = new Date();
   const apiKey = googleApiKey();
 
-  if (!hasGoogleApiKey()) {
+  if (!hasGoogleAddressApiKey()) {
     return {
       status: "DISABLED",
       provider: null,

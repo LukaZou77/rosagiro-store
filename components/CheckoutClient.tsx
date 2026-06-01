@@ -70,6 +70,12 @@ function makeAddressSessionToken() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function addressSearchReadiness(value: string, address: Pick<AddressState, "state" | "city">) {
+  if (value.trim().length < 3) return "Digite pelo menos 3 caracteres para buscar sugestoes.";
+  if (!address.state || address.city.trim().length < 3) return "Informe UF e cidade para buscar por rua.";
+  return "";
+}
+
 export function CheckoutClient({ products }: { products: Product[] }) {
   const router = useRouter();
   const cart = useCart();
@@ -121,6 +127,8 @@ export function CheckoutClient({ products }: { products: Product[] }) {
   }, []);
 
   function updateAddress(field: keyof AddressState, value: string) {
+    const nextAddress = { ...address, [field]: value };
+
     if (field === "cep") {
       const formattedCep = formatCep(value);
       const digits = cepDigits(formattedCep);
@@ -144,6 +152,16 @@ export function CheckoutClient({ products }: { products: Product[] }) {
       autofilledFields.current[field] = false;
     }
 
+    if ((field === "state" || field === "city") && addressSearch.trim().length >= 3) {
+      const readinessMessage = addressSearchReadiness(addressSearch, nextAddress);
+      if (readinessMessage) {
+        setAddressSuggestions([]);
+        setActiveSuggestionIndex(-1);
+        setAddressSearchStatus("disabled");
+        setAddressSearchMessage(readinessMessage);
+      }
+    }
+
     setAddress((current) => ({ ...current, [field]: value }));
   }
 
@@ -156,6 +174,11 @@ export function CheckoutClient({ products }: { products: Product[] }) {
     }
 
     if (query.length < 3) {
+      return;
+    }
+
+    const readinessMessage = addressSearchReadiness(query, { state: address.state, city: address.city });
+    if (readinessMessage) {
       return;
     }
 
@@ -181,6 +204,8 @@ export function CheckoutClient({ products }: { products: Product[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           input: query,
+          state: address.state,
+          city: address.city,
           sessionToken: addressSessionToken.current
         }),
         signal: controller.signal
@@ -228,17 +253,18 @@ export function CheckoutClient({ products }: { products: Product[] }) {
       if (timeoutId) window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [addressSearch]);
+  }, [address.city, address.state, addressSearch]);
 
   function handleAddressSearchChange(event: ChangeEvent<HTMLInputElement>) {
     const value = event.target.value;
     setAddressSearch(value);
 
-    if (value.trim().length < 3) {
+    const readinessMessage = addressSearchReadiness(value, address);
+    if (readinessMessage) {
       setAddressSuggestions([]);
       setActiveSuggestionIndex(-1);
-      setAddressSearchStatus("idle");
-      setAddressSearchMessage("Digite pelo menos 3 caracteres para buscar sugestoes.");
+      setAddressSearchStatus(value.trim().length < 3 ? "idle" : "disabled");
+      setAddressSearchMessage(readinessMessage);
     }
   }
 
@@ -441,13 +467,44 @@ export function CheckoutClient({ products }: { products: Product[] }) {
         </fieldset>
         <fieldset>
           <legend>Endereco</legend>
+          <div className="form-grid">
+            <label>
+              CEP
+              <input
+                name="cep"
+                placeholder="00000-000"
+                autoComplete="postal-code"
+                inputMode="numeric"
+                value={address.cep}
+                onChange={(event) => updateAddress("cep", event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Estado
+              <select name="state" value={address.state} onChange={(event) => updateAddress("state", event.target.value)} required>
+                <option value="">UF</option>
+                {states.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className={`cep-status ${cepStatus}`} aria-live="polite">
+            {cepMessage}
+          </p>
+          <label>
+            Cidade <input name="city" autoComplete="address-level2" value={address.city} onChange={(event) => updateAddress("city", event.target.value)} required />
+          </label>
           <div className="address-search">
-            <label htmlFor="address-search-input">Buscar endereco</label>
+            <label htmlFor="address-search-input">Buscar rua pelo ViaCEP</label>
             <div className="address-search-box">
               <input
                 id="address-search-input"
                 type="search"
-                placeholder="Digite rua, bairro ou cidade"
+                placeholder="Digite o nome da rua"
                 value={addressSearch}
                 onChange={handleAddressSearchChange}
                 onKeyDown={handleAddressSearchKeyDown}
@@ -489,34 +546,6 @@ export function CheckoutClient({ products }: { products: Product[] }) {
               {addressSearchMessage}
             </p>
           </div>
-          <div className="form-grid">
-            <label>
-              CEP
-              <input
-                name="cep"
-                placeholder="00000-000"
-                autoComplete="postal-code"
-                inputMode="numeric"
-                value={address.cep}
-                onChange={(event) => updateAddress("cep", event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Estado
-              <select name="state" value={address.state} onChange={(event) => updateAddress("state", event.target.value)} required>
-                <option value="">UF</option>
-                {states.map((state) => (
-                  <option key={state} value={state}>
-                    {state}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <p className={`cep-status ${cepStatus}`} aria-live="polite">
-            {cepMessage}
-          </p>
           <label>
             Rua <input name="street" autoComplete="address-line1" value={address.street} onChange={(event) => updateAddress("street", event.target.value)} required />
           </label>
@@ -531,9 +560,6 @@ export function CheckoutClient({ products }: { products: Product[] }) {
           <div className="form-grid">
             <label>
               Bairro <input name="district" value={address.district} onChange={(event) => updateAddress("district", event.target.value)} required />
-            </label>
-            <label>
-              Cidade <input name="city" autoComplete="address-level2" value={address.city} onChange={(event) => updateAddress("city", event.target.value)} required />
             </label>
           </div>
         </fieldset>
