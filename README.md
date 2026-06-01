@@ -30,11 +30,13 @@ Required:
 - `ADMIN_PASSWORD`
 - `NEXT_PUBLIC_SITE_URL`
 
-Reserved for the later payment phase:
+Payment:
 
 - `PAYMENT_MODE`
 - `MERCADO_PAGO_ACCESS_TOKEN`
 - `MERCADO_PAGO_WEBHOOK_SECRET`
+
+Use `PAYMENT_MODE="simulated"` for local fallback. Use `PAYMENT_MODE="mercado_pago_sandbox"` only with Mercado Pago test credentials and a suitable `NEXT_PUBLIC_SITE_URL`. Live credentials are not part of this baseline.
 
 ## Product import
 
@@ -55,6 +57,10 @@ Use `docs/product-import-template.csv` as a starting template. The importer prev
 Admins can import the Anjun 2026 workbook at `/admin/frete`. The first version reads only the `D2D Pickup` sheet, stores structured CEP and weight-rate rows in PostgreSQL, and quotes checkout freight from `SP-Sao Paulo`.
 
 No carrier API is called and no shipping label is purchased. Insurance, ICMS/ISS, risk-area fees, transportadora, and excursao remain manual confirmation notes.
+
+## Payment sandbox
+
+Checkout keeps the local simulated payment page as a test backdoor. When Mercado Pago sandbox variables are configured, Pix and card choices create a server-side Checkout Pro preference and redirect to Mercado Pago. Webhooks update local payment/order status only after signature validation and a server-side payment lookup.
 
 ## Verification
 

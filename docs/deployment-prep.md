@@ -2,7 +2,7 @@
 
 ## Target
 
-This version is prepared for a Vercel deployment, but it still uses simulated payment. Do not connect real payment credentials until the Mercado Pago Checkout Pro and webhook phase is implemented.
+This version is prepared for a Vercel deployment and supports simulated payment plus Mercado Pago Checkout Pro sandbox. Do not use live Mercado Pago credentials until the store is ready for real sales.
 
 ## Required environment variables
 
@@ -12,12 +12,16 @@ This version is prepared for a Vercel deployment, but it still uses simulated pa
 - `ADMIN_PASSWORD`: seed admin password for local or preview setup.
 - `NEXT_PUBLIC_SITE_URL`: canonical public URL, for metadata, robots, and sitemap.
 - `GOOGLE_MAPS_API_KEY`: optional server-side key for checkout address suggestions and address validation. If empty, checkout falls back to CEP/manual address entry.
+- `PAYMENT_MODE`: `simulated` for local fallback, or `mercado_pago_sandbox` for Checkout Pro sandbox.
+- `MERCADO_PAGO_ACCESS_TOKEN`: sandbox access token from the Mercado Pago seller test account.
+- `MERCADO_PAGO_WEBHOOK_SECRET`: webhook secret from the Mercado Pago application. Required for webhook processing.
 
-## Reserved payment variables
+## Payment notes
 
-- `PAYMENT_MODE`: keep as `simulated` for this phase.
-- `MERCADO_PAGO_ACCESS_TOKEN`: leave empty until real Mercado Pago integration.
-- `MERCADO_PAGO_WEBHOOK_SECRET`: leave empty until webhook validation exists.
+- If `PAYMENT_MODE` is `simulated`, or the Mercado Pago access token/site URL is missing, Pix and card choices fall back to the local simulated payment page.
+- Mercado Pago Checkout Pro uses a server-created preference with one summary item for the server-computed order total.
+- Webhooks are accepted only when `MERCADO_PAGO_WEBHOOK_SECRET` validates the `x-signature`/`x-request-id` manifest.
+- A public HTTPS `NEXT_PUBLIC_SITE_URL` is needed for Mercado Pago to reach `/api/webhooks/mercado-pago`.
 
 ## Local verification
 
@@ -48,7 +52,8 @@ npm run db:seed
 
 - Keep `.env.local` local and never commit it.
 - Restrict `GOOGLE_MAPS_API_KEY` in Google Cloud to the required Maps APIs before production use.
+- Use Mercado Pago test seller/buyer accounts for sandbox. Never put live tokens in `.env.example` or source files.
 - Run CSV imports only from the admin area.
 - Import Anjun freight tables only through `/admin/frete`; keep original XLSX files local and out of git.
 - Freight is simulated from imported D2D Pickup rates. No real carrier API, label purchase, insurance, or tax automation runs in this phase.
-- Use the simulated payment page to validate order and inventory behavior until real payment is connected.
+- Use the simulated payment page to validate order and inventory behavior when sandbox credentials are unavailable.

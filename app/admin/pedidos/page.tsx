@@ -4,7 +4,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
-import { paymentMethodLabel } from "@/lib/payments";
+import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 
 const statusLabels: Record<string, string> = {
   PENDING_PAYMENT: "Aguardando pagamento",
@@ -26,7 +26,7 @@ export default async function AdminOrdersPage() {
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
         <p className="eyebrow">Pedidos</p>
-        <h1>Pedidos simulados</h1>
+        <h1>Pedidos</h1>
       </div>
       <div className="admin-table">
         {orders.map((order) => (
@@ -40,7 +40,10 @@ export default async function AdminOrdersPage() {
             <div>
               <span>{order.items.length} itens</span>
               <strong>{money(order.totalCents)}</strong>
-              <small>{paymentMethodLabel(order.payment?.method)}</small>
+              <small>
+                {paymentProviderLabel(order.payment?.provider)} / {paymentMethodLabel(order.payment?.method)} /{" "}
+                {paymentStatusLabel(order.payment?.status)}
+              </small>
             </div>
             <form action={updateOrderStatusAction} className="status-form">
               <input type="hidden" name="orderNumber" value={order.orderNumber} />

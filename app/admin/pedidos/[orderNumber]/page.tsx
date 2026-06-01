@@ -4,7 +4,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
-import { paymentMethodLabel } from "@/lib/payments";
+import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 
 const statusLabels: Record<string, string> = {
   PENDING_PAYMENT: "Aguardando pagamento",
@@ -84,7 +84,10 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
           <div className="summary-block">
             <div>
               <span>Pagamento</span>
-              <strong>{paymentMethodLabel(order.payment?.method)}</strong>
+              <strong>
+                {paymentProviderLabel(order.payment?.provider)} / {paymentMethodLabel(order.payment?.method)}
+              </strong>
+              <small>{paymentStatusLabel(order.payment?.status)}</small>
             </div>
             <div>
               <span>Subtotal</span>
@@ -120,6 +123,17 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
             ) : null}
             {order.shippingRateId ? <small>Rate ID: {order.shippingRateId}</small> : null}
           </div>
+          {order.payment?.provider === "MERCADO_PAGO" ? (
+            <div className={`address-match-card admin ${order.payment.syncError ? "failed" : "needs-review"}`}>
+              <span>Mercado Pago</span>
+              <strong>{order.payment.providerStatus || "Aguardando status"}</strong>
+              {order.payment.providerStatusDetail ? <small>Detalhe: {order.payment.providerStatusDetail}</small> : null}
+              {order.payment.providerPreferenceId ? <small>Preference ID: {order.payment.providerPreferenceId}</small> : null}
+              {order.payment.providerPaymentId ? <small>Payment ID: {order.payment.providerPaymentId}</small> : null}
+              {order.payment.lastWebhookAt ? <small>Webhook: {order.payment.lastWebhookAt.toLocaleString("pt-BR")}</small> : null}
+              {order.payment.syncError ? <small>{order.payment.syncError}</small> : null}
+            </div>
+          ) : null}
         </div>
       </section>
       <section className="cart-panel admin-order-items">

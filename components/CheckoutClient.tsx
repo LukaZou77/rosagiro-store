@@ -543,22 +543,26 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    const result = (await response.json()) as { orderNumber?: string; error?: string };
+    const result = (await response.json()) as { orderNumber?: string; redirectTo?: string; externalRedirect?: boolean; error?: string };
     setSubmitting(false);
 
-    if (!response.ok || !result.orderNumber) {
+    if (!response.ok || !result.orderNumber || !result.redirectTo) {
       setError(result.error || "Nao foi possivel criar o pedido.");
       return;
     }
 
     writeCart([]);
-    router.push(`/pagamento-simulado/${result.orderNumber}`);
+    if (result.externalRedirect) {
+      window.location.assign(result.redirectTo);
+      return;
+    }
+    router.push(result.redirectTo);
   }
 
   return (
     <section className="checkout-shell">
       <form action={submit} className="checkout-form">
-        <p className="eyebrow">Checkout simulado</p>
+        <p className="eyebrow">Checkout Bela Viva</p>
         <h1>Entrega e pagamento</h1>
         <fieldset>
           <legend>Contato</legend>

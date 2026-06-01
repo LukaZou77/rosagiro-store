@@ -1443,6 +1443,14 @@ dd {
   padding: clamp(16px, 4vw, 28px);
 }
 
+.payment-return-note {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  padding: 0.85rem 1rem;
+  color: var(--ink);
+}
+
 .cart-panel h1,
 .checkout-form h1,
 .confirmation h1 {

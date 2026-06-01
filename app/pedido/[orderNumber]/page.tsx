@@ -4,7 +4,7 @@ import { StoreShell } from "@/components/StoreShell";
 import { getCategories } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
-import { paymentMethodLabel } from "@/lib/payments";
+import { mercadoPagoReturnMessage, paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 
 const addressMatchLabels: Record<string, string> = {
   VALIDATED: "Endereco validado",
@@ -16,10 +16,12 @@ const addressMatchLabels: Record<string, string> = {
 
 type PageProps = {
   params: Promise<{ orderNumber: string }>;
+  searchParams?: Promise<{ mp?: string }>;
 };
 
-export default async function OrderPage({ params }: PageProps) {
+export default async function OrderPage({ params, searchParams }: PageProps) {
   const { orderNumber } = await params;
+  const query = searchParams ? await searchParams : {};
   const [categories, order] = await Promise.all([
     getCategories(),
     prisma.order.findUnique({
@@ -29,24 +31,33 @@ export default async function OrderPage({ params }: PageProps) {
   ]);
 
   if (!order) notFound();
+  const mercadoPagoMessage = mercadoPagoReturnMessage(query.mp);
 
   return (
     <StoreShell categories={categories}>
       <section className="confirmation order-confirmation">
-        <p className="eyebrow">Pedido simulado</p>
+        <p className="eyebrow">Pedido Bela Viva</p>
         <h1>{order.status === "PAID" ? "Compra confirmada." : "Pedido criado."}</h1>
         <p>
-          {order.customerName}, este fluxo nao gera cobranca real. Use esta tela para revisar a experiencia de
-          pos-compra.
+          {order.customerName}, acompanhe aqui o status do pedido. Em ambiente sandbox, pagamentos Mercado Pago nao
+          geram cobranca real.
         </p>
+        {mercadoPagoMessage ? <p className="payment-return-note">{mercadoPagoMessage}</p> : null}
         <div className="confirmation-card">
           <span>Numero do pedido</span>
           <strong>{order.orderNumber}</strong>
           <small>
-            Status: {order.status.replace("_", " ")} / {paymentMethodLabel(order.payment?.method)} / Total:{" "}
-            {money(order.totalCents)}
+            Status: {order.status.replace("_", " ")} / {paymentProviderLabel(order.payment?.provider)} -{" "}
+            {paymentMethodLabel(order.payment?.method)} / {paymentStatusLabel(order.payment?.status)} / Total: {money(order.totalCents)}
           </small>
         </div>
+        {order.payment?.provider === "MERCADO_PAGO" ? (
+          <div className="address-match-card needs-review">
+            <span>Mercado Pago sandbox</span>
+            <strong>{order.payment.providerStatus || "Aguardando retorno"}</strong>
+            <small>{order.payment.syncError || "Webhook aprovado marcara o pedido como pago automaticamente."}</small>
+          </div>
+        ) : null}
         <div className={`address-match-card ${order.addressMatchStatus.toLowerCase().replace("_", "-")}`}>
           <span>{addressMatchLabels[order.addressMatchStatus] || "Endereco salvo"}</span>
           <strong>{order.addressMatchFormatted || `${order.street}, ${order.number} - ${order.city}/${order.state}`}</strong>

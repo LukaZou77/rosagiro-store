@@ -6,6 +6,7 @@ import { validateCheckoutAddress } from "@/lib/google-address";
 import { discountCents, subtotalCents, totalCents } from "@/lib/money";
 import { isPaymentMethod, type PaymentMethodValue } from "@/lib/payments";
 import { resolveOrderShipping } from "@/lib/shipping";
+import type { Prisma } from "@/src/generated/prisma/client";
 
 export type CartInput = {
   slug: string;
@@ -217,15 +218,59 @@ export async function createOrder(input: CheckoutInput) {
   return order;
 }
 
-export async function simulatePayment(orderNumber: string) {
+type PaidOrderPaymentUpdate = {
+  provider?: "SIMULATED" | "MERCADO_PAGO";
+  providerPaymentId?: string | null;
+  providerExternalReference?: string | null;
+  providerStatus?: string | null;
+  providerStatusDetail?: string | null;
+  providerPayload?: Prisma.InputJsonValue;
+  lastWebhookAt?: Date;
+  paidAt?: Date;
+};
+
+export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrderPaymentUpdate = {}) {
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { orderNumber },
       include: { items: true, payment: true }
     });
     if (!order) throw new OrderError("Pedido nao encontrado.", 404);
-    if (order.status === "PAID") return order;
+    if (order.status === "PAID") {
+      const shouldRefreshProvider =
+        paymentUpdate.provider === "MERCADO_PAGO" ||
+        Boolean(paymentUpdate.providerPaymentId || paymentUpdate.providerStatus || paymentUpdate.lastWebhookAt);
+      if (order.payment && shouldRefreshProvider) {
+        await tx.payment.update({
+          where: { orderId: order.id },
+          data: {
+            provider: paymentUpdate.provider,
+            providerPaymentId: paymentUpdate.providerPaymentId,
+            providerExternalReference: paymentUpdate.providerExternalReference,
+            providerStatus: paymentUpdate.providerStatus,
+            providerStatusDetail: paymentUpdate.providerStatusDetail,
+            providerPayload: paymentUpdate.providerPayload,
+            lastWebhookAt: paymentUpdate.lastWebhookAt,
+            syncError: null
+          }
+        });
+      }
+      return order;
+    }
     if (order.status !== "PENDING_PAYMENT") throw new OrderError("Este pedido nao pode ser pago.");
+
+    const claimed = await tx.order.updateMany({
+      where: { id: order.id, status: "PENDING_PAYMENT" },
+      data: { status: "PAID" }
+    });
+    if (claimed.count !== 1) {
+      const currentOrder = await tx.order.findUnique({
+        where: { id: order.id },
+        include: { items: true, payment: true }
+      });
+      if (currentOrder?.status === "PAID") return currentOrder;
+      throw new OrderError("Este pedido nao pode ser pago.");
+    }
 
     for (const item of order.items) {
       if (!item.productId) throw new OrderError(`${item.productName} nao esta mais disponivel.`);
@@ -243,13 +288,27 @@ export async function simulatePayment(orderNumber: string) {
 
     await tx.payment.update({
       where: { orderId: order.id },
-      data: { status: "PAID", paidAt: new Date() }
+      data: {
+        status: "PAID",
+        paidAt: paymentUpdate.paidAt || new Date(),
+        provider: paymentUpdate.provider,
+        providerPaymentId: paymentUpdate.providerPaymentId,
+        providerExternalReference: paymentUpdate.providerExternalReference,
+        providerStatus: paymentUpdate.providerStatus,
+        providerStatusDetail: paymentUpdate.providerStatusDetail,
+        providerPayload: paymentUpdate.providerPayload,
+        lastWebhookAt: paymentUpdate.lastWebhookAt,
+        syncError: null
+      }
     });
 
-    return tx.order.update({
+    return tx.order.findUniqueOrThrow({
       where: { id: order.id },
-      data: { status: "PAID" },
       include: { items: true, payment: true }
     });
   });
+}
+
+export async function simulatePayment(orderNumber: string) {
+  return markOrderPaid(orderNumber, { provider: "SIMULATED" });
 }

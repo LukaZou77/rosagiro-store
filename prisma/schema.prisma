@@ -227,16 +227,44 @@ model OrderItem {
 }
 
 model Payment {
-  id          String          @id @default(cuid())
-  orderId     String          @unique
-  provider    PaymentProvider @default(SIMULATED)
-  method      PaymentMethod   @default(SIMULATED)
-  status      PaymentStatus   @default(PENDING)
-  amountCents Int
-  paidAt      DateTime?
-  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id                        String          @id @default(cuid())
+  orderId                   String          @unique
+  provider                  PaymentProvider @default(SIMULATED)
+  method                    PaymentMethod   @default(SIMULATED)
+  status                    PaymentStatus   @default(PENDING)
+  amountCents               Int
+  paidAt                    DateTime?
+  providerPreferenceId      String?         @unique
+  providerPaymentId         String?         @unique
+  providerExternalReference String?
+  providerInitPoint         String?
+  providerSandboxInitPoint  String?
+  providerStatus            String?
+  providerStatusDetail      String?
+  providerPayload           Json?
+  syncError                 String?
+  lastWebhookAt             DateTime?
+  order                     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+}
+
+model PaymentWebhookEvent {
+  id             String          @id @default(cuid())
+  provider       PaymentProvider @default(MERCADO_PAGO)
+  dedupeKey      String          @unique
+  providerEventId String?
+  requestId      String?
+  dataId         String?
+  eventType      String?
+  action         String?
+  signatureValid Boolean         @default(false)
+  payload        Json
+  processedAt    DateTime?
+  createdAt      DateTime        @default(now())
+
+  @@index([provider, dataId])
+  @@index([provider, requestId])
 }
 
 model StoreProfile {
