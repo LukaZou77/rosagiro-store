@@ -105,6 +105,121 @@ const storeProfile = {
   launchNote: "Ambiente em preparacao: pedidos e pagamentos desta versao sao simulados."
 };
 
+const launchReadinessItems = [
+  {
+    itemKey: "store-legal-identity",
+    group: "Loja",
+    title: "Dados legais da loja",
+    description: "Substituir CNPJ, inscricao estadual, razao social, endereco comercial, e horario real de atendimento.",
+    priority: 1,
+    sortOrder: 10
+  },
+  {
+    itemKey: "store-support-channels",
+    group: "Loja",
+    title: "Canais reais de atendimento",
+    description: "Trocar WhatsApp, e-mail local e redes sociais por canais comerciais reais antes de publicar.",
+    priority: 1,
+    sortOrder: 20
+  },
+  {
+    itemKey: "catalog-real-products",
+    group: "Catalogo",
+    title: "Catalogo real de produtos",
+    description: "Importar SKUs reais, marcas, categorias, precos, descricoes, imagens, estoque, peso e status de venda.",
+    priority: 1,
+    sortOrder: 30
+  },
+  {
+    itemKey: "catalog-media-quality",
+    group: "Catalogo",
+    title: "Imagens e midia de produto",
+    description: "Confirmar imagens finais dos produtos, padrao visual, links externos e ausencia de placeholders.",
+    priority: 2,
+    sortOrder: 40
+  },
+  {
+    itemKey: "payment-mercado-pago-sandbox",
+    group: "Pagamento",
+    title: "Mercado Pago sandbox validado",
+    description: "Configurar contas teste, access token sandbox, webhook secret e validar Checkout Pro com webhook HTTPS.",
+    priority: 1,
+    sortOrder: 50
+  },
+  {
+    itemKey: "payment-live-cutover",
+    group: "Pagamento",
+    title: "Corte para pagamento real",
+    description: "Revisar credenciais live, webhook publico, valor recebido, estoque, chargeback, reembolso e monitoramento antes de cobrar clientes.",
+    priority: 1,
+    sortOrder: 60
+  },
+  {
+    itemKey: "shipping-anjun-rates",
+    group: "Logistica",
+    title: "Tabela Anjun e regras de frete",
+    description: "Confirmar validade da tabela D2D Pickup, origem de envio, CEPs cobertos, peso de produtos e embalagem.",
+    priority: 1,
+    sortOrder: 70
+  },
+  {
+    itemKey: "shipping-manual-fees",
+    group: "Logistica",
+    title: "Taxas e conferencia manual",
+    description: "Definir como tratar seguro, ICMS/ISS, area de risco, excursao, transportadora e excecoes antes de vender.",
+    priority: 2,
+    sortOrder: 80
+  },
+  {
+    itemKey: "address-google-maps",
+    group: "Endereco",
+    title: "Google Maps opcional",
+    description: "Se usar validacao Google, configurar API key restrita e conferir autocomplete, details e address validation.",
+    priority: 3,
+    sortOrder: 90
+  },
+  {
+    itemKey: "address-manual-review",
+    group: "Endereco",
+    title: "Conferencia de endereco",
+    description: "Definir rotina operacional para enderecos com ViaCEP incompleto, Google desativado ou status needs review.",
+    priority: 2,
+    sortOrder: 100
+  },
+  {
+    itemKey: "deploy-vercel-env",
+    group: "Deploy",
+    title: "Ambiente Vercel e variaveis",
+    description: "Configurar dominio, NEXT_PUBLIC_SITE_URL, banco de producao, SESSION_SECRET, Mercado Pago e Google no ambiente correto.",
+    priority: 1,
+    sortOrder: 110
+  },
+  {
+    itemKey: "deploy-production-db",
+    group: "Deploy",
+    title: "Banco de producao",
+    description: "Executar migrate deploy, seed controlado, importacao de dados reais e backup/rollback antes de publicar.",
+    priority: 1,
+    sortOrder: 120
+  },
+  {
+    itemKey: "ops-policies-lgpd",
+    group: "Operacao",
+    title: "Politicas e LGPD",
+    description: "Revisar termos, privacidade, trocas, devolucoes, entrega, atendimento, dados pessoais e regras de beleza.",
+    priority: 1,
+    sortOrder: 130
+  },
+  {
+    itemKey: "ops-seo-merchant",
+    group: "Operacao",
+    title: "SEO e canais comerciais",
+    description: "Validar metadata, sitemap, robots, Open Graph, Google Merchant/feed e dados estruturados antes de divulgar.",
+    priority: 2,
+    sortOrder: 140
+  }
+] as const;
+
 const products = [
   {
     slug: "aura-serum-c",
@@ -468,6 +583,20 @@ async function main() {
     update: {},
     create: storeProfile
   });
+
+  for (const item of launchReadinessItems) {
+    await prisma.launchReadinessItem.upsert({
+      where: { itemKey: item.itemKey },
+      update: {
+        group: item.group,
+        title: item.title,
+        description: item.description,
+        priority: item.priority,
+        sortOrder: item.sortOrder
+      },
+      create: item
+    });
+  }
 }
 
 main()

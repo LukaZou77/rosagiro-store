@@ -11,6 +11,7 @@ import { formatCep } from "@/lib/cep";
 import { STORE_PROFILE_ID } from "@/lib/store-profile";
 
 const statuses = ["PENDING_PAYMENT", "PAID", "FULFILLING", "SHIPPED", "CANCELED"] as const;
+const launchReadinessStatuses = ["PENDING", "IN_PROGRESS", "DONE", "BLOCKED"] as const;
 
 function field(formData: FormData, name: string) {
   return String(formData.get(name) || "").trim();
@@ -402,4 +403,30 @@ export async function importProductsAction(formData: FormData) {
   }
 
   redirect(redirectTo);
+}
+
+export async function updateLaunchReadinessItemAction(formData: FormData) {
+  await requireAdmin();
+
+  const itemKey = field(formData, "itemKey");
+  const status = field(formData, "status");
+  const notes = field(formData, "notes").slice(0, 1200);
+  if (!itemKey || !launchReadinessStatuses.includes(status as (typeof launchReadinessStatuses)[number])) {
+    redirectError("/admin/prontidao", "Item ou status invalido.");
+  }
+
+  const result = await prisma.launchReadinessItem.updateMany({
+    where: { itemKey },
+    data: {
+      status: status as (typeof launchReadinessStatuses)[number],
+      notes
+    }
+  });
+  if (result.count === 0) {
+    redirectError("/admin/prontidao", "Item de prontidao nao encontrado.");
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/prontidao");
+  redirect(`/admin/prontidao?saved=${encodeURIComponent(itemKey)}`);
 }

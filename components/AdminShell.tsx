@@ -27,6 +27,7 @@ export function AdminShell({
           <Link href="/admin/frete">Frete</Link>
           <Link href="/admin/pedidos">Pedidos</Link>
           <Link href="/admin/loja">Loja / Confianca</Link>
+          <Link href="/admin/prontidao">Prontidao / Launch</Link>
           <Link href="/">Ver loja</Link>
         </nav>
         <form action={logoutAction}>

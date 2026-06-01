@@ -2590,6 +2590,109 @@ legend {
   color: var(--muted);
 }
 
+.readiness-metrics {
+  margin-bottom: 16px;
+}
+
+.readiness-metrics small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.readiness-groups,
+.readiness-list {
+  display: grid;
+  gap: 14px;
+}
+
+.readiness-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.readiness-group-heading span {
+  color: var(--brass);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.readiness-group-heading h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.readiness-group-heading strong {
+  color: var(--rose-deep);
+  font-size: 1.25rem;
+}
+
+.readiness-item {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.readiness-item-main {
+  display: grid;
+  gap: 8px;
+}
+
+.readiness-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.readiness-item h3 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.readiness-item p,
+.readiness-item small {
+  margin: 0;
+  color: var(--muted);
+}
+
+.readiness-controls {
+  display: grid;
+  gap: 10px;
+}
+
+.readiness-controls textarea {
+  min-height: 84px;
+}
+
+.status-chip.readiness-status.pending {
+  border-color: rgba(183, 119, 45, 0.34);
+  background: rgba(243, 200, 79, 0.14);
+  color: #8b5a1f;
+}
+
+.status-chip.readiness-status.in-progress {
+  border-color: rgba(53, 111, 91, 0.34);
+  background: var(--mist);
+  color: var(--sage);
+}
+
+.status-chip.readiness-status.done {
+  border-color: rgba(113, 138, 122, 0.45);
+  background: #eef6f0;
+  color: #315742;
+}
+
+.status-chip.readiness-status.blocked {
+  border-color: rgba(185, 105, 112, 0.5);
+  background: #fff1f2;
+  color: var(--rose-deep);
+}
+
 .table-note {
   margin: 10px 0 0;
   color: var(--muted);
@@ -2894,6 +2997,11 @@ legend {
 
   .admin-detail-grid {
     grid-template-columns: minmax(0, 1fr) 360px;
+  }
+
+  .readiness-item {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    align-items: start;
   }
 
   .admin-detail-grid.product-editor {

@@ -39,6 +39,13 @@ enum ShippingMethod {
   RETIRADA_LOCAL
 }
 
+enum LaunchReadinessStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
 model AdminUser {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -265,6 +272,23 @@ model PaymentWebhookEvent {
 
   @@index([provider, dataId])
   @@index([provider, requestId])
+}
+
+model LaunchReadinessItem {
+  id          String                @id @default(cuid())
+  itemKey     String                @unique
+  group       String
+  title       String
+  description String
+  status      LaunchReadinessStatus @default(PENDING)
+  priority    Int                   @default(2)
+  notes       String                @default("")
+  sortOrder   Int                   @default(0)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([group, sortOrder])
+  @@index([status, priority])
 }
 
 model StoreProfile {
