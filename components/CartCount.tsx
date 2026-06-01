@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useSyncExternalStore } from "react";
 
 const CART_KEY = "bela-viva-cart";
+const QUICK_PURCHASE_OPEN_EVENT = "bela-viva-quick-purchase-open";
 
 type CartLine = {
   slug: string;
@@ -31,6 +32,10 @@ export function notifyCartChanged() {
   window.dispatchEvent(new Event("bela-viva-cart-changed"));
 }
 
+export function notifyQuickPurchaseOpen() {
+  window.dispatchEvent(new Event(QUICK_PURCHASE_OPEN_EVENT));
+}
+
 export function readCart() {
   try {
     return JSON.parse(localStorage.getItem(CART_KEY) || "[]") as CartLine[];
@@ -42,6 +47,11 @@ export function readCart() {
 export function writeCart(cart: CartLine[]) {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
   notifyCartChanged();
+}
+
+export function subscribeQuickPurchaseOpen(callback: () => void) {
+  window.addEventListener(QUICK_PURCHASE_OPEN_EVENT, callback);
+  return () => window.removeEventListener(QUICK_PURCHASE_OPEN_EVENT, callback);
 }
 
 export function useCart() {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CartCount } from "@/components/CartCount";
+import { QuickPurchaseDrawer } from "@/components/QuickPurchaseDrawer";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { legalLinks, siteConfig, storefrontLinks } from "@/lib/site-config";
 import { getStoreProfile, storeCnpjLabel, storeSocialLinks, storeTrustSignals } from "@/lib/store-profile";
@@ -89,6 +90,7 @@ export async function StoreShell({
           </nav>
         ) : null}
       </footer>
+      <QuickPurchaseDrawer />
       <nav className="mobile-tabs" aria-label="Navegacao principal">
         <Link href="/">Inicio</Link>
         <Link href="/promocoes">Ofertas</Link>

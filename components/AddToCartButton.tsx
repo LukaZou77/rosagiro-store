@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { readCart, writeCart } from "@/components/CartCount";
+import { notifyQuickPurchaseOpen, readCart, writeCart } from "@/components/CartCount";
 
 export function AddToCartButton({
   slug,
@@ -40,6 +40,7 @@ export function AddToCartButton({
         if (existing) existing.quantity += 1;
         else cart.push({ slug, quantity: 1 });
         writeCart(cart);
+        notifyQuickPurchaseOpen();
         setAdded(true);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => setAdded(false), 1300);
