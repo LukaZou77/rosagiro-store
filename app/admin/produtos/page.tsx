@@ -173,6 +173,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                   <strong>{money(product.priceCents)}</strong>
                   {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : null}
                   <small>Rank {product.featuredRank}</small>
+                  <small>{product.weightGrams} g</small>
                 </div>
               </div>
               <div className="admin-row-actions">

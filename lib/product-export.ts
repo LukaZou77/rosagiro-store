@@ -32,6 +32,7 @@ export async function currentProductsCsv() {
     skinType: product.skinType,
     finish: product.finish,
     volume: product.volume,
+    weightGrams: product.weightGrams,
     rating: String(product.rating).replace(".", ","),
     reviewCount: product.reviewCount
   }));

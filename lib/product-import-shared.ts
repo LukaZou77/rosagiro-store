@@ -19,6 +19,7 @@ export const productImportOptionalFields = [
   "skinType",
   "finish",
   "volume",
+  "weightGrams",
   "rating",
   "reviewCount"
 ] as const;
@@ -35,6 +36,7 @@ export type ProductImportExistingProduct = {
   active: boolean;
   brand: string;
   category: string;
+  weightGrams: number;
 };
 
 export type ProductImportRow = {
@@ -58,6 +60,7 @@ export type ProductImportRow = {
   skinType: string;
   finish: string;
   volume: string;
+  weightGrams: number;
   rating: number;
   reviewCount: number;
   operation: "create" | "update";
@@ -109,6 +112,7 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   skinType: "Todos os tipos",
   finish: "Glow",
   volume: "30 ml",
+  weightGrams: 150,
   rating: "4,8",
   reviewCount: 12
 };
@@ -128,6 +132,7 @@ export const productImportHelpRows = [
   ["compareAtPrice", "Nao", "Preco comparativo maior que o preco atual."],
   ["benefits, ingredients, badges", "Nao", "Separe varios itens com |."],
   ["skinType, finish, volume", "Nao", "Texto livre para filtros e detalhe do produto."],
+  ["weightGrams", "Nao", "Peso unitario em gramas para cotacao de frete. Padrao 150."],
   ["rating", "Nao", "Nota de 0 a 5. Padrao 4,8 quando vazio."],
   ["reviewCount", "Nao", "Quantidade inteira de avaliacoes."]
 ] as const;
@@ -255,6 +260,14 @@ function parseReviewCount(value: string) {
   return Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
 }
 
+function parseWeightGrams(value: string) {
+  const raw = value.trim();
+  if (!raw) return { value: 150, valid: true };
+  const weight = Number(raw.replace(",", "."));
+  if (!Number.isFinite(weight) || weight <= 0) return { value: 150, valid: false };
+  return { value: Math.max(1, Math.floor(weight)), valid: true };
+}
+
 export function isAllowedProductImage(value: string) {
   const trimmed = value.trim();
   if (trimmed.startsWith("/assets/") || trimmed.startsWith("/placeholder")) return true;
@@ -310,6 +323,7 @@ export function parseProductCsv(
     const subcategory = raw.subcategory?.trim() || "";
     const priceCents = parseCents(raw.price || "");
     const compareAtPriceCents = raw.compareAtPrice ? parseCents(raw.compareAtPrice) : null;
+    const weight = parseWeightGrams(raw.weightGrams || "");
     const stock = parseStock(raw.stock || "");
     const active = parseBoolean(raw.active || "");
     const image = raw.image?.trim() || "";
@@ -327,6 +341,7 @@ export function parseProductCsv(
       errors.push("compareAtPrice deve ser maior que price");
     }
     if (stock < 0) errors.push("stock invalido");
+    if (!weight.valid) errors.push("weightGrams deve ser um numero maior que zero");
     if (active === null) errors.push("active deve ser true/false, sim/nao ou 1/0");
     if (!image) errors.push("image obrigatorio");
     else if (!isAllowedProductImage(image)) errors.push("image deve ser /assets/..., /placeholder... ou URL http(s)");
@@ -355,6 +370,7 @@ export function parseProductCsv(
       skinType: optionalText(raw.skinType || "", "A ajustar"),
       finish: optionalText(raw.finish || "", "A ajustar"),
       volume: optionalText(raw.volume || "", "A ajustar"),
+      weightGrams: weight.value,
       rating: parseRating(raw.rating || ""),
       reviewCount: parseReviewCount(raw.reviewCount || ""),
       operation,

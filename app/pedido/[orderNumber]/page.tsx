@@ -52,6 +52,13 @@ export default async function OrderPage({ params }: PageProps) {
           <strong>{order.addressMatchFormatted || `${order.street}, ${order.number} - ${order.city}/${order.state}`}</strong>
           <small>{order.addressMatchMessage || "Confira o endereco antes do envio."}</small>
         </div>
+        <div className={`address-match-card ${order.shippingQuoteStatus.toLowerCase().replace("_", "-")}`}>
+          <span>{order.shippingServiceLabel || "Entrega"}</span>
+          <strong>
+            {money(order.shippingCents)} / {order.shippingWeightGrams ? `${(order.shippingWeightGrams / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg` : "peso a conferir"}
+          </strong>
+          <small>{order.shippingQuoteMessage || "Frete salvo para conferencia operacional."}</small>
+        </div>
         <div className="order-items">
           {order.items.map((item) => (
             <div key={item.id}>

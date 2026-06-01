@@ -9,6 +9,7 @@ export type CatalogProduct = {
   subcategory: string;
   priceCents: number;
   compareAtPriceCents: number | null;
+  weightGrams: number;
   image: string;
   descriptionPt: string;
   benefits: string[];

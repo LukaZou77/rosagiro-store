@@ -3,13 +3,16 @@ import "server-only";
 import { randomInt } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { validateCheckoutAddress } from "@/lib/google-address";
-import { discountCents, shippingCents, subtotalCents, totalCents } from "@/lib/money";
+import { discountCents, subtotalCents, totalCents } from "@/lib/money";
 import { isPaymentMethod, type PaymentMethodValue } from "@/lib/payments";
+import { resolveOrderShipping } from "@/lib/shipping";
 
 export type CartInput = {
   slug: string;
   quantity: number;
 };
+
+type CheckoutShippingMethod = "PADRAO" | "EXPRESSA" | "ANJUN_D2D_PICKUP" | "RETIRADA_LOCAL";
 
 export type CheckoutInput = {
   items: CartInput[];
@@ -28,7 +31,7 @@ export type CheckoutInput = {
     number: string;
     complement?: string;
   };
-  shippingMethod: "PADRAO" | "EXPRESSA";
+  shippingMethod: CheckoutShippingMethod;
   paymentMethod: PaymentMethodValue;
 };
 
@@ -74,7 +77,14 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
     complement: cleanText(data.address?.complement)
   };
 
-  const shippingMethod = data.shippingMethod === "EXPRESSA" ? "EXPRESSA" : "PADRAO";
+  const rawShippingMethod = cleanText(data.shippingMethod).toUpperCase();
+  const shippingMethod: CheckoutShippingMethod =
+    rawShippingMethod === "ANJUN_D2D_PICKUP" ||
+    rawShippingMethod === "RETIRADA_LOCAL" ||
+    rawShippingMethod === "EXPRESSA" ||
+    rawShippingMethod === "PADRAO"
+      ? rawShippingMethod
+      : "RETIRADA_LOCAL";
   const rawPaymentMethod = cleanText((data as Partial<CheckoutInput>).paymentMethod).toUpperCase();
   const paymentMethod = isPaymentMethod(rawPaymentMethod) ? rawPaymentMethod : "SIMULATED";
 
@@ -118,14 +128,29 @@ export async function createOrder(input: CheckoutInput) {
     return {
       product,
       quantity: item.quantity,
-      priceCents: product.priceCents
+      priceCents: product.priceCents,
+      weightGrams: product.weightGrams
     };
   });
 
   const subtotal = subtotalCents(lines);
   const discount = discountCents(subtotal);
-  const shipping = shippingCents(subtotal, input.shippingMethod);
-  const total = totalCents(subtotal, discount, shipping);
+  let shippingQuote;
+  try {
+    shippingQuote = await resolveOrderShipping({
+      method: input.shippingMethod,
+      cep: input.address.cep,
+      subtotal,
+      lines
+    });
+  } catch (error) {
+    throw new OrderError(
+      error instanceof Error
+        ? error.message
+        : "Nao foi possivel recalcular o frete. Revise o CEP ou escolha retirada local."
+    );
+  }
+  const total = totalCents(subtotal, discount, shippingQuote.shippingCents);
   const addressMatch = await validateCheckoutAddress(input.address);
 
   const order = await prisma.order.create({
@@ -151,10 +176,21 @@ export async function createOrder(input: CheckoutInput) {
       addressLongitude: addressMatch.longitude,
       addressMatchMessage: addressMatch.message,
       addressMatchCheckedAt: addressMatch.checkedAt,
-      shippingMethod: input.shippingMethod,
+      shippingMethod: shippingQuote.method,
+      shippingCarrier: shippingQuote.carrier,
+      shippingService: shippingQuote.service,
+      shippingServiceLabel: shippingQuote.serviceLabel,
+      shippingRateId: shippingQuote.rateId,
+      shippingZone: shippingQuote.zone,
+      shippingCity: shippingQuote.city,
+      shippingWeightGrams: shippingQuote.weightGrams,
+      shippingEstimate: shippingQuote.estimate,
+      shippingQuoteStatus: shippingQuote.status,
+      shippingQuoteMessage: shippingQuote.message,
+      shippingQuoteSnapshot: shippingQuote.snapshot,
       subtotalCents: subtotal,
       discountCents: discount,
-      shippingCents: shipping,
+      shippingCents: shippingQuote.shippingCents,
       totalCents: total,
       items: {
         create: lines.map((line) => ({

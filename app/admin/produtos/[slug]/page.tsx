@@ -130,6 +130,10 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
               Estoque
               <input name="quantity" type="number" min="0" defaultValue={product.inventory?.quantity || 0} />
             </label>
+            <label>
+              Peso unitario (g)
+              <input name="weightGrams" type="number" min="1" defaultValue={product.weightGrams} />
+            </label>
             <label className="checkbox-label">
               <input name="active" type="checkbox" defaultChecked={product.active} />
               Produto ativo

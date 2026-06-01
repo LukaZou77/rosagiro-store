@@ -33,8 +33,8 @@ export const siteConfig = {
     storeTrust: "CNPJ e dados da loja serao revisados antes da publicacao oficial.",
     deliveryModes: [
       "Retirada local mediante confirmacao",
-      "Transportadora ou excursao sob consulta",
-      "Frete calculado na finalizacao do pedido"
+      "Anjun D2D Pickup estimado por CEP",
+      "Transportadora ou excursao sob consulta"
     ],
     shelfSignals: ["Pedido minimo R$ 300", "Pronta entrega", "Compra para revenda", "Suporte no WhatsApp"]
   },
@@ -240,15 +240,15 @@ export const infoPages = {
     sections: [
       {
         title: "Modalidades",
-        body: "A loja trabalha com entrega padrao e expressa no fluxo de teste. A comunicacao tambem reserva espaco para retirada local, transportadora e excursao, comuns em compras por atacado."
+        body: "A loja trabalha com estimativa de frete por CEP no checkout e retirada local mediante confirmacao. Transportadora e excursao continuam como opcoes para consulta pelo WhatsApp."
       },
       {
-        title: "Frete gratis",
-        body: "A regra atual oferece frete gratis a partir de R$ 299,00. Esta regra fica centralizada para facilitar ajustes comerciais."
+        title: "Cotacao por CEP",
+        body: "A primeira regra usa tabela Anjun D2D Pickup importada no admin, com origem Sao Paulo e calculo por CEP e peso. Seguro, impostos e areas especiais podem exigir confirmacao manual."
       },
       {
         title: "Integracoes futuras",
-        body: "A segunda fase prepara o caminho para transportadoras, regras por CEP e combinacao via WhatsApp, mas ainda nao conecta uma logistica real."
+        body: "Esta fase ainda nao compra etiquetas nem chama API real de transportadora. Depois podemos conectar Melhor Envio, Anjun ou outra operacao sem refazer o checkout."
       }
     ]
   },

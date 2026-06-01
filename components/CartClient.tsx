@@ -33,8 +33,7 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
   );
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0), [items]);
   const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
-  const shipping = subtotal >= 29900 ? 0 : 1490;
-  const total = subtotal - discount + shipping;
+  const total = subtotal - discount;
   const whatsappHref = useMemo(() => buildCartWhatsAppHref(items, subtotal), [items, subtotal]);
 
   function update(next: Array<{ slug: string; quantity: number }>) {
@@ -106,14 +105,14 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
             <strong>-{money(discount)}</strong>
           </div>
           <div>
-            <span>Frete estimado</span>
-            <strong>{shipping === 0 ? "Gratis" : money(shipping)}</strong>
+            <span>Frete</span>
+            <strong>No checkout</strong>
           </div>
           <div className="summary-total">
-            <span>Total</span>
+            <span>Total sem frete</span>
             <strong>{money(total)}</strong>
           </div>
-          <p>Frete gratis acima de R$ 299,00. Desconto automatico de 10% acima de R$ 250,00.</p>
+          <p>Frete Anjun D2D Pickup sera estimado por CEP no checkout. Retirada local continua disponivel.</p>
         </div>
         <div className="delivery-note">
           {siteConfig.wholesale.deliveryModes.map((mode) => (

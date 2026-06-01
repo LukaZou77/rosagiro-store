@@ -22,11 +22,6 @@ export function discountCents(subtotal: number) {
   return subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
 }
 
-export function shippingCents(subtotal: number, method: "PADRAO" | "EXPRESSA") {
-  if (subtotal >= 29900) return 0;
-  return method === "EXPRESSA" ? 2490 : 1490;
-}
-
 export function totalCents(subtotal: number, discount: number, shipping: number) {
   return subtotal - discount + shipping;
 }

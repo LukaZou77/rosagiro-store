@@ -46,9 +46,15 @@ Required CSV fields:
 
 Optional CSV fields:
 
-`compareAtPrice,benefits,ingredients,badges,skinType,finish,volume,rating,reviewCount`
+`compareAtPrice,benefits,ingredients,badges,skinType,finish,volume,weightGrams,rating,reviewCount`
 
 Use `docs/product-import-template.csv` as a starting template. The importer previews and validates rows before writing to the database, then creates or updates products by `slug`.
+
+## Freight simulation
+
+Admins can import the Anjun 2026 workbook at `/admin/frete`. The first version reads only the `D2D Pickup` sheet, stores structured CEP and weight-rate rows in PostgreSQL, and quotes checkout freight from `SP-Sao Paulo`.
+
+No carrier API is called and no shipping label is purchased. Insurance, ICMS/ISS, risk-area fees, transportadora, and excursao remain manual confirmation notes.
 
 ## Verification
 

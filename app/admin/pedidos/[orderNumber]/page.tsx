@@ -98,10 +98,27 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
               <span>Frete</span>
               <strong>{money(order.shippingCents)}</strong>
             </div>
+            <div>
+              <span>Metodo</span>
+              <strong>{order.shippingServiceLabel || order.shippingMethod}</strong>
+            </div>
             <div className="summary-total">
               <span>Total</span>
               <strong>{money(order.totalCents)}</strong>
             </div>
+          </div>
+          <div className={`address-match-card admin ${order.shippingQuoteStatus.toLowerCase().replace("_", "-")}`}>
+            <span>{order.shippingQuoteStatus}</span>
+            <strong>
+              {order.shippingCarrier || "Frete"} {order.shippingZone ? `/ ${order.shippingZone}` : ""}
+            </strong>
+            <small>{order.shippingQuoteMessage || "Frete salvo para conferencia."}</small>
+            {order.shippingWeightGrams ? (
+              <small>
+                Peso cobrado: {(order.shippingWeightGrams / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg
+              </small>
+            ) : null}
+            {order.shippingRateId ? <small>Rate ID: {order.shippingRateId}</small> : null}
           </div>
         </div>
       </section>

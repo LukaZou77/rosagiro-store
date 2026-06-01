@@ -138,6 +138,7 @@ export async function updateProductDetailAction(formData: FormData) {
   const priceCents = parseCents(field(formData, "price"));
   const compareAtPriceCents = parseCents(field(formData, "compareAtPrice"));
   const quantity = positiveInt(formData, "quantity");
+  const weightGrams = Math.max(1, positiveInt(formData, "weightGrams", 150));
   const reviewCount = positiveInt(formData, "reviewCount");
   const featuredRank = positiveInt(formData, "featuredRank", 1000);
   const active = formData.get("active") === "on";
@@ -178,6 +179,7 @@ export async function updateProductDetailAction(formData: FormData) {
         skinType: field(formData, "skinType") || "A ajustar",
         finish: field(formData, "finish") || "A ajustar",
         volume: field(formData, "volume") || "A ajustar",
+        weightGrams,
         rating: ratingValue(formData),
         reviewCount,
         stockStatus: quantity > 0 ? "Em estoque" : "Esgotado",

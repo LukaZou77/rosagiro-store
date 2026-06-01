@@ -1,2 +1,2 @@
-slug,name,brand,category,subcategory,price,stock,active,image,descriptionPt,compareAtPrice,benefits,ingredients,badges,skinType,finish,volume,rating,reviewCount
-serum-vitamina-c-exemplo,Serum Vitamina C Exemplo,Bela Viva,skincare,Serum,"89,90",24,true,/assets/products/aura-serum.svg,Descricao curta do produto para a vitrine.,"109,90",Luminosidade|Textura leve,Vitamina C|Acido hialuronico,Novo|Favorito,Todos os tipos,Glow,30 ml,"4,8",12
+slug,name,brand,category,subcategory,price,stock,active,image,descriptionPt,compareAtPrice,benefits,ingredients,badges,skinType,finish,volume,weightGrams,rating,reviewCount
+serum-vitamina-c-exemplo,Serum Vitamina C Exemplo,Bela Viva,skincare,Serum,"89,90",24,true,/assets/products/aura-serum.svg,Descricao curta do produto para a vitrine.,"109,90",Luminosidade|Textura leve,Vitamina C|Acido hialuronico,Novo|Favorito,Todos os tipos,Glow,30 ml,150,"4,8",12

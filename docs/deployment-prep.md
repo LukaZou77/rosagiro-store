@@ -49,4 +49,6 @@ npm run db:seed
 - Keep `.env.local` local and never commit it.
 - Restrict `GOOGLE_MAPS_API_KEY` in Google Cloud to the required Maps APIs before production use.
 - Run CSV imports only from the admin area.
+- Import Anjun freight tables only through `/admin/frete`; keep original XLSX files local and out of git.
+- Freight is simulated from imported D2D Pickup rates. No real carrier API, label purchase, insurance, or tax automation runs in this phase.
 - Use the simulated payment page to validate order and inventory behavior until real payment is connected.

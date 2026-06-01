@@ -33,7 +33,8 @@ export async function getProductImportExistingProducts(slugs?: string[]): Promis
     stock: product.inventory?.quantity || 0,
     active: product.active,
     brand: product.brand.name,
-    category: product.category.label
+    category: product.category.label,
+    weightGrams: product.weightGrams
   }));
 }
 
@@ -62,6 +63,7 @@ function productData(row: ProductImportRow, brandId: string, categoryId: string)
     skinType: row.skinType,
     finish: row.finish,
     volume: row.volume,
+    weightGrams: row.weightGrams,
     rating: row.rating,
     reviewCount: row.reviewCount,
     stockStatus: row.stock > 0 ? "Em estoque" : "Esgotado",

@@ -15,6 +15,7 @@ type Product = {
   name: string;
   image: string;
   priceCents: number;
+  weightGrams: number;
   brand: { name: string };
 };
 
@@ -63,6 +64,34 @@ type AddressDetailsResponse = {
   message?: string;
 };
 
+type CheckoutShippingMethod = "ANJUN_D2D_PICKUP" | "RETIRADA_LOCAL";
+
+type ShippingQuoteOption = {
+  method: CheckoutShippingMethod;
+  carrier: string;
+  service: string;
+  label: string;
+  priceCents: number;
+  billableWeightGrams: number;
+  productWeightGrams: number;
+  rateId: string | null;
+  zone: string | null;
+  city: string | null;
+  state: string | null;
+  estimate: string;
+  note: string;
+};
+
+type ShippingQuoteResponse = {
+  status: "OK" | "NO_RATE" | "INVALID_CEP" | "EMPTY_CART" | "ERROR";
+  message: string;
+  options: ShippingQuoteOption[];
+  productWeightGrams: number;
+  billableWeightGrams: number;
+};
+
+type ShippingStatus = "idle" | "loading" | "ready" | "warning" | "error";
+
 function makeAddressSessionToken() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -80,7 +109,7 @@ function addressSearchReadiness(value: string, address: Pick<AddressState, "stat
 export function CheckoutClient({ products, trustSignals }: { products: Product[]; trustSignals: string[] }) {
   const router = useRouter();
   const cart = useCart();
-  const [shippingMethod, setShippingMethod] = useState<"PADRAO" | "EXPRESSA">("PADRAO");
+  const [shippingMethod, setShippingMethod] = useState<CheckoutShippingMethod>("RETIRADA_LOCAL");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("PIX");
   const [address, setAddress] = useState<AddressState>({
     cep: "",
@@ -98,6 +127,9 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const [addressSearchStatus, setAddressSearchStatus] = useState<AddressSearchStatus>("idle");
   const [addressSearchMessage, setAddressSearchMessage] = useState("Digite rua, bairro ou cidade para buscar sugestoes.");
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [shippingQuote, setShippingQuote] = useState<ShippingQuoteResponse | null>(null);
+  const [shippingStatus, setShippingStatus] = useState<ShippingStatus>("idle");
+  const [shippingMessage, setShippingMessage] = useState("Informe o CEP para estimar Anjun D2D Pickup.");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const addressSessionToken = useRef(makeAddressSessionToken());
@@ -106,12 +138,18 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const autofilledFields = useRef<Record<AutoFillField, boolean>>({ ...emptyAutofillFields });
 
   const productMap = useMemo(() => new Map(products.map((product) => [product.slug, product])), [products]);
-  const items = cart
-    .map((item) => ({ ...item, product: productMap.get(item.slug) }))
-    .filter((item): item is { slug: string; quantity: number; product: Product } => Boolean(item.product));
+  const items = useMemo(
+    () =>
+      cart
+        .map((item) => ({ ...item, product: productMap.get(item.slug) }))
+        .filter((item): item is { slug: string; quantity: number; product: Product } => Boolean(item.product)),
+    [cart, productMap]
+  );
+  const quoteItems = useMemo(() => items.map((item) => ({ slug: item.slug, quantity: item.quantity })), [items]);
   const subtotal = items.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0);
   const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
-  const shipping = subtotal >= 29900 ? 0 : shippingMethod === "EXPRESSA" ? 2490 : 1490;
+  const selectedShipping = shippingQuote?.options.find((option) => option.method === shippingMethod) || null;
+  const shipping = selectedShipping?.priceCents || 0;
   const total = subtotal - discount + shipping;
 
   const clearAutofilledAddress = useCallback(() => {
@@ -137,9 +175,17 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
       if (!digits) {
         setCepStatus("idle");
         setCepMessage(manualCepMessage);
+        setShippingQuote(null);
+        setShippingMethod("RETIRADA_LOCAL");
+        setShippingStatus("idle");
+        setShippingMessage("Informe o CEP para estimar Anjun D2D Pickup.");
       } else if (digits.length < 8) {
         setCepStatus("idle");
         setCepMessage("Digite os 8 numeros do CEP para buscar o endereco.");
+        setShippingQuote(null);
+        setShippingMethod("RETIRADA_LOCAL");
+        setShippingStatus("idle");
+        setShippingMessage("Informe o CEP com 8 digitos para estimar Anjun D2D Pickup.");
       } else {
         setCepStatus("loading");
         setCepMessage("Buscando CEP...");
@@ -405,6 +451,69 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     };
   }, [address.cep, clearAutofilledAddress]);
 
+  useEffect(() => {
+    const digits = cepDigits(address.cep);
+    if (!quoteItems.length) {
+      return;
+    }
+
+    if (digits.length !== 8) {
+      return;
+    }
+
+    const controller = new AbortController();
+    let active = true;
+    const loadingId = window.setTimeout(() => {
+      if (!active) return;
+      setShippingStatus("loading");
+      setShippingMessage("Calculando frete por CEP e peso...");
+    }, 0);
+
+    fetch("/api/shipping/quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: quoteItems, cep: digits }),
+      signal: controller.signal
+    })
+      .then(async (response) => {
+        const result = (await response.json()) as ShippingQuoteResponse;
+        if (!active) return;
+        window.clearTimeout(loadingId);
+
+        if (!response.ok || result.status === "ERROR") {
+          setShippingQuote(null);
+          setShippingMethod("RETIRADA_LOCAL");
+          setShippingStatus("error");
+          setShippingMessage(result.message || "Nao foi possivel calcular o frete agora.");
+          return;
+        }
+
+        const anjunOption = result.options.find((option) => option.method === "ANJUN_D2D_PICKUP");
+        setShippingQuote(result);
+        setShippingMethod((current) => {
+          if (current === "ANJUN_D2D_PICKUP" && anjunOption) return current;
+          return anjunOption ? "ANJUN_D2D_PICKUP" : "RETIRADA_LOCAL";
+        });
+        setShippingStatus(result.status === "OK" ? "ready" : "warning");
+        setShippingMessage(anjunOption || result.options.length ? result.message : "Escolha retirada local ou consulte o atendimento.");
+      })
+      .catch((quoteError: unknown) => {
+        if (!active) return;
+        window.clearTimeout(loadingId);
+        if (quoteError instanceof DOMException && quoteError.name === "AbortError") return;
+        setShippingQuote(null);
+        setShippingMethod("RETIRADA_LOCAL");
+        setShippingStatus("error");
+        setShippingMessage("Nao foi possivel calcular o frete agora. Retirada local segue disponivel.");
+      });
+
+    return () => {
+      active = false;
+      window.clearTimeout(loadingId);
+      controller.abort();
+    };
+  }, [address.cep, quoteItems]);
+
   async function submit(formData: FormData) {
     setSubmitting(true);
     setError("");
@@ -566,20 +675,42 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
         </fieldset>
         <fieldset>
           <legend>Entrega</legend>
-          <label className="radio-card">
-            <input type="radio" name="shipping" checked={shippingMethod === "PADRAO"} onChange={() => setShippingMethod("PADRAO")} />
-            <span>
-              <strong>Entrega padrao</strong>
-              <small>4 a 7 dias uteis / {subtotal >= 29900 ? "Gratis" : money(1490)}</small>
-            </span>
-          </label>
-          <label className="radio-card">
-            <input type="radio" name="shipping" checked={shippingMethod === "EXPRESSA"} onChange={() => setShippingMethod("EXPRESSA")} />
-            <span>
-              <strong>Entrega expressa</strong>
-              <small>2 a 3 dias uteis / {subtotal >= 29900 ? "Gratis" : money(2490)}</small>
-            </span>
-          </label>
+          <p className={`cep-status shipping-status ${shippingStatus}`} aria-live="polite">
+            {shippingMessage}
+          </p>
+          {shippingQuote?.options.length ? (
+            shippingQuote.options.map((option) => (
+              <label className="radio-card" key={option.method}>
+                <input
+                  type="radio"
+                  name="shipping"
+                  checked={shippingMethod === option.method}
+                  onChange={() => setShippingMethod(option.method)}
+                />
+                <span>
+                  <strong>{option.label}</strong>
+                  <small>
+                    {option.priceCents === 0 ? "R$ 0,00" : money(option.priceCents)} / peso cobrado{" "}
+                    {(option.billableWeightGrams / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg
+                  </small>
+                  <small>{option.zone ? `${option.city}/${option.state} - ${option.zone}` : option.estimate}</small>
+                </span>
+              </label>
+            ))
+          ) : (
+            <label className="radio-card">
+              <input
+                type="radio"
+                name="shipping"
+                checked={shippingMethod === "RETIRADA_LOCAL"}
+                onChange={() => setShippingMethod("RETIRADA_LOCAL")}
+              />
+              <span>
+                <strong>Retirada local</strong>
+                <small>R$ 0,00 / combine pelo atendimento</small>
+              </span>
+            </label>
+          )}
           <div className="delivery-note inline">
             {siteConfig.wholesale.deliveryModes.map((mode) => (
               <span key={mode}>{mode}</span>
@@ -633,9 +764,10 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
             <strong>-{money(discount)}</strong>
           </div>
           <div>
-            <span>Frete</span>
-            <strong>{shipping === 0 ? "Gratis" : money(shipping)}</strong>
+            <span>Frete base</span>
+            <strong>{shipping === 0 ? "R$ 0,00" : money(shipping)}</strong>
           </div>
+          {selectedShipping ? <p>{selectedShipping.note}</p> : <p>Frete Anjun sera calculado apos informar o CEP.</p>}
           <div className="summary-total">
             <span>Total</span>
             <strong>{money(total)}</strong>

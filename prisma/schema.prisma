@@ -35,6 +35,8 @@ enum PaymentMethod {
 enum ShippingMethod {
   PADRAO
   EXPRESSA
+  ANJUN_D2D_PICKUP
+  RETIRADA_LOCAL
 }
 
 model AdminUser {
@@ -80,6 +82,7 @@ model Product {
   subcategory         String
   priceCents          Int
   compareAtPriceCents Int?
+  weightGrams         Int         @default(150)
   image               String
   gallery             String[]
   descriptionPt       String
@@ -138,6 +141,17 @@ model Order {
   addressMatchMessage     String?
   addressMatchCheckedAt   DateTime?
   shippingMethod          ShippingMethod @default(PADRAO)
+  shippingCarrier         String?
+  shippingService         String?
+  shippingServiceLabel    String?
+  shippingRateId          String?
+  shippingZone            String?
+  shippingCity            String?
+  shippingWeightGrams     Int            @default(0)
+  shippingEstimate        String?
+  shippingQuoteStatus     String         @default("NOT_QUOTED")
+  shippingQuoteMessage    String?
+  shippingQuoteSnapshot   Json?
   subtotalCents           Int
   discountCents           Int
   shippingCents           Int
@@ -150,6 +164,49 @@ model Order {
   @@index([status, createdAt])
   @@index([customerEmail])
   @@index([addressMatchStatus])
+}
+
+model ShippingRateImport {
+  id            String         @id @default(cuid())
+  carrier       String
+  service       String
+  sourceName    String
+  sourceSheet   String
+  originKey     String
+  originLabel   String
+  versionLabel  String
+  effectiveFrom DateTime?
+  rowCount      Int
+  stateCount    Int
+  zoneCount     Int
+  active        Boolean        @default(false)
+  rates         ShippingRate[]
+  createdAt     DateTime       @default(now())
+
+  @@index([carrier, service, originKey, active])
+}
+
+model ShippingRate {
+  id                String             @id @default(cuid())
+  importId          String
+  carrier           String
+  service           String
+  originKey         String
+  originLabel       String
+  destinationState  String
+  city              String
+  cepStart          Int
+  cepEnd            Int
+  zone              String
+  ratesCents        Int[]
+  additionalKgCents Int
+  active            Boolean            @default(true)
+  import            ShippingRateImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  createdAt         DateTime           @default(now())
+
+  @@index([active, carrier, service, originKey])
+  @@index([destinationState, cepStart, cepEnd])
+  @@index([importId])
 }
 
 model OrderItem {
@@ -183,30 +240,30 @@ model Payment {
 }
 
 model StoreProfile {
-  id                    String   @id @default("main")
-  storeName             String   @default("Bela Viva")
-  legalName             String   @default("Bela Viva Comercio de Beleza Ltda.")
-  cnpj                  String   @default("00.000.000/0000-00")
-  stateRegistration     String   @default("Isento ou a ajustar")
-  cep                   String   @default("00000-000")
-  state                 String   @default("SP")
-  city                  String   @default("Sao Paulo")
-  district              String   @default("A ajustar")
-  street                String   @default("Endereco em preparacao")
-  number                String   @default("S/N")
-  complement            String?
-  email                 String   @default("contato@belaviva.local")
-  whatsapp              String   @default("+55 11 90000-0000")
-  businessHours         String   @default("Segunda a sexta, 9h as 18h")
-  instagramUrl          String   @default("")
-  facebookUrl           String   @default("")
-  tiktokUrl             String   @default("")
-  pickupNote            String   @default("Retirada local mediante confirmacao pelo atendimento.")
-  shippingNote          String   @default("Transportadora, entrega padrao e excursao serao confirmadas antes do envio.")
-  paymentNote           String   @default("Pix, cartao e pagamento simulado estao preparados para a fase de testes.")
-  exchangeNote          String   @default("Trocas e devolucoes seguem politica propria antes da publicacao oficial.")
-  trustBadges           String[] @default(["Loja em preparacao", "Atendimento por WhatsApp", "Pedido minimo sinalizado"])
-  launchNote            String   @default("Ambiente em preparacao: pedidos e pagamentos desta versao sao simulados.")
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                String   @id @default("main")
+  storeName         String   @default("Bela Viva")
+  legalName         String   @default("Bela Viva Comercio de Beleza Ltda.")
+  cnpj              String   @default("00.000.000/0000-00")
+  stateRegistration String   @default("Isento ou a ajustar")
+  cep               String   @default("00000-000")
+  state             String   @default("SP")
+  city              String   @default("Sao Paulo")
+  district          String   @default("A ajustar")
+  street            String   @default("Endereco em preparacao")
+  number            String   @default("S/N")
+  complement        String?
+  email             String   @default("contato@belaviva.local")
+  whatsapp          String   @default("+55 11 90000-0000")
+  businessHours     String   @default("Segunda a sexta, 9h as 18h")
+  instagramUrl      String   @default("")
+  facebookUrl       String   @default("")
+  tiktokUrl         String   @default("")
+  pickupNote        String   @default("Retirada local mediante confirmacao pelo atendimento.")
+  shippingNote      String   @default("Anjun D2D Pickup, transportadora e excursao serao confirmadas antes do envio.")
+  paymentNote       String   @default("Pix, cartao e pagamento simulado estao preparados para a fase de testes.")
+  exchangeNote      String   @default("Trocas e devolucoes seguem politica propria antes da publicacao oficial.")
+  trustBadges       String[] @default(["Loja em preparacao", "Atendimento por WhatsApp", "Pedido minimo sinalizado"])
+  launchNote        String   @default("Ambiente em preparacao: pedidos e pagamentos desta versao sao simulados.")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }

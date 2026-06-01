@@ -52,7 +52,7 @@ export const defaultStoreProfile = {
   facebookUrl: "",
   tiktokUrl: "",
   pickupNote: "Retirada local mediante confirmacao pelo atendimento.",
-  shippingNote: "Transportadora, entrega padrao e excursao serao confirmadas antes do envio.",
+  shippingNote: "Anjun D2D Pickup, transportadora e excursao serao confirmadas antes do envio.",
   paymentNote: "Pix, cartao e pagamento simulado estao preparados para a fase de testes.",
   exchangeNote: "Trocas e devolucoes seguem politica propria antes da publicacao oficial.",
   trustBadges: ["Loja em preparacao", "Atendimento por WhatsApp", "Pedido minimo sinalizado"],
