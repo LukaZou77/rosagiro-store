@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
+import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getFeaturedBrands, getProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
+import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 function discountLabel(product: Awaited<ReturnType<typeof getProducts>>[number]) {
   if (!product.compareAtPriceCents || product.compareAtPriceCents <= product.priceCents) return product.badges[0] || "Destaque";
@@ -16,6 +18,7 @@ export default async function HomePage() {
   const dealProducts = products.filter((product) => product.compareAtPriceCents).slice(0, 3);
   const heroProduct = dealProducts[0] || products[0];
   const secondaryDeals = (dealProducts.length > 1 ? dealProducts.slice(1) : products.filter((product) => product.slug !== heroProduct?.slug)).slice(0, 2);
+  const whatsappHref = buildGeneralWhatsAppHref("home atacado");
   const stats = [
     { value: `${products.length}+`, label: siteConfig.homePromotions.stats.productsLabel },
     { value: `${categories.length}`, label: siteConfig.homePromotions.stats.categoriesLabel },
@@ -134,9 +137,9 @@ export default async function HomePage() {
             <Link className="button primary" href="/categoria/all">
               {siteConfig.homePromotions.wholesaleBand.primaryCta}
             </Link>
-            <Link className="button secondary" href={siteConfig.whatsappHref}>
+            <WhatsAppLink className="button whatsapp" href={whatsappHref}>
               {siteConfig.homePromotions.wholesaleBand.secondaryCta}
-            </Link>
+            </WhatsAppLink>
           </div>
         </div>
         <ul className="service-list">

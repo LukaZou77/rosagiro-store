@@ -1,18 +1,35 @@
+const whatsappPhone = "5511900000000";
+
 export const siteConfig = {
   name: "Bela Viva",
   tagline: "beleza multimarcas",
   description: "Bela Viva, ecommerce multimarcas de beleza para o Brasil.",
   defaultUrl: "http://localhost:3000",
   supportEmail: "contato@belaviva.local",
-  whatsappLabel: "+55 11 90000-0000",
-  whatsappHref: "https://wa.me/5511900000000",
+  whatsapp: {
+    phone: whatsappPhone,
+    displayNumber: "+55 11 90000-0000",
+    baseHref: `https://wa.me/${whatsappPhone}`,
+    label: "WhatsApp",
+    serviceLabel: "Atendimento WhatsApp",
+    productCta: "Consultar no WhatsApp",
+    productSecondaryCta: "Tirar duvida",
+    cartCta: "Enviar lista pelo WhatsApp",
+    messages: {
+      generalGreeting: "Ola, Bela Viva! Quero atendimento para comprar no atacado.",
+      generalQuestion: "Pode me orientar sobre produtos, estoque e formas de entrega?",
+      productGreeting: "Ola, Bela Viva! Quero consultar este produto.",
+      productQuestion: "Pode confirmar estoque, condicao para atacado e melhor forma de entrega?",
+      cartGreeting: "Ola, Bela Viva! Quero confirmar esta lista de compra.",
+      cartQuestion: "Pode revisar estoque e me orientar sobre retirada, transportadora ou excursao?"
+    }
+  },
   marketplace: "Brasil",
   wholesale: {
     minimumOrderCents: 30000,
     minimumOrderTitle: "Pedido minimo",
     minimumOrderText: "Pedido minimo R$ 300,00 para compras no atacado. Nesta fase o pedido de teste nao sera bloqueado.",
     headerStrip: "PEDIDO MINIMO R$ 300,00 - ATACADO MULTIMARCAS - RECEBA EM CASA",
-    serviceLabel: "Atendimento WhatsApp",
     storeTrust: "CNPJ e dados da loja serao revisados antes da publicacao oficial.",
     deliveryModes: [
       "Retirada local mediante confirmacao",

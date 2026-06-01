@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CartCount } from "@/components/CartCount";
+import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { legalLinks, siteConfig, storefrontLinks } from "@/lib/site-config";
+import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 type CategoryLink = {
   slug: string;
@@ -14,11 +16,13 @@ export function StoreShell({
   categories: CategoryLink[];
   children: React.ReactNode;
 }) {
+  const generalWhatsAppHref = buildGeneralWhatsAppHref("navegacao principal");
+
   return (
     <>
       <div className="store-alert" aria-label="Condicoes de compra">
         <span>{siteConfig.wholesale.headerStrip}</span>
-        <Link href={siteConfig.whatsappHref}>{siteConfig.wholesale.serviceLabel}</Link>
+        <WhatsAppLink href={generalWhatsAppHref}>{siteConfig.whatsapp.serviceLabel}</WhatsAppLink>
       </div>
       <header className="topbar">
         <Link className="brand" href="/">
@@ -39,7 +43,7 @@ export function StoreShell({
               {link.label}
             </Link>
           ))}
-          <Link href={siteConfig.whatsappHref}>WhatsApp</Link>
+          <WhatsAppLink href={generalWhatsAppHref}>{siteConfig.whatsapp.label}</WhatsAppLink>
         </nav>
         <CartCount />
       </header>
@@ -69,6 +73,7 @@ export function StoreShell({
         <Link href="/">Inicio</Link>
         <Link href="/categoria/all">Categorias</Link>
         <Link href="/carrinho">Carrinho</Link>
+        <WhatsAppLink href={generalWhatsAppHref}>{siteConfig.whatsapp.label}</WhatsAppLink>
       </nav>
     </>
   );

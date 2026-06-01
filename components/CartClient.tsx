@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useCart, writeCart } from "@/components/CartCount";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
+import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
+import { buildCartWhatsAppHref } from "@/lib/whatsapp";
 
 type Product = {
   slug: string;
@@ -21,13 +23,18 @@ export function CartClient({ products }: { products: Product[] }) {
   const cart = useCart();
 
   const productMap = useMemo(() => new Map(products.map((product) => [product.slug, product])), [products]);
-  const items = cart
-    .map((item) => ({ ...item, product: productMap.get(item.slug) }))
-    .filter((item): item is { slug: string; quantity: number; product: Product } => Boolean(item.product));
-  const subtotal = items.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0);
+  const items = useMemo(
+    () =>
+      cart
+        .map((item) => ({ ...item, product: productMap.get(item.slug) }))
+        .filter((item): item is { slug: string; quantity: number; product: Product } => Boolean(item.product)),
+    [cart, productMap]
+  );
+  const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0), [items]);
   const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
   const shipping = subtotal >= 29900 ? 0 : 1490;
   const total = subtotal - discount + shipping;
+  const whatsappHref = useMemo(() => buildCartWhatsAppHref(items, subtotal), [items, subtotal]);
 
   function update(next: Array<{ slug: string; quantity: number }>) {
     const clean = next.filter((item) => item.quantity > 0);
@@ -112,6 +119,11 @@ export function CartClient({ products }: { products: Product[] }) {
             <span key={mode}>{mode}</span>
           ))}
         </div>
+        {items.length ? (
+          <WhatsAppLink href={whatsappHref} className="button whatsapp wide">
+            {siteConfig.whatsapp.cartCta}
+          </WhatsAppLink>
+        ) : null}
         <Link className={`button primary wide ${items.length ? "" : "disabled"}`} href={items.length ? "/checkout" : "/categoria/all"}>
           {items.length ? "Continuar para checkout" : "Ver produtos"}
         </Link>

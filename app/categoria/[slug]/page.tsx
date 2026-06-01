@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
+import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getProducts } from "@/lib/catalog";
 import { siteConfig } from "@/lib/site-config";
+import { buildCatalogWhatsAppHref } from "@/lib/whatsapp";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -24,17 +26,21 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     getProducts({ categorySlug, brandName: brand, query, sort })
   ]);
   const currentCategory = categories.find((category) => category.slug === categorySlug);
+  const categoryLabel = categorySlug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria";
+  const whatsappHref = buildCatalogWhatsAppHref(categoryLabel, products.length);
 
   return (
     <StoreShell categories={categories}>
       <section className="catalog-header">
         <p className="eyebrow">Catalogo</p>
-        <h1>{categorySlug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria"}</h1>
+        <h1>{categoryLabel}</h1>
         <p>{products.length} produtos disponiveis, com filtros por categoria, marca e prioridade de compra.</p>
         <div className="catalog-service-bar">
           <span>{siteConfig.wholesale.minimumOrderText}</span>
           <span>{siteConfig.wholesale.deliveryModes[1]}</span>
-          <a href={siteConfig.whatsappHref}>{siteConfig.wholesale.serviceLabel}</a>
+          <WhatsAppLink href={whatsappHref} className="service-whatsapp">
+            {siteConfig.whatsapp.serviceLabel}
+          </WhatsAppLink>
         </div>
       </section>
 

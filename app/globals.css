@@ -8,6 +8,8 @@
   --rose: #c6536a;
   --rose-deep: #852742;
   --sage: #356f5b;
+  --whatsapp: #168c5a;
+  --whatsapp-deep: #0f6c43;
   --brass: #b7772d;
   --deal: #f3c84f;
   --mist: #eaf4ef;
@@ -373,14 +375,18 @@ h3 {
 
 .button:hover,
 .product-card button:hover,
+.whatsapp-inline:hover,
 .quick-action:hover,
 .category-tile:hover,
-.brand-chip:hover {
+.brand-chip:hover,
+.mobile-tabs a:hover {
   transform: translateY(-1px);
 }
 
 .button:active,
-.product-card button:active {
+.product-card button:active,
+.whatsapp-inline:active,
+.mobile-tabs a:active {
   transform: translateY(0);
 }
 
@@ -402,6 +408,17 @@ textarea:focus-visible {
 .button.secondary {
   border-color: var(--line);
   background: var(--surface);
+}
+
+.button.whatsapp {
+  border-color: rgba(22, 140, 90, 0.24);
+  background: var(--whatsapp);
+  color: white;
+  box-shadow: 0 12px 24px rgba(22, 140, 90, 0.18);
+}
+
+.button.whatsapp:hover {
+  background: var(--whatsapp-deep);
 }
 
 .button.wide {
@@ -875,6 +892,31 @@ textarea:focus-visible {
   margin-top: 4px;
 }
 
+.product-card-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.whatsapp-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(22, 140, 90, 0.22);
+  border-radius: 8px;
+  background: rgba(22, 140, 90, 0.08);
+  color: var(--whatsapp-deep);
+  font-size: 0.78rem;
+  font-weight: 900;
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out), border-color 160ms var(--ease-out);
+}
+
+.whatsapp-inline:hover {
+  border-color: rgba(22, 140, 90, 0.42);
+  background: rgba(22, 140, 90, 0.13);
+}
+
 .price-stack {
   display: grid;
   gap: 2px;
@@ -936,6 +978,19 @@ textarea:focus-visible {
 
 .catalog-service-bar a {
   color: var(--rose-deep);
+}
+
+.catalog-service-bar .service-whatsapp {
+  border-color: rgba(22, 140, 90, 0.26);
+  background: rgba(22, 140, 90, 0.1);
+  color: var(--whatsapp-deep);
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out), border-color 160ms var(--ease-out);
+}
+
+.catalog-service-bar .service-whatsapp:hover {
+  border-color: rgba(22, 140, 90, 0.42);
+  background: rgba(22, 140, 90, 0.16);
+  transform: translateY(-1px);
 }
 
 .catalog-layout {
@@ -1117,6 +1172,24 @@ textarea {
   font-weight: 900;
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+.purchase-panel .purchase-panel-actions {
+  display: grid;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 7px;
+}
+
+.purchase-panel .purchase-panel-actions small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.purchase-panel .button.whatsapp {
+  width: 100%;
+  text-decoration: none;
 }
 
 .badge-row {
@@ -1446,7 +1519,7 @@ legend {
 .mobile-tabs {
   margin: 12px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   padding: 7px;
   border: 1px solid var(--line);
@@ -1458,11 +1531,18 @@ legend {
 .mobile-tabs a {
   display: grid;
   min-height: 42px;
+  min-width: 0;
   place-items: center;
   border-radius: 8px;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 900;
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+
+.mobile-tabs a:hover {
+  background: var(--mist);
+  color: var(--ink);
 }
 
 .site-footer {

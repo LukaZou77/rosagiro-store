@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
+import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getProduct, getRelatedProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
+import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -18,6 +20,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   const [categories, related] = await Promise.all([getCategories(), getRelatedProducts(product.category.slug, product.slug)]);
   const available = (product.inventory?.quantity || 0) > 0;
+  const whatsappHref = buildProductWhatsAppHref(product);
 
   return (
     <StoreShell categories={categories}>
@@ -47,7 +50,12 @@ export default async function ProductPage({ params }: PageProps) {
               <strong>{money(siteConfig.wholesale.minimumOrderCents)}</strong>
             </div>
             <p>{siteConfig.wholesale.minimumOrderText}</p>
-            <a href={siteConfig.whatsappHref}>{siteConfig.wholesale.serviceLabel}</a>
+            <div className="purchase-panel-actions">
+              <WhatsAppLink href={whatsappHref} className="button whatsapp">
+                {siteConfig.whatsapp.productCta}
+              </WhatsAppLink>
+              <small>Mensagem com produto, preco, estoque e entrega.</small>
+            </div>
           </div>
           <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{badge}</span>)}</div>
           <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { WhatsAppLink } from "@/components/WhatsAppLink";
 import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
+import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 
 export function ProductCard({ product }: { product: CatalogProduct }) {
   const quantity = product.inventory?.quantity || 0;
@@ -12,6 +14,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
       ? Math.round((1 - product.priceCents / product.compareAtPriceCents) * 100)
       : null;
   const heroBadge = discount ? `${discount}% OFF` : product.badges[0] || product.stockStatus;
+  const whatsappHref = buildProductWhatsAppHref(product);
 
   return (
     <article className={available ? "product-card" : "product-card is-unavailable"}>
@@ -45,7 +48,12 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
             {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : <small>{product.stockStatus}</small>}
             <small>{siteConfig.wholesale.minimumOrderTitle} {money(siteConfig.wholesale.minimumOrderCents)}</small>
           </div>
-          <AddToCartButton slug={product.slug} label="Comprar" disabled={!available} />
+          <div className="product-card-actions">
+            <AddToCartButton slug={product.slug} label="Comprar" disabled={!available} />
+            <WhatsAppLink href={whatsappHref} className="whatsapp-inline" ariaLabel={`Consultar ${product.name} no WhatsApp`}>
+              {siteConfig.whatsapp.productSecondaryCta}
+            </WhatsAppLink>
+          </div>
         </div>
       </div>
     </article>
