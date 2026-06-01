@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomInt } from "node:crypto";
 import { prisma } from "@/lib/db";
+import { validateCheckoutAddress } from "@/lib/google-address";
 import { discountCents, shippingCents, subtotalCents, totalCents } from "@/lib/money";
 import { isPaymentMethod, type PaymentMethodValue } from "@/lib/payments";
 
@@ -125,6 +126,7 @@ export async function createOrder(input: CheckoutInput) {
   const discount = discountCents(subtotal);
   const shipping = shippingCents(subtotal, input.shippingMethod);
   const total = totalCents(subtotal, discount, shipping);
+  const addressMatch = await validateCheckoutAddress(input.address);
 
   const order = await prisma.order.create({
     data: {
@@ -140,6 +142,15 @@ export async function createOrder(input: CheckoutInput) {
       street: input.address.street,
       number: input.address.number,
       complement: input.address.complement || null,
+      addressMatchStatus: addressMatch.status,
+      addressMatchProvider: addressMatch.provider,
+      addressMatchFormatted: addressMatch.formattedAddress,
+      addressMatchPlaceId: addressMatch.placeId,
+      addressMatchGranularity: addressMatch.granularity,
+      addressLatitude: addressMatch.latitude,
+      addressLongitude: addressMatch.longitude,
+      addressMatchMessage: addressMatch.message,
+      addressMatchCheckedAt: addressMatch.checkedAt,
       shippingMethod: input.shippingMethod,
       subtotalCents: subtotal,
       discountCents: discount,

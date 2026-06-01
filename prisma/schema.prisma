@@ -114,36 +114,46 @@ model Inventory {
 }
 
 model Order {
-  id             String         @id @default(cuid())
-  orderNumber    String         @unique
-  status         OrderStatus    @default(PENDING_PAYMENT)
-  customerName   String
-  customerEmail  String
-  customerPhone  String
-  customerCpf    String
-  cep            String
-  state          String
-  city           String
-  district       String
-  street         String
-  number         String
-  complement     String?
-  shippingMethod ShippingMethod @default(PADRAO)
-  subtotalCents  Int
-  discountCents  Int
-  shippingCents  Int
-  totalCents     Int
-  items          OrderItem[]
-  payment        Payment?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id                      String         @id @default(cuid())
+  orderNumber             String         @unique
+  status                  OrderStatus    @default(PENDING_PAYMENT)
+  customerName            String
+  customerEmail           String
+  customerPhone           String
+  customerCpf             String
+  cep                     String
+  state                   String
+  city                    String
+  district                String
+  street                  String
+  number                  String
+  complement              String?
+  addressMatchStatus      String         @default("NOT_CHECKED")
+  addressMatchProvider    String?
+  addressMatchFormatted   String?
+  addressMatchPlaceId     String?
+  addressMatchGranularity String?
+  addressLatitude         Float?
+  addressLongitude        Float?
+  addressMatchMessage     String?
+  addressMatchCheckedAt   DateTime?
+  shippingMethod          ShippingMethod @default(PADRAO)
+  subtotalCents           Int
+  discountCents           Int
+  shippingCents           Int
+  totalCents              Int
+  items                   OrderItem[]
+  payment                 Payment?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
 
   @@index([status, createdAt])
   @@index([customerEmail])
+  @@index([addressMatchStatus])
 }
 
 model OrderItem {
-  id             String  @id @default(cuid())
+  id             String   @id @default(cuid())
   orderId        String
   productId      String?
   productSlug    String
@@ -153,7 +163,7 @@ model OrderItem {
   unitPriceCents Int
   quantity       Int
   lineTotalCents Int
-  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   @@index([orderId])

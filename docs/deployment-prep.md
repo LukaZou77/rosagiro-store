@@ -11,6 +11,7 @@ This version is prepared for a Vercel deployment, but it still uses simulated pa
 - `ADMIN_EMAIL`: seed admin email for local or preview setup.
 - `ADMIN_PASSWORD`: seed admin password for local or preview setup.
 - `NEXT_PUBLIC_SITE_URL`: canonical public URL, for metadata, robots, and sitemap.
+- `GOOGLE_MAPS_API_KEY`: optional server-side key for checkout address suggestions and address validation. If empty, checkout falls back to CEP/manual address entry.
 
 ## Reserved payment variables
 
@@ -46,5 +47,6 @@ npm run db:seed
 ## Operational notes
 
 - Keep `.env.local` local and never commit it.
+- Restrict `GOOGLE_MAPS_API_KEY` in Google Cloud to the required Maps APIs before production use.
 - Run CSV imports only from the admin area.
 - Use the simulated payment page to validate order and inventory behavior until real payment is connected.

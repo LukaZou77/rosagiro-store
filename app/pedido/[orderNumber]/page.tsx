@@ -6,6 +6,14 @@ import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
 import { paymentMethodLabel } from "@/lib/payments";
 
+const addressMatchLabels: Record<string, string> = {
+  VALIDATED: "Endereco validado",
+  NEEDS_REVIEW: "Endereco para conferencia",
+  FAILED: "Validacao indisponivel",
+  DISABLED: "Validacao nao configurada",
+  NOT_CHECKED: "Validacao nao executada"
+};
+
 type PageProps = {
   params: Promise<{ orderNumber: string }>;
 };
@@ -38,6 +46,11 @@ export default async function OrderPage({ params }: PageProps) {
             Status: {order.status.replace("_", " ")} / {paymentMethodLabel(order.payment?.method)} / Total:{" "}
             {money(order.totalCents)}
           </small>
+        </div>
+        <div className={`address-match-card ${order.addressMatchStatus.toLowerCase().replace("_", "-")}`}>
+          <span>{addressMatchLabels[order.addressMatchStatus] || "Endereco salvo"}</span>
+          <strong>{order.addressMatchFormatted || `${order.street}, ${order.number} - ${order.city}/${order.state}`}</strong>
+          <small>{order.addressMatchMessage || "Confira o endereco antes do envio."}</small>
         </div>
         <div className="order-items">
           {order.items.map((item) => (

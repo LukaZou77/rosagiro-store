@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, writeCart } from "@/components/CartCount";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
@@ -21,6 +21,7 @@ const states = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT"
 const manualCepMessage = "Preencha manualmente se o CEP nao trouxer todos os dados.";
 
 type CepStatus = "idle" | "loading" | "success" | "not-found" | "error";
+type AddressSearchStatus = "idle" | "loading" | "success" | "empty" | "disabled" | "error";
 
 type AddressState = {
   cep: string;
@@ -41,6 +42,34 @@ const emptyAutofillFields: Record<AutoFillField, boolean> = {
   city: false
 };
 
+type AddressSuggestion = {
+  placeId: string;
+  mainText: string;
+  secondaryText: string;
+  fullText: string;
+};
+
+type AddressAutocompleteResponse = {
+  status: "OK" | "DISABLED" | "ERROR";
+  suggestions: AddressSuggestion[];
+  message?: string;
+};
+
+type AddressDetailsResponse = {
+  status: "OK" | "DISABLED" | "ERROR";
+  formattedAddress?: string;
+  address?: Partial<AddressState>;
+  message?: string;
+};
+
+function makeAddressSessionToken() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function CheckoutClient({ products }: { products: Product[] }) {
   const router = useRouter();
   const cart = useCart();
@@ -57,8 +86,15 @@ export function CheckoutClient({ products }: { products: Product[] }) {
   });
   const [cepStatus, setCepStatus] = useState<CepStatus>("idle");
   const [cepMessage, setCepMessage] = useState(manualCepMessage);
+  const [addressSearch, setAddressSearch] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [addressSearchStatus, setAddressSearchStatus] = useState<AddressSearchStatus>("idle");
+  const [addressSearchMessage, setAddressSearchMessage] = useState("Digite rua, bairro ou cidade para buscar sugestoes.");
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const addressSessionToken = useRef(makeAddressSessionToken());
+  const skipNextAddressSearch = useRef(false);
   const lastAutofilledCep = useRef("");
   const autofilledFields = useRef<Record<AutoFillField, boolean>>({ ...emptyAutofillFields });
 
@@ -109,6 +145,165 @@ export function CheckoutClient({ products }: { products: Product[] }) {
     }
 
     setAddress((current) => ({ ...current, [field]: value }));
+  }
+
+  useEffect(() => {
+    const query = addressSearch.trim();
+
+    if (skipNextAddressSearch.current) {
+      skipNextAddressSearch.current = false;
+      return;
+    }
+
+    if (query.length < 3) {
+      return;
+    }
+
+    const controller = new AbortController();
+    let active = true;
+    const debounce = window.setTimeout(() => {
+      setAddressSearchStatus("loading");
+      setAddressSearchMessage("Buscando enderecos...");
+
+      fetch("/api/address/autocomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: query,
+          sessionToken: addressSessionToken.current
+        }),
+        signal: controller.signal
+      })
+        .then(async (response) => {
+          const result = (await response.json()) as AddressAutocompleteResponse;
+          if (!active) return;
+
+          if (result.status === "DISABLED") {
+            setAddressSuggestions([]);
+            setActiveSuggestionIndex(-1);
+            setAddressSearchStatus("disabled");
+            setAddressSearchMessage(result.message || "Busca por endereco indisponivel agora. Use o CEP ou preencha manualmente.");
+            return;
+          }
+
+          if (!response.ok || result.status === "ERROR") {
+            setAddressSuggestions([]);
+            setActiveSuggestionIndex(-1);
+            setAddressSearchStatus("error");
+            setAddressSearchMessage(result.message || "Nao foi possivel buscar sugestoes agora. Preencha manualmente.");
+            return;
+          }
+
+          setAddressSuggestions(result.suggestions);
+          setActiveSuggestionIndex(result.suggestions.length ? 0 : -1);
+          setAddressSearchStatus(result.suggestions.length ? "success" : "empty");
+          setAddressSearchMessage(result.suggestions.length ? "Selecione uma sugestao para preencher o endereco." : "Nenhuma sugestao encontrada. Voce pode preencher manualmente.");
+        })
+        .catch((autocompleteError: unknown) => {
+          if (!active) return;
+          if (autocompleteError instanceof DOMException && autocompleteError.name === "AbortError") return;
+          setAddressSuggestions([]);
+          setActiveSuggestionIndex(-1);
+          setAddressSearchStatus("error");
+          setAddressSearchMessage("Nao foi possivel buscar sugestoes agora. Preencha manualmente.");
+        });
+    }, 450);
+
+    return () => {
+      active = false;
+      window.clearTimeout(debounce);
+      controller.abort();
+    };
+  }, [addressSearch]);
+
+  function handleAddressSearchChange(event: ChangeEvent<HTMLInputElement>) {
+    const value = event.target.value;
+    setAddressSearch(value);
+
+    if (value.trim().length < 3) {
+      setAddressSuggestions([]);
+      setActiveSuggestionIndex(-1);
+      setAddressSearchStatus("idle");
+      setAddressSearchMessage("Digite pelo menos 3 caracteres para buscar sugestoes.");
+    }
+  }
+
+  async function selectAddressSuggestion(suggestion: AddressSuggestion) {
+    skipNextAddressSearch.current = true;
+    setAddressSearch(suggestion.fullText);
+    setAddressSuggestions([]);
+    setActiveSuggestionIndex(-1);
+    setAddressSearchStatus("loading");
+    setAddressSearchMessage("Carregando endereco selecionado...");
+
+    try {
+      const response = await fetch("/api/address/place-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          placeId: suggestion.placeId,
+          sessionToken: addressSessionToken.current
+        })
+      });
+      const result = (await response.json()) as AddressDetailsResponse;
+      addressSessionToken.current = makeAddressSessionToken();
+
+      if (!response.ok || result.status !== "OK") {
+        setAddressSearchStatus(result.status === "DISABLED" ? "disabled" : "error");
+        setAddressSearchMessage(result.message || "Nao foi possivel carregar o endereco selecionado. Preencha manualmente.");
+        return;
+      }
+
+      const nextAddress = result.address || {};
+      const formattedCep = nextAddress.cep ? formatCep(nextAddress.cep) : "";
+      const nextAutofilledFields = {
+        state: Boolean(nextAddress.state),
+        street: Boolean(nextAddress.street),
+        district: Boolean(nextAddress.district),
+        city: Boolean(nextAddress.city)
+      };
+
+      setAddress((current) => ({
+        ...current,
+        cep: formattedCep || current.cep,
+        state: nextAddress.state || current.state,
+        street: nextAddress.street || current.street,
+        number: nextAddress.number || current.number,
+        district: nextAddress.district || current.district,
+        city: nextAddress.city || current.city
+      }));
+      autofilledFields.current = nextAutofilledFields;
+      if (formattedCep) lastAutofilledCep.current = cepDigits(formattedCep);
+      setAddressSearchStatus("success");
+      setAddressSearchMessage("Endereco selecionado. Confira numero e complemento antes de finalizar.");
+      if (formattedCep) {
+        setCepStatus("success");
+        setCepMessage("Endereco encontrado. Complete numero e complemento se necessario.");
+      }
+    } catch {
+      addressSessionToken.current = makeAddressSessionToken();
+      setAddressSearchStatus("error");
+      setAddressSearchMessage("Nao foi possivel carregar o endereco selecionado. Preencha manualmente.");
+    }
+  }
+
+  function handleAddressSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (!addressSuggestions.length) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveSuggestionIndex((current) => (current + 1) % addressSuggestions.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveSuggestionIndex((current) => (current <= 0 ? addressSuggestions.length - 1 : current - 1));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const suggestion = addressSuggestions[activeSuggestionIndex];
+      if (suggestion) void selectAddressSuggestion(suggestion);
+    } else if (event.key === "Escape") {
+      setAddressSuggestions([]);
+      setActiveSuggestionIndex(-1);
+    }
   }
 
   useEffect(() => {
@@ -232,6 +427,54 @@ export function CheckoutClient({ products }: { products: Product[] }) {
         </fieldset>
         <fieldset>
           <legend>Endereco</legend>
+          <div className="address-search">
+            <label htmlFor="address-search-input">Buscar endereco</label>
+            <div className="address-search-box">
+              <input
+                id="address-search-input"
+                type="search"
+                placeholder="Digite rua, bairro ou cidade"
+                value={addressSearch}
+                onChange={handleAddressSearchChange}
+                onKeyDown={handleAddressSearchKeyDown}
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={addressSuggestions.length > 0}
+                aria-controls="address-suggestions"
+                aria-activedescendant={activeSuggestionIndex >= 0 ? `address-suggestion-${activeSuggestionIndex}` : undefined}
+                autoComplete="off"
+              />
+              <span aria-hidden="true">Buscar</span>
+            </div>
+            {addressSuggestions.length > 0 ? (
+              <ul className="address-suggestions" id="address-suggestions" role="listbox">
+                {addressSuggestions.map((suggestion, index) => (
+                  <li
+                    id={`address-suggestion-${index}`}
+                    key={suggestion.placeId}
+                    role="option"
+                    aria-selected={index === activeSuggestionIndex}
+                  >
+                    <button
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onMouseEnter={() => setActiveSuggestionIndex(index)}
+                      onClick={() => void selectAddressSuggestion(suggestion)}
+                    >
+                      <span className="suggestion-marker" aria-hidden="true" />
+                      <span>
+                        <strong>{suggestion.mainText}</strong>
+                        <small>{suggestion.secondaryText || suggestion.fullText}</small>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <p className={`address-search-status ${addressSearchStatus}`} aria-live="polite">
+              {addressSearchMessage}
+            </p>
+          </div>
           <div className="form-grid">
             <label>
               CEP

@@ -14,6 +14,14 @@ const statusLabels: Record<string, string> = {
   CANCELED: "Cancelado"
 };
 
+const addressMatchLabels: Record<string, string> = {
+  VALIDATED: "Validado",
+  NEEDS_REVIEW: "Conferir manualmente",
+  FAILED: "Falhou",
+  DISABLED: "Nao configurado",
+  NOT_CHECKED: "Nao checado"
+};
+
 type PageProps = {
   params: Promise<{ orderNumber: string }>;
 };
@@ -45,6 +53,18 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
           <p>
             {order.district}, {order.city} - {order.state}, CEP {order.cep}
           </p>
+          <div className={`address-match-card admin ${order.addressMatchStatus.toLowerCase().replace("_", "-")}`}>
+            <span>{addressMatchLabels[order.addressMatchStatus] || order.addressMatchStatus}</span>
+            <strong>{order.addressMatchFormatted || "Endereco salvo sem padronizacao externa"}</strong>
+            <small>{order.addressMatchMessage || "Confira antes do envio."}</small>
+            {order.addressLatitude !== null && order.addressLongitude !== null ? (
+              <small>
+                Coordenadas: {order.addressLatitude.toFixed(6)}, {order.addressLongitude.toFixed(6)}
+              </small>
+            ) : null}
+            {order.addressMatchPlaceId ? <small>Place ID: {order.addressMatchPlaceId}</small> : null}
+            {order.addressMatchGranularity ? <small>Granularidade: {order.addressMatchGranularity}</small> : null}
+          </div>
         </div>
         <div className="summary-panel">
           <h2>Status</h2>
