@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { allInfoPages, siteUrl } from "@/lib/site-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticRoutes = ["", "/categoria/all", ...allInfoPages.map((page) => page.href)].map(
+  const staticRoutes = ["", "/categoria/all", "/promocoes", ...allInfoPages.map((page) => page.href)].map(
     (path) => ({
       url: siteUrl(path),
       lastModified: new Date()

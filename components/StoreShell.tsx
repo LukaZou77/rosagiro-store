@@ -38,7 +38,7 @@ export function StoreShell({
               {category.label}
             </Link>
           ))}
-          {storefrontLinks.slice(1, 3).map((link) => (
+          {storefrontLinks.slice(1, 4).map((link) => (
             <Link key={link.href} href={link.href}>
               {link.label}
             </Link>
@@ -71,6 +71,7 @@ export function StoreShell({
       </footer>
       <nav className="mobile-tabs" aria-label="Navegacao principal">
         <Link href="/">Inicio</Link>
+        <Link href="/promocoes">Ofertas</Link>
         <Link href="/categoria/all">Categorias</Link>
         <Link href="/carrinho">Carrinho</Link>
         <WhatsAppLink href={generalWhatsAppHref}>{siteConfig.whatsapp.label}</WhatsAppLink>

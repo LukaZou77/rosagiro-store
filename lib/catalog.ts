@@ -85,6 +85,40 @@ export async function getProducts(options: {
   return products as CatalogProduct[];
 }
 
+export function discountPercent(product: CatalogProduct) {
+  if (!product.compareAtPriceCents || product.compareAtPriceCents <= product.priceCents) return 0;
+  return Math.round((1 - product.priceCents / product.compareAtPriceCents) * 100);
+}
+
+export async function getPromotionCollections() {
+  const products = await getProducts();
+  const withStock = (product: CatalogProduct) => (product.inventory?.quantity || 0) > 0;
+  const dealProducts = products
+    .filter((product) => withStock(product) && discountPercent(product) > 0)
+    .sort((a, b) => discountPercent(b) - discountPercent(a));
+  const lowPriceProducts = [...products].filter(withStock).sort((a, b) => a.priceCents - b.priceCents).slice(0, 4);
+  const hotProducts = [...products]
+    .filter(withStock)
+    .sort((a, b) => {
+      const aBadge = a.badges.some((badge) => /mais vendido|favorito|oferta/i.test(badge)) ? 1 : 0;
+      const bBadge = b.badges.some((badge) => /mais vendido|favorito|oferta/i.test(badge)) ? 1 : 0;
+      return bBadge - aBadge || b.reviewCount - a.reviewCount || b.rating - a.rating;
+    })
+    .slice(0, 4);
+  const stockReadyProducts = [...products]
+    .filter(withStock)
+    .sort((a, b) => (b.inventory?.quantity || 0) - (a.inventory?.quantity || 0))
+    .slice(0, 4);
+
+  return {
+    products,
+    dealProducts,
+    lowPriceProducts,
+    hotProducts,
+    stockReadyProducts
+  };
+}
+
 export async function getProduct(slug: string) {
   const product = await prisma.product.findUnique({
     where: { slug },

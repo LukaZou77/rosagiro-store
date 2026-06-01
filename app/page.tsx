@@ -85,6 +85,9 @@ export default async function HomePage() {
             <Link className="button primary" href="/categoria/all">
               {siteConfig.hero.primaryCta}
             </Link>
+            <Link className="button secondary" href="/promocoes">
+              Ver promocoes
+            </Link>
             {heroProduct ? (
               <Link className="button secondary" href={`/produto/${heroProduct.slug}`}>
                 {siteConfig.hero.secondaryCta}

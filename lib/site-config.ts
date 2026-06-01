@@ -58,7 +58,7 @@ export const siteConfig = {
       label: "Atacadao piloto",
       text: "Pedido minimo R$ 300,00, multimarcas em pronta entrega e atendimento por WhatsApp para duvidas de compra.",
       cta: "Ver ofertas",
-      href: "/categoria/all?sort=price-asc"
+      href: "/promocoes"
     },
     searchPlaceholder: "Buscar serum, batom, perfume, pincel...",
     stats: {
@@ -73,6 +73,11 @@ export const siteConfig = {
       "Estoque visivel antes da confirmacao"
     ],
     quickActions: [
+      {
+        label: "Ofertas",
+        description: "Produtos com desconto real, giro rapido e pronta entrega.",
+        href: "/promocoes"
+      },
       {
         label: "Menor preco",
         description: "Itens com preco comparativo para compras de oportunidade.",
@@ -97,11 +102,50 @@ export const siteConfig = {
       secondaryCta: "Falar no WhatsApp"
     },
     shelfNote: "Use a importacao CSV para trocar nomes, precos, estoque e descricao quando os produtos reais chegarem."
+  },
+  promotionsPage: {
+    eyebrow: "Promocoes",
+    title: "Ofertas para montar pedido de atacado com agilidade.",
+    body: "Uma vitrine direta para encontrar desconto real, itens de menor preco, campeoes de giro e produtos com estoque para reposicao.",
+    primaryCta: "Comprar ofertas",
+    secondaryCta: "Falar no WhatsApp",
+    heroBadge: "Promocao multimarcas",
+    dealShelfTitle: "Descontos reais no catalogo",
+    dealShelfBody: "Produtos com preco anterior cadastrado e oportunidade real para repor estoque.",
+    emptyDealTitle: "Nenhuma oferta ativa no momento.",
+    emptyDealBody: "Novas promocoes entram aqui quando houver preco promocional confirmado.",
+    emptyStockTitle: "Nenhum produto em pronta entrega.",
+    emptyStockBody: "Assim que o estoque for atualizado, os itens de reposicao voltam para esta prateleira.",
+    lowPriceTitle: "Menor preco para completar pedido",
+    hotShelfTitle: "Mais procurados para revenda",
+    stockShelfTitle: "Pronta entrega e reposicao",
+    shelfNote: "Os destaques usam campos atuais do produto: desconto real, badges, estoque, avaliacao, marca e categoria.",
+    signals: [
+      "Pedido minimo R$ 300",
+      "Desconto real quando existe preco comparativo",
+      "Produtos multimarcas",
+      "WhatsApp para fechar duvidas"
+    ],
+    tiles: [
+      {
+        label: "Desconto real",
+        text: "Somente itens com preco antigo cadastrado entram como oferta."
+      },
+      {
+        label: "Compra rapida",
+        text: "Atalhos por menor preco, giro e estoque para montar carrinho."
+      },
+      {
+        label: "Atacado local",
+        text: "Pedido minimo, retirada, transportadora e excursao continuam visiveis."
+      }
+    ]
   }
 };
 
 export const storefrontLinks = [
   { href: "/categoria/all", label: "Categorias" },
+  { href: "/promocoes", label: "Ofertas" },
   { href: "/entrega", label: "Entrega" },
   { href: "/trocas-e-devolucoes", label: "Trocas" },
   { href: "/contato", label: "Contato" }
