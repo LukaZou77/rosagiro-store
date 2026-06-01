@@ -1659,6 +1659,37 @@ legend {
   font-weight: 800;
 }
 
+.cep-status {
+  min-height: 32px;
+  margin: -2px 0 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.cep-status.loading {
+  border-color: rgba(183, 119, 45, 0.38);
+  background: rgba(243, 200, 79, 0.18);
+  color: var(--ink);
+}
+
+.cep-status.success {
+  border-color: rgba(22, 140, 90, 0.28);
+  background: rgba(22, 140, 90, 0.09);
+  color: var(--whatsapp-deep);
+}
+
+.cep-status.not-found,
+.cep-status.error {
+  border-color: rgba(198, 83, 106, 0.28);
+  background: rgba(198, 83, 106, 0.08);
+  color: var(--rose-deep);
+}
+
 .empty-state {
   grid-column: 1 / -1;
   padding: 24px;

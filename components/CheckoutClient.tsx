@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, writeCart } from "@/components/CartCount";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
+import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
 import { money } from "@/lib/money";
 import { paymentMethods, type PaymentMethodValue } from "@/lib/payments";
 import { siteConfig } from "@/lib/site-config";
@@ -17,14 +18,49 @@ type Product = {
 };
 
 const states = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
+const manualCepMessage = "Preencha manualmente se o CEP nao trouxer todos os dados.";
+
+type CepStatus = "idle" | "loading" | "success" | "not-found" | "error";
+
+type AddressState = {
+  cep: string;
+  state: string;
+  street: string;
+  number: string;
+  complement: string;
+  district: string;
+  city: string;
+};
+
+type AutoFillField = "state" | "street" | "district" | "city";
+
+const emptyAutofillFields: Record<AutoFillField, boolean> = {
+  state: false,
+  street: false,
+  district: false,
+  city: false
+};
 
 export function CheckoutClient({ products }: { products: Product[] }) {
   const router = useRouter();
   const cart = useCart();
   const [shippingMethod, setShippingMethod] = useState<"PADRAO" | "EXPRESSA">("PADRAO");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("PIX");
+  const [address, setAddress] = useState<AddressState>({
+    cep: "",
+    state: "",
+    street: "",
+    number: "",
+    complement: "",
+    district: "",
+    city: ""
+  });
+  const [cepStatus, setCepStatus] = useState<CepStatus>("idle");
+  const [cepMessage, setCepMessage] = useState(manualCepMessage);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const lastAutofilledCep = useRef("");
+  const autofilledFields = useRef<Record<AutoFillField, boolean>>({ ...emptyAutofillFields });
 
   const productMap = useMemo(() => new Map(products.map((product) => [product.slug, product])), [products]);
   const items = cart
@@ -34,6 +70,104 @@ export function CheckoutClient({ products }: { products: Product[] }) {
   const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
   const shipping = subtotal >= 29900 ? 0 : shippingMethod === "EXPRESSA" ? 2490 : 1490;
   const total = subtotal - discount + shipping;
+
+  const clearAutofilledAddress = useCallback(() => {
+    const fields = autofilledFields.current;
+    setAddress((current) => ({
+      ...current,
+      state: fields.state ? "" : current.state,
+      street: fields.street ? "" : current.street,
+      district: fields.district ? "" : current.district,
+      city: fields.city ? "" : current.city
+    }));
+    autofilledFields.current = { ...emptyAutofillFields };
+    lastAutofilledCep.current = "";
+  }, []);
+
+  function updateAddress(field: keyof AddressState, value: string) {
+    if (field === "cep") {
+      const formattedCep = formatCep(value);
+      const digits = cepDigits(formattedCep);
+
+      if (!digits) {
+        setCepStatus("idle");
+        setCepMessage(manualCepMessage);
+      } else if (digits.length < 8) {
+        setCepStatus("idle");
+        setCepMessage("Digite os 8 numeros do CEP para buscar o endereco.");
+      } else {
+        setCepStatus("loading");
+        setCepMessage("Buscando CEP...");
+      }
+
+      setAddress((current) => ({ ...current, cep: formattedCep }));
+      return;
+    }
+
+    if (field === "state" || field === "street" || field === "district" || field === "city") {
+      autofilledFields.current[field] = false;
+    }
+
+    setAddress((current) => ({ ...current, [field]: value }));
+  }
+
+  useEffect(() => {
+    const digits = cepDigits(address.cep);
+    if (digits.length !== 8) return;
+
+    const controller = new AbortController();
+    let active = true;
+    let timedOut = false;
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, 8000);
+
+    lookupCep(digits, controller.signal)
+      .then((result) => {
+        if (!active) return;
+        window.clearTimeout(timeoutId);
+        if (result.status === "not-found") {
+          if (lastAutofilledCep.current && lastAutofilledCep.current !== digits) clearAutofilledAddress();
+          setCepStatus("not-found");
+          setCepMessage("CEP nao encontrado, preencha manualmente.");
+          return;
+        }
+
+        const nextAutofilledFields = {
+          state: Boolean(result.address.state),
+          street: Boolean(result.address.street),
+          district: Boolean(result.address.district),
+          city: Boolean(result.address.city)
+        };
+
+        setAddress((current) => ({
+          ...current,
+          state: result.address.state || current.state,
+          street: result.address.street || current.street,
+          district: result.address.district || current.district,
+          city: result.address.city || current.city
+        }));
+        autofilledFields.current = nextAutofilledFields;
+        lastAutofilledCep.current = digits;
+        setCepStatus("success");
+        setCepMessage("Endereco encontrado. Complete numero e complemento se necessario.");
+      })
+      .catch((lookupError: unknown) => {
+        if (!active) return;
+        window.clearTimeout(timeoutId);
+        if (lookupError instanceof DOMException && lookupError.name === "AbortError" && !timedOut) return;
+        if (lastAutofilledCep.current && lastAutofilledCep.current !== digits) clearAutofilledAddress();
+        setCepStatus("error");
+        setCepMessage("Nao foi possivel consultar agora. Preencha manualmente.");
+      });
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [address.cep, clearAutofilledAddress]);
 
   async function submit(formData: FormData) {
     setSubmitting(true);
@@ -100,35 +234,49 @@ export function CheckoutClient({ products }: { products: Product[] }) {
           <legend>Endereco</legend>
           <div className="form-grid">
             <label>
-              CEP <input name="cep" placeholder="00000-000" required />
+              CEP
+              <input
+                name="cep"
+                placeholder="00000-000"
+                autoComplete="postal-code"
+                inputMode="numeric"
+                value={address.cep}
+                onChange={(event) => updateAddress("cep", event.target.value)}
+                required
+              />
             </label>
             <label>
               Estado
-              <select name="state" required>
+              <select name="state" value={address.state} onChange={(event) => updateAddress("state", event.target.value)} required>
                 <option value="">UF</option>
                 {states.map((state) => (
-                  <option key={state}>{state}</option>
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
                 ))}
               </select>
             </label>
           </div>
+          <p className={`cep-status ${cepStatus}`} aria-live="polite">
+            {cepMessage}
+          </p>
           <label>
-            Rua <input name="street" required />
+            Rua <input name="street" autoComplete="address-line1" value={address.street} onChange={(event) => updateAddress("street", event.target.value)} required />
           </label>
           <div className="form-grid">
             <label>
-              Numero <input name="number" required />
+              Numero <input name="number" autoComplete="address-line2" value={address.number} onChange={(event) => updateAddress("number", event.target.value)} required />
             </label>
             <label>
-              Complemento <input name="complement" />
+              Complemento <input name="complement" value={address.complement} onChange={(event) => updateAddress("complement", event.target.value)} />
             </label>
           </div>
           <div className="form-grid">
             <label>
-              Bairro <input name="district" required />
+              Bairro <input name="district" value={address.district} onChange={(event) => updateAddress("district", event.target.value)} required />
             </label>
             <label>
-              Cidade <input name="city" required />
+              Cidade <input name="city" autoComplete="address-level2" value={address.city} onChange={(event) => updateAddress("city", event.target.value)} required />
             </label>
           </div>
         </fieldset>
