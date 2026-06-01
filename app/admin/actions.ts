@@ -7,6 +7,8 @@ import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
 import { importProductsFromCsv, ProductImportError } from "@/lib/product-import";
 import { isAllowedProductImage, parseCents, parsePipeList, slugify } from "@/lib/product-import-shared";
+import { formatCep } from "@/lib/cep";
+import { STORE_PROFILE_ID } from "@/lib/store-profile";
 
 const statuses = ["PENDING_PAYMENT", "PAID", "FULFILLING", "SHIPPED", "CANCELED"] as const;
 
@@ -27,6 +29,27 @@ function ratingValue(formData: FormData) {
 
 function redirectError(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
+}
+
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function cleanState(value: string) {
+  return value.replace(/[^a-z]/gi, "").slice(0, 2).toUpperCase();
+}
+
+function optionalHttpUrl(value: string, fieldLabel: string) {
+  if (!value) return "";
+
+  try {
+    const url = new URL(value);
+    if (url.protocol === "http:" || url.protocol === "https:") return url.toString();
+  } catch {
+    // Fall through to the shared error below.
+  }
+
+  redirectError("/admin/loja", `${fieldLabel} deve ser uma URL http(s) valida.`);
 }
 
 function revalidateCatalog(productSlug?: string) {
@@ -257,6 +280,104 @@ export async function updateOrderStatusAction(formData: FormData) {
   revalidatePath("/admin/pedidos");
   revalidatePath(`/admin/pedidos/${orderNumber}`);
   revalidatePath(`/pedido/${orderNumber}`);
+}
+
+export async function saveStoreProfileAction(formData: FormData) {
+  await requireAdmin();
+
+  const storeName = field(formData, "storeName");
+  const legalName = field(formData, "legalName");
+  const cnpj = field(formData, "cnpj");
+  const stateRegistration = field(formData, "stateRegistration") || "Isento ou a ajustar";
+  const cep = formatCep(field(formData, "cep"));
+  const state = cleanState(field(formData, "state"));
+  const city = field(formData, "city");
+  const district = field(formData, "district");
+  const street = field(formData, "street");
+  const number = field(formData, "number");
+  const complement = field(formData, "complement");
+  const email = field(formData, "email").toLowerCase();
+  const whatsapp = field(formData, "whatsapp");
+  const businessHours = field(formData, "businessHours");
+  const instagramUrl = optionalHttpUrl(field(formData, "instagramUrl"), "Instagram");
+  const facebookUrl = optionalHttpUrl(field(formData, "facebookUrl"), "Facebook");
+  const tiktokUrl = optionalHttpUrl(field(formData, "tiktokUrl"), "TikTok");
+  const pickupNote = field(formData, "pickupNote");
+  const shippingNote = field(formData, "shippingNote");
+  const paymentNote = field(formData, "paymentNote");
+  const exchangeNote = field(formData, "exchangeNote");
+  const launchNote = field(formData, "launchNote");
+  const trustBadges = parsePipeList(field(formData, "trustBadges")).slice(0, 8);
+
+  if (!storeName || !legalName) redirectError("/admin/loja", "Informe nome da loja e razao social.");
+  if (cnpj && onlyDigits(cnpj).length !== 14) redirectError("/admin/loja", "CNPJ deve ter 14 digitos.");
+  if (cep && onlyDigits(cep).length !== 8) redirectError("/admin/loja", "CEP deve ter 8 digitos.");
+  if (state && state.length !== 2) redirectError("/admin/loja", "UF deve ter 2 letras.");
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirectError("/admin/loja", "E-mail invalido.");
+
+  await prisma.storeProfile.upsert({
+    where: { id: STORE_PROFILE_ID },
+    update: {
+      storeName,
+      legalName,
+      cnpj,
+      stateRegistration,
+      cep,
+      state,
+      city,
+      district,
+      street,
+      number,
+      complement: complement || null,
+      email,
+      whatsapp,
+      businessHours,
+      instagramUrl,
+      facebookUrl,
+      tiktokUrl,
+      pickupNote,
+      shippingNote,
+      paymentNote,
+      exchangeNote,
+      trustBadges,
+      launchNote
+    },
+    create: {
+      id: STORE_PROFILE_ID,
+      storeName,
+      legalName,
+      cnpj,
+      stateRegistration,
+      cep,
+      state,
+      city,
+      district,
+      street,
+      number,
+      complement: complement || null,
+      email,
+      whatsapp,
+      businessHours,
+      instagramUrl,
+      facebookUrl,
+      tiktokUrl,
+      pickupNote,
+      shippingNote,
+      paymentNote,
+      exchangeNote,
+      trustBadges,
+      launchNote
+    }
+  });
+
+  revalidatePath("/");
+  revalidatePath("/informacoes-da-loja");
+  revalidatePath("/produto/[slug]", "page");
+  revalidatePath("/carrinho");
+  revalidatePath("/checkout");
+  revalidatePath("/admin");
+  revalidatePath("/admin/loja");
+  redirect("/admin/loja?saved=1");
 }
 
 export async function importProductsAction(formData: FormData) {

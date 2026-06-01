@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, ty
 import { useRouter } from "next/navigation";
 import { useCart, writeCart } from "@/components/CartCount";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
+import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
 import { money } from "@/lib/money";
 import { paymentMethods, type PaymentMethodValue } from "@/lib/payments";
@@ -76,7 +77,7 @@ function addressSearchReadiness(value: string, address: Pick<AddressState, "stat
   return "";
 }
 
-export function CheckoutClient({ products }: { products: Product[] }) {
+export function CheckoutClient({ products, trustSignals }: { products: Product[]; trustSignals: string[] }) {
   const router = useRouter();
   const cart = useCart();
   const [shippingMethod, setShippingMethod] = useState<"PADRAO" | "EXPRESSA">("PADRAO");
@@ -612,6 +613,7 @@ export function CheckoutClient({ products }: { products: Product[] }) {
       </form>
       <aside className="summary-panel">
         <MinimumOrderNotice subtotalCents={subtotal} compact />
+        <StoreTrustSignals signals={trustSignals} compact />
         <div className="summary-block">
           <h2>Resumo</h2>
           {items.map((item) => (

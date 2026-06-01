@@ -3,10 +3,12 @@ import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
+import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getProduct, getRelatedProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
+import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 
 type PageProps = {
@@ -18,9 +20,14 @@ export default async function ProductPage({ params }: PageProps) {
   const product = await getProduct(slug);
   if (!product || !product.active) notFound();
 
-  const [categories, related] = await Promise.all([getCategories(), getRelatedProducts(product.category.slug, product.slug)]);
+  const [categories, related, storeProfile] = await Promise.all([
+    getCategories(),
+    getRelatedProducts(product.category.slug, product.slug),
+    getStoreProfile()
+  ]);
   const available = (product.inventory?.quantity || 0) > 0;
   const whatsappHref = buildProductWhatsAppHref(product);
+  const trustSignals = storeTrustSignals(storeProfile);
 
   return (
     <StoreShell categories={categories}>
@@ -59,6 +66,7 @@ export default async function ProductPage({ params }: PageProps) {
           </div>
           <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{badge}</span>)}</div>
           <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />
+          <StoreTrustSignals signals={trustSignals} compact />
           <dl className="spec-list">
             <div>
               <dt>Tipo</dt>

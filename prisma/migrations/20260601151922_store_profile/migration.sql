@@ -1,0 +1,31 @@
+-- CreateTable
+CREATE TABLE "StoreProfile" (
+    "id" TEXT NOT NULL DEFAULT 'main',
+    "storeName" TEXT NOT NULL DEFAULT 'Bela Viva',
+    "legalName" TEXT NOT NULL DEFAULT 'Bela Viva Comercio de Beleza Ltda.',
+    "cnpj" TEXT NOT NULL DEFAULT '00.000.000/0000-00',
+    "stateRegistration" TEXT NOT NULL DEFAULT 'Isento ou a ajustar',
+    "cep" TEXT NOT NULL DEFAULT '00000-000',
+    "state" TEXT NOT NULL DEFAULT 'SP',
+    "city" TEXT NOT NULL DEFAULT 'Sao Paulo',
+    "district" TEXT NOT NULL DEFAULT 'A ajustar',
+    "street" TEXT NOT NULL DEFAULT 'Endereco em preparacao',
+    "number" TEXT NOT NULL DEFAULT 'S/N',
+    "complement" TEXT,
+    "email" TEXT NOT NULL DEFAULT 'contato@belaviva.local',
+    "whatsapp" TEXT NOT NULL DEFAULT '+55 11 90000-0000',
+    "businessHours" TEXT NOT NULL DEFAULT 'Segunda a sexta, 9h as 18h',
+    "instagramUrl" TEXT NOT NULL DEFAULT '',
+    "facebookUrl" TEXT NOT NULL DEFAULT '',
+    "tiktokUrl" TEXT NOT NULL DEFAULT '',
+    "pickupNote" TEXT NOT NULL DEFAULT 'Retirada local mediante confirmacao pelo atendimento.',
+    "shippingNote" TEXT NOT NULL DEFAULT 'Transportadora, entrega padrao e excursao serao confirmadas antes do envio.',
+    "paymentNote" TEXT NOT NULL DEFAULT 'Pix, cartao e pagamento simulado estao preparados para a fase de testes.',
+    "exchangeNote" TEXT NOT NULL DEFAULT 'Trocas e devolucoes seguem politica propria antes da publicacao oficial.',
+    "trustBadges" TEXT[] DEFAULT ARRAY['Loja em preparacao', 'Atendimento por WhatsApp', 'Pedido minimo sinalizado']::TEXT[],
+    "launchNote" TEXT NOT NULL DEFAULT 'Ambiente em preparacao: pedidos e pagamentos desta versao sao simulados.',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "StoreProfile_pkey" PRIMARY KEY ("id")
+);

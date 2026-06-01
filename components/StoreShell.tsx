@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CartCount } from "@/components/CartCount";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { legalLinks, siteConfig, storefrontLinks } from "@/lib/site-config";
+import { getStoreProfile, storeCnpjLabel, storeSocialLinks, storeTrustSignals } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 type CategoryLink = {
@@ -9,7 +10,7 @@ type CategoryLink = {
   label: string;
 };
 
-export function StoreShell({
+export async function StoreShell({
   categories,
   children
 }: {
@@ -17,11 +18,15 @@ export function StoreShell({
   children: React.ReactNode;
 }) {
   const generalWhatsAppHref = buildGeneralWhatsAppHref("navegacao principal");
+  const storeProfile = await getStoreProfile();
+  const trustSignals = storeTrustSignals(storeProfile, 3);
+  const socialLinks = storeSocialLinks(storeProfile);
 
   return (
     <>
       <div className="store-alert" aria-label="Condicoes de compra">
         <span>{siteConfig.wholesale.headerStrip}</span>
+        <Link href="/informacoes-da-loja">{storeCnpjLabel(storeProfile)}</Link>
         <WhatsAppLink href={generalWhatsAppHref}>{siteConfig.whatsapp.serviceLabel}</WhatsAppLink>
       </div>
       <header className="topbar">
@@ -67,7 +72,22 @@ export function StoreShell({
             </Link>
           ))}
           <Link href="/contato">Contato</Link>
+          <Link href="/informacoes-da-loja">Informacoes da loja</Link>
         </nav>
+        <div className="footer-trust-list" aria-label="Sinais de confianca">
+          {trustSignals.map((signal) => (
+            <span key={signal}>{signal}</span>
+          ))}
+        </div>
+        {socialLinks.length ? (
+          <nav aria-label="Redes sociais">
+            {socialLinks.map((link) => (
+              <a href={link.href} key={link.label} rel="noreferrer" target="_blank">
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        ) : null}
       </footer>
       <nav className="mobile-tabs" aria-label="Navegacao principal">
         <Link href="/">Inicio</Link>

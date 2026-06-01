@@ -78,6 +78,33 @@ const brands = [
   }
 ];
 
+const storeProfile = {
+  id: "main",
+  storeName: "Bela Viva",
+  legalName: "Bela Viva Comercio de Beleza Ltda.",
+  cnpj: "00.000.000/0000-00",
+  stateRegistration: "Isento ou a ajustar",
+  cep: "00000-000",
+  state: "SP",
+  city: "Sao Paulo",
+  district: "A ajustar",
+  street: "Endereco em preparacao",
+  number: "S/N",
+  complement: "Dados comerciais serao revisados antes da publicacao.",
+  email: "contato@belaviva.local",
+  whatsapp: "+55 11 90000-0000",
+  businessHours: "Segunda a sexta, 9h as 18h",
+  instagramUrl: "",
+  facebookUrl: "",
+  tiktokUrl: "",
+  pickupNote: "Retirada local mediante confirmacao pelo atendimento.",
+  shippingNote: "Transportadora, entrega padrao e excursao serao confirmadas antes do envio.",
+  paymentNote: "Pix, cartao e pagamento simulado estao preparados para a fase de testes.",
+  exchangeNote: "Trocas e devolucoes seguem politica propria antes da publicacao oficial.",
+  trustBadges: ["Loja em preparacao", "Atendimento por WhatsApp", "Pedido minimo sinalizado"],
+  launchNote: "Ambiente em preparacao: pedidos e pagamentos desta versao sao simulados."
+};
+
 const products = [
   {
     slug: "aura-serum-c",
@@ -432,6 +459,12 @@ async function main() {
       passwordHash: hashPassword(password),
       active: true
     }
+  });
+
+  await prisma.storeProfile.upsert({
+    where: { id: "main" },
+    update: {},
+    create: storeProfile
   });
 }
 

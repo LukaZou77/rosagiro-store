@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useCart, writeCart } from "@/components/CartCount";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
+import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
@@ -19,7 +20,7 @@ type Product = {
   inventory: { quantity: number } | null;
 };
 
-export function CartClient({ products }: { products: Product[] }) {
+export function CartClient({ products, trustSignals }: { products: Product[]; trustSignals: string[] }) {
   const cart = useCart();
 
   const productMap = useMemo(() => new Map(products.map((product) => [product.slug, product])), [products]);
@@ -119,6 +120,7 @@ export function CartClient({ products }: { products: Product[] }) {
             <span key={mode}>{mode}</span>
           ))}
         </div>
+        <StoreTrustSignals signals={trustSignals} compact />
         {items.length ? (
           <WhatsAppLink href={whatsappHref} className="button whatsapp wide">
             {siteConfig.whatsapp.cartCta}
