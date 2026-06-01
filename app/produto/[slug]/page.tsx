@@ -5,6 +5,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
 import { getCategories, getProduct, getRelatedProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
+import { siteConfig } from "@/lib/site-config";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -39,6 +40,14 @@ export default async function ProductPage({ params }: PageProps) {
           <div className="price-line">
             <strong>{money(product.priceCents)}</strong>
             {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : null}
+          </div>
+          <div className="purchase-panel">
+            <div>
+              <span>{siteConfig.wholesale.minimumOrderTitle}</span>
+              <strong>{money(siteConfig.wholesale.minimumOrderCents)}</strong>
+            </div>
+            <p>{siteConfig.wholesale.minimumOrderText}</p>
+            <a href={siteConfig.whatsappHref}>{siteConfig.wholesale.serviceLabel}</a>
           </div>
           <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{badge}</span>)}</div>
           <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />

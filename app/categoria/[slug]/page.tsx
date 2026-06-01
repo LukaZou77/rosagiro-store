@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
 import { getCategories, getProducts } from "@/lib/catalog";
+import { siteConfig } from "@/lib/site-config";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -30,6 +31,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         <p className="eyebrow">Catalogo</p>
         <h1>{categorySlug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria"}</h1>
         <p>{products.length} produtos disponiveis, com filtros por categoria, marca e prioridade de compra.</p>
+        <div className="catalog-service-bar">
+          <span>{siteConfig.wholesale.minimumOrderText}</span>
+          <span>{siteConfig.wholesale.deliveryModes[1]}</span>
+          <a href={siteConfig.whatsappHref}>{siteConfig.wholesale.serviceLabel}</a>
+        </div>
       </section>
 
       <section className="catalog-layout">
@@ -54,9 +60,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
           <label>
             Ordenar
             <select name="sort" defaultValue={sort}>
-              <option value="featured">Curadoria</option>
+              <option value="featured">Destaque</option>
               <option value="price-asc">Menor preco</option>
               <option value="price-desc">Maior preco</option>
+              <option value="name-asc">A-Z</option>
+              <option value="name-desc">Z-A</option>
               <option value="rating">Melhor avaliacao</option>
             </select>
           </label>

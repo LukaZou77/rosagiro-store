@@ -35,6 +35,11 @@ export default async function HomePage() {
           <p className="eyebrow">{siteConfig.hero.eyebrow}</p>
           <h1>{siteConfig.hero.title}</h1>
           <p>{siteConfig.hero.body}</p>
+          <div className="wholesale-signal-row" aria-label="Sinais de compra no atacado">
+            {siteConfig.wholesale.shelfSignals.map((signal) => (
+              <span key={signal}>{signal}</span>
+            ))}
+          </div>
         </div>
         <div className="hero-commerce-panel" aria-label="Ofertas em destaque">
           <div className="panel-heading">
@@ -129,14 +134,17 @@ export default async function HomePage() {
             <Link className="button primary" href="/categoria/all">
               {siteConfig.homePromotions.wholesaleBand.primaryCta}
             </Link>
-            <Link className="button secondary" href="/contato">
+            <Link className="button secondary" href={siteConfig.whatsappHref}>
               {siteConfig.homePromotions.wholesaleBand.secondaryCta}
             </Link>
           </div>
         </div>
-        <ul>
+        <ul className="service-list">
           {siteConfig.homePromotions.trustPoints.map((point) => (
             <li key={point}>{point}</li>
+          ))}
+          {siteConfig.wholesale.deliveryModes.map((mode) => (
+            <li key={mode}>{mode}</li>
           ))}
         </ul>
       </section>

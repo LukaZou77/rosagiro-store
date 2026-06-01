@@ -16,6 +16,10 @@ export function StoreShell({
 }) {
   return (
     <>
+      <div className="store-alert" aria-label="Condicoes de compra">
+        <span>{siteConfig.wholesale.headerStrip}</span>
+        <Link href={siteConfig.whatsappHref}>{siteConfig.wholesale.serviceLabel}</Link>
+      </div>
       <header className="topbar">
         <Link className="brand" href="/">
           <span className="brand-mark">BV</span>
@@ -35,6 +39,7 @@ export function StoreShell({
               {link.label}
             </Link>
           ))}
+          <Link href={siteConfig.whatsappHref}>WhatsApp</Link>
         </nav>
         <CartCount />
       </header>
@@ -49,6 +54,7 @@ export function StoreShell({
             </span>
           </Link>
           <p>{siteConfig.description}</p>
+          <p className="store-trust">{siteConfig.wholesale.storeTrust}</p>
         </div>
         <nav aria-label="Links de suporte">
           {legalLinks.map((link) => (

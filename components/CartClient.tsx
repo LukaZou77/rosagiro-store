@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useCart, writeCart } from "@/components/CartCount";
+import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { money } from "@/lib/money";
+import { siteConfig } from "@/lib/site-config";
 
 type Product = {
   slug: string;
@@ -37,6 +39,7 @@ export function CartClient({ products }: { products: Product[] }) {
       <div className="cart-panel">
         <p className="eyebrow">Carrinho</p>
         <h1>Sua selecao</h1>
+        <MinimumOrderNotice subtotalCents={subtotal} />
         {items.length ? (
           items.map((item) => (
             <article className="cart-row" key={item.slug}>
@@ -103,6 +106,11 @@ export function CartClient({ products }: { products: Product[] }) {
             <strong>{money(total)}</strong>
           </div>
           <p>Frete gratis acima de R$ 299,00. Desconto automatico de 10% acima de R$ 250,00.</p>
+        </div>
+        <div className="delivery-note">
+          {siteConfig.wholesale.deliveryModes.map((mode) => (
+            <span key={mode}>{mode}</span>
+          ))}
         </div>
         <Link className={`button primary wide ${items.length ? "" : "disabled"}`} href={items.length ? "/checkout" : "/categoria/all"}>
           {items.length ? "Continuar para checkout" : "Ver produtos"}

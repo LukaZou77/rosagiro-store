@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
+import { siteConfig } from "@/lib/site-config";
 
 export function ProductCard({ product }: { product: CatalogProduct }) {
   const quantity = product.inventory?.quantity || 0;
@@ -27,6 +28,10 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
           <h3>{product.name}</h3>
         </Link>
         <p>{product.subcategory}</p>
+        <div className="purchase-signals">
+          <span>{product.volume}</span>
+          <span>{siteConfig.wholesale.shelfSignals[2]}</span>
+        </div>
         {product.badges.length ? (
           <div className="mini-badge-row">
             {product.badges.slice(0, 2).map((badge) => (
@@ -38,6 +43,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
           <div className="price-stack">
             <strong>{money(product.priceCents)}</strong>
             {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : <small>{product.stockStatus}</small>}
+            <small>{siteConfig.wholesale.minimumOrderTitle} {money(siteConfig.wholesale.minimumOrderCents)}</small>
           </div>
           <AddToCartButton slug={product.slug} label="Comprar" disabled={!available} />
         </div>

@@ -5,11 +5,26 @@ export const siteConfig = {
   defaultUrl: "http://localhost:3000",
   supportEmail: "contato@belaviva.local",
   whatsappLabel: "+55 11 90000-0000",
+  whatsappHref: "https://wa.me/5511900000000",
   marketplace: "Brasil",
+  wholesale: {
+    minimumOrderCents: 30000,
+    minimumOrderTitle: "Pedido minimo",
+    minimumOrderText: "Pedido minimo R$ 300,00 para compras no atacado. Nesta fase o pedido de teste nao sera bloqueado.",
+    headerStrip: "PEDIDO MINIMO R$ 300,00 - ATACADO MULTIMARCAS - RECEBA EM CASA",
+    serviceLabel: "Atendimento WhatsApp",
+    storeTrust: "CNPJ e dados da loja serao revisados antes da publicacao oficial.",
+    deliveryModes: [
+      "Retirada local mediante confirmacao",
+      "Transportadora ou excursao sob consulta",
+      "Frete calculado na finalizacao do pedido"
+    ],
+    shelfSignals: ["Pedido minimo R$ 300", "Pronta entrega", "Compra para revenda", "Suporte no WhatsApp"]
+  },
   hero: {
     eyebrow: "Atacado e varejo de beleza",
     title: "Multimarcas para montar kits, repor estoque e vender mais.",
-    body: "Skincare, maquiagem, perfumes, cabelo e acessorios organizados para compras rapidas, reposicao de bancada e pedidos de teste.",
+    body: "Skincare, maquiagem, perfumes, cabelo e acessorios organizados para compras rapidas, reposicao de bancada e pedidos de atacado.",
     primaryCta: "Ver catalogo completo",
     secondaryCta: "Comprar destaque"
   },
@@ -23,9 +38,9 @@ export const siteConfig = {
   },
   homePromotions: {
     promoBar: {
-      label: "Campanha piloto",
-      text: "Monte pedidos multimarcas com Pix, cartao ou pagamento simulado enquanto a loja esta em preparacao.",
-      cta: "Explorar ofertas",
+      label: "Atacadao piloto",
+      text: "Pedido minimo R$ 300,00, multimarcas em pronta entrega e atendimento por WhatsApp para duvidas de compra.",
+      cta: "Ver ofertas",
       href: "/categoria/all?sort=price-asc"
     },
     searchPlaceholder: "Buscar serum, batom, perfume, pincel...",
@@ -35,34 +50,34 @@ export const siteConfig = {
       brandsLabel: "marcas no catalogo"
     },
     trustPoints: [
+      "Pedido minimo R$ 300,00 sinalizado antes do checkout",
       "Pedido multimarcas em um carrinho",
-      "Precos recalculados no servidor",
-      "Pix e cartao preparados para a proxima fase",
+      "Retirada, transportadora e excursao em preparacao",
       "Estoque visivel antes da confirmacao"
     ],
     quickActions: [
       {
-        label: "Ofertas",
+        label: "Menor preco",
         description: "Itens com preco comparativo para compras de oportunidade.",
         href: "/categoria/all?sort=price-asc"
       },
       {
-        label: "Reposicao rapida",
+        label: "Reposicao",
         description: "Skincare, make e corpo para completar prateleira.",
         href: "/categoria/all"
       },
       {
-        label: "Kits por categoria",
-        description: "Combine produtos por rotina sem sair do catalogo.",
+        label: "Revenda",
+        description: "Combine produtos por rotina, marca e categoria.",
         href: "/categoria/skincare"
       }
     ],
     wholesaleBand: {
       eyebrow: "Compra com volume",
-      title: "Base pronta para evoluir para atacado, combos e campanhas reais.",
-      body: "Nesta primeira versao, a vitrine ja separa ofertas, categorias e disponibilidade. Depois podemos adicionar preco por quantidade, cupons e tabelas de atacado sem refazer a experiencia.",
+      title: "Compra minima clara, atendimento rapido e formas de entrega brasileiras.",
+      body: "A vitrine ja orienta pedido minimo, estoque, pronta entrega e consulta por WhatsApp. Depois podemos adicionar preco por quantidade, cupons e tabelas de atacado sem refazer a experiencia.",
       primaryCta: "Ver todos os produtos",
-      secondaryCta: "Falar com atendimento"
+      secondaryCta: "Falar no WhatsApp"
     },
     shelfNote: "Use a importacao CSV para trocar nomes, precos, estoque e descricao quando os produtos reais chegarem."
   }
@@ -164,7 +179,7 @@ export const infoPages = {
     sections: [
       {
         title: "Modalidades",
-        body: "A loja trabalha com entrega padrao e expressa no fluxo de teste. Os valores sao recalculados no servidor no momento do checkout."
+        body: "A loja trabalha com entrega padrao e expressa no fluxo de teste. A comunicacao tambem reserva espaco para retirada local, transportadora e excursao, comuns em compras por atacado."
       },
       {
         title: "Frete gratis",
@@ -172,7 +187,7 @@ export const infoPages = {
       },
       {
         title: "Integracoes futuras",
-        body: "A segunda fase prepara o caminho para transportadoras e regras por CEP, mas ainda nao conecta uma logistica real."
+        body: "A segunda fase prepara o caminho para transportadoras, regras por CEP e combinacao via WhatsApp, mas ainda nao conecta uma logistica real."
       }
     ]
   },

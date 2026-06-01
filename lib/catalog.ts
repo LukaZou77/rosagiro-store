@@ -73,9 +73,13 @@ export async function getProducts(options: {
         ? { priceCents: "asc" }
         : sort === "price-desc"
           ? { priceCents: "desc" }
-          : sort === "rating"
-            ? { rating: "desc" }
-            : { featuredRank: "asc" }
+          : sort === "name-asc"
+            ? { name: "asc" }
+            : sort === "name-desc"
+              ? { name: "desc" }
+              : sort === "rating"
+                ? { rating: "desc" }
+                : { featuredRank: "asc" }
   });
 
   return products as CatalogProduct[];

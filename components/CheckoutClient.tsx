@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, writeCart } from "@/components/CartCount";
+import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { money } from "@/lib/money";
 import { paymentMethods, type PaymentMethodValue } from "@/lib/payments";
+import { siteConfig } from "@/lib/site-config";
 
 type Product = {
   slug: string;
@@ -146,6 +148,11 @@ export function CheckoutClient({ products }: { products: Product[] }) {
               <small>2 a 3 dias uteis / {subtotal >= 29900 ? "Gratis" : money(2490)}</small>
             </span>
           </label>
+          <div className="delivery-note inline">
+            {siteConfig.wholesale.deliveryModes.map((mode) => (
+              <span key={mode}>{mode}</span>
+            ))}
+          </div>
         </fieldset>
         <fieldset>
           <legend>Pagamento</legend>
@@ -173,6 +180,7 @@ export function CheckoutClient({ products }: { products: Product[] }) {
         </button>
       </form>
       <aside className="summary-panel">
+        <MinimumOrderNotice subtotalCents={subtotal} compact />
         <div className="summary-block">
           <h2>Resumo</h2>
           {items.map((item) => (
