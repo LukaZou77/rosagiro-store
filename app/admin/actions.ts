@@ -6,8 +6,37 @@ import { clearAdminSession, requireAdmin, setAdminSession, verifyPassword } from
 import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
 import { importProductsFromCsv, ProductImportError } from "@/lib/product-import";
+import { isAllowedProductImage, parseCents, parsePipeList, slugify } from "@/lib/product-import-shared";
 
 const statuses = ["PENDING_PAYMENT", "PAID", "FULFILLING", "SHIPPED", "CANCELED"] as const;
+
+function field(formData: FormData, name: string) {
+  return String(formData.get(name) || "").trim();
+}
+
+function positiveInt(formData: FormData, name: string, fallback = 0) {
+  const value = Number(formData.get(name));
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : fallback;
+}
+
+function ratingValue(formData: FormData) {
+  const value = Number(field(formData, "rating").replace(",", "."));
+  if (!Number.isFinite(value)) return 4.8;
+  return Math.min(5, Math.max(0, value));
+}
+
+function redirectError(path: string, message: string): never {
+  redirect(`${path}?error=${encodeURIComponent(message)}`);
+}
+
+function revalidateCatalog(productSlug?: string) {
+  revalidatePath("/");
+  revalidatePath("/categoria/[slug]", "page");
+  revalidatePath("/admin");
+  revalidatePath("/admin/produtos");
+  revalidatePath("/admin/importar-produtos");
+  if (productSlug) revalidatePath(`/produto/${productSlug}`);
+}
 
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
@@ -66,6 +95,148 @@ export async function updateProductAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/categoria/[slug]", "page");
   revalidatePath("/admin/produtos");
+}
+
+export async function updateProductDetailAction(formData: FormData) {
+  await requireAdmin();
+
+  const productId = field(formData, "productId");
+  const product = productId
+    ? await prisma.product.findUnique({ where: { id: productId }, select: { slug: true } })
+    : null;
+  if (!product) redirectError("/admin/produtos", "Produto nao encontrado.");
+
+  const name = field(formData, "name");
+  const brandId = field(formData, "brandId");
+  const categoryId = field(formData, "categoryId");
+  const subcategory = field(formData, "subcategory");
+  const descriptionPt = field(formData, "descriptionPt");
+  const image = field(formData, "image");
+  const priceCents = parseCents(field(formData, "price"));
+  const compareAtPriceCents = parseCents(field(formData, "compareAtPrice"));
+  const quantity = positiveInt(formData, "quantity");
+  const reviewCount = positiveInt(formData, "reviewCount");
+  const featuredRank = positiveInt(formData, "featuredRank", 1000);
+  const active = formData.get("active") === "on";
+  const detailPath = `/admin/produtos/${product.slug}`;
+
+  if (!name || !brandId || !categoryId || !subcategory || !descriptionPt || priceCents <= 0) {
+    redirectError(detailPath, "Preencha os campos obrigatorios do produto.");
+  }
+  if (compareAtPriceCents > 0 && compareAtPriceCents <= priceCents) {
+    redirectError(detailPath, "O preco comparativo deve ser maior que o preco atual.");
+  }
+  if (!isAllowedProductImage(image)) {
+    redirectError(detailPath, "A imagem deve usar /assets/..., /placeholder... ou URL http(s).");
+  }
+
+  const [brand, category] = await Promise.all([
+    prisma.brand.findUnique({ where: { id: brandId } }),
+    prisma.category.findUnique({ where: { id: categoryId } })
+  ]);
+  if (!brand || !category) redirectError(detailPath, "Marca ou categoria invalida.");
+
+  await prisma.$transaction([
+    prisma.product.update({
+      where: { id: productId },
+      data: {
+        name,
+        brandId,
+        categoryId,
+        subcategory,
+        priceCents,
+        compareAtPriceCents: compareAtPriceCents > 0 ? compareAtPriceCents : null,
+        image,
+        gallery: [image],
+        descriptionPt,
+        benefits: parsePipeList(field(formData, "benefits")),
+        ingredients: parsePipeList(field(formData, "ingredients")),
+        badges: parsePipeList(field(formData, "badges")),
+        skinType: field(formData, "skinType") || "A ajustar",
+        finish: field(formData, "finish") || "A ajustar",
+        volume: field(formData, "volume") || "A ajustar",
+        rating: ratingValue(formData),
+        reviewCount,
+        stockStatus: quantity > 0 ? "Em estoque" : "Esgotado",
+        active,
+        featuredRank
+      }
+    }),
+    prisma.inventory.upsert({
+      where: { productId },
+      update: { quantity },
+      create: { productId, quantity }
+    })
+  ]);
+
+  revalidateCatalog(product.slug);
+  redirect(`${detailPath}?saved=1`);
+}
+
+export async function saveBrandAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = field(formData, "brandId");
+  const name = field(formData, "name");
+  const logo = field(formData, "logo").slice(0, 8).toUpperCase();
+  const origin = field(formData, "origin") || "A ajustar";
+  const descriptionPt = field(formData, "descriptionPt") || "Descricao da marca a ajustar.";
+  const featured = formData.get("featured") === "on";
+  const slug = slugify(name);
+  let redirectTo = "/admin/marcas?saved=1";
+
+  if (!name || !slug) redirectError("/admin/marcas", "Informe o nome da marca.");
+
+  try {
+    if (id) {
+      await prisma.brand.update({
+        where: { id },
+        data: { name, slug, logo: logo || name.slice(0, 2).toUpperCase(), origin, descriptionPt, featured }
+      });
+    } else {
+      await prisma.brand.create({
+        data: {
+          name,
+          slug,
+          logo: logo || name.slice(0, 2).toUpperCase(),
+          origin,
+          descriptionPt,
+          featured,
+          categorySlugs: []
+        }
+      });
+    }
+    revalidateCatalog();
+  } catch {
+    redirectTo = `/admin/marcas?error=${encodeURIComponent("Nao foi possivel salvar a marca. Verifique duplicidade de nome ou slug.")}`;
+  }
+
+  redirect(redirectTo);
+}
+
+export async function saveCategoryAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = field(formData, "categoryId");
+  const label = field(formData, "label");
+  const note = field(formData, "note") || "Ajustar descricao da categoria.";
+  const slug = slugify(label);
+  let redirectTo = "/admin/categorias?saved=1";
+
+  if (!label || !slug) redirectError("/admin/categorias", "Informe o nome da categoria.");
+
+  try {
+    if (id) {
+      await prisma.category.update({ where: { id }, data: { label, slug, note } });
+    } else {
+      await prisma.category.create({ data: { label, slug, note } });
+    }
+    revalidateCatalog();
+  } catch {
+    redirectTo = `/admin/categorias?error=${encodeURIComponent("Nao foi possivel salvar a categoria. Verifique duplicidade de nome ou slug.")}`;
+  }
+
+  redirect(redirectTo);
 }
 
 export async function updateOrderStatusAction(formData: FormData) {

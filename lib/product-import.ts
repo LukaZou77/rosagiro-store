@@ -2,7 +2,11 @@ import "server-only";
 
 import type { Prisma } from "@/src/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { parseProductCsv, type ProductImportRow } from "@/lib/product-import-shared";
+import {
+  parseProductCsv,
+  type ProductImportExistingProduct,
+  type ProductImportRow
+} from "@/lib/product-import-shared";
 
 export class ProductImportError extends Error {
   constructor(message: string) {
@@ -15,6 +19,23 @@ type ImportCounters = {
   updated: number;
   stockUpdated: number;
 };
+
+export async function getProductImportExistingProducts(slugs?: string[]): Promise<ProductImportExistingProduct[]> {
+  const products = await prisma.product.findMany({
+    where: slugs?.length ? { slug: { in: slugs } } : undefined,
+    include: { brand: true, category: true, inventory: true }
+  });
+
+  return products.map((product) => ({
+    slug: product.slug,
+    name: product.name,
+    priceCents: product.priceCents,
+    stock: product.inventory?.quantity || 0,
+    active: product.active,
+    brand: product.brand.name,
+    category: product.category.label
+  }));
+}
 
 function brandLogo(name: string) {
   return name
@@ -111,11 +132,14 @@ async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, in
 }
 
 export async function importProductsFromCsv(csvText: string): Promise<ImportCounters> {
-  const preview = parseProductCsv(csvText);
+  const initialPreview = parseProductCsv(csvText);
   if (!csvText.trim()) throw new ProductImportError("Envie um arquivo CSV antes de importar.");
-  if (preview.missingHeaders.length) {
-    throw new ProductImportError(`Campos obrigatorios ausentes: ${preview.missingHeaders.join(", ")}`);
+  if (initialPreview.missingHeaders.length) {
+    throw new ProductImportError(`Campos obrigatorios ausentes: ${initialPreview.missingHeaders.join(", ")}`);
   }
+
+  const existingProducts = await getProductImportExistingProducts(initialPreview.rows.map((row) => row.slug).filter(Boolean));
+  const preview = parseProductCsv(csvText, { existingProducts });
   if (preview.errorCount) {
     throw new ProductImportError("Corrija os erros da pre-visualizacao antes de importar.");
   }

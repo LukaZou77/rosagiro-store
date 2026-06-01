@@ -1,78 +1,197 @@
-import { updateProductAction } from "@/app/admin/actions";
+import type { Prisma } from "@/src/generated/prisma/client";
+import Link from "next/link";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import Link from "next/link";
+import { money } from "@/lib/money";
 
-function brlValue(cents: number | null) {
-  if (!cents) return "";
-  return (cents / 100).toFixed(2).replace(".", ",");
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function single(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function AdminProductsPage() {
-  const admin = await requireAdmin();
+export default async function AdminProductsPage({ searchParams }: PageProps) {
+  const [admin, params, brands, categories] = await Promise.all([
+    requireAdmin(),
+    searchParams,
+    prisma.brand.findMany({ orderBy: { name: "asc" } }),
+    prisma.category.findMany({ orderBy: { label: "asc" } })
+  ]);
+  const q = single(params.q)?.trim() || "";
+  const brand = single(params.brand) || "all";
+  const category = single(params.category) || "all";
+  const status = single(params.status) || "all";
+  const stock = single(params.stock) || "all";
+
+  const where: Prisma.ProductWhereInput = {
+    brandId: brand !== "all" ? brand : undefined,
+    categoryId: category !== "all" ? category : undefined,
+    active: status === "active" ? true : status === "inactive" ? false : undefined,
+    inventory:
+      stock === "in"
+        ? { quantity: { gt: 0 } }
+        : stock === "low"
+          ? { quantity: { gt: 0, lte: 5 } }
+          : stock === "out"
+            ? { quantity: 0 }
+            : undefined,
+    OR: q
+      ? [
+          { slug: { contains: q, mode: "insensitive" } },
+          { name: { contains: q, mode: "insensitive" } },
+          { subcategory: { contains: q, mode: "insensitive" } },
+          { brand: { name: { contains: q, mode: "insensitive" } } },
+          { category: { label: { contains: q, mode: "insensitive" } } }
+        ]
+      : undefined
+  };
+
   const products = await prisma.product.findMany({
+    where,
     include: { brand: true, category: true, inventory: true },
-    orderBy: { featuredRank: "asc" }
+    orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }]
   });
+
+  const activeCount = products.filter((product) => product.active).length;
+  const lowStockCount = products.filter((product) => {
+    const quantity = product.inventory?.quantity || 0;
+    return quantity > 0 && quantity <= 5;
+  }).length;
+  const outOfStockCount = products.filter((product) => (product.inventory?.quantity || 0) === 0).length;
 
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
         <p className="eyebrow">Produtos</p>
-        <h1>Catalogo e estoque</h1>
-        <Link className="button secondary" href="/admin/importar-produtos">
-          Importar CSV
-        </Link>
+        <h1>Central de produtos</h1>
+        <p>Filtre, revise e abra cada item para editar a ficha completa do catalogo.</p>
+        <div className="admin-actions">
+          <Link className="button secondary" href="/admin/importar-produtos">
+            Importar / modelos
+          </Link>
+          <Link className="button secondary" href="/admin/produtos/exportar" prefetch={false}>
+            Exportar CSV
+          </Link>
+        </div>
       </div>
+
+      <div className="metric-grid compact">
+        <div>
+          <span>Resultado</span>
+          <strong>{products.length}</strong>
+        </div>
+        <div>
+          <span>Ativos</span>
+          <strong>{activeCount}</strong>
+        </div>
+        <div>
+          <span>Estoque baixo</span>
+          <strong>{lowStockCount}</strong>
+        </div>
+        <div>
+          <span>Esgotados</span>
+          <strong>{outOfStockCount}</strong>
+        </div>
+      </div>
+
+      <form className="filters admin-filters" action="/admin/produtos">
+        <label>
+          Buscar
+          <input name="q" defaultValue={q} placeholder="Nome, slug, marca..." />
+        </label>
+        <label>
+          Marca
+          <select name="brand" defaultValue={brand}>
+            <option value="all">Todas</option>
+            {brands.map((item) => (
+              <option value={item.id} key={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Categoria
+          <select name="category" defaultValue={category}>
+            <option value="all">Todas</option>
+            {categories.map((item) => (
+              <option value={item.id} key={item.id}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Status
+          <select name="status" defaultValue={status}>
+            <option value="all">Todos</option>
+            <option value="active">Ativos</option>
+            <option value="inactive">Inativos</option>
+          </select>
+        </label>
+        <label>
+          Estoque
+          <select name="stock" defaultValue={stock}>
+            <option value="all">Todos</option>
+            <option value="in">Em estoque</option>
+            <option value="low">Baixo</option>
+            <option value="out">Esgotado</option>
+          </select>
+        </label>
+        <button className="button primary" type="submit">
+          Aplicar
+        </button>
+        <Link className="button secondary" href="/admin/produtos">
+          Limpar
+        </Link>
+      </form>
+
       <div className="admin-list">
-        {products.map((product) => (
-          <form action={updateProductAction} className="admin-product-row" key={product.id}>
-            <input type="hidden" name="productId" value={product.id} />
-            <img src={product.image} alt={product.name} />
-            <div className="admin-product-fields">
-              <label>
-                Nome
-                <input name="name" defaultValue={product.name} required />
-              </label>
-              <div className="form-grid">
-                <label>
-                  Categoria
-                  <input value={`${product.category.label} / ${product.brand.name}`} readOnly />
-                </label>
-                <label>
-                  Subcategoria
-                  <input name="subcategory" defaultValue={product.subcategory} required />
-                </label>
+        {products.map((product) => {
+          const quantity = product.inventory?.quantity || 0;
+          return (
+            <article className="admin-product-row catalog-row" key={product.id}>
+              <img src={product.image} alt={product.name} />
+              <div className="admin-product-summary">
+                <div>
+                  <span className="status-chip">{product.slug}</span>
+                  <span className={product.active ? "status-chip success" : "status-chip warning"}>
+                    {product.active ? "Ativo" : "Inativo"}
+                  </span>
+                  <span className={quantity > 0 ? "status-chip success" : "status-chip warning"}>
+                    {quantity > 0 ? `${quantity} un.` : "Esgotado"}
+                  </span>
+                </div>
+                <h2>{product.name}</h2>
+                <p>
+                  {product.brand.name} / {product.category.label} / {product.subcategory}
+                </p>
+                <div className="admin-row-meta">
+                  <strong>{money(product.priceCents)}</strong>
+                  {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : null}
+                  <small>Rank {product.featuredRank}</small>
+                </div>
               </div>
-              <label>
-                Descricao
-                <textarea name="descriptionPt" defaultValue={product.descriptionPt} required />
-              </label>
-              <div className="form-grid">
-                <label>
-                  Preco
-                  <input name="price" defaultValue={brlValue(product.priceCents)} required />
-                </label>
-                <label>
-                  Preco comparativo
-                  <input name="compareAtPrice" defaultValue={brlValue(product.compareAtPriceCents)} />
-                </label>
-                <label>
-                  Estoque
-                  <input name="quantity" type="number" min="0" defaultValue={product.inventory?.quantity || 0} />
-                </label>
-                <label className="checkbox-label">
-                  <input name="active" type="checkbox" defaultChecked={product.active} />
-                  Produto ativo
-                </label>
+              <div className="admin-row-actions">
+                <Link className="button secondary" href={`/produto/${product.slug}`}>
+                  Ver loja
+                </Link>
+                <Link className="button primary" href={`/admin/produtos/${product.slug}`}>
+                  Editar ficha
+                </Link>
               </div>
-              <button className="button primary" type="submit">
-                Salvar produto
-              </button>
-            </div>
-          </form>
-        ))}
+            </article>
+          );
+        })}
+        {!products.length ? (
+          <div className="empty-state">
+            <strong>Nenhum produto encontrado</strong>
+            <p>Limpe os filtros ou importe uma nova planilha de produtos.</p>
+          </div>
+        ) : null}
       </div>
     </AdminShell>
   );

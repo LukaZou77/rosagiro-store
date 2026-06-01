@@ -5,13 +5,18 @@ import { money } from "@/lib/money";
 import {
   parseProductCsv,
   productImportOptionalFields,
-  productImportRequiredFields
+  productImportRequiredFields,
+  type ProductImportExistingProduct
 } from "@/lib/product-import-shared";
 
-export function AdminProductImportClient() {
+export function AdminProductImportClient({
+  existingProducts
+}: {
+  existingProducts: ProductImportExistingProduct[];
+}) {
   const [csvText, setCsvText] = useState("");
   const [fileName, setFileName] = useState("");
-  const preview = useMemo(() => parseProductCsv(csvText), [csvText]);
+  const preview = useMemo(() => parseProductCsv(csvText, { existingProducts }), [csvText, existingProducts]);
   const hasCsv = Boolean(csvText.trim());
   const canImport = hasCsv && preview.rows.length > 0 && preview.errorCount === 0;
 
@@ -20,6 +25,12 @@ export function AdminProductImportClient() {
     if (!file) return;
     setFileName(file.name);
     setCsvText(await file.text());
+  }
+
+  function delta(value: number | null, formatter: (input: number) => string) {
+    if (value === null || value === 0) return "sem mudanca";
+    const prefix = value > 0 ? "+" : "";
+    return `${prefix}${formatter(value)}`;
   }
 
   return (
@@ -55,9 +66,36 @@ export function AdminProductImportClient() {
           <span>{fileName || "Nenhum arquivo selecionado"}</span>
         </div>
 
+        {hasCsv ? (
+          <div className="import-kpis">
+            <div>
+              <span>Linhas</span>
+              <strong>{preview.summary.totalRows}</strong>
+            </div>
+            <div>
+              <span>Criar</span>
+              <strong>{preview.summary.createCount}</strong>
+            </div>
+            <div>
+              <span>Atualizar</span>
+              <strong>{preview.summary.updateCount}</strong>
+            </div>
+            <div>
+              <span>Erros</span>
+              <strong>{preview.errorCount}</strong>
+            </div>
+          </div>
+        ) : null}
+
         {hasCsv && preview.missingHeaders.length ? (
           <div className="form-error" role="alert">
             Campos ausentes: {preview.missingHeaders.join(", ")}
+          </div>
+        ) : null}
+
+        {hasCsv && preview.summary.duplicateSlugCount ? (
+          <div className="form-error" role="alert">
+            Existem {preview.summary.duplicateSlugCount} linhas com slug duplicado no CSV.
           </div>
         ) : null}
 
@@ -67,37 +105,55 @@ export function AdminProductImportClient() {
               <thead>
                 <tr>
                   <th>Linha</th>
+                  <th>Acao</th>
                   <th>Produto</th>
-                  <th>Marca</th>
-                  <th>Categoria</th>
+                  <th>Marca / categoria</th>
                   <th>Preco</th>
                   <th>Estoque</th>
+                  <th>Imagem</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {preview.rows.slice(0, 12).map((row) => (
-                  <tr key={row.rowNumber} className={row.errors.length ? "has-error" : ""}>
+                {preview.rows.slice(0, 20).map((row) => (
+                  <tr key={`${row.rowNumber}-${row.slug}`} className={row.errors.length ? "has-error" : ""}>
                     <td>{row.rowNumber}</td>
+                    <td>
+                      <span className={row.operation === "create" ? "status-chip success" : "status-chip"}>
+                        {row.operation === "create" ? "Criar" : "Atualizar"}
+                      </span>
+                    </td>
                     <td>
                       <strong>{row.name || "-"}</strong>
                       <small>{row.slug || "sem slug"}</small>
                     </td>
-                    <td>{row.brand || "-"}</td>
-                    <td>{row.category || "-"}</td>
-                    <td>{row.priceCents > 0 ? money(row.priceCents) : "-"}</td>
-                    <td>{row.stock}</td>
+                    <td>
+                      <strong>{row.brand || "-"}</strong>
+                      <small>{row.category || "-"} / {row.subcategory || "-"}</small>
+                    </td>
+                    <td>
+                      {row.priceCents > 0 ? money(row.priceCents) : "-"}
+                      <small>{delta(row.priceDeltaCents, money)}</small>
+                    </td>
+                    <td>
+                      {row.stock}
+                      <small>{delta(row.stockDelta, (value) => `${value} un.`)}</small>
+                    </td>
+                    <td>
+                      {row.image ? <img className="preview-thumb" src={row.image} alt="" loading="lazy" /> : "-"}
+                      <small>{row.image || "sem imagem"}</small>
+                    </td>
                     <td>{row.errors.length ? row.errors.join("; ") : "OK"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {preview.rows.length > 12 ? <p className="table-note">Mostrando 12 de {preview.rows.length} linhas.</p> : null}
+            {preview.rows.length > 20 ? <p className="table-note">Mostrando 20 de {preview.rows.length} linhas.</p> : null}
           </div>
         ) : (
           <div className="empty-state">
             <strong>Importacao flexivel</strong>
-            <p>Escolha um CSV para pre-visualizar produtos, erros e estoque antes de gravar no banco.</p>
+            <p>Escolha um CSV para pre-visualizar criacoes, atualizacoes, erros, estoque e imagens antes de gravar.</p>
           </div>
         )}
 
