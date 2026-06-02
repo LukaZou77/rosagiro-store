@@ -3,6 +3,8 @@ dist/
 .vite/
 .next/
 src/generated/prisma/
+public/uploads/products/*
+!public/uploads/products/.gitkeep
 
 .env
 .env.*

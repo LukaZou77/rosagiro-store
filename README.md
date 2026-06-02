@@ -29,6 +29,7 @@ Required:
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `NEXT_PUBLIC_SITE_URL`
+- `PRODUCT_IMAGE_STORAGE` (`local` in this first upload version)
 
 Payment:
 
@@ -48,7 +49,9 @@ Required CSV fields:
 
 Optional CSV fields:
 
-`compareAtPrice,benefits,ingredients,badges,skinType,finish,volume,weightGrams,rating,reviewCount`
+`compareAtPrice,gallery,benefits,ingredients,badges,skinType,finish,volume,weightGrams,rating,reviewCount`
+
+Use `gallery` with up to 6 image paths separated by `|`. Local admin uploads are saved under `/uploads/products/...`; production should move product media to persistent object storage before Vercel live sales.
 
 Use `docs/product-import-template.csv` as a starting template. The importer previews and validates rows before writing to the database, then creates or updates products by `slug`.
 

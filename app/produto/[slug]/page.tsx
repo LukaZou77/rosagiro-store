@@ -2,12 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductGallery } from "@/components/ProductGallery";
 import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getProduct, getRelatedProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { productDiscountPercent, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
+import { normalizeProductGallery } from "@/lib/product-import-shared";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
@@ -33,12 +35,13 @@ export default async function ProductPage({ params }: PageProps) {
   const discount = productDiscountPercent(product);
   const whatsappHref = buildProductWhatsAppHref(product);
   const trustSignals = storeTrustSignals(storeProfile);
+  const gallery = normalizeProductGallery(product.image, product.gallery);
 
   return (
     <StoreShell categories={categories}>
       <section className="product-detail">
         <div className="product-media">
-          <img src={product.image} alt={product.name} />
+          <ProductGallery images={gallery} productName={product.name} />
         </div>
         <div className="product-info">
           <Link className="back-link" href={`/categoria/${product.category.slug}`}>

@@ -148,13 +148,21 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
           </header>
           <label>
             Seu Nome <span>*</span>
-            <input ref={nameInputRef} value={name} onChange={(event) => setName(event.target.value)} placeholder="Seu Nome" required />
+            <input
+              name="customerName"
+              ref={nameInputRef}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Seu Nome"
+              required
+            />
           </label>
           <label>
             Seu WhatsApp <span>*</span>
             <div className="whatsapp-input-row">
               <span aria-hidden="true">BR +55</span>
               <input
+                name="customerWhatsapp"
                 value={whatsapp}
                 onChange={(event) => setWhatsapp(cleanPhoneInput(event.target.value))}
                 inputMode="tel"

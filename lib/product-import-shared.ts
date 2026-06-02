@@ -13,6 +13,7 @@ export const productImportRequiredFields = [
 
 export const productImportOptionalFields = [
   "compareAtPrice",
+  "gallery",
   "benefits",
   "ingredients",
   "badges",
@@ -53,6 +54,7 @@ export type ProductImportRow = {
   stock: number;
   active: boolean;
   image: string;
+  gallery: string[];
   descriptionPt: string;
   benefits: string[];
   ingredients: string[];
@@ -104,6 +106,7 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   stock: 24,
   active: true,
   image: "/assets/products/aura-serum.svg",
+  gallery: "/assets/products/aura-serum.svg",
   descriptionPt: "Descricao curta do produto para a vitrine.",
   compareAtPrice: "109,90",
   benefits: "Luminosidade|Textura leve",
@@ -127,9 +130,10 @@ export const productImportHelpRows = [
   ["price", "Sim", "Preco em BRL. Aceita 89,90 ou 89.90."],
   ["stock", "Sim", "Quantidade inteira em estoque."],
   ["active", "Sim", "true/false, sim/nao, 1/0, ativo/inativo."],
-  ["image", "Sim", "Use /assets/..., /placeholder... ou URL http(s)."],
+  ["image", "Sim", "Use /assets/..., /uploads/products/..., /placeholder... ou URL http(s)."],
   ["descriptionPt", "Sim", "Descricao em portugues para a vitrine."],
   ["compareAtPrice", "Nao", "Preco comparativo maior que o preco atual."],
+  ["gallery", "Nao", "Ate 6 imagens separadas por |. A imagem principal tambem entra na galeria."],
   ["benefits, ingredients, badges", "Nao", "Separe varios itens com |."],
   ["skinType, finish, volume", "Nao", "Texto livre para filtros e detalhe do produto."],
   ["weightGrams", "Nao", "Peso unitario em gramas para cotacao de frete. Padrao 150."],
@@ -245,6 +249,8 @@ export function pipeListValue(values: string[] | null | undefined) {
   return (values || []).join("|");
 }
 
+export const PRODUCT_GALLERY_LIMIT = 6;
+
 function optionalText(value: string, fallback: string) {
   return value.trim() || fallback;
 }
@@ -270,7 +276,9 @@ function parseWeightGrams(value: string) {
 
 export function isAllowedProductImage(value: string) {
   const trimmed = value.trim();
-  if (trimmed.startsWith("/assets/") || trimmed.startsWith("/placeholder")) return true;
+  if (trimmed.startsWith("/assets/") || trimmed.startsWith("/uploads/products/") || trimmed.startsWith("/placeholder")) {
+    return true;
+  }
   if (!/^https?:\/\//i.test(trimmed)) return false;
   try {
     const parsed = new URL(trimmed);
@@ -278,6 +286,19 @@ export function isAllowedProductImage(value: string) {
   } catch {
     return false;
   }
+}
+
+export function normalizeProductGallery(primaryImage: string, gallery: string[] = []) {
+  const seen = new Set<string>();
+  const ordered = [primaryImage, ...gallery]
+    .map((image) => image.trim())
+    .filter((image) => image && isAllowedProductImage(image));
+
+  return ordered.filter((image) => {
+    if (seen.has(image)) return false;
+    seen.add(image);
+    return true;
+  }).slice(0, PRODUCT_GALLERY_LIMIT);
 }
 
 function emptyPreview(errorCount: number): ProductImportPreview {
@@ -327,6 +348,7 @@ export function parseProductCsv(
     const stock = parseStock(raw.stock || "");
     const active = parseBoolean(raw.active || "");
     const image = raw.image?.trim() || "";
+    const gallery = parsePipeList(raw.gallery || "");
     const descriptionPt = raw.descriptionPt?.trim() || "";
     const existing = existingBySlug.get(slug);
 
@@ -344,7 +366,18 @@ export function parseProductCsv(
     if (!weight.valid) errors.push("weightGrams deve ser um numero maior que zero");
     if (active === null) errors.push("active deve ser true/false, sim/nao ou 1/0");
     if (!image) errors.push("image obrigatorio");
-    else if (!isAllowedProductImage(image)) errors.push("image deve ser /assets/..., /placeholder... ou URL http(s)");
+    else if (!isAllowedProductImage(image)) {
+      errors.push("image deve ser /assets/..., /uploads/products/..., /placeholder... ou URL http(s)");
+    }
+    if (Array.from(new Set([image, ...gallery].filter(Boolean))).length > PRODUCT_GALLERY_LIMIT) {
+      errors.push(`gallery aceita no maximo ${PRODUCT_GALLERY_LIMIT} imagens incluindo a principal`);
+    }
+    for (const galleryImage of gallery) {
+      if (!isAllowedProductImage(galleryImage)) {
+        errors.push("gallery deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s)");
+        break;
+      }
+    }
     if (!descriptionPt) errors.push("descriptionPt obrigatorio");
 
     const operation: ProductImportRow["operation"] = existing ? "update" : "create";
@@ -363,6 +396,7 @@ export function parseProductCsv(
       stock: Math.max(0, stock),
       active: active ?? true,
       image,
+      gallery: normalizeProductGallery(image, gallery),
       descriptionPt,
       benefits: parsePipeList(raw.benefits || ""),
       ingredients: parsePipeList(raw.ingredients || ""),

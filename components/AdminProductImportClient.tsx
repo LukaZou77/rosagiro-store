@@ -142,6 +142,7 @@ export function AdminProductImportClient({
                     <td>
                       {row.image ? <img className="preview-thumb" src={row.image} alt="" loading="lazy" /> : "-"}
                       <small>{row.image || "sem imagem"}</small>
+                      <small>{row.gallery.length} imagem(ns) na galeria</small>
                     </td>
                     <td>{row.errors.length ? row.errors.join("; ") : "OK"}</td>
                   </tr>

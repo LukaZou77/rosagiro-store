@@ -134,7 +134,7 @@ const launchReadinessItems = [
     itemKey: "catalog-media-quality",
     group: "Catalogo",
     title: "Imagens e midia de produto",
-    description: "Confirmar imagens finais dos produtos, padrao visual, links externos e ausencia de placeholders.",
+    description: "Confirmar imagens finais dos produtos, padrao visual, links externos, ausencia de placeholders e migracao de uploads locais para armazenamento persistente antes da Vercel.",
     priority: 2,
     sortOrder: 40
   },

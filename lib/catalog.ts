@@ -11,6 +11,7 @@ export type CatalogProduct = {
   compareAtPriceCents: number | null;
   weightGrams: number;
   image: string;
+  gallery: string[];
   descriptionPt: string;
   benefits: string[];
   ingredients: string[];

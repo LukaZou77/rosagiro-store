@@ -4,7 +4,7 @@ import { updateProductDetailAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { formatImportMoney, pipeListValue } from "@/lib/product-import-shared";
+import { PRODUCT_GALLERY_LIMIT, formatImportMoney, normalizeProductGallery, pipeListValue } from "@/lib/product-import-shared";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -31,6 +31,8 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
 
   const error = single(query.error);
   const saved = single(query.saved);
+  const gallery = normalizeProductGallery(product.image, product.gallery);
+  const emptySlots = Math.max(0, PRODUCT_GALLERY_LIMIT - gallery.length);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -59,10 +61,13 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
         </div>
       ) : null}
 
-      <form action={updateProductDetailAction} className="admin-detail-grid product-editor">
+      <form action={updateProductDetailAction} className="admin-detail-grid product-editor" encType="multipart/form-data">
         <input type="hidden" name="productId" value={product.id} />
         <section className="import-panel">
-          <img className="product-editor-image" src={product.image} alt={product.name} />
+          <div className="product-editor-main-image">
+            <img className="product-editor-image" src={product.image} alt={product.name} />
+            <span>Imagem principal</span>
+          </div>
           <div className="form-grid">
             <label>
               Slug
@@ -74,10 +79,50 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
             </label>
           </div>
           <label>
-            Caminho ou URL da imagem
+            Caminho ou URL manual
             <input name="image" defaultValue={product.image} required />
           </label>
-          <p className="table-note">Aceita /assets/..., /placeholder... ou URL http(s). Upload fica para uma fase futura.</p>
+          <p className="table-note">Aceita /assets/..., /uploads/products/..., /placeholder... ou URL http(s).</p>
+
+          <div className="product-gallery-manager">
+            <div className="product-gallery-heading">
+              <div>
+                <strong>Galeria do produto</strong>
+                <small>Ate {PRODUCT_GALLERY_LIMIT} imagens. A principal aparece nos cards e no carrinho.</small>
+              </div>
+              <span>{gallery.length}/{PRODUCT_GALLERY_LIMIT}</span>
+            </div>
+            <div className="product-gallery-grid">
+              {gallery.map((imagePath) => (
+                <div className="product-gallery-slot" key={imagePath}>
+                  <img src={imagePath} alt="" loading="lazy" />
+                  <input type="hidden" name="galleryExisting" value={imagePath} />
+                  <label className="radio-label">
+                    <input name="primaryImage" type="radio" value={imagePath} defaultChecked={imagePath === product.image} />
+                    Principal
+                  </label>
+                  <label className="checkbox-label compact">
+                    <input name="removeGalleryImage" type="checkbox" value={imagePath} />
+                    Remover
+                  </label>
+                </div>
+              ))}
+              {Array.from({ length: emptySlots }).map((_, index) => (
+                <div className="product-gallery-slot empty" key={`empty-${index}`}>
+                  <span>Vazio</span>
+                </div>
+              ))}
+            </div>
+            <label className="product-upload-field">
+              Enviar novas imagens
+              <input name="galleryFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+            </label>
+            <label className="checkbox-label compact">
+              <input name="firstUploadAsPrimary" type="checkbox" />
+              Usar a primeira imagem enviada como principal
+            </label>
+            <p className="table-note">JPG, PNG ou WebP. Maximo 5MB por imagem. SVG continua apenas em /assets ja existentes.</p>
+          </div>
         </section>
 
         <section className="import-panel">

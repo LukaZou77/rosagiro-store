@@ -111,10 +111,8 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const router = useRouter();
   const cart = useCart();
   const { customer, requireCustomerSession } = useCustomerSession();
-  const [contact, setContact] = useState(() => ({
-    name: customer?.name || "",
-    phone: customer?.whatsapp || ""
-  }));
+  const [contact, setContact] = useState({ name: "", phone: "" });
+  const [contactTouched, setContactTouched] = useState({ name: false, phone: false });
   const [shippingMethod, setShippingMethod] = useState<CheckoutShippingMethod>("RETIRADA_LOCAL");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("PIX");
   const [address, setAddress] = useState<AddressState>({
@@ -157,6 +155,13 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const selectedShipping = shippingQuote?.options.find((option) => option.method === shippingMethod) || null;
   const shipping = selectedShipping?.priceCents || 0;
   const total = subtotal - discount + shipping;
+  const contactValue = useMemo(
+    () => ({
+      name: contactTouched.name ? contact.name : contact.name || customer?.name || "",
+      phone: contactTouched.phone ? contact.phone : contact.phone || customer?.whatsapp || ""
+    }),
+    [contact, contactTouched, customer]
+  );
 
   const prefillContactFromCustomer = useCallback((nextCustomer: { name: string; whatsapp: string }) => {
     setContact((current) => ({
@@ -169,6 +174,11 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     if (!items.length || customer) return;
     requireCustomerSession({ intent: "checkout", onSuccess: prefillContactFromCustomer });
   }, [customer, items.length, prefillContactFromCustomer, requireCustomerSession]);
+
+  function updateContact(field: "name" | "phone", value: string) {
+    setContact((current) => ({ ...current, [field]: value }));
+    setContactTouched((current) => ({ ...current, [field]: true }));
+  }
 
   const clearAutofilledAddress = useCallback(() => {
     const fields = autofilledFields.current;
@@ -596,8 +606,8 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
             <input
               name="name"
               autoComplete="name"
-              value={contact.name}
-              onChange={(event) => setContact((current) => ({ ...current, name: event.target.value }))}
+              value={contactValue.name}
+              onChange={(event) => updateContact("name", event.target.value)}
               required
             />
           </label>
@@ -609,8 +619,8 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
             <input
               name="phone"
               placeholder="(11) 99999-9999"
-              value={contact.phone}
-              onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))}
+              value={contactValue.phone}
+              onChange={(event) => updateContact("phone", event.target.value)}
               required
             />
           </label>

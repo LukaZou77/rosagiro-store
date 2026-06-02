@@ -24,6 +24,7 @@ export async function currentProductsCsv() {
     stock: product.inventory?.quantity || 0,
     active: product.active,
     image: product.image,
+    gallery: pipeListValue(product.gallery),
     descriptionPt: product.descriptionPt,
     compareAtPrice: formatImportMoney(product.compareAtPriceCents),
     benefits: pipeListValue(product.benefits),

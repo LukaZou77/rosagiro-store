@@ -56,7 +56,7 @@ function productData(row: ProductImportRow, brandId: string, categoryId: string)
     priceCents: row.priceCents,
     compareAtPriceCents: row.compareAtPriceCents,
     image: row.image,
-    gallery: [row.image],
+    gallery: row.gallery,
     descriptionPt: row.descriptionPt,
     benefits: row.benefits.length ? row.benefits : ["Ajustar beneficios"],
     ingredients: row.ingredients.length ? row.ingredients : ["Ajustar ingredientes"],

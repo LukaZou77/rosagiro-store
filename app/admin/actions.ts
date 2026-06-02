@@ -6,7 +6,14 @@ import { clearAdminSession, requireAdmin, setAdminSession, verifyPassword } from
 import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
 import { importProductsFromCsv, ProductImportError } from "@/lib/product-import";
-import { isAllowedProductImage, parseCents, parsePipeList, slugify } from "@/lib/product-import-shared";
+import { isAllowedProductImage, normalizeProductGallery, parseCents, parsePipeList, slugify } from "@/lib/product-import-shared";
+import {
+  assertGalleryCapacity,
+  cleanGalleryInput,
+  deleteLocalProductImages,
+  extractProductUploads,
+  saveProductImageUploads
+} from "@/lib/product-images";
 import { formatCep } from "@/lib/cep";
 import { STORE_PROFILE_ID } from "@/lib/store-profile";
 
@@ -126,7 +133,7 @@ export async function updateProductDetailAction(formData: FormData) {
 
   const productId = field(formData, "productId");
   const product = productId
-    ? await prisma.product.findUnique({ where: { id: productId }, select: { slug: true } })
+    ? await prisma.product.findUnique({ where: { id: productId }, select: { slug: true, image: true, gallery: true } })
     : null;
   if (!product) redirectError("/admin/produtos", "Produto nao encontrado.");
 
@@ -136,6 +143,7 @@ export async function updateProductDetailAction(formData: FormData) {
   const subcategory = field(formData, "subcategory");
   const descriptionPt = field(formData, "descriptionPt");
   const image = field(formData, "image");
+  const primaryImageInput = field(formData, "primaryImage");
   const priceCents = parseCents(field(formData, "price"));
   const compareAtPriceCents = parseCents(field(formData, "compareAtPrice"));
   const quantity = positiveInt(formData, "quantity");
@@ -152,7 +160,7 @@ export async function updateProductDetailAction(formData: FormData) {
     redirectError(detailPath, "O preco comparativo deve ser maior que o preco atual.");
   }
   if (!isAllowedProductImage(image)) {
-    redirectError(detailPath, "A imagem deve usar /assets/..., /placeholder... ou URL http(s).");
+    redirectError(detailPath, "A imagem deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
   }
 
   const [brand, category] = await Promise.all([
@@ -161,40 +169,71 @@ export async function updateProductDetailAction(formData: FormData) {
   ]);
   if (!brand || !category) redirectError(detailPath, "Marca ou categoria invalida.");
 
-  await prisma.$transaction([
-    prisma.product.update({
-      where: { id: productId },
-      data: {
-        name,
-        brandId,
-        categoryId,
-        subcategory,
-        priceCents,
-        compareAtPriceCents: compareAtPriceCents > 0 ? compareAtPriceCents : null,
-        image,
-        gallery: [image],
-        descriptionPt,
-        benefits: parsePipeList(field(formData, "benefits")),
-        ingredients: parsePipeList(field(formData, "ingredients")),
-        badges: parsePipeList(field(formData, "badges")),
-        skinType: field(formData, "skinType") || "A ajustar",
-        finish: field(formData, "finish") || "A ajustar",
-        volume: field(formData, "volume") || "A ajustar",
-        weightGrams,
-        rating: ratingValue(formData),
-        reviewCount,
-        stockStatus: quantity > 0 ? "Em estoque" : "Esgotado",
-        active,
-        featuredRank
-      }
-    }),
-    prisma.inventory.upsert({
-      where: { productId },
-      update: { quantity },
-      create: { productId, quantity }
-    })
-  ]);
+  const removedImages = new Set(cleanGalleryInput(formData.getAll("removeGalleryImage")));
+  const keptExistingImages = cleanGalleryInput(formData.getAll("galleryExisting")).filter((galleryImage) => !removedImages.has(galleryImage));
+  const baseGallery = normalizeProductGallery("", [image, ...keptExistingImages].filter((galleryImage) => !removedImages.has(galleryImage)));
+  const uploadFiles = extractProductUploads(formData.getAll("galleryFiles"));
+  let uploadedImages: string[] = [];
 
+  try {
+    assertGalleryCapacity(baseGallery, uploadFiles.length);
+    uploadedImages = await saveProductImageUploads(product.slug, uploadFiles);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Nao foi possivel salvar as imagens enviadas.";
+    redirectError(detailPath, message);
+  }
+
+  const gallery = normalizeProductGallery("", [...baseGallery, ...uploadedImages]);
+  if (!gallery.length) redirectError(detailPath, "Cadastre pelo menos uma imagem do produto.");
+
+  const firstUploadAsPrimary = formData.get("firstUploadAsPrimary") === "on";
+  const preferredPrimary = firstUploadAsPrimary && uploadedImages[0] ? uploadedImages[0] : primaryImageInput;
+  const primaryImage = gallery.includes(preferredPrimary)
+    ? preferredPrimary
+    : gallery.includes(image)
+      ? image
+      : gallery[0];
+
+  try {
+    await prisma.$transaction([
+      prisma.product.update({
+        where: { id: productId },
+        data: {
+          name,
+          brandId,
+          categoryId,
+          subcategory,
+          priceCents,
+          compareAtPriceCents: compareAtPriceCents > 0 ? compareAtPriceCents : null,
+          image: primaryImage,
+          gallery,
+          descriptionPt,
+          benefits: parsePipeList(field(formData, "benefits")),
+          ingredients: parsePipeList(field(formData, "ingredients")),
+          badges: parsePipeList(field(formData, "badges")),
+          skinType: field(formData, "skinType") || "A ajustar",
+          finish: field(formData, "finish") || "A ajustar",
+          volume: field(formData, "volume") || "A ajustar",
+          weightGrams,
+          rating: ratingValue(formData),
+          reviewCount,
+          stockStatus: quantity > 0 ? "Em estoque" : "Esgotado",
+          active,
+          featuredRank
+        }
+      }),
+      prisma.inventory.upsert({
+        where: { productId },
+        update: { quantity },
+        create: { productId, quantity }
+      })
+    ]);
+  } catch {
+    await deleteLocalProductImages(product.slug, uploadedImages);
+    redirectError(detailPath, "Nao foi possivel salvar o produto. Tente novamente.");
+  }
+
+  await deleteLocalProductImages(product.slug, [...removedImages].filter((galleryImage) => !gallery.includes(galleryImage)));
   revalidateCatalog(product.slug);
   redirect(`${detailPath}?saved=1`);
 }
