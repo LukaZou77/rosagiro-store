@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { readCart, subscribeQuickPurchaseOpen, useCart, writeCart } from "@/components/CartCount";
+import { CustomerCheckoutButton } from "@/components/CustomerSession";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
@@ -246,9 +247,9 @@ export function QuickPurchaseDrawer() {
               </span>
             )}
             {hasValidLines ? (
-              <Link className="button primary wide" href="/checkout" onClick={() => setOpen(false)}>
+              <CustomerCheckoutButton className="button primary wide" onProceed={() => setOpen(false)}>
                 Continuar para checkout
-              </Link>
+              </CustomerCheckoutButton>
             ) : (
               <span className="button primary wide disabled" aria-disabled="true">
                 Continuar para checkout

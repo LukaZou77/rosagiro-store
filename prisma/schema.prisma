@@ -56,6 +56,23 @@ model AdminUser {
   updatedAt    DateTime @updatedAt
 }
 
+model Customer {
+  id             String   @id @default(cuid())
+  name           String
+  whatsapp       String
+  whatsappDigits String   @unique
+  source         String   @default("WHATSAPP_LIGHT_LOGIN")
+  loginCount     Int      @default(0)
+  firstSeenAt    DateTime @default(now())
+  lastLoginAt    DateTime?
+  lastSeenAt     DateTime?
+  orders         Order[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([lastSeenAt])
+}
+
 model Brand {
   id            String    @id @default(cuid())
   slug          String    @unique
@@ -125,6 +142,7 @@ model Inventory {
 
 model Order {
   id                      String         @id @default(cuid())
+  customerId              String?
   orderNumber             String         @unique
   status                  OrderStatus    @default(PENDING_PAYMENT)
   customerName            String
@@ -163,6 +181,7 @@ model Order {
   discountCents           Int
   shippingCents           Int
   totalCents              Int
+  customer                Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
   items                   OrderItem[]
   payment                 Payment?
   createdAt               DateTime       @default(now())
@@ -170,6 +189,7 @@ model Order {
 
   @@index([status, createdAt])
   @@index([customerEmail])
+  @@index([customerId])
   @@index([addressMatchStatus])
 }
 

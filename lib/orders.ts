@@ -1,6 +1,7 @@
 import "server-only";
 
 import { randomInt } from "node:crypto";
+import { normalizeBrazilWhatsapp, upsertCustomerFromContact } from "@/lib/customers";
 import { prisma } from "@/lib/db";
 import { validateCheckoutAddress } from "@/lib/google-address";
 import { discountCents, subtotalCents, totalCents } from "@/lib/money";
@@ -61,10 +62,12 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
         .filter((item) => item.slug && item.quantity > 0)
     : [];
 
+  const phone = cleanText(data.customer?.phone);
+  const normalizedPhone = normalizeBrazilWhatsapp(phone);
   const customer = {
     name: cleanText(data.customer?.name),
     email: cleanText(data.customer?.email).toLowerCase(),
-    phone: cleanText(data.customer?.phone),
+    phone: normalizedPhone?.whatsapp || phone,
     cpf: cleanText(data.customer?.cpf)
   };
 
@@ -97,7 +100,7 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
     throw new OrderError("Informe um e-mail valido.");
   }
   if (digits(customer.cpf).length !== 11) throw new OrderError("CPF deve ter 11 digitos.");
-  if (digits(customer.phone).length < 10) throw new OrderError("Telefone deve ter DDD e numero.");
+  if (!normalizedPhone) throw new OrderError("WhatsApp deve ser do Brasil e ter DDD.");
   if (digits(address.cep).length !== 8) throw new OrderError("CEP deve ter 8 digitos.");
   if (!address.state || !address.city || !address.district || !address.street || !address.number) {
     throw new OrderError("Preencha todos os dados de endereco.");
@@ -153,9 +156,11 @@ export async function createOrder(input: CheckoutInput) {
   }
   const total = totalCents(subtotal, discount, shippingQuote.shippingCents);
   const addressMatch = await validateCheckoutAddress(input.address);
+  const customer = await upsertCustomerFromContact(input.customer.name, input.customer.phone);
 
   const order = await prisma.order.create({
     data: {
+      customerId: customer.id,
       orderNumber: makeOrderNumber(),
       customerName: input.customer.name,
       customerEmail: input.customer.email,

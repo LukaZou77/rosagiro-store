@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useCart, writeCart } from "@/components/CartCount";
+import { CustomerCheckoutButton } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
@@ -125,9 +126,13 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
             {siteConfig.whatsapp.cartCta}
           </WhatsAppLink>
         ) : null}
-        <Link className={`button primary wide ${items.length ? "" : "disabled"}`} href={items.length ? "/checkout" : "/categoria/all"}>
-          {items.length ? "Continuar para checkout" : "Ver produtos"}
-        </Link>
+        {items.length ? (
+          <CustomerCheckoutButton className="button primary wide">Continuar para checkout</CustomerCheckoutButton>
+        ) : (
+          <Link className="button primary wide disabled" href="/categoria/all">
+            Ver produtos
+          </Link>
+        )}
       </aside>
     </section>
   );

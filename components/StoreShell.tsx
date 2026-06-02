@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CartCount } from "@/components/CartCount";
+import { CustomerSessionProvider } from "@/components/CustomerSession";
 import { QuickPurchaseDrawer } from "@/components/QuickPurchaseDrawer";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { legalLinks, siteConfig, storefrontLinks } from "@/lib/site-config";
@@ -24,7 +25,7 @@ export async function StoreShell({
   const socialLinks = storeSocialLinks(storeProfile);
 
   return (
-    <>
+    <CustomerSessionProvider>
       <div className="store-alert" aria-label="Condicoes de compra">
         <span>{siteConfig.wholesale.headerStrip}</span>
         <Link href="/informacoes-da-loja">{storeCnpjLabel(storeProfile)}</Link>
@@ -98,6 +99,6 @@ export async function StoreShell({
         <Link href="/carrinho">Carrinho</Link>
         <WhatsAppLink href={generalWhatsAppHref}>{siteConfig.whatsapp.label}</WhatsAppLink>
       </nav>
-    </>
+    </CustomerSessionProvider>
   );
 }

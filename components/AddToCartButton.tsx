@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { notifyQuickPurchaseOpen, readCart, writeCart } from "@/components/CartCount";
+import { useCustomerSession } from "@/components/CustomerSession";
 
 export function AddToCartButton({
   slug,
@@ -18,6 +19,7 @@ export function AddToCartButton({
   wide?: boolean;
   disabled?: boolean;
 }) {
+  const { requireCustomerSession } = useCustomerSession();
   const [added, setAdded] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -27,6 +29,18 @@ export function AddToCartButton({
     };
   }, []);
 
+  function addItem() {
+    const cart = readCart();
+    const existing = cart.find((item) => item.slug === slug);
+    if (existing) existing.quantity += 1;
+    else cart.push({ slug, quantity: 1 });
+    writeCart(cart);
+    notifyQuickPurchaseOpen();
+    setAdded(true);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setAdded(false), 1300);
+  }
+
   return (
     <button
       aria-live="polite"
@@ -35,15 +49,7 @@ export function AddToCartButton({
       type="button"
       onClick={() => {
         if (disabled) return;
-        const cart = readCart();
-        const existing = cart.find((item) => item.slug === slug);
-        if (existing) existing.quantity += 1;
-        else cart.push({ slug, quantity: 1 });
-        writeCart(cart);
-        notifyQuickPurchaseOpen();
-        setAdded(true);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => setAdded(false), 1300);
+        if (requireCustomerSession({ intent: "add_to_cart", onSuccess: addItem })) addItem();
       }}
     >
       {disabled ? unavailableLabel : added ? confirmationLabel : label}

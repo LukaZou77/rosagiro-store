@@ -178,11 +178,11 @@ export const infoPages = {
     sections: [
       {
         title: "Dados coletados",
-        body: "No checkout coletamos nome, e-mail, telefone, CPF e endereco para criar o pedido e simular a entrega. Esta versao ainda nao cria conta de cliente."
+        body: "Ao adicionar produtos ou iniciar o checkout podemos solicitar nome e WhatsApp para atendimento e compra no atacado. No checkout tambem coletamos e-mail, CPF e endereco para criar o pedido e simular a entrega."
       },
       {
         title: "Uso das informacoes",
-        body: "Os dados sao usados para processar pedidos, atendimento e validacao operacional. Integracoes reais de pagamento serao documentadas antes do lancamento oficial."
+        body: "Os dados sao usados para atendimento via WhatsApp, organizacao de clientes, processamento de pedidos e validacao operacional. Esta fase nao cria senha nem area publica de cliente."
       },
       {
         title: "Ajustes antes do lancamento",

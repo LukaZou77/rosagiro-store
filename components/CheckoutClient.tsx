@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, writeCart } from "@/components/CartCount";
+import { useCustomerSession } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
@@ -109,6 +110,11 @@ function addressSearchReadiness(value: string, address: Pick<AddressState, "stat
 export function CheckoutClient({ products, trustSignals }: { products: Product[]; trustSignals: string[] }) {
   const router = useRouter();
   const cart = useCart();
+  const { customer, requireCustomerSession } = useCustomerSession();
+  const [contact, setContact] = useState(() => ({
+    name: customer?.name || "",
+    phone: customer?.whatsapp || ""
+  }));
   const [shippingMethod, setShippingMethod] = useState<CheckoutShippingMethod>("RETIRADA_LOCAL");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("PIX");
   const [address, setAddress] = useState<AddressState>({
@@ -151,6 +157,18 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const selectedShipping = shippingQuote?.options.find((option) => option.method === shippingMethod) || null;
   const shipping = selectedShipping?.priceCents || 0;
   const total = subtotal - discount + shipping;
+
+  const prefillContactFromCustomer = useCallback((nextCustomer: { name: string; whatsapp: string }) => {
+    setContact((current) => ({
+      name: current.name || nextCustomer.name,
+      phone: current.phone || nextCustomer.whatsapp
+    }));
+  }, []);
+
+  useEffect(() => {
+    if (!items.length || customer) return;
+    requireCustomerSession({ intent: "checkout", onSuccess: prefillContactFromCustomer });
+  }, [customer, items.length, prefillContactFromCustomer, requireCustomerSession]);
 
   const clearAutofilledAddress = useCallback(() => {
     const fields = autofilledFields.current;
@@ -517,6 +535,13 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   async function submit(formData: FormData) {
     setSubmitting(true);
     setError("");
+    if (!customer) {
+      setSubmitting(false);
+      setError("Entre via WhatsApp para continuar o checkout.");
+      requireCustomerSession({ intent: "checkout", onSuccess: prefillContactFromCustomer });
+      return;
+    }
+
     const payload = {
       items: cart,
       customer: {
@@ -567,13 +592,27 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
         <fieldset>
           <legend>Contato</legend>
           <label>
-            Nome completo <input name="name" autoComplete="name" required />
+            Nome completo{" "}
+            <input
+              name="name"
+              autoComplete="name"
+              value={contact.name}
+              onChange={(event) => setContact((current) => ({ ...current, name: event.target.value }))}
+              required
+            />
           </label>
           <label>
             E-mail <input name="email" type="email" autoComplete="email" required />
           </label>
           <label>
-            Telefone <input name="phone" placeholder="(11) 99999-9999" required />
+            WhatsApp{" "}
+            <input
+              name="phone"
+              placeholder="(11) 99999-9999"
+              value={contact.phone}
+              onChange={(event) => setContact((current) => ({ ...current, phone: event.target.value }))}
+              required
+            />
           </label>
           <label>
             CPF <input name="cpf" placeholder="000.000.000-00" required />
