@@ -2,16 +2,19 @@ import Link from "next/link";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getLaunchReadinessSnapshot, launchReadinessSignalLabels } from "@/lib/launch-readiness";
 import { money } from "@/lib/money";
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
-  const [productCount, pendingOrders, paidOrders, revenue] = await Promise.all([
+  const [productCount, pendingOrders, paidOrders, revenue, launchSnapshot] = await Promise.all([
     prisma.product.count(),
     prisma.order.count({ where: { status: "PENDING_PAYMENT" } }),
     prisma.order.count({ where: { status: "PAID" } }),
-    prisma.order.aggregate({ where: { status: "PAID" }, _sum: { totalCents: true } })
+    prisma.order.aggregate({ where: { status: "PAID" }, _sum: { totalCents: true } }),
+    getLaunchReadinessSnapshot()
   ]);
+  const topIssues = launchSnapshot.highPriorityIssues.slice(0, 3);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -37,6 +40,53 @@ export default async function AdminPage() {
           <strong>{money(revenue._sum.totalCents || 0)}</strong>
         </div>
       </div>
+
+      <section className="import-panel launch-summary">
+        <div className="readiness-group-heading">
+          <div>
+            <span>Prontidao para venda real</span>
+            <h2>Saude de lancamento</h2>
+          </div>
+          <strong>
+            {launchSnapshot.readyCount}/{launchSnapshot.signals.length}
+          </strong>
+        </div>
+        <div className="launch-summary-grid">
+          <div>
+            <span>Prontos</span>
+            <strong>{launchSnapshot.readyCount}</strong>
+          </div>
+          <div>
+            <span>Para revisar</span>
+            <strong>{launchSnapshot.warningCount}</strong>
+          </div>
+          <div>
+            <span>Acao necessaria</span>
+            <strong>{launchSnapshot.actionRequiredCount}</strong>
+          </div>
+        </div>
+        {topIssues.length ? (
+          <div className="readiness-signal-list compact">
+            {topIssues.map((signal) => (
+              <Link className={`readiness-signal ${signal.status.toLowerCase().replace("_", "-")}`} href={signal.actionHref} key={signal.key}>
+                <span>{launchReadinessSignalLabels[signal.status]}</span>
+                <strong>{signal.label}</strong>
+                <small>{signal.message}</small>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="admin-notice success">Nenhum bloqueio alto detectado pelos checks automaticos.</div>
+        )}
+        <div className="admin-actions">
+          <Link className="button primary" href="/admin/prontidao">
+            Ver central de lacunas
+          </Link>
+          <Link className="button secondary" href="/admin/loja">
+            Revisar dados da loja
+          </Link>
+        </div>
+      </section>
     </AdminShell>
   );
 }

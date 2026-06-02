@@ -2,6 +2,7 @@ import Link from "next/link";
 import { saveStoreProfileAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
+import { getLaunchReadinessSnapshot, launchReadinessSignalLabels } from "@/lib/launch-readiness";
 import { getStoreProfile, storeCnpjLabel, storeProfileAddress, storeTrustSignals } from "@/lib/store-profile";
 
 type PageProps = {
@@ -13,10 +14,16 @@ function single(value: string | string[] | undefined) {
 }
 
 export default async function AdminStoreProfilePage({ searchParams }: PageProps) {
-  const [admin, params, profile] = await Promise.all([requireAdmin(), searchParams, getStoreProfile()]);
+  const [admin, params, profile, launchSnapshot] = await Promise.all([
+    requireAdmin(),
+    searchParams,
+    getStoreProfile(),
+    getLaunchReadinessSnapshot()
+  ]);
   const saved = single(params.saved);
   const error = single(params.error);
   const trustBadges = profile.trustBadges.join(" | ");
+  const storeSignals = launchSnapshot.signals.filter((signal) => signal.group === "Loja");
 
   return (
     <AdminShell adminName={admin.name}>
@@ -41,6 +48,24 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
           {error}
         </div>
       ) : null}
+
+      <section className="import-panel store-placeholder-checks">
+        <div className="readiness-group-heading">
+          <div>
+            <span>Checks de loja</span>
+            <h2>Dados que precisam parecer reais antes de publicar</h2>
+          </div>
+        </div>
+        <div className="readiness-signal-list compact">
+          {storeSignals.map((signal) => (
+            <div className={`readiness-signal ${signal.status.toLowerCase().replace("_", "-")}`} key={signal.key}>
+              <span>{launchReadinessSignalLabels[signal.status]}</span>
+              <strong>{signal.label}</strong>
+              <small>{signal.message}</small>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <form action={saveStoreProfileAction} className="admin-detail-grid store-profile-editor">
         <section className="import-panel">

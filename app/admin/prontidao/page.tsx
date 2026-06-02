@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { updateLaunchReadinessItemAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getLaunchReadinessSnapshot, launchReadinessSignalLabels } from "@/lib/launch-readiness";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -40,12 +42,13 @@ function priorityLabel(priority: number) {
 }
 
 export default async function AdminLaunchReadinessPage({ searchParams }: PageProps) {
-  const [admin, params, items] = await Promise.all([
+  const [admin, params, items, launchSnapshot] = await Promise.all([
     requireAdmin(),
     searchParams,
     prisma.launchReadinessItem.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
-    })
+    }),
+    getLaunchReadinessSnapshot()
   ]);
   const saved = single(params.saved);
   const error = single(params.error);
@@ -107,6 +110,45 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
         Esta central nao le nem mostra valores de `.env.local`. Use os status para controlar a preparacao; mantenha
         senhas, tokens e chaves fora do codigo.
       </div>
+
+      <section className="import-panel readiness-auto-checks">
+        <div className="readiness-group-heading">
+          <div>
+            <span>Checks automaticos</span>
+            <h2>Leitura atual do sistema</h2>
+          </div>
+          <strong>
+            {launchSnapshot.readyCount}/{launchSnapshot.signals.length}
+          </strong>
+        </div>
+        <p className="table-note">
+          Estes sinais sao calculados a partir de dados do banco e presenca de variaveis de ambiente. Eles nao alteram
+          os status manuais abaixo e nunca exibem valores secretos.
+        </p>
+        <div className="launch-summary-grid">
+          <div>
+            <span>Prontos</span>
+            <strong>{launchSnapshot.readyCount}</strong>
+          </div>
+          <div>
+            <span>Para revisar</span>
+            <strong>{launchSnapshot.warningCount}</strong>
+          </div>
+          <div>
+            <span>Acao necessaria</span>
+            <strong>{launchSnapshot.actionRequiredCount}</strong>
+          </div>
+        </div>
+        <div className="readiness-signal-list">
+          {launchSnapshot.signals.map((signal) => (
+            <Link className={`readiness-signal ${signal.status.toLowerCase().replace("_", "-")}`} href={signal.actionHref} key={signal.key}>
+              <span>{launchReadinessSignalLabels[signal.status]}</span>
+              <strong>{signal.label}</strong>
+              <small>{signal.message}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <div className="readiness-groups">
         {Object.entries(groups).map(([group, groupItems]) => (
