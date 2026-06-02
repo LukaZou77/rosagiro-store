@@ -1,20 +1,26 @@
 :root {
   color-scheme: light;
-  --paper: #f6f8f5;
+  --paper: #f8faf6;
   --surface: #ffffff;
-  --ink: #16221f;
-  --muted: #61716b;
-  --line: #d9e3dd;
-  --rose: #c6536a;
-  --rose-deep: #852742;
-  --sage: #356f5b;
-  --whatsapp: #168c5a;
-  --whatsapp-deep: #0f6c43;
-  --brass: #b7772d;
-  --deal: #f3c84f;
-  --mist: #eaf4ef;
+  --ink: #17211d;
+  --muted: #5d6c65;
+  --line: #dfe7df;
+  --rose: #ef4d56;
+  --rose-deep: #b5162d;
+  --promo: #ef4d56;
+  --promo-deep: #b5162d;
+  --promo-soft: #fff0ef;
+  --sage: #10785b;
+  --whatsapp: #16a762;
+  --whatsapp-deep: #0d7445;
+  --brass: #bf6f18;
+  --deal: #ffd33d;
+  --deal-soft: #fff7cf;
+  --mist: #edf7f0;
   --cool: #e9eef5;
-  --shadow: 0 18px 42px rgba(22, 34, 31, 0.11);
+  --soft: #f5fbf6;
+  --shadow: 0 18px 42px rgba(23, 33, 29, 0.11);
+  --shadow-strong: 0 22px 48px rgba(23, 33, 29, 0.16);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 16px;
@@ -31,8 +37,9 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    linear-gradient(180deg, rgba(233, 238, 245, 0.84), transparent 310px),
-    linear-gradient(90deg, rgba(234, 244, 239, 0.62), transparent 46%),
+    linear-gradient(180deg, rgba(255, 247, 207, 0.56), transparent 280px),
+    linear-gradient(90deg, rgba(237, 247, 240, 0.78), transparent 48%),
+    linear-gradient(135deg, rgba(239, 77, 86, 0.06), transparent 34%),
     var(--paper);
 }
 
@@ -73,8 +80,9 @@ main {
   justify-content: center;
   gap: 8px 14px;
   padding: 9px clamp(16px, 5vw, 72px);
-  background: var(--rose-deep);
+  background: linear-gradient(90deg, var(--promo-deep), #d83a34 54%, #d89216);
   color: white;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.16);
   font-size: 0.76rem;
   font-weight: 950;
   text-align: center;
@@ -86,7 +94,7 @@ main {
   padding: 5px 10px;
   border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.18);
   color: white;
 }
 
@@ -100,8 +108,8 @@ main {
   gap: 16px;
   min-height: 72px;
   padding: 12px clamp(16px, 4vw, 44px);
-  border-bottom: 1px solid rgba(217, 227, 221, 0.92);
-  background: rgba(246, 248, 245, 0.94);
+  border-bottom: 1px solid rgba(223, 231, 223, 0.92);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(18px);
 }
 
@@ -132,8 +140,8 @@ main {
   width: 42px;
   height: 42px;
   place-items: center;
-  border: 1px solid rgba(22, 34, 31, 0.18);
-  background: linear-gradient(135deg, var(--ink), #254f42);
+  border: 1px solid rgba(181, 22, 45, 0.22);
+  background: linear-gradient(135deg, var(--promo-deep), var(--sage));
   color: var(--paper);
   font-size: 0.78rem;
   font-weight: 800;
@@ -158,7 +166,7 @@ main {
 }
 
 .desktop-nav a:hover {
-  color: var(--ink);
+  color: var(--promo-deep);
 }
 
 .cart-link {
@@ -170,7 +178,14 @@ main {
   padding: 0 13px;
   border: 1px solid var(--line);
   background: var(--surface);
-  box-shadow: 0 8px 18px rgba(22, 34, 31, 0.06);
+  box-shadow: 0 8px 18px rgba(23, 33, 29, 0.06);
+  transition: transform 160ms var(--ease-out), border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.cart-link:hover {
+  border-color: rgba(181, 22, 45, 0.24);
+  box-shadow: 0 12px 24px rgba(23, 33, 29, 0.1);
+  transform: translateY(-1px);
 }
 
 .cart-count {
@@ -179,7 +194,7 @@ main {
   height: 22px;
   place-items: center;
   border-radius: 999px;
-  background: var(--rose-deep);
+  background: var(--promo-deep);
   color: white;
   font-size: 0.78rem;
   font-weight: 700;
@@ -190,8 +205,10 @@ main {
   gap: 8px;
   align-items: center;
   padding: 10px clamp(16px, 5vw, 72px);
-  border-bottom: 1px solid rgba(217, 227, 221, 0.92);
-  background: var(--ink);
+  border-bottom: 1px solid rgba(223, 231, 223, 0.92);
+  background:
+    linear-gradient(90deg, rgba(181, 22, 45, 0.96), rgba(23, 33, 29, 0.98) 58%, rgba(16, 120, 91, 0.94)),
+    var(--ink);
   color: white;
 }
 
@@ -213,9 +230,13 @@ main {
 }
 
 .promo-strip a {
+  width: fit-content;
+  padding: 4px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
   color: white;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  text-decoration: none;
 }
 
 .hero {
@@ -243,7 +264,7 @@ main {
 
 .eyebrow {
   margin: 0 0 10px;
-  color: var(--brass);
+  color: var(--promo-deep);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -290,7 +311,8 @@ h3 {
   padding: 38px clamp(16px, 5vw, 72px) 30px;
   border-bottom: 1px solid var(--line);
   background:
-    linear-gradient(135deg, rgba(243, 200, 79, 0.26), rgba(234, 244, 239, 0.72) 48%, rgba(255, 255, 255, 0.9)),
+    radial-gradient(circle at 8% 12%, rgba(255, 211, 61, 0.34), transparent 31%),
+    linear-gradient(135deg, rgba(255, 240, 239, 0.96), rgba(237, 247, 240, 0.82) 48%, rgba(255, 255, 255, 0.94)),
     var(--paper);
 }
 
@@ -312,7 +334,7 @@ h3 {
   min-width: 0;
   align-items: center;
   padding: 14px;
-  border: 1px solid rgba(22, 34, 31, 0.12);
+  border: 1px solid rgba(181, 22, 45, 0.16);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow);
@@ -320,8 +342,8 @@ h3 {
 }
 
 .promo-route-feature:hover {
-  border-color: rgba(198, 83, 106, 0.44);
-  box-shadow: 0 22px 48px rgba(22, 34, 31, 0.14);
+  border-color: rgba(181, 22, 45, 0.44);
+  box-shadow: var(--shadow-strong);
   transform: translateY(-2px);
 }
 
@@ -374,7 +396,7 @@ h3 {
 }
 
 .price-line.compact strong {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-size: 1rem;
 }
 
@@ -394,7 +416,7 @@ h3 {
 .promo-route-stats div {
   min-width: 0;
   padding: 12px;
-  border: 1px solid rgba(217, 227, 221, 0.92);
+  border: 1px solid rgba(223, 231, 223, 0.92);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.74);
 }
@@ -405,7 +427,7 @@ h3 {
 }
 
 .promo-route-stats dt {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-size: 1.28rem;
   font-weight: 950;
   line-height: 1;
@@ -439,7 +461,7 @@ h3 {
 .delivery-note span {
   min-height: 30px;
   padding: 6px 9px;
-  border: 1px solid rgba(217, 227, 221, 0.92);
+  border: 1px solid rgba(223, 231, 223, 0.92);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.76);
   color: var(--ink);
@@ -474,10 +496,16 @@ h3 {
   display: grid;
   gap: 8px;
   padding: 8px;
-  border: 1px solid rgba(22, 34, 31, 0.12);
+  border: 1px solid rgba(181, 22, 45, 0.14);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 12px 28px rgba(22, 34, 31, 0.08);
+  box-shadow: 0 12px 28px rgba(23, 33, 29, 0.08);
+  transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.home-search > div:focus-within {
+  border-color: rgba(181, 22, 45, 0.36);
+  box-shadow: 0 16px 34px rgba(181, 22, 45, 0.12);
 }
 
 .home-search input {
@@ -530,26 +558,36 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(185, 105, 112, 0.34);
+  outline: 3px solid rgba(239, 77, 86, 0.34);
   outline-offset: 2px;
 }
 
 .button.primary {
-  background: var(--ink);
+  background: linear-gradient(135deg, var(--promo-deep), var(--promo));
   color: white;
-  box-shadow: 0 12px 24px rgba(32, 39, 36, 0.18);
+  box-shadow: 0 12px 24px rgba(181, 22, 45, 0.2);
+}
+
+.button.primary:hover {
+  box-shadow: 0 16px 30px rgba(181, 22, 45, 0.26);
 }
 
 .button.secondary {
   border-color: var(--line);
   background: var(--surface);
+  color: var(--ink);
+}
+
+.button.secondary:hover {
+  border-color: rgba(181, 22, 45, 0.24);
+  background: var(--promo-soft);
 }
 
 .button.whatsapp {
-  border-color: rgba(22, 140, 90, 0.24);
+  border-color: rgba(22, 167, 98, 0.24);
   background: var(--whatsapp);
   color: white;
-  box-shadow: 0 12px 24px rgba(22, 140, 90, 0.18);
+  box-shadow: 0 12px 24px rgba(22, 167, 98, 0.18);
 }
 
 .button.whatsapp:hover {
@@ -576,7 +614,7 @@ textarea:focus-visible {
 
 .hero-stats div {
   padding: 12px;
-  border-top: 2px solid var(--ink);
+  border-top: 3px solid var(--promo-deep);
   background: rgba(255, 255, 255, 0.62);
 }
 
@@ -586,7 +624,7 @@ textarea:focus-visible {
 }
 
 .hero-stats dt {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-size: 1.35rem;
   font-weight: 950;
   line-height: 1;
@@ -627,15 +665,15 @@ textarea:focus-visible {
   display: grid;
   width: 100%;
   padding: 14px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(181, 22, 45, 0.16);
   background: var(--surface);
   box-shadow: var(--shadow);
   transition: transform 170ms var(--ease-out), box-shadow 170ms var(--ease-out), border-color 170ms var(--ease-out);
 }
 
 .hero-product:hover {
-  border-color: rgba(198, 83, 106, 0.42);
-  box-shadow: 0 22px 48px rgba(22, 34, 31, 0.14);
+  border-color: rgba(181, 22, 45, 0.42);
+  box-shadow: var(--shadow-strong);
   transform: translateY(-2px);
 }
 
@@ -646,8 +684,9 @@ textarea:focus-visible {
   z-index: 1;
   padding: 7px 10px;
   border-radius: 999px;
-  background: var(--deal);
-  color: var(--ink);
+  border: 1px solid rgba(181, 22, 45, 0.18);
+  background: linear-gradient(135deg, var(--deal), #ffe889);
+  color: var(--promo-deep);
   font-size: 0.74rem;
   font-weight: 950;
 }
@@ -670,8 +709,9 @@ textarea:focus-visible {
 }
 
 .hero-product small {
-  color: var(--rose-deep);
-  font-weight: 800;
+  color: var(--promo-deep);
+  font-size: 1.08rem;
+  font-weight: 950;
 }
 
 .deal-list {
@@ -692,7 +732,7 @@ textarea:focus-visible {
 }
 
 .deal-list a:hover {
-  border-color: rgba(53, 111, 91, 0.36);
+  border-color: rgba(181, 22, 45, 0.26);
   background: white;
   transform: translateY(-1px);
 }
@@ -719,7 +759,7 @@ textarea:focus-visible {
 }
 
 .deal-list b {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
 }
 
 .section {
@@ -765,7 +805,7 @@ textarea:focus-visible {
   min-height: 104px;
   padding: 16px;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--rose);
+  border-left: 4px solid var(--promo);
   border-radius: 8px;
   background: var(--surface);
   box-shadow: 0 10px 24px rgba(22, 34, 31, 0.06);
@@ -785,7 +825,9 @@ textarea:focus-visible {
   gap: 12px;
   border-top: 1px solid rgba(22, 34, 31, 0.1);
   border-bottom: 1px solid rgba(22, 34, 31, 0.1);
-  background: var(--ink);
+  background:
+    linear-gradient(135deg, rgba(181, 22, 45, 0.92), rgba(23, 33, 29, 0.98) 58%, rgba(16, 120, 91, 0.92)),
+    var(--ink);
   color: white;
 }
 
@@ -814,7 +856,9 @@ textarea:focus-visible {
   gap: 18px;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  background: var(--mist);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 207, 0.42), rgba(237, 247, 240, 0.72)),
+    var(--mist);
 }
 
 .promo-shelf-band .section-heading {
@@ -831,14 +875,14 @@ textarea:focus-visible {
   padding: 18px;
   border: 1px solid var(--line);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(234, 244, 239, 0.52)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(237, 247, 240, 0.54)),
     var(--surface);
   transition: transform 160ms var(--ease-out), border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 
 .category-tile:hover {
-  border-color: rgba(53, 111, 91, 0.36);
-  box-shadow: 0 12px 24px rgba(22, 34, 31, 0.07);
+  border-color: rgba(181, 22, 45, 0.24);
+  box-shadow: 0 12px 24px rgba(23, 33, 29, 0.07);
 }
 
 .category-tile span {
@@ -872,7 +916,7 @@ textarea:focus-visible {
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background:
-    linear-gradient(90deg, rgba(53, 111, 91, 0.12), rgba(198, 83, 106, 0.08)),
+    linear-gradient(90deg, rgba(16, 120, 91, 0.12), rgba(255, 211, 61, 0.18), rgba(239, 77, 86, 0.08)),
     var(--surface);
 }
 
@@ -891,7 +935,7 @@ textarea:focus-visible {
 
 .wholesale-band li {
   padding: 13px 14px;
-  border: 1px solid rgba(217, 227, 221, 0.9);
+  border: 1px solid rgba(223, 231, 223, 0.9);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.76);
   color: var(--ink);
@@ -899,13 +943,13 @@ textarea:focus-visible {
 }
 
 .service-list li:nth-child(n + 5) {
-  border-color: rgba(53, 111, 91, 0.26);
-  background: rgba(234, 244, 239, 0.82);
+  border-color: rgba(16, 120, 91, 0.26);
+  background: rgba(237, 247, 240, 0.82);
 }
 
 .brand-market {
   background:
-    linear-gradient(180deg, rgba(234, 244, 239, 0.85), rgba(233, 238, 245, 0.72)),
+    linear-gradient(180deg, rgba(237, 247, 240, 0.86), rgba(233, 238, 245, 0.72)),
     var(--mist);
 }
 
@@ -926,8 +970,8 @@ textarea:focus-visible {
 }
 
 .brand-chip:hover {
-  border-color: rgba(53, 111, 91, 0.36);
-  box-shadow: 0 12px 24px rgba(22, 34, 31, 0.07);
+  border-color: rgba(16, 120, 91, 0.36);
+  box-shadow: 0 12px 24px rgba(23, 33, 29, 0.07);
 }
 
 .brand-chip span {
@@ -949,13 +993,13 @@ textarea:focus-visible {
   overflow: hidden;
   border: 1px solid var(--line);
   background: var(--surface);
-  box-shadow: 0 10px 24px rgba(22, 34, 31, 0.055);
+  box-shadow: 0 10px 24px rgba(23, 33, 29, 0.055);
   transition: transform 170ms var(--ease-out), box-shadow 170ms var(--ease-out), border-color 170ms var(--ease-out);
 }
 
 .product-card:hover {
-  border-color: rgba(198, 83, 106, 0.34);
-  box-shadow: 0 18px 34px rgba(22, 34, 31, 0.1);
+  border-color: rgba(181, 22, 45, 0.34);
+  box-shadow: 0 18px 34px rgba(23, 33, 29, 0.1);
   transform: translateY(-2px);
 }
 
@@ -967,7 +1011,9 @@ textarea:focus-visible {
   position: relative;
   display: block;
   overflow: hidden;
-  background: linear-gradient(135deg, #f4f7f2, #e8eef5);
+  background:
+    radial-gradient(circle at 78% 8%, rgba(255, 211, 61, 0.22), transparent 34%),
+    linear-gradient(135deg, #fff8f4, #edf7f0 58%, #e8eef5);
 }
 
 .product-image img {
@@ -988,9 +1034,10 @@ textarea:focus-visible {
   z-index: 1;
   max-width: calc(100% - 20px);
   padding: 6px 9px;
+  border: 1px solid rgba(181, 22, 45, 0.16);
   border-radius: 999px;
-  background: var(--deal);
-  color: var(--ink);
+  background: linear-gradient(135deg, var(--deal), #ffe889);
+  color: var(--promo-deep);
   font-size: 0.72rem;
   font-weight: 950;
   line-height: 1;
@@ -1019,15 +1066,15 @@ textarea:focus-visible {
   flex: 0 0 auto;
   padding: 3px 6px;
   border-radius: 999px;
-  background: rgba(53, 111, 91, 0.1);
-  color: #285343;
+  background: rgba(16, 120, 91, 0.1);
+  color: var(--sage);
   font-size: 0.68rem;
   font-weight: 900;
 }
 
 .stock-chip.low {
-  background: rgba(198, 83, 106, 0.12);
-  color: var(--rose-deep);
+  background: rgba(239, 77, 86, 0.12);
+  color: var(--promo-deep);
 }
 
 .product-card p {
@@ -1041,8 +1088,9 @@ textarea:focus-visible {
 
 .purchase-signals span {
   padding: 5px 8px;
-  background: var(--paper);
-  color: var(--muted);
+  border-color: rgba(16, 120, 91, 0.18);
+  background: var(--soft);
+  color: var(--sage);
   font-size: 0.68rem;
 }
 
@@ -1055,8 +1103,9 @@ textarea:focus-visible {
 
 .mini-badge-row span {
   padding: 4px 7px;
-  border: 1px solid rgba(217, 227, 221, 0.86);
+  border: 1px solid rgba(255, 211, 61, 0.72);
   border-radius: 999px;
+  background: rgba(255, 247, 207, 0.66);
   color: var(--ink);
   font-size: 0.68rem;
   font-weight: 850;
@@ -1079,9 +1128,9 @@ textarea:focus-visible {
   justify-content: center;
   min-height: 34px;
   padding: 0 10px;
-  border: 1px solid rgba(22, 140, 90, 0.22);
+  border: 1px solid rgba(22, 167, 98, 0.26);
   border-radius: 8px;
-  background: rgba(22, 140, 90, 0.08);
+  background: rgba(22, 167, 98, 0.09);
   color: var(--whatsapp-deep);
   font-size: 0.78rem;
   font-weight: 900;
@@ -1089,8 +1138,8 @@ textarea:focus-visible {
 }
 
 .whatsapp-inline:hover {
-  border-color: rgba(22, 140, 90, 0.42);
-  background: rgba(22, 140, 90, 0.13);
+  border-color: rgba(22, 167, 98, 0.46);
+  background: rgba(22, 167, 98, 0.15);
 }
 
 .price-stack {
@@ -1100,7 +1149,12 @@ textarea:focus-visible {
 
 .price-stack strong,
 .product-card strong {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
+}
+
+.price-stack strong {
+  font-size: 1.13rem;
+  line-height: 1.1;
 }
 
 .price-stack span {
@@ -1115,17 +1169,19 @@ textarea:focus-visible {
 
 .product-card button {
   min-height: 38px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(181, 22, 45, 0.2);
   border-radius: 8px;
-  background: var(--ink);
+  background: linear-gradient(135deg, var(--promo-deep), var(--promo));
   color: white;
   font-size: 0.84rem;
-  font-weight: 800;
-  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out), opacity 160ms var(--ease-out);
+  font-weight: 950;
+  box-shadow: 0 10px 20px rgba(181, 22, 45, 0.16);
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out), filter 160ms var(--ease-out), opacity 160ms var(--ease-out);
 }
 
 .product-card button:hover {
-  background: #233c34;
+  box-shadow: 0 14px 26px rgba(181, 22, 45, 0.24);
+  filter: saturate(1.08);
 }
 
 .catalog-header {
@@ -1153,19 +1209,19 @@ textarea:focus-visible {
 }
 
 .catalog-service-bar a {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
 }
 
 .catalog-service-bar .service-whatsapp {
-  border-color: rgba(22, 140, 90, 0.26);
-  background: rgba(22, 140, 90, 0.1);
+  border-color: rgba(22, 167, 98, 0.3);
+  background: rgba(22, 167, 98, 0.11);
   color: var(--whatsapp-deep);
   transition: transform 160ms var(--ease-out), background 160ms var(--ease-out), border-color 160ms var(--ease-out);
 }
 
 .catalog-service-bar .service-whatsapp:hover {
-  border-color: rgba(22, 140, 90, 0.42);
-  background: rgba(22, 140, 90, 0.16);
+  border-color: rgba(22, 167, 98, 0.46);
+  background: rgba(22, 167, 98, 0.16);
   transform: translateY(-1px);
 }
 
@@ -1297,7 +1353,7 @@ textarea {
 }
 
 .price-line strong {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-size: 1.8rem;
 }
 
@@ -1311,10 +1367,10 @@ textarea {
   gap: 10px;
   margin: 16px 0 18px;
   padding: 14px;
-  border: 1px solid rgba(198, 83, 106, 0.24);
+  border: 1px solid rgba(181, 22, 45, 0.24);
   border-radius: 8px;
   background:
-    linear-gradient(90deg, rgba(243, 200, 79, 0.16), rgba(234, 244, 239, 0.72)),
+    linear-gradient(90deg, rgba(255, 211, 61, 0.2), rgba(237, 247, 240, 0.76), rgba(255, 240, 239, 0.72)),
     var(--surface);
 }
 
@@ -1333,7 +1389,7 @@ textarea {
 }
 
 .purchase-panel strong {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-size: 1.18rem;
 }
 
@@ -1344,7 +1400,7 @@ textarea {
 
 .purchase-panel a {
   width: max-content;
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-weight: 900;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -1377,8 +1433,9 @@ textarea {
 
 .badge-row span {
   padding: 6px 10px;
+  border: 1px solid rgba(255, 211, 61, 0.54);
   border-radius: 999px;
-  background: var(--mist);
+  background: var(--deal-soft);
   color: var(--ink);
   font-size: 0.78rem;
   font-weight: 800;
@@ -1433,7 +1490,7 @@ dd {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
-  box-shadow: 0 14px 36px rgba(32, 39, 36, 0.06);
+  box-shadow: 0 14px 36px rgba(23, 33, 29, 0.06);
 }
 
 .cart-panel,
@@ -1518,14 +1575,16 @@ dd {
   gap: 10px;
   margin: 0 0 16px;
   padding: 14px;
-  border: 1px solid rgba(198, 83, 106, 0.28);
+  border: 1px solid rgba(181, 22, 45, 0.22);
   border-radius: 8px;
-  background: #fff9e6;
+  background:
+    linear-gradient(90deg, rgba(255, 211, 61, 0.34), rgba(255, 240, 239, 0.7)),
+    #fff9e6;
 }
 
 .minimum-order.compact {
   margin-bottom: 14px;
-  background: var(--paper);
+  background: var(--deal-soft);
 }
 
 .minimum-order-copy {
@@ -1541,7 +1600,7 @@ dd {
 }
 
 .minimum-order-copy strong {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-size: 1.15rem;
 }
 
@@ -1562,12 +1621,12 @@ dd {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--rose), var(--deal));
+  background: linear-gradient(90deg, var(--promo-deep), var(--promo), var(--deal));
   transition: width 180ms var(--ease-out);
 }
 
 .minimum-order a {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-size: 0.86rem;
   font-weight: 900;
   text-decoration: underline;
@@ -1584,18 +1643,18 @@ dd {
   gap: 9px;
   min-height: 46px;
   padding: 0 12px 0 14px;
-  border: 1px solid rgba(198, 83, 106, 0.28);
+  border: 1px solid rgba(255, 211, 61, 0.34);
   border-radius: 999px;
-  background: var(--ink);
+  background: linear-gradient(135deg, var(--promo-deep), var(--ink));
   color: white;
-  box-shadow: 0 18px 38px rgba(22, 34, 31, 0.2);
+  box-shadow: 0 18px 38px rgba(181, 22, 45, 0.22);
   font-weight: 900;
   transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 
 .quick-purchase-fab:hover {
   transform: translateY(-2px);
-  box-shadow: 0 24px 46px rgba(22, 34, 31, 0.26);
+  box-shadow: 0 24px 46px rgba(181, 22, 45, 0.28);
 }
 
 .quick-purchase-fab strong {
@@ -1626,12 +1685,12 @@ dd {
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(22, 34, 31, 0);
+  background: rgba(23, 33, 29, 0);
   transition: background 200ms var(--ease-out);
 }
 
 .quick-drawer-shell.open .quick-drawer-overlay {
-  background: rgba(22, 34, 31, 0.34);
+  background: rgba(23, 33, 29, 0.36);
 }
 
 .quick-drawer {
@@ -1644,7 +1703,7 @@ dd {
   height: 100dvh;
   border-left: 1px solid var(--line);
   background: var(--surface);
-  box-shadow: -24px 0 48px rgba(22, 34, 31, 0.18);
+  box-shadow: -24px 0 48px rgba(23, 33, 29, 0.18);
   transform: translateX(102%);
   transition: transform 220ms var(--ease-out);
 }
@@ -1668,7 +1727,7 @@ dd {
 }
 
 .quick-drawer-header span {
-  color: var(--brass);
+  color: var(--promo-deep);
   font-size: 0.72rem;
   font-weight: 950;
   text-transform: uppercase;
@@ -1734,7 +1793,7 @@ dd {
 .quick-minimum {
   display: grid;
   gap: 9px;
-  background: #fff9e6;
+  background: var(--deal-soft);
 }
 
 .quick-minimum > div:first-child {
@@ -1752,7 +1811,7 @@ dd {
 }
 
 .quick-minimum strong {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
 }
 
 .quick-minimum p {
@@ -1809,7 +1868,7 @@ dd {
 
 .quick-line-info em {
   margin-top: 3px;
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-style: normal;
   font-weight: 850;
 }
@@ -1835,7 +1894,7 @@ dd {
 
 .quick-line-actions > strong {
   justify-self: end;
-  color: var(--rose-deep);
+  color: var(--promo-deep);
 }
 
 .quick-summary {
@@ -1855,7 +1914,7 @@ dd {
 .quick-summary div:last-child {
   padding-bottom: 0;
   border-bottom: 0;
-  color: var(--rose-deep);
+  color: var(--promo-deep);
 }
 
 .quick-drawer-footer {
@@ -1875,7 +1934,7 @@ dd {
 
 .delivery-note span {
   background: var(--mist);
-  color: #315742;
+  color: var(--sage);
 }
 
 .summary-block div,
@@ -1888,7 +1947,7 @@ dd {
 }
 
 .summary-total {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-size: 1.2rem;
 }
 
@@ -1925,7 +1984,7 @@ legend {
 
 .radio-card:hover,
 .radio-card:focus-within {
-  border-color: rgba(125, 52, 65, 0.42);
+  border-color: rgba(181, 22, 45, 0.36);
   background: white;
   transform: translateY(-1px);
 }
@@ -1954,7 +2013,7 @@ legend {
 .form-error {
   min-height: 24px;
   margin-bottom: 10px;
-  color: var(--rose-deep);
+  color: var(--promo-deep);
   font-weight: 800;
 }
 
@@ -1977,13 +2036,13 @@ legend {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: white;
-  box-shadow: 0 10px 22px rgba(22, 34, 31, 0.06);
+  box-shadow: 0 10px 22px rgba(23, 33, 29, 0.06);
   transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 
 .address-search-box:focus-within {
-  border-color: rgba(53, 111, 91, 0.46);
-  box-shadow: 0 14px 30px rgba(22, 34, 31, 0.1);
+  border-color: rgba(16, 120, 91, 0.46);
+  box-shadow: 0 14px 30px rgba(16, 120, 91, 0.1);
 }
 
 .address-search-box input {
@@ -2019,7 +2078,7 @@ legend {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: white;
-  box-shadow: 0 18px 44px rgba(22, 34, 31, 0.16);
+  box-shadow: 0 18px 44px rgba(23, 33, 29, 0.16);
   list-style: none;
 }
 
@@ -2044,7 +2103,7 @@ legend {
 
 .address-suggestions li[aria-selected="true"] button,
 .address-suggestions button:hover {
-  background: var(--mist);
+  background: var(--soft);
 }
 
 .address-suggestions button:active {
@@ -2107,7 +2166,7 @@ legend {
 .address-search-status.disabled,
 .address-search-status.empty,
 .address-search-status.error {
-  color: var(--rose-deep);
+  color: var(--promo-deep);
 }
 
 .cep-status {
@@ -2129,16 +2188,16 @@ legend {
 }
 
 .cep-status.success {
-  border-color: rgba(22, 140, 90, 0.28);
-  background: rgba(22, 140, 90, 0.09);
+  border-color: rgba(22, 167, 98, 0.28);
+  background: rgba(22, 167, 98, 0.09);
   color: var(--whatsapp-deep);
 }
 
 .cep-status.not-found,
 .cep-status.error {
-  border-color: rgba(198, 83, 106, 0.28);
-  background: rgba(198, 83, 106, 0.08);
-  color: var(--rose-deep);
+  border-color: rgba(239, 77, 86, 0.28);
+  background: rgba(239, 77, 86, 0.08);
+  color: var(--promo-deep);
 }
 
 .cep-status.shipping-status {
@@ -2146,8 +2205,8 @@ legend {
 }
 
 .cep-status.ready {
-  border-color: rgba(22, 140, 90, 0.28);
-  background: rgba(22, 140, 90, 0.09);
+  border-color: rgba(22, 167, 98, 0.28);
+  background: rgba(22, 167, 98, 0.09);
   color: var(--whatsapp-deep);
 }
 
@@ -2185,7 +2244,7 @@ legend {
   gap: 6px;
   margin: 0 0 20px;
   padding: 14px;
-  border: 1px solid rgba(53, 111, 91, 0.24);
+  border: 1px solid rgba(16, 120, 91, 0.24);
   border-radius: 8px;
   background: rgba(234, 244, 239, 0.82);
   text-align: left;
@@ -2256,8 +2315,8 @@ legend {
 }
 
 .mobile-tabs a:hover {
-  background: var(--mist);
-  color: var(--ink);
+  background: var(--promo-soft);
+  color: var(--promo-deep);
 }
 
 .site-footer {
@@ -2294,6 +2353,13 @@ legend {
   border-radius: 8px;
   color: var(--muted);
   font-weight: 800;
+  transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out), background 160ms var(--ease-out);
+}
+
+.site-footer nav a:hover {
+  border-color: rgba(181, 22, 45, 0.22);
+  background: var(--promo-soft);
+  color: var(--promo-deep);
 }
 
 .footer-trust-list {
@@ -2304,7 +2370,7 @@ legend {
 
 .footer-trust-list span {
   padding: 6px 9px;
-  border: 1px solid rgba(53, 111, 91, 0.18);
+  border: 1px solid rgba(16, 120, 91, 0.18);
   border-radius: 999px;
   background: var(--mist);
   color: var(--sage);
@@ -2352,10 +2418,10 @@ legend {
   display: grid;
   gap: 10px;
   padding: 16px;
-  border: 1px solid rgba(53, 111, 91, 0.2);
+  border: 1px solid rgba(16, 120, 91, 0.2);
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(234, 244, 239, 0.9), rgba(255, 255, 255, 0.96));
-  box-shadow: 0 12px 26px rgba(22, 34, 31, 0.06);
+  box-shadow: 0 12px 26px rgba(23, 33, 29, 0.06);
 }
 
 .store-trust-card span {

@@ -29,20 +29,20 @@ export const siteConfig = {
     minimumOrderCents: 30000,
     minimumOrderTitle: "Pedido minimo",
     minimumOrderText: "Pedido minimo R$ 300,00 para compras no atacado. Nesta fase o pedido de teste nao sera bloqueado.",
-    headerStrip: "PEDIDO MINIMO R$ 300,00 - ATACADO MULTIMARCAS - RECEBA EM CASA",
+    headerStrip: "PEDIDO MINIMO R$ 300,00 - OFERTAS MULTIMARCAS - PIX, CEP E WHATSAPP",
     storeTrust: "CNPJ e dados da loja serao revisados antes da publicacao oficial.",
     deliveryModes: [
       "Retirada local mediante confirmacao",
       "Anjun D2D Pickup estimado por CEP",
       "Transportadora ou excursao sob consulta"
     ],
-    shelfSignals: ["Pedido minimo R$ 300", "Pronta entrega", "Compra para revenda", "Suporte no WhatsApp"]
+    shelfSignals: ["Pedido minimo R$ 300", "Ofertas e pronta entrega", "Compra para revenda", "WhatsApp rapido"]
   },
   hero: {
-    eyebrow: "Atacado e varejo de beleza",
-    title: "Multimarcas para montar kits, repor estoque e vender mais.",
-    body: "Skincare, maquiagem, perfumes, cabelo e acessorios organizados para compras rapidas, reposicao de bancada e pedidos de atacado.",
-    primaryCta: "Ver catalogo completo",
+    eyebrow: "Atacadao de beleza multimarcas",
+    title: "Ofertas para revenda, kits e reposicao com compra rapida.",
+    body: "Skincare, maquiagem, perfumes, cabelo e acessorios com sinal de estoque, pedido minimo, frete por CEP e atendimento no WhatsApp.",
+    primaryCta: "Comprar pelo catalogo",
     secondaryCta: "Comprar destaque"
   },
   homeSections: {
@@ -55,8 +55,8 @@ export const siteConfig = {
   },
   homePromotions: {
     promoBar: {
-      label: "Atacadao piloto",
-      text: "Pedido minimo R$ 300,00, multimarcas em pronta entrega e atendimento por WhatsApp para duvidas de compra.",
+      label: "Ofertas no atacado",
+      text: "Pedido minimo R$ 300,00, Pix sandbox, frete por CEP e WhatsApp para revisar estoque e entrega.",
       cta: "Ver ofertas",
       href: "/promocoes"
     },
@@ -67,15 +67,16 @@ export const siteConfig = {
       brandsLabel: "marcas no catalogo"
     },
     trustPoints: [
-      "Pedido minimo R$ 300,00 sinalizado antes do checkout",
+      "Pedido minimo R$ 300,00 sinalizado em toda compra",
       "Pedido multimarcas em um carrinho",
-      "Retirada, transportadora e excursao em preparacao",
-      "Estoque visivel antes da confirmacao"
+      "Pix, cartao e simulador em ambiente de teste",
+      "Frete Anjun estimado por CEP",
+      "WhatsApp para duvidas de estoque e entrega"
     ],
     quickActions: [
       {
         label: "Ofertas",
-        description: "Produtos com desconto real, giro rapido e pronta entrega.",
+        description: "Desconto real, pronta entrega e giro rapido para revenda.",
         href: "/promocoes"
       },
       {
@@ -96,8 +97,8 @@ export const siteConfig = {
     ],
     wholesaleBand: {
       eyebrow: "Compra com volume",
-      title: "Compra minima clara, atendimento rapido e formas de entrega brasileiras.",
-      body: "A vitrine ja orienta pedido minimo, estoque, pronta entrega e consulta por WhatsApp. Depois podemos adicionar preco por quantidade, cupons e tabelas de atacado sem refazer a experiencia.",
+      title: "Compra minima clara, WhatsApp rapido e entrega do jeito brasileiro.",
+      body: "A vitrine ja orienta pedido minimo, estoque, pronta entrega, Pix sandbox, frete por CEP e consulta por WhatsApp. Depois podemos adicionar preco por quantidade, cupons e tabelas de atacado sem refazer a experiencia.",
       primaryCta: "Ver todos os produtos",
       secondaryCta: "Falar no WhatsApp"
     },
@@ -123,8 +124,8 @@ export const siteConfig = {
     signals: [
       "Pedido minimo R$ 300",
       "Desconto real quando existe preco comparativo",
-      "Produtos multimarcas",
-      "WhatsApp para fechar duvidas"
+      "Produtos multimarcas para revenda",
+      "Pix, CEP e WhatsApp visiveis"
     ],
     tiles: [
       {
