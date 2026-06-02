@@ -12,8 +12,63 @@ type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+const sortLabels: Record<string, string> = {
+  featured: "Destaque",
+  "price-asc": "Menor preco",
+  "price-desc": "Maior preco",
+  "name-asc": "A-Z",
+  "name-desc": "Z-A",
+  rating: "Melhor avaliacao"
+};
+
 function value(input: string | string[] | undefined) {
   return Array.isArray(input) ? input[0] : input;
+}
+
+function FilterFields({
+  brand,
+  brandOptions,
+  query,
+  sort
+}: {
+  brand: string;
+  brandOptions: string[];
+  query: string;
+  sort: string;
+}) {
+  return (
+    <>
+      <label>
+        Buscar
+        <input name="q" defaultValue={query} placeholder="Serum, batom, perfume..." />
+      </label>
+      <label>
+        Marca
+        <select name="brand" defaultValue={brand}>
+          <option value="all">Todas</option>
+          {brandOptions.map((brandName) => (
+            <option value={brandName} key={brandName}>
+              {brandName}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Ordenar
+        <select name="sort" defaultValue={sort}>
+          <option value="featured">Destaque</option>
+          <option value="price-asc">Menor preco</option>
+          <option value="price-desc">Maior preco</option>
+          <option value="name-asc">A-Z</option>
+          <option value="name-desc">Z-A</option>
+          <option value="rating">Melhor avaliacao</option>
+        </select>
+      </label>
+      <button className="button primary wide" type="submit">
+        Aplicar filtros
+      </button>
+    </>
+  );
 }
 
 export default async function CategoryPage({ params, searchParams }: PageProps) {
@@ -29,6 +84,8 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const currentCategory = categories.find((category) => category.slug === categorySlug);
   const categoryLabel = categorySlug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria";
   const whatsappHref = buildCatalogWhatsAppHref(categoryLabel, products.length);
+  const brandOptions = [...new Set(products.map((product) => product.brand.name))].sort();
+  const sortLabel = sortLabels[sort] || sortLabels.featured;
   const readyCount = products.filter((product) => productQuantity(product) > 0).length;
   const dealCount = products.filter((product) => productDiscountPercent(product) > 0).length;
   const lowStockCount = products.filter((product) => {
@@ -70,38 +127,22 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       </section>
 
       <section className="catalog-layout">
-        <form className="filters" action={`/categoria/${categorySlug}`}>
-          <label>
-            Buscar
-            <input name="q" defaultValue={query} placeholder="Serum, batom, perfume..." />
-          </label>
-          <label>
-            Marca
-            <select name="brand" defaultValue={brand}>
-              <option value="all">Todas</option>
-              {[...new Set(products.map((product) => product.brand.name))]
-                .sort()
-                .map((brandName) => (
-                  <option value={brandName} key={brandName}>
-                    {brandName}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label>
-            Ordenar
-            <select name="sort" defaultValue={sort}>
-              <option value="featured">Destaque</option>
-              <option value="price-asc">Menor preco</option>
-              <option value="price-desc">Maior preco</option>
-              <option value="name-asc">A-Z</option>
-              <option value="name-desc">Z-A</option>
-              <option value="rating">Melhor avaliacao</option>
-            </select>
-          </label>
-          <button className="button primary wide" type="submit">
-            Aplicar filtros
-          </button>
+        <div className="mobile-filter-panel">
+          <details>
+            <summary>
+              <span>{siteConfig.mobilePurchase.filterTitle}</span>
+              <small>
+                {products.length} produtos / {sortLabel}
+              </small>
+            </summary>
+            <p>{siteConfig.mobilePurchase.filterHint}</p>
+            <form className="filters" action={`/categoria/${categorySlug}`}>
+              <FilterFields brand={brand} brandOptions={brandOptions} query={query} sort={sort} />
+            </form>
+          </details>
+        </div>
+        <form className="filters desktop-filters" action={`/categoria/${categorySlug}`}>
+          <FilterFields brand={brand} brandOptions={brandOptions} query={query} sort={sort} />
         </form>
         <div>
           <div className="category-pills">

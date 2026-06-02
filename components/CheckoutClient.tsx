@@ -586,7 +586,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
 
   return (
     <section className="checkout-shell">
-      <form action={submit} className="checkout-form">
+      <form action={submit} className="checkout-form" id="checkout-form">
         <p className="eyebrow">Checkout Bela Viva</p>
         <h1>Entrega e pagamento</h1>
         <fieldset>
@@ -817,6 +817,15 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
           </div>
         </div>
       </aside>
+      <div className="mobile-checkout-bar" aria-label="Resumo rapido do checkout">
+        <div>
+          <span>{siteConfig.mobilePurchase.checkoutBarLabel}</span>
+          <strong>{money(total)}</strong>
+        </div>
+        <button className="button primary" type="submit" form="checkout-form" disabled={submitting || !items.length}>
+          {submitting ? "Criando..." : siteConfig.mobilePurchase.checkoutSubmit}
+        </button>
+      </div>
     </section>
   );
 }

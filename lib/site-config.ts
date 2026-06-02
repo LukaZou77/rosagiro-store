@@ -153,6 +153,14 @@ export const siteConfig = {
     detailPanelTitle: "Compra no atacado",
     detailPanelNote: "Confira estoque, minimo de compra e frete antes de finalizar. O pedido de teste segue liberado nesta fase.",
     unavailableCta: "Consultar disponibilidade"
+  },
+  mobilePurchase: {
+    filterTitle: "Filtrar e ordenar",
+    filterHint: "Ajuste busca, marca e prioridade.",
+    productCta: "Comprar",
+    productWhatsAppCta: "WhatsApp",
+    checkoutBarLabel: "Total do pedido",
+    checkoutSubmit: "Finalizar"
   }
 };
 

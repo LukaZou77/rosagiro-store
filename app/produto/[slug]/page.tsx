@@ -107,6 +107,17 @@ export default async function ProductPage({ params }: PageProps) {
         </div>
       </section>
 
+      <div className="mobile-product-action-bar" aria-label="Compra rapida do produto">
+        <div>
+          <span>{stockLabel}</span>
+          <strong>{money(product.priceCents)}</strong>
+        </div>
+        <AddToCartButton slug={product.slug} label={siteConfig.mobilePurchase.productCta} disabled={!available} />
+        <WhatsAppLink href={whatsappHref} className="mobile-product-whatsapp">
+          {siteConfig.mobilePurchase.productWhatsAppCta}
+        </WhatsAppLink>
+      </div>
+
       <section className="section detail-columns">
         <div>
           <h2>Beneficios</h2>

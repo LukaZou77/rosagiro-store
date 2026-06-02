@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { readCart, subscribeQuickPurchaseOpen, useCart, writeCart } from "@/components/CartCount";
 import { CustomerCheckoutButton } from "@/components/CustomerSession";
@@ -51,6 +52,7 @@ function removeLine(slug: string) {
 }
 
 export function QuickPurchaseDrawer() {
+  const pathname = usePathname();
   const cart = useCart();
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -127,10 +129,15 @@ export function QuickPurchaseDrawer() {
       ? Math.min(100, Math.round((summary.subtotalCents / summary.minimumOrderCents) * 100))
       : 0;
   const hasValidLines = whatsappItems.length > 0;
+  const hideFloatingEntry =
+    pathname.startsWith("/produto/") ||
+    pathname === "/checkout" ||
+    pathname.startsWith("/pagamento-simulado/") ||
+    pathname.startsWith("/pedido/");
 
   return (
     <>
-      {count > 0 && !open ? (
+      {count > 0 && !open && !hideFloatingEntry ? (
         <button className="quick-purchase-fab" type="button" onClick={() => setOpen(true)} aria-label="Abrir pedido rapido">
           <span>Pedido</span>
           <strong>{count}</strong>
