@@ -7,6 +7,7 @@ import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getProduct, getRelatedProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
+import { productDiscountPercent, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
@@ -25,7 +26,11 @@ export default async function ProductPage({ params }: PageProps) {
     getRelatedProducts(product.category.slug, product.slug),
     getStoreProfile()
   ]);
-  const available = (product.inventory?.quantity || 0) > 0;
+  const quantity = productQuantity(product);
+  const available = quantity > 0;
+  const stockLabel = productStockLabel(product);
+  const stockTone = productStockTone(product);
+  const discount = productDiscountPercent(product);
   const whatsappHref = buildProductWhatsAppHref(product);
   const trustSignals = storeTrustSignals(storeProfile);
 
@@ -51,13 +56,28 @@ export default async function ProductPage({ params }: PageProps) {
             <strong>{money(product.priceCents)}</strong>
             {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : null}
           </div>
-          <div className="purchase-panel">
-            <div>
-              <span>{siteConfig.wholesale.minimumOrderTitle}</span>
-              <strong>{money(siteConfig.wholesale.minimumOrderCents)}</strong>
+          <div className={`purchase-panel ${available ? "" : "is-unavailable"}`}>
+            <div className="purchase-panel-heading">
+              <span>{siteConfig.productConversion.detailPanelTitle}</span>
+              <strong className={`stock-text ${stockTone}`}>{stockLabel}</strong>
             </div>
-            <p>{siteConfig.wholesale.minimumOrderText}</p>
+            <div className="purchase-metrics" aria-label="Resumo de compra">
+              <div>
+                <span>{siteConfig.productConversion.minimumLabel}</span>
+                <strong>{money(siteConfig.wholesale.minimumOrderCents)}</strong>
+              </div>
+              <div>
+                <span>{siteConfig.productConversion.stockLabel}</span>
+                <strong>{available ? `${quantity} un.` : "Sob consulta"}</strong>
+              </div>
+              <div>
+                <span>{siteConfig.productConversion.freightLabel}</span>
+                <strong>{siteConfig.productConversion.freightText}</strong>
+              </div>
+            </div>
+            <p>{discount > 0 ? `${discount}% OFF com preco comparativo cadastrado. ` : ""}{siteConfig.productConversion.detailPanelNote}</p>
             <div className="purchase-panel-actions">
+              <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />
               <WhatsAppLink href={whatsappHref} className="button whatsapp">
                 {siteConfig.whatsapp.productCta}
               </WhatsAppLink>
@@ -65,7 +85,6 @@ export default async function ProductPage({ params }: PageProps) {
             </div>
           </div>
           <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{badge}</span>)}</div>
-          <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />
           <StoreTrustSignals signals={trustSignals} compact />
           <dl className="spec-list">
             <div>
@@ -82,7 +101,7 @@ export default async function ProductPage({ params }: PageProps) {
             </div>
             <div>
               <dt>Status</dt>
-              <dd>{available ? product.stockStatus : "Esgotado"}</dd>
+              <dd>{stockLabel}</dd>
             </div>
           </dl>
         </div>

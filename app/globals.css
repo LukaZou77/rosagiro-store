@@ -764,10 +764,20 @@ textarea:focus-visible {
 
 .deal-list small {
   color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.25;
 }
 
 .deal-list b {
   color: var(--promo-deep);
+  font-size: 0.86rem;
+  text-align: right;
+}
+
+.promo-feature-stock {
+  color: var(--sage);
+  font-size: 0.8rem;
+  font-weight: 900;
 }
 
 .section {
@@ -1080,9 +1090,19 @@ textarea:focus-visible {
   font-weight: 900;
 }
 
+.stock-chip.ready {
+  background: rgba(var(--sage-rgb), 0.1);
+  color: var(--sage);
+}
+
 .stock-chip.low {
   background: rgba(var(--promo-rgb), 0.12);
   color: var(--promo-deep);
+}
+
+.stock-chip.out {
+  background: rgba(var(--ink-rgb), 0.08);
+  color: var(--muted);
 }
 
 .product-card p {
@@ -1092,6 +1112,7 @@ textarea:focus-visible {
 
 .purchase-signals {
   min-height: 30px;
+  align-items: center;
 }
 
 .purchase-signals span {
@@ -1121,8 +1142,10 @@ textarea:focus-visible {
 
 .product-card-bottom {
   display: grid;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 9px;
+  margin-top: 5px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(var(--line-rgb), 0.78);
 }
 
 .product-card-actions {
@@ -1155,6 +1178,13 @@ textarea:focus-visible {
   gap: 2px;
 }
 
+.price-stack > small:first-child {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
 .price-stack strong,
 .product-card strong {
   color: var(--promo-deep);
@@ -1173,6 +1203,30 @@ textarea:focus-visible {
 
 .price-stack small {
   font-size: 0.74rem;
+}
+
+.price-support-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 7px;
+  align-items: center;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.price-support-line em {
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(var(--deal-rgb), 0.28);
+  color: var(--promo-deep);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.price-support-line small {
+  color: var(--muted);
+  font-weight: 800;
 }
 
 .product-card button {
@@ -1231,6 +1285,34 @@ textarea:focus-visible {
   border-color: rgba(var(--whatsapp-rgb), 0.46);
   background: rgba(var(--whatsapp-rgb), 0.16);
   transform: translateY(-1px);
+}
+
+.catalog-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 920px;
+  margin-top: 12px;
+}
+
+.catalog-kpis span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(var(--line-rgb), 0.9);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.catalog-kpis strong {
+  overflow-wrap: anywhere;
+  color: var(--promo-deep);
+  font-size: 1rem;
+  line-height: 1.05;
 }
 
 .catalog-layout {
@@ -1382,7 +1464,7 @@ textarea {
     var(--surface);
 }
 
-.purchase-panel div {
+.purchase-panel-heading {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -1399,6 +1481,37 @@ textarea {
 .purchase-panel strong {
   color: var(--promo-deep);
   font-size: 1.18rem;
+}
+
+.purchase-panel .stock-text.ready {
+  color: var(--sage);
+}
+
+.purchase-panel .stock-text.low,
+.purchase-panel .stock-text.out {
+  color: var(--promo-deep);
+}
+
+.purchase-metrics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.purchase-metrics div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid rgba(var(--line-rgb), 0.82);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.purchase-metrics strong {
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+  line-height: 1.18;
 }
 
 .purchase-panel p {
@@ -3389,12 +3502,20 @@ a.readiness-signal:focus-visible {
   }
 
   .product-card-bottom {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) minmax(132px, 0.62fr);
     align-items: center;
   }
 
   .product-card button {
     padding: 0 14px;
+  }
+
+  .catalog-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .purchase-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .catalog-header h1,

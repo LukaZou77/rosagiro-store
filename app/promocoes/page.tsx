@@ -5,6 +5,7 @@ import { StoreShell } from "@/components/StoreShell";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { discountPercent, getCategories, getPromotionCollections } from "@/lib/catalog";
 import { money } from "@/lib/money";
+import { productQuantity, productStockLabel } from "@/lib/product-conversion";
 import { siteConfig } from "@/lib/site-config";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
@@ -22,6 +23,7 @@ export default async function PromotionsPage() {
   const strongestDiscount = dealProducts.reduce((max, product) => Math.max(max, discountPercent(product)), 0);
   const readyStock = products.filter((product) => (product.inventory?.quantity || 0) > 0).length;
   const heroDiscount = heroProduct ? discountPercent(heroProduct) : 0;
+  const heroStock = heroProduct ? productQuantity(heroProduct) : 0;
 
   return (
     <StoreShell categories={categories}>
@@ -53,6 +55,9 @@ export default async function PromotionsPage() {
               <span>{heroProduct.brand.name}</span>
               <strong>{heroProduct.name}</strong>
               <p>{heroProduct.subcategory}</p>
+              <small className="promo-feature-stock">
+                {heroStock > 0 ? `${heroStock} un. pronta entrega` : "Disponibilidade sob consulta"}
+              </small>
               <div className="price-line compact">
                 <strong>{money(heroProduct.priceCents)}</strong>
                 {heroProduct.compareAtPriceCents ? <span>{money(heroProduct.compareAtPriceCents)}</span> : null}
@@ -121,7 +126,7 @@ export default async function PromotionsPage() {
                   <img src={product.image} alt={product.name} />
                   <span>
                     <strong>{product.name}</strong>
-                    <small>{product.brand.name}</small>
+                    <small>{product.brand.name} / {productStockLabel(product)}</small>
                   </span>
                   <b>{money(product.priceCents)}</b>
                 </Link>
@@ -147,7 +152,7 @@ export default async function PromotionsPage() {
                   <img src={product.image} alt={product.name} />
                   <span>
                     <strong>{product.name}</strong>
-                    <small>{product.badges[0] || product.category.label}</small>
+                    <small>{product.badges[0] || product.category.label} / {productQuantity(product)} un.</small>
                   </span>
                   <b>Nota {product.rating.toFixed(1)}</b>
                 </Link>

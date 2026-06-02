@@ -3,17 +3,27 @@ import { AddToCartButton } from "@/components/AddToCartButton";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
+import {
+  productDiscountPercent,
+  productHeroBadge,
+  productPurchaseSignals,
+  productQuantity,
+  productShortStockLabel,
+  productStockLabel,
+  productStockTone
+} from "@/lib/product-conversion";
 import { siteConfig } from "@/lib/site-config";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 
 export function ProductCard({ product }: { product: CatalogProduct }) {
-  const quantity = product.inventory?.quantity || 0;
+  const quantity = productQuantity(product);
   const available = quantity > 0;
-  const discount =
-    product.compareAtPriceCents && product.compareAtPriceCents > product.priceCents
-      ? Math.round((1 - product.priceCents / product.compareAtPriceCents) * 100)
-      : null;
-  const heroBadge = discount ? `${discount}% OFF` : product.badges[0] || product.stockStatus;
+  const discount = productDiscountPercent(product);
+  const heroBadge = productHeroBadge(product);
+  const stockTone = productStockTone(product);
+  const stockLabel = productStockLabel(product);
+  const shortStockLabel = productShortStockLabel(product);
+  const purchaseSignals = productPurchaseSignals(product);
   const whatsappHref = buildProductWhatsAppHref(product);
 
   return (
@@ -25,28 +35,34 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
       <div className="product-card-body">
         <div className="product-meta-line">
           <span>{product.brand.name}</span>
-          <small className={available ? "stock-chip" : "stock-chip low"}>{available ? `${quantity} un.` : "Esgotado"}</small>
+          <small className={`stock-chip ${stockTone}`}>{shortStockLabel}</small>
         </div>
         <Link href={`/produto/${product.slug}`}>
           <h3>{product.name}</h3>
         </Link>
         <p>{product.subcategory}</p>
-        <div className="purchase-signals">
-          <span>{product.volume}</span>
-          <span>{siteConfig.wholesale.shelfSignals[2]}</span>
+        <div className="purchase-signals" aria-label="Sinais de compra">
+          {purchaseSignals.map((signal) => (
+            <span key={signal}>{signal}</span>
+          ))}
         </div>
-        {product.badges.length ? (
+        {product.badges.length || !available ? (
           <div className="mini-badge-row">
             {product.badges.slice(0, 2).map((badge) => (
               <span key={badge}>{badge}</span>
             ))}
+            {!available ? <span>{siteConfig.productConversion.unavailableCta}</span> : null}
           </div>
         ) : null}
         <div className="product-card-bottom">
           <div className="price-stack">
+            <small>{siteConfig.productConversion.priceLabel}</small>
             <strong>{money(product.priceCents)}</strong>
-            {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : <small>{product.stockStatus}</small>}
-            <small>{siteConfig.wholesale.minimumOrderTitle} {money(siteConfig.wholesale.minimumOrderCents)}</small>
+            {product.compareAtPriceCents ? <span>De {money(product.compareAtPriceCents)}</span> : null}
+            <div className="price-support-line">
+              {discount > 0 ? <em>{siteConfig.productConversion.discountLabel}</em> : <em>{siteConfig.productConversion.cardMinimumHint}</em>}
+              <small>{stockLabel}</small>
+            </div>
           </div>
           <div className="product-card-actions">
             <AddToCartButton slug={product.slug} label="Comprar" disabled={!available} />

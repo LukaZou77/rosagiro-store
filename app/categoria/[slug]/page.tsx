@@ -3,6 +3,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getProducts } from "@/lib/catalog";
+import { productDiscountPercent, productQuantity } from "@/lib/product-conversion";
 import { siteConfig } from "@/lib/site-config";
 import { buildCatalogWhatsAppHref } from "@/lib/whatsapp";
 
@@ -28,6 +29,12 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const currentCategory = categories.find((category) => category.slug === categorySlug);
   const categoryLabel = categorySlug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria";
   const whatsappHref = buildCatalogWhatsAppHref(categoryLabel, products.length);
+  const readyCount = products.filter((product) => productQuantity(product) > 0).length;
+  const dealCount = products.filter((product) => productDiscountPercent(product) > 0).length;
+  const lowStockCount = products.filter((product) => {
+    const quantity = productQuantity(product);
+    return quantity > 0 && quantity <= 6;
+  }).length;
 
   return (
     <StoreShell categories={categories}>
@@ -41,6 +48,24 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
           <WhatsAppLink href={whatsappHref} className="service-whatsapp">
             {siteConfig.whatsapp.serviceLabel}
           </WhatsAppLink>
+        </div>
+        <div className="catalog-kpis" aria-label="Resumo de compra da categoria">
+          <span>
+            <strong>{readyCount}</strong>
+            Pronta entrega
+          </span>
+          <span>
+            <strong>{dealCount}</strong>
+            Desconto real
+          </span>
+          <span>
+            <strong>{lowStockCount}</strong>
+            Giro rapido
+          </span>
+          <span>
+            <strong>{siteConfig.productConversion.cardMinimumHint}</strong>
+            Compra minima
+          </span>
         </div>
       </section>
 

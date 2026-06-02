@@ -141,6 +141,18 @@ export const siteConfig = {
         text: "Pedido minimo, retirada, transportadora e excursao continuam visiveis."
       }
     ]
+  },
+  productConversion: {
+    priceLabel: "Preco para pedido",
+    discountLabel: "Desconto real",
+    minimumLabel: "Minimo atacado",
+    stockLabel: "Estoque",
+    freightLabel: "Frete por CEP",
+    freightText: "Anjun, retirada ou consulta no WhatsApp",
+    cardMinimumHint: "R$ 300 minimo",
+    detailPanelTitle: "Compra no atacado",
+    detailPanelNote: "Confira estoque, minimo de compra e frete antes de finalizar. O pedido de teste segue liberado nesta fase.",
+    unavailableCta: "Consultar disponibilidade"
   }
 };
 
