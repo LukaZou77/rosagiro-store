@@ -6,13 +6,15 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { discountPercent, getCategories, getPromotionCollections } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { productQuantity, productStockLabel } from "@/lib/product-conversion";
+import { storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = storefrontMetadata({
   title: "Promocoes",
-  description: "Ofertas, descontos reais e produtos de pronta entrega para compras de beleza no atacado."
-};
+  description: "Ofertas, descontos reais e produtos de pronta entrega para compras de beleza no atacado.",
+  path: "/promocoes"
+});
 
 export default async function PromotionsPage() {
   const [categories, collections] = await Promise.all([getCategories(), getPromotionCollections()]);

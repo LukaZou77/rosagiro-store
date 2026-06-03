@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SimulatePaymentButton } from "@/components/SimulatePaymentButton";
@@ -6,10 +7,13 @@ import { getCategories } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
 import { paymentMethodLabel } from "@/lib/payments";
+import { noIndexMetadata } from "@/lib/seo";
 
 type PageProps = {
   params: Promise<{ orderNumber: string }>;
 };
+
+export const metadata: Metadata = noIndexMetadata("Pagamento", "Confirmacao de pagamento Bela Viva.");
 
 export default async function SimulatedPaymentPage({ params }: PageProps) {
   const { orderNumber } = await params;

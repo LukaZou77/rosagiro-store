@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/AddToCartButton";
@@ -6,6 +7,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
+import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { getCategories, getProduct, getProducts, getRelatedProducts } from "@/lib/catalog";
@@ -18,6 +20,7 @@ import {
 import { productDiscountPercent, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
 import { productWholesaleLines } from "@/lib/product-wholesale";
+import { breadcrumbJsonLd, noIndexMetadata, productJsonLd, productMetaDescription, storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
@@ -25,6 +28,21 @@ import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product || !product.active) {
+    return noIndexMetadata("Produto", "Produto Bela Viva indisponivel.");
+  }
+
+  return storefrontMetadata({
+    title: `${product.name} | ${product.brand.name}`,
+    description: productMetaDescription(product),
+    path: `/produto/${product.slug}`,
+    image: product.image
+  });
+}
 
 export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
@@ -57,6 +75,16 @@ export default async function ProductPage({ params }: PageProps) {
 
   return (
     <StoreShell categories={categories}>
+      <StructuredData
+        data={[
+          productJsonLd(product),
+          breadcrumbJsonLd([
+            { name: "Inicio", path: "/" },
+            { name: product.category.label, path: `/categoria/${product.category.slug}` },
+            { name: product.name, path: `/produto/${product.slug}` }
+          ])
+        ]}
+      />
       <section className="product-detail">
         <div className="product-media">
           <ProductGallery images={gallery} productName={product.name} />

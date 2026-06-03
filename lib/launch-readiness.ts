@@ -78,6 +78,7 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
   const hasDeployEnvironment =
     hasPublicUrl(env.NEXT_PUBLIC_SITE_URL) && Boolean(env.SESSION_SECRET?.trim()) && Boolean(env.DATABASE_URL?.trim());
   const hasGoogleMaps = Boolean(env.GOOGLE_MAPS_API_KEY?.trim());
+  const hasSeoPublicBase = hasPublicUrl(env.NEXT_PUBLIC_SITE_URL);
 
   const signals = [
     signal({
@@ -186,6 +187,18 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
         input.policyPageCount >= 6
           ? "Paginas basicas existem, mas ainda precisam revisao juridica/operacional real."
           : "Politicas, SEO ou paginas publicas basicas ainda estao incompletas.",
+      actionHref: "/admin/prontidao"
+    }),
+    signal({
+      key: "seo-baseline",
+      group: "Operacao",
+      label: "SEO/GEO baseline",
+      status: hasSeoPublicBase && input.policyPageCount >= 6 ? "WARNING" : "ACTION_REQUIRED",
+      severity: "medium",
+      message:
+        hasSeoPublicBase && input.policyPageCount >= 6
+          ? "Metadata, sitemap, robots e llms.txt podem ser auditados no dominio publico; rode SEO audit antes do go-live."
+          : "Configure NEXT_PUBLIC_SITE_URL com HTTPS publico e revise paginas publicas antes do audit SEO final.",
       actionHref: "/admin/prontidao"
     }),
     signal({

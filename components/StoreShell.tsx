@@ -2,7 +2,9 @@ import Link from "next/link";
 import { CartCount } from "@/components/CartCount";
 import { CustomerSessionProvider } from "@/components/CustomerSession";
 import { QuickPurchaseDrawer } from "@/components/QuickPurchaseDrawer";
+import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
+import { storeJsonLd, websiteJsonLd } from "@/lib/seo";
 import { legalLinks, siteConfig, storefrontLinks } from "@/lib/site-config";
 import { getStoreProfile, storeCnpjLabel, storeSocialLinks, storeTrustSignals } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
@@ -26,6 +28,7 @@ export async function StoreShell({
 
   return (
     <CustomerSessionProvider>
+      <StructuredData data={[storeJsonLd(storeProfile), websiteJsonLd()]} />
       <div className="store-alert" aria-label="Condicoes de compra">
         <span>{siteConfig.wholesale.headerStrip}</span>
         <Link href="/informacoes-da-loja">{storeCnpjLabel(storeProfile)}</Link>

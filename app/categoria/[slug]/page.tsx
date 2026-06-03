@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
+import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getProducts } from "@/lib/catalog";
 import { productDiscountPercent, productQuantity } from "@/lib/product-conversion";
+import { breadcrumbJsonLd, categoryMetaDescription, noIndexMetadata, storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import { buildCatalogWhatsAppHref } from "@/lib/whatsapp";
 
@@ -23,6 +26,28 @@ const sortLabels: Record<string, string> = {
 
 function value(input: string | string[] | undefined) {
   return Array.isArray(input) ? input[0] : input;
+}
+
+async function categorySeoContext(slug: string) {
+  const [categories, products] = await Promise.all([getCategories(), getProducts({ categorySlug: slug })]);
+  const currentCategory = categories.find((category) => category.slug === slug);
+  const label = slug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria";
+  return { categories, products, currentCategory, label };
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const categorySlug = slug || "all";
+  const { currentCategory, label, products } = await categorySeoContext(categorySlug);
+  if (categorySlug !== "all" && !currentCategory) {
+    return noIndexMetadata("Categoria", "Categoria Bela Viva indisponivel.");
+  }
+  const path = `/categoria/${categorySlug}`;
+  return storefrontMetadata({
+    title: `${label} no atacado`,
+    description: categoryMetaDescription(label, products.length),
+    path
+  });
 }
 
 function FilterFields({
@@ -95,6 +120,13 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
   return (
     <StoreShell categories={categories}>
+      <StructuredData
+        data={breadcrumbJsonLd([
+          { name: "Inicio", path: "/" },
+          { name: "Catalogo", path: "/categoria/all" },
+          { name: categoryLabel, path: `/categoria/${categorySlug}` }
+        ])}
+      />
       <section className="catalog-header">
         <p className="eyebrow">Catalogo</p>
         <h1>{categoryLabel}</h1>

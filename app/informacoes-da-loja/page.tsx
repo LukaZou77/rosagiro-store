@@ -3,6 +3,7 @@ import Link from "next/link";
 import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { getCategories } from "@/lib/catalog";
+import { storefrontMetadata } from "@/lib/seo";
 import {
   getStoreProfile,
   storeCnpjLabel,
@@ -12,10 +13,11 @@ import {
   storeTrustSignals
 } from "@/lib/store-profile";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = storefrontMetadata({
   title: "Informacoes da loja",
-  description: "Dados comerciais, atendimento, entrega, pagamento e politicas da Bela Viva."
-};
+  description: "Dados comerciais, atendimento, entrega, pagamento e politicas da Bela Viva.",
+  path: "/informacoes-da-loja"
+});
 
 export default async function StoreInformationPage() {
   const [categories, profile] = await Promise.all([getCategories(), getStoreProfile()]);

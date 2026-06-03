@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { StoreShell } from "@/components/StoreShell";
@@ -5,6 +6,7 @@ import { getCategories } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
 import { mercadoPagoReturnMessage, paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
+import { noIndexMetadata } from "@/lib/seo";
 
 const addressMatchLabels: Record<string, string> = {
   VALIDATED: "Endereco validado",
@@ -18,6 +20,8 @@ type PageProps = {
   params: Promise<{ orderNumber: string }>;
   searchParams?: Promise<{ mp?: string }>;
 };
+
+export const metadata: Metadata = noIndexMetadata("Pedido", "Acompanhamento de pedido Bela Viva.");
 
 export default async function OrderPage({ params, searchParams }: PageProps) {
   const { orderNumber } = await params;
