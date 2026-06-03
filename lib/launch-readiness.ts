@@ -1,4 +1,5 @@
 import type { StoreProfile } from "@/src/generated/prisma/client";
+import type { ProductQualitySummary } from "@/lib/product-quality";
 
 export type LaunchReadinessSignalStatus = "READY" | "WARNING" | "ACTION_REQUIRED";
 export type LaunchReadinessSignalSeverity = "low" | "medium" | "high";
@@ -23,10 +24,7 @@ export type LaunchReadinessSnapshot = {
 
 type BuildSnapshotInput = {
   profile: StoreProfile | null;
-  productCount: number;
-  activeProductCount: number;
-  placeholderImageCount: number;
-  productsWithoutWeightCount: number;
+  productQuality: ProductQualitySummary;
   activeShippingImportCount: number;
   policyPageCount: number;
   readinessDoneCount: number;
@@ -72,8 +70,9 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
       !placeholderPhonePattern.test(profile.whatsapp)
   );
   const hasSocialLink = Boolean(profile?.instagramUrl || profile?.facebookUrl || profile?.tiktokUrl);
-  const hasCatalogDepth = input.activeProductCount > 12;
-  const hasUsableCatalog = input.activeProductCount > 0 && input.placeholderImageCount === 0 && input.productsWithoutWeightCount === 0;
+  const hasCatalogDepth = input.productQuality.activeCount > 12;
+  const catalogHasActionRequired = input.productQuality.actionRequiredCount > 0 || input.productQuality.activeCount === 0;
+  const catalogHasReview = input.productQuality.reviewCount > 0 || !hasCatalogDepth;
   const paymentMode = (env.PAYMENT_MODE || "").trim();
   const hasMercadoPagoSandbox =
     paymentMode === "mercado_pago_sandbox" &&
@@ -113,24 +112,27 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
       key: "catalog-real-data",
       group: "Catalogo",
       label: "Catalogo real",
-      status: hasCatalogDepth ? "READY" : hasUsableCatalog ? "WARNING" : "ACTION_REQUIRED",
-      severity: hasCatalogDepth ? "medium" : "high",
-      message: hasCatalogDepth
-        ? `${input.activeProductCount} de ${input.productCount} produtos ativos com dados operacionais.`
-        : `${input.activeProductCount} de ${input.productCount} produtos ativos; ainda parece catalogo piloto de 12 SKUs.`,
-      actionHref: "/admin/produtos"
+      status: catalogHasActionRequired ? "ACTION_REQUIRED" : hasCatalogDepth ? "READY" : "WARNING",
+      severity: catalogHasActionRequired ? "high" : "medium",
+      message: catalogHasActionRequired
+        ? `${input.productQuality.actionRequiredCount} produto(s) com lacunas criticas; ${input.productQuality.activeCount} ativos no catalogo.`
+        : hasCatalogDepth
+          ? `${input.productQuality.activeCount} de ${input.productQuality.total} produtos ativos com checks criticos resolvidos.`
+          : `${input.productQuality.activeCount} de ${input.productQuality.total} produtos ativos; ainda parece catalogo piloto de 12 SKUs.`,
+      actionHref: "/admin/produtos/qualidade"
     }),
     signal({
       key: "catalog-media-weight",
       group: "Catalogo",
       label: "Midia e peso",
-      status: input.placeholderImageCount === 0 && input.productsWithoutWeightCount === 0 ? "READY" : "ACTION_REQUIRED",
-      severity: "medium",
-      message:
-        input.placeholderImageCount === 0 && input.productsWithoutWeightCount === 0
-          ? "Produtos ativos nao usam imagem vazia/placeholder e possuem peso para frete."
-          : `${input.placeholderImageCount} imagens placeholder/vazias e ${input.productsWithoutWeightCount} produtos sem peso.`,
-      actionHref: "/admin/importar-produtos"
+      status: catalogHasActionRequired ? "ACTION_REQUIRED" : catalogHasReview ? "WARNING" : "READY",
+      severity: catalogHasActionRequired ? "high" : "medium",
+      message: catalogHasActionRequired
+        ? `${input.productQuality.actionRequiredCount} produto(s) com lacunas criticas; ${input.productQuality.svgDemoCount} ainda usam SVG de prototipo.`
+        : catalogHasReview
+          ? `${input.productQuality.reviewCount} produto(s) precisam revisao; ${input.productQuality.defaultWeightCount} usam peso padrao de 150g.`
+          : "Produtos ativos passaram nos checks automaticos de midia, conteudo e peso.",
+      actionHref: "/admin/produtos/qualidade"
     }),
     signal({
       key: "payment-sandbox",
@@ -222,22 +224,17 @@ export const launchReadinessSignalLabels: Record<LaunchReadinessSignalStatus, st
 
 export async function getLaunchReadinessSnapshot() {
   const { prisma } = await import("@/lib/db");
+  const { getProductQualitySummary } = await import("@/lib/product-quality");
   const [
     profile,
-    productCount,
-    activeProductCount,
-    placeholderImageCount,
-    productsWithoutWeightCount,
+    productQuality,
     activeShippingImportCount,
     policyPageCount,
     readinessDoneCount,
     readinessTotalCount
   ] = await Promise.all([
     prisma.storeProfile.findUnique({ where: { id: "main" } }),
-    prisma.product.count(),
-    prisma.product.count({ where: { active: true } }),
-    prisma.product.count({ where: { OR: [{ image: { contains: "placeholder" } }, { image: { equals: "" } }] } }),
-    prisma.product.count({ where: { weightGrams: { lte: 0 } } }),
+    getProductQualitySummary(),
     prisma.shippingRateImport.count({ where: { active: true } }),
     prisma.siteInfoPage.count({ where: { active: true } }),
     prisma.launchReadinessItem.count({ where: { status: "DONE" } }),
@@ -246,10 +243,7 @@ export async function getLaunchReadinessSnapshot() {
 
   return buildLaunchReadinessSnapshot({
     profile,
-    productCount,
-    activeProductCount,
-    placeholderImageCount,
-    productsWithoutWeightCount,
+    productQuality,
     activeShippingImportCount,
     policyPageCount: policyPageCount + 1,
     readinessDoneCount,

@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
+import { evaluateProductQuality } from "@/lib/product-quality";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -61,6 +62,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
     return quantity > 0 && quantity <= 5;
   }).length;
   const outOfStockCount = products.filter((product) => (product.inventory?.quantity || 0) === 0).length;
+  const qualityItems = products.map(evaluateProductQuality);
+  const qualityActionCount = qualityItems.filter((item) => item.status === "ACTION_REQUIRED").length;
+  const qualityBySlug = new Map(qualityItems.map((item) => [item.slug, item]));
 
   return (
     <AdminShell adminName={admin.name}>
@@ -69,6 +73,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         <h1>Central de produtos</h1>
         <p>Filtre, revise e abra cada item para editar a ficha completa do catalogo.</p>
         <div className="admin-actions">
+          <Link className="button secondary" href="/admin/produtos/qualidade">
+            Ver qualidade
+          </Link>
           <Link className="button secondary" href="/admin/importar-produtos">
             Importar / modelos
           </Link>
@@ -95,6 +102,10 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           <span>Esgotados</span>
           <strong>{outOfStockCount}</strong>
         </div>
+        <Link href="/admin/produtos/qualidade">
+          <span>Qualidade critica</span>
+          <strong>{qualityActionCount}</strong>
+        </Link>
       </div>
 
       <form className="filters admin-filters" action="/admin/produtos">
@@ -152,6 +163,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       <div className="admin-list">
         {products.map((product) => {
           const quantity = product.inventory?.quantity || 0;
+          const quality = qualityBySlug.get(product.slug);
           return (
             <article className="admin-product-row catalog-row" key={product.id}>
               <img src={product.image} alt={product.name} />
@@ -164,6 +176,11 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                   <span className={quantity > 0 ? "status-chip success" : "status-chip warning"}>
                     {quantity > 0 ? `${quantity} un.` : "Esgotado"}
                   </span>
+                  {quality ? (
+                    <span className={`status-chip quality-${quality.status.toLowerCase().replace("_", "-")}`}>
+                      {quality.statusLabel}
+                    </span>
+                  ) : null}
                 </div>
                 <h2>{product.name}</h2>
                 <p>

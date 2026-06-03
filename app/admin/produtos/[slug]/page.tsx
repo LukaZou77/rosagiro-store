@@ -5,6 +5,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PRODUCT_GALLERY_LIMIT, formatImportMoney, normalizeProductGallery, pipeListValue } from "@/lib/product-import-shared";
+import { evaluateProductQuality, productQualityGroupLabels } from "@/lib/product-quality";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -33,6 +34,7 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
   const saved = single(query.saved);
   const gallery = normalizeProductGallery(product.image, product.gallery);
   const emptySlots = Math.max(0, PRODUCT_GALLERY_LIMIT - gallery.length);
+  const quality = evaluateProductQuality(product);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -61,7 +63,34 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
         </div>
       ) : null}
 
-      <form action={updateProductDetailAction} className="admin-detail-grid product-editor" encType="multipart/form-data">
+      <section className={`import-panel quality-editor-panel ${quality.status.toLowerCase().replace("_", "-")}`}>
+        <div className="readiness-group-heading">
+          <div>
+            <span>Qualidade da ficha</span>
+            <h2>{quality.statusLabel}</h2>
+          </div>
+          <strong>{quality.issues.length}</strong>
+        </div>
+        <p className="table-note">{quality.statusMessage}</p>
+        {quality.issues.length ? (
+          <div className="quality-row-issues expanded">
+            {quality.issues.map((issue) => (
+              <span className={`quality-mini-issue ${issue.severity}`} key={issue.key}>
+                {productQualityGroupLabels[issue.group]}: {issue.label}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="admin-notice success">Nenhum alerta automatico encontrado para este produto.</div>
+        )}
+        <div className="admin-actions">
+          <Link className="button secondary" href="/admin/produtos/qualidade">
+            Ver central de qualidade
+          </Link>
+        </div>
+      </section>
+
+      <form action={updateProductDetailAction} className="admin-detail-grid product-editor">
         <input type="hidden" name="productId" value={product.id} />
         <section className="import-panel">
           <div className="product-editor-main-image">
