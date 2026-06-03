@@ -1,0 +1,280 @@
+import type { Prisma } from "@/src/generated/prisma/client";
+import { PRODUCT_GALLERY_LIMIT, formatImportMoney, normalizeProductGallery, pipeListValue } from "@/lib/product-import-shared";
+
+type AdminProductFormProduct = Prisma.ProductGetPayload<{
+  include: { brand: true; category: true; inventory: true };
+}>;
+
+type ProductFormAction = (formData: FormData) => void | Promise<void>;
+
+type AdminProductFormProps = {
+  action: ProductFormAction;
+  brands: Array<{ id: string; name: string }>;
+  categories: Array<{ id: string; label: string }>;
+  mode: "create" | "edit";
+  product?: AdminProductFormProduct;
+};
+
+function textValue(value: string | null | undefined, fallback = "") {
+  return value ?? fallback;
+}
+
+function numberValue(value: number | null | undefined, fallback: number | string = "") {
+  return value ?? fallback;
+}
+
+export function AdminProductForm({ action, brands, categories, mode, product }: AdminProductFormProps) {
+  const isEdit = mode === "edit";
+  const gallery = product ? normalizeProductGallery(product.image, product.gallery) : [];
+  const emptySlots = Math.max(0, PRODUCT_GALLERY_LIMIT - gallery.length);
+  const currentImage = product?.image || "";
+  const submitLabel = isEdit ? "Salvar ficha completa" : "Criar produto";
+
+  return (
+    <form action={action} className="admin-detail-grid product-editor">
+      {isEdit && product ? <input type="hidden" name="productId" value={product.id} /> : null}
+      <section className="import-panel">
+        <div className="product-editor-main-image">
+          {currentImage ? (
+            <img className="product-editor-image" src={currentImage} alt={product?.name || "Produto"} />
+          ) : (
+            <div className="product-editor-image placeholder" aria-hidden="true">
+              Sem imagem
+            </div>
+          )}
+          <span>Imagem principal</span>
+        </div>
+        <div className="form-grid">
+          <label>
+            Slug
+            <input
+              name={isEdit ? undefined : "slug"}
+              value={isEdit ? product?.slug || "" : undefined}
+              readOnly={isEdit}
+              placeholder={isEdit ? undefined : "Gerado pelo nome se ficar vazio"}
+            />
+          </label>
+          <label>
+            Rank de vitrine
+            <input name="featuredRank" type="number" min="0" defaultValue={numberValue(product?.featuredRank, 1000)} />
+          </label>
+        </div>
+        <label>
+          Caminho ou URL manual
+          <input
+            name="image"
+            defaultValue={currentImage}
+            placeholder="/assets/... ou /uploads/products/... ou URL http(s)"
+            required={isEdit}
+          />
+        </label>
+        <p className="table-note">
+          Em produto novo, voce pode preencher um caminho manual ou apenas enviar imagens abaixo. Aceita /assets/...,
+          /uploads/products/..., /placeholder... ou URL http(s).
+        </p>
+
+        <div className="product-gallery-manager">
+          <div className="product-gallery-heading">
+            <div>
+              <strong>Galeria do produto</strong>
+              <small>Ate {PRODUCT_GALLERY_LIMIT} imagens. A principal aparece nos cards e no carrinho.</small>
+            </div>
+            <span>{gallery.length}/{PRODUCT_GALLERY_LIMIT}</span>
+          </div>
+          <div className="product-gallery-grid">
+            {gallery.map((imagePath) => (
+              <div className="product-gallery-slot" key={imagePath}>
+                <img src={imagePath} alt="" loading="lazy" />
+                <input type="hidden" name="galleryExisting" value={imagePath} />
+                <label className="radio-label">
+                  <input name="primaryImage" type="radio" value={imagePath} defaultChecked={imagePath === currentImage} />
+                  Principal
+                </label>
+                <label className="checkbox-label compact">
+                  <input name="removeGalleryImage" type="checkbox" value={imagePath} />
+                  Remover
+                </label>
+              </div>
+            ))}
+            {Array.from({ length: emptySlots }).map((_, index) => (
+              <div className="product-gallery-slot empty" key={`empty-${index}`}>
+                <span>Vazio</span>
+              </div>
+            ))}
+          </div>
+          <label className="product-upload-field">
+            Enviar novas imagens
+            <input name="galleryFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+          </label>
+          <label className="checkbox-label compact">
+            <input name="firstUploadAsPrimary" type="checkbox" defaultChecked={!isEdit} />
+            Usar a primeira imagem enviada como principal
+          </label>
+          <p className="table-note">JPG, PNG ou WebP. Maximo 5MB por imagem. SVG continua apenas em /assets ja existentes.</p>
+        </div>
+      </section>
+
+      <section className="import-panel">
+        <div className="form-grid">
+          <label>
+            Nome
+            <input name="name" defaultValue={product?.name || ""} required />
+          </label>
+          <label>
+            Marca
+            <select name="brandId" defaultValue={product?.brandId || brands[0]?.id || ""} required>
+              {!brands.length ? <option value="">Cadastre uma marca primeiro</option> : null}
+              {brands.map((brand) => (
+                <option value={brand.id} key={brand.id}>
+                  {brand.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Categoria
+            <select name="categoryId" defaultValue={product?.categoryId || categories[0]?.id || ""} required>
+              {!categories.length ? <option value="">Cadastre uma categoria primeiro</option> : null}
+              {categories.map((category) => (
+                <option value={category.id} key={category.id}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Subcategoria
+            <input name="subcategory" defaultValue={product?.subcategory || ""} required />
+          </label>
+        </div>
+
+        <label>
+          Descricao
+          <textarea name="descriptionPt" defaultValue={product?.descriptionPt || ""} required />
+        </label>
+
+        <div className="form-grid">
+          <label>
+            Preco
+            <input name="price" defaultValue={formatImportMoney(product?.priceCents)} required />
+          </label>
+          <label>
+            Preco comparativo
+            <input name="compareAtPrice" defaultValue={formatImportMoney(product?.compareAtPriceCents)} />
+          </label>
+          <label>
+            Estoque
+            <input name="quantity" type="number" min="0" defaultValue={numberValue(product?.inventory?.quantity, 0)} />
+          </label>
+          <label>
+            Peso unitario (g)
+            <input name="weightGrams" type="number" min="1" defaultValue={numberValue(product?.weightGrams, 150)} />
+          </label>
+          <label className="checkbox-label">
+            <input name="active" type="checkbox" defaultChecked={product?.active ?? true} />
+            Produto ativo
+          </label>
+        </div>
+
+        <div className="admin-form-block">
+          <div className="product-gallery-heading">
+            <div>
+              <strong>Dados de atacado</strong>
+              <small>Informacoes exibidas no produto e enviadas na consulta por WhatsApp.</small>
+            </div>
+          </div>
+          <div className="form-grid">
+            <label>
+              Quantidade sugerida
+              <input
+                name="suggestedQuantity"
+                type="number"
+                min="1"
+                defaultValue={numberValue(product?.suggestedQuantity)}
+                placeholder="Ex: 6"
+              />
+            </label>
+            <label>
+              Caixa fechada / atacado
+              <input
+                name="wholesalePackage"
+                defaultValue={textValue(product?.wholesalePackage)}
+                placeholder="Ex: Caixa com 12 un. sob consulta"
+              />
+            </label>
+            <label>
+              Validade / lote
+              <input
+                name="validityNote"
+                defaultValue={textValue(product?.validityNote)}
+                placeholder="Ex: Validade minima 12 meses"
+              />
+            </label>
+            <label>
+              Kit recomendado
+              <textarea
+                name="kitRecommendation"
+                defaultValue={textValue(product?.kitRecommendation)}
+                placeholder="Ex: Combine com sabonete facial e protetor solar"
+              />
+            </label>
+            <label>
+              Observacao de compra
+              <textarea
+                name="purchaseNote"
+                defaultValue={textValue(product?.purchaseNote)}
+                placeholder="Ex: Confirmar estoque para volume pelo WhatsApp"
+              />
+            </label>
+          </div>
+          <p className="table-note">
+            Use esses campos para orientar revendedoras e lojistas. Eles nao criam desconto automatico nem alteram o checkout.
+          </p>
+        </div>
+
+        <div className="form-grid">
+          <label>
+            Beneficios
+            <textarea name="benefits" defaultValue={pipeListValue(product?.benefits)} />
+          </label>
+          <label>
+            Ingredientes
+            <textarea name="ingredients" defaultValue={pipeListValue(product?.ingredients)} />
+          </label>
+          <label>
+            Tags / badges
+            <textarea name="badges" defaultValue={pipeListValue(product?.badges)} />
+          </label>
+        </div>
+        <p className="table-note">Use | para separar varios itens, igual ao CSV.</p>
+
+        <div className="form-grid">
+          <label>
+            Tipo de pele / uso
+            <input name="skinType" defaultValue={product?.skinType || ""} />
+          </label>
+          <label>
+            Acabamento / textura
+            <input name="finish" defaultValue={product?.finish || ""} />
+          </label>
+          <label>
+            Volume / tamanho
+            <input name="volume" defaultValue={product?.volume || ""} />
+          </label>
+          <label>
+            Rating
+            <input name="rating" defaultValue={isEdit ? String(product?.rating ?? 0).replace(".", ",") : "0"} />
+          </label>
+          <label>
+            Avaliacoes
+            <input name="reviewCount" type="number" min="0" defaultValue={numberValue(product?.reviewCount, 0)} />
+          </label>
+        </div>
+
+        <button className="button primary wide" type="submit">
+          {submitLabel}
+        </button>
+      </section>
+    </form>
+  );
+}

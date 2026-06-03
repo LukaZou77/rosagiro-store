@@ -73,6 +73,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         <h1>Central de produtos</h1>
         <p>Filtre, revise e abra cada item para editar a ficha completa do catalogo.</p>
         <div className="admin-actions">
+          <Link className="button primary" href="/admin/produtos/novo">
+            Novo produto
+          </Link>
           <Link className="button secondary" href="/admin/produtos/qualidade">
             Ver qualidade
           </Link>
@@ -207,7 +210,15 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         {!products.length ? (
           <div className="empty-state">
             <strong>Nenhum produto encontrado</strong>
-            <p>Limpe os filtros ou importe uma nova planilha de produtos.</p>
+            <p>Limpe os filtros, importe uma planilha ou cadastre um produto manualmente.</p>
+            <div className="admin-actions">
+              <Link className="button primary" href="/admin/produtos/novo">
+                Novo produto
+              </Link>
+              <Link className="button secondary" href="/admin/importar-produtos">
+                Importar CSV
+              </Link>
+            </div>
           </div>
         ) : null}
       </div>

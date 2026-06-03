@@ -4311,6 +4311,12 @@ legend {
   color: var(--rose-deep);
 }
 
+.admin-notice.warning {
+  border-color: rgba(var(--deal-rgb), 0.48);
+  background: var(--deal-soft);
+  color: #8b5a1f;
+}
+
 .import-workspace {
   display: grid;
   gap: 14px;
@@ -4464,6 +4470,14 @@ legend {
   background: var(--paper);
 }
 
+.product-editor-image.placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
 .product-editor-main-image {
   display: grid;
   gap: 8px;
@@ -4568,6 +4582,14 @@ legend {
   padding: 10px;
   border: 1px dashed rgba(var(--promo-deep-rgb), 0.28);
   background: var(--paper);
+}
+
+.new-product-guidance {
+  margin-bottom: 18px;
+  border-color: rgba(var(--sage-rgb), 0.24);
+  background:
+    linear-gradient(135deg, rgba(238, 246, 240, 0.86), rgba(255, 255, 255, 0.94)),
+    var(--surface);
 }
 
 .quality-metrics small {
