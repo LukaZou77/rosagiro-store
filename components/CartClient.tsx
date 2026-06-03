@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useCart, writeCart } from "@/components/CartCount";
+import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { CustomerCheckoutButton } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
+import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
 import { buildCartWhatsAppHref } from "@/lib/whatsapp";
@@ -16,8 +18,14 @@ type Product = {
   name: string;
   image: string;
   priceCents: number;
+  compareAtPriceCents: number | null;
+  badges: string[];
+  active: boolean;
+  rating?: number;
+  reviewCount?: number;
   subcategory: string;
   brand: { name: string };
+  category: { slug: string; label?: string };
   inventory: { quantity: number } | null;
 };
 
@@ -36,6 +44,11 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
   const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
   const total = subtotal - discount;
   const whatsappHref = useMemo(() => buildCartWhatsAppHref(items, subtotal), [items, subtotal]);
+  const recommendations = useMemo(
+    () => getCartCompletionRecommendations(products, cart, { limit: 4 }),
+    [cart, products]
+  );
+  const minimumReached = subtotal >= siteConfig.wholesale.minimumOrderCents;
 
   function update(next: Array<{ slug: string; quantity: number }>) {
     const clean = next.filter((item) => item.quantity > 0);
@@ -126,6 +139,22 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
           ))}
         </div>
         <StoreTrustSignals signals={trustSignals} compact />
+        {items.length ? (
+          <CartCompletionRecommendations
+            compact
+            recommendations={recommendations}
+            title={
+              minimumReached
+                ? siteConfig.productConversion.completionReachedTitle
+                : siteConfig.productConversion.completionTitle
+            }
+            body={
+              minimumReached
+                ? siteConfig.productConversion.completionReachedBody
+                : siteConfig.productConversion.completionBody
+            }
+          />
+        ) : null}
         {items.length ? (
           <WhatsAppLink href={whatsappHref} className="button whatsapp wide">
             {siteConfig.whatsapp.cartCta}

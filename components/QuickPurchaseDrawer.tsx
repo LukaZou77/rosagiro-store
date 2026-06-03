@@ -4,8 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { readCart, subscribeQuickPurchaseOpen, useCart, writeCart } from "@/components/CartCount";
+import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { CustomerCheckoutButton } from "@/components/CustomerSession";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
+import type { CartCompletionRecommendation } from "@/lib/cart-completion";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
 import { buildCartWhatsAppHref } from "@/lib/whatsapp";
@@ -33,6 +35,7 @@ type CartSummary = {
   minimumOrderCents: number;
   remainingToMinimumCents: number;
   minimumReached: boolean;
+  recommendations: CartCompletionRecommendation[];
   error?: string;
 };
 
@@ -224,6 +227,21 @@ export function QuickPurchaseDrawer() {
                     </article>
                   ))}
                 </div>
+
+                <CartCompletionRecommendations
+                  compact
+                  recommendations={summary.recommendations}
+                  title={
+                    summary.minimumReached
+                      ? siteConfig.productConversion.completionReachedTitle
+                      : siteConfig.productConversion.completionTitle
+                  }
+                  body={
+                    summary.minimumReached
+                      ? siteConfig.productConversion.completionReachedBody
+                      : `Faltam ${money(summary.remainingToMinimumCents)} para o minimo sugerido.`
+                  }
+                />
 
                 <section className="quick-summary" aria-label="Resumo do pedido">
                   <div>

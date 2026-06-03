@@ -4,23 +4,32 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, writeCart } from "@/components/CartCount";
+import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { useCustomerSession } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
+import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
 import { money } from "@/lib/money";
 import { paymentMethods, type PaymentMethodValue } from "@/lib/payments";
 import { siteConfig } from "@/lib/site-config";
-import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
+import { buildCartWhatsAppHref, buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 type Product = {
   slug: string;
   name: string;
   image: string;
   priceCents: number;
+  compareAtPriceCents: number | null;
   weightGrams: number;
+  badges: string[];
+  active: boolean;
+  rating?: number;
+  reviewCount?: number;
   brand: { name: string };
+  category: { slug: string; label?: string };
+  inventory: { quantity: number } | null;
 };
 
 const states = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
@@ -155,10 +164,31 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const quoteItems = useMemo(() => items.map((item) => ({ slug: item.slug, quantity: item.quantity })), [items]);
   const subtotal = items.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0);
   const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
+  const minimumReached = subtotal >= siteConfig.wholesale.minimumOrderCents;
+  const recommendations = useMemo(
+    () => getCartCompletionRecommendations(products, cart, { limit: 4 }),
+    [cart, products]
+  );
   const selectedShipping = shippingQuote?.options.find((option) => option.method === shippingMethod) || null;
   const shipping = selectedShipping?.priceCents || 0;
   const total = subtotal - discount + shipping;
   const emptyCheckoutWhatsAppHref = useMemo(() => buildGeneralWhatsAppHref("checkout sem itens"), []);
+  const checkoutWhatsAppItems = useMemo(
+    () =>
+      items.map((item) => ({
+        quantity: item.quantity,
+        product: {
+          name: item.product.name,
+          priceCents: item.product.priceCents,
+          brand: item.product.brand
+        }
+      })),
+    [items]
+  );
+  const checkoutWhatsAppHref = useMemo(
+    () => buildCartWhatsAppHref(checkoutWhatsAppItems, subtotal),
+    [checkoutWhatsAppItems, subtotal]
+  );
   const contactValue = useMemo(
     () => ({
       name: contactTouched.name ? contact.name : contact.name || customer?.name || "",
@@ -837,6 +867,23 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
       <aside className="summary-panel">
         <MinimumOrderNotice subtotalCents={subtotal} compact />
         <StoreTrustSignals signals={trustSignals} compact />
+        <CartCompletionRecommendations
+          compact
+          recommendations={recommendations}
+          title={
+            minimumReached
+              ? siteConfig.productConversion.completionReachedTitle
+              : siteConfig.productConversion.completionTitle
+          }
+          body={
+            minimumReached
+              ? siteConfig.productConversion.completionReachedBody
+              : siteConfig.productConversion.completionBody
+          }
+        />
+        <WhatsAppLink href={checkoutWhatsAppHref} className="button whatsapp wide">
+          {siteConfig.whatsapp.cartCta}
+        </WhatsAppLink>
         <div className="summary-block">
           <h2>Resumo</h2>
           {items.map((item) => (

@@ -154,7 +154,14 @@ export const siteConfig = {
     detailPanelNote: "Confira estoque, pedido minimo e frete antes de finalizar. Para comprar em volume, o atendimento pode sugerir itens para completar sua lista.",
     reviewFallback: "Produto em curadoria",
     bundlePrompt: "Quer montar kit para revenda? Envie este item pelo WhatsApp e informe sua cidade/UF.",
-    unavailableCta: "Consultar disponibilidade"
+    unavailableCta: "Consultar disponibilidade",
+    completionEyebrow: "Completar pedido",
+    completionTitle: "Combine para fechar pedido minimo",
+    completionBody: "Sugestoes com estoque para ajudar a montar uma lista de atacado mais completa.",
+    completionReachedTitle: "Produtos para combinar",
+    completionReachedBody: "Inclua itens de reposicao ou revenda antes de finalizar.",
+    completionAddCta: "Adicionar",
+    completionAddedCta: "Adicionado"
   },
   mobilePurchase: {
     filterTitle: "Filtrar e ordenar",

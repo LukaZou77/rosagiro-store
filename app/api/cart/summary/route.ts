@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { prisma } from "@/lib/db";
 import { discountCents, subtotalCents, totalCents } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
@@ -28,6 +29,13 @@ export async function POST(request: Request) {
       ? await prisma.product.findMany({
           where: { slug: { in: uniqueSlugs } },
           include: { brand: true, inventory: true }
+        })
+      : [];
+    const recommendationProducts = requestedItems.length
+      ? await prisma.product.findMany({
+          where: { active: true },
+          include: { brand: true, category: true, inventory: true },
+          orderBy: { featuredRank: "asc" }
         })
       : [];
     const productMap = new Map(products.map((product) => [product.slug, product]));
@@ -70,6 +78,10 @@ export async function POST(request: Request) {
     const total = totalCents(subtotal, discount, 0);
     const minimumOrderCents = siteConfig.wholesale.minimumOrderCents;
     const remainingToMinimumCents = Math.max(0, minimumOrderCents - subtotal);
+    const recommendations = getCartCompletionRecommendations(recommendationProducts, requestedItems, {
+      limit: 4,
+      minimumOrderCents
+    });
 
     return NextResponse.json({
       lines,
@@ -78,7 +90,8 @@ export async function POST(request: Request) {
       totalCents: total,
       minimumOrderCents,
       remainingToMinimumCents,
-      minimumReached: remainingToMinimumCents === 0
+      minimumReached: remainingToMinimumCents === 0,
+      recommendations
     });
   } catch (error) {
     console.error(error);
@@ -91,6 +104,7 @@ export async function POST(request: Request) {
         minimumOrderCents: siteConfig.wholesale.minimumOrderCents,
         remainingToMinimumCents: siteConfig.wholesale.minimumOrderCents,
         minimumReached: false,
+        recommendations: [],
         error: "Nao foi possivel resumir o carrinho agora."
       },
       { status: 500 }

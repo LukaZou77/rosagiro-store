@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
-import { getCategories, getProduct, getRelatedProducts } from "@/lib/catalog";
+import { getCartCompletionRecommendations } from "@/lib/cart-completion";
+import { getCategories, getProduct, getProducts, getRelatedProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { productDiscountPercent, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
@@ -23,10 +25,11 @@ export default async function ProductPage({ params }: PageProps) {
   const product = await getProduct(slug);
   if (!product || !product.active) notFound();
 
-  const [categories, related, storeProfile] = await Promise.all([
+  const [categories, related, storeProfile, products] = await Promise.all([
     getCategories(),
     getRelatedProducts(product.category.slug, product.slug),
-    getStoreProfile()
+    getStoreProfile(),
+    getProducts()
   ]);
   const quantity = productQuantity(product);
   const available = quantity > 0;
@@ -36,6 +39,11 @@ export default async function ProductPage({ params }: PageProps) {
   const whatsappHref = buildProductWhatsAppHref(product);
   const trustSignals = storeTrustSignals(storeProfile);
   const gallery = normalizeProductGallery(product.image, product.gallery);
+  const completionRecommendations = getCartCompletionRecommendations(products, [{ slug: product.slug, quantity: 1 }], {
+    currentCategorySlug: product.category.slug,
+    excludeSlug: product.slug,
+    limit: 4
+  });
 
   return (
     <StoreShell categories={categories}>
@@ -131,15 +139,26 @@ export default async function ProductPage({ params }: PageProps) {
       </section>
 
       <section className="section">
-        <div className="section-heading">
-          <p className="eyebrow">Complete a rotina</p>
-          <h2>Tambem nesta categoria</h2>
-        </div>
-        <div className="product-grid compact">
-          {related.map((item) => (
-            <ProductCard product={item} key={item.slug} />
-          ))}
-        </div>
+        {completionRecommendations.length ? (
+          <CartCompletionRecommendations
+            recommendations={completionRecommendations}
+            openDrawerOnAdd
+            title={siteConfig.productConversion.completionTitle}
+            body={`Combine ${product.name} com itens em estoque para aproximar sua lista do pedido minimo.`}
+          />
+        ) : (
+          <>
+            <div className="section-heading">
+              <p className="eyebrow">Completar pedido</p>
+              <h2>Tambem nesta categoria</h2>
+            </div>
+            <div className="product-grid compact">
+              {related.map((item) => (
+                <ProductCard product={item} key={item.slug} />
+              ))}
+            </div>
+          </>
+        )}
       </section>
     </StoreShell>
   );
