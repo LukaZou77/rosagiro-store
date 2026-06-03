@@ -11,7 +11,6 @@ import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { getCategories, getProduct, getProducts, getRelatedProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import {
-  productDetailDecisionSignals,
   productDetailGalleryState,
   productDetailInfoItems,
   productDetailServiceCards
@@ -47,9 +46,8 @@ export default async function ProductPage({ params }: PageProps) {
   const trustSignals = storeTrustSignals(storeProfile);
   const gallery = normalizeProductGallery(product.image, product.gallery);
   const galleryState = productDetailGalleryState(gallery);
-  const decisionSignals = productDetailDecisionSignals(product, siteConfig.wholesale.minimumOrderCents);
   const detailInfoItems = productDetailInfoItems(product);
-  const serviceCards = productDetailServiceCards(product);
+  const serviceCards = productDetailServiceCards();
   const wholesaleLines = productWholesaleLines(product);
   const completionRecommendations = getCartCompletionRecommendations(products, [{ slug: product.slug, quantity: 1 }], {
     currentCategorySlug: product.category.slug,
@@ -81,21 +79,6 @@ export default async function ProductPage({ params }: PageProps) {
             <strong>{money(product.priceCents)}</strong>
             {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : null}
           </div>
-          <section className="product-decision-panel" aria-labelledby="product-decision-title">
-            <div>
-              <p className="eyebrow">{siteConfig.productConversion.realnessEyebrow}</p>
-              <h2 id="product-decision-title">{siteConfig.productConversion.realnessTitle}</h2>
-              <p>{siteConfig.productConversion.realnessBody}</p>
-            </div>
-            <div className="product-decision-grid">
-              {decisionSignals.map((signal) => (
-                <div className={`product-decision-card ${signal.tone}`} key={`${signal.label}-${signal.value}`}>
-                  <span>{signal.label}</span>
-                  <strong>{signal.value}</strong>
-                </div>
-              ))}
-            </div>
-          </section>
           <div className={`purchase-panel ${available ? "" : "is-unavailable"}`}>
             <div className="purchase-panel-heading">
               <span>{siteConfig.productConversion.detailPanelTitle}</span>
@@ -124,21 +107,6 @@ export default async function ProductPage({ params }: PageProps) {
               <small>{siteConfig.productConversion.bundlePrompt}</small>
             </div>
           </div>
-          <section className="wholesale-info-panel" aria-labelledby="wholesale-info-title">
-            <div className="wholesale-info-heading">
-              <span>{siteConfig.productConversion.wholesaleInfoEyebrow}</span>
-              <h2 id="wholesale-info-title">{siteConfig.productConversion.wholesaleInfoTitle}</h2>
-            </div>
-            <div className="wholesale-info-grid">
-              {wholesaleLines.map((line) => (
-                <div className={line.fallback ? "is-fallback" : ""} key={line.key}>
-                  <span>{line.label}</span>
-                  <strong>{line.value}</strong>
-                </div>
-              ))}
-            </div>
-            <p>{siteConfig.productConversion.wholesaleInfoNote}</p>
-          </section>
           <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{badge}</span>)}</div>
           <StoreTrustSignals signals={trustSignals} compact />
         </div>
@@ -154,6 +122,22 @@ export default async function ProductPage({ params }: PageProps) {
           {siteConfig.mobilePurchase.productWhatsAppCta}
         </WhatsAppLink>
       </div>
+
+      <section className="section wholesale-info-panel product-wholesale-detail" aria-labelledby="wholesale-info-title">
+        <div className="section-heading compact">
+          <p className="eyebrow">{siteConfig.productConversion.wholesaleInfoEyebrow}</p>
+          <h2 id="wholesale-info-title">{siteConfig.productConversion.wholesaleInfoTitle}</h2>
+          <p>{siteConfig.productConversion.wholesaleInfoNote}</p>
+        </div>
+        <div className="wholesale-info-grid">
+          {wholesaleLines.map((line) => (
+            <div className={line.fallback ? "is-fallback" : ""} key={line.key}>
+              <span>{line.label}</span>
+              <strong>{line.value}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="section product-realness-sections">
         <div className="product-realness-card product-ficha-card">
@@ -181,7 +165,7 @@ export default async function ProductPage({ params }: PageProps) {
         <div className="product-realness-card">
           <div className="section-heading compact">
             <p className="eyebrow">Composicao</p>
-          <h2>Ingredientes-chave</h2>
+            <h2>Ingredientes-chave</h2>
           </div>
           <ul>{product.ingredients.map((item) => <li key={item}>{item}</li>)}</ul>
         </div>
