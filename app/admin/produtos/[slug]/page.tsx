@@ -214,6 +214,62 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
             </label>
           </div>
 
+          <div className="admin-form-block">
+            <div className="product-gallery-heading">
+              <div>
+                <strong>Dados de atacado</strong>
+                <small>Informacoes exibidas no produto e enviadas na consulta por WhatsApp.</small>
+              </div>
+            </div>
+            <div className="form-grid">
+              <label>
+                Quantidade sugerida
+                <input
+                  name="suggestedQuantity"
+                  type="number"
+                  min="1"
+                  defaultValue={product.suggestedQuantity ?? ""}
+                  placeholder="Ex: 6"
+                />
+              </label>
+              <label>
+                Caixa fechada / atacado
+                <input
+                  name="wholesalePackage"
+                  defaultValue={product.wholesalePackage ?? ""}
+                  placeholder="Ex: Caixa com 12 un. sob consulta"
+                />
+              </label>
+              <label>
+                Validade / lote
+                <input
+                  name="validityNote"
+                  defaultValue={product.validityNote ?? ""}
+                  placeholder="Ex: Validade minima 12 meses"
+                />
+              </label>
+              <label>
+                Kit recomendado
+                <textarea
+                  name="kitRecommendation"
+                  defaultValue={product.kitRecommendation ?? ""}
+                  placeholder="Ex: Combine com sabonete facial e protetor solar"
+                />
+              </label>
+              <label>
+                Observacao de compra
+                <textarea
+                  name="purchaseNote"
+                  defaultValue={product.purchaseNote ?? ""}
+                  placeholder="Ex: Confirmar estoque para volume pelo WhatsApp"
+                />
+              </label>
+            </div>
+            <p className="table-note">
+              Use esses campos para orientar revendedoras e lojistas. Eles nao criam desconto automatico nem alteram o checkout.
+            </p>
+          </div>
+
           <div className="form-grid">
             <label>
               Beneficios

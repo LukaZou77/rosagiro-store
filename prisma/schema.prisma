@@ -107,6 +107,11 @@ model Product {
   priceCents          Int
   compareAtPriceCents Int?
   weightGrams         Int         @default(150)
+  suggestedQuantity   Int?
+  kitRecommendation   String?
+  wholesalePackage    String?
+  validityNote        String?
+  purchaseNote        String?
   image               String
   gallery             String[]
   descriptionPt       String

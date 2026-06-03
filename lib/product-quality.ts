@@ -6,7 +6,7 @@ import { normalizeProductGallery } from "@/lib/product-import-shared";
 
 export type ProductQualityStatus = "READY" | "REVIEW" | "ACTION_REQUIRED";
 export type ProductQualitySeverity = "low" | "medium" | "high";
-export type ProductQualityGroup = "media" | "content" | "operation" | "promotion" | "launch";
+export type ProductQualityGroup = "media" | "content" | "wholesale" | "operation" | "promotion" | "launch";
 
 export type ProductQualityIssue = {
   key: string;
@@ -39,6 +39,7 @@ export type ProductQualitySummary = {
   localUploadCount: number;
   svgDemoCount: number;
   defaultWeightCount: number;
+  wholesaleIssueCount: number;
   issueCounts: Array<ProductQualityIssue & { count: number }>;
   items: ProductQualityResult[];
 };
@@ -56,6 +57,7 @@ export const productQualityStatusLabels: Record<ProductQualityStatus, string> = 
 export const productQualityGroupLabels: Record<ProductQualityGroup, string> = {
   media: "Midia",
   content: "Conteudo",
+  wholesale: "Atacado",
   operation: "Operacao",
   promotion: "Promocao",
   launch: "Publicacao"
@@ -63,12 +65,17 @@ export const productQualityGroupLabels: Record<ProductQualityGroup, string> = {
 
 const PLACEHOLDER_PATTERN = /placeholder/i;
 const ADJUST_PATTERN = /a ajustar|exemplo|preparacao|prepara\u00e7\u00e3o|teste|demo/i;
+const WHOLESALE_DRAFT_PATTERN = /a ajustar|exemplo|preparacao|prepara\u00e7\u00e3o|teste|demo|a confirmar|sob consulta|conferencia|confer\u00eancia/i;
 const MIN_DESCRIPTION_LENGTH = 80;
 const MIN_GALLERY_IMAGES = 3;
 const DEFAULT_WEIGHT_GRAMS = 150;
 
 function textLooksDraft(value: string | null | undefined) {
   return !value?.trim() || ADJUST_PATTERN.test(value);
+}
+
+function wholesaleTextLooksDraft(value: string | null | undefined) {
+  return !value?.trim() || WHOLESALE_DRAFT_PATTERN.test(value);
 }
 
 function listLooksDraft(values: string[] | null | undefined, minItems: number) {
@@ -215,6 +222,66 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
     );
   }
 
+  if (!product.suggestedQuantity || product.suggestedQuantity <= 0) {
+    issues.push(
+      issue({
+        key: "missing-suggested-quantity",
+        group: "wholesale",
+        severity: "medium",
+        label: "Quantidade sugerida ausente",
+        message: "Informe uma quantidade sugerida para orientar compra de reposicao ou revenda."
+      })
+    );
+  }
+
+  if (wholesaleTextLooksDraft(product.kitRecommendation)) {
+    issues.push(
+      issue({
+        key: "missing-kit-recommendation",
+        group: "wholesale",
+        severity: "medium",
+        label: "Kit recomendado a revisar",
+        message: "Inclua combinacao real para kit, rotina ou reposicao sem prometer desconto automatico."
+      })
+    );
+  }
+
+  if (wholesaleTextLooksDraft(product.wholesalePackage)) {
+    issues.push(
+      issue({
+        key: "missing-wholesale-package",
+        group: "wholesale",
+        severity: "medium",
+        label: "Atacado/caixa sem regra real",
+        message: "Preencha caixa fechada, pacote, grade ou condicao de atacado que a equipe possa confirmar."
+      })
+    );
+  }
+
+  if (wholesaleTextLooksDraft(product.validityNote)) {
+    issues.push(
+      issue({
+        key: "missing-validity-note",
+        group: "wholesale",
+        severity: "medium",
+        label: "Validade/lote a confirmar",
+        message: "Inclua validade minima, lote ou regra clara de conferencia antes de vender."
+      })
+    );
+  }
+
+  if (textLooksDraft(product.purchaseNote)) {
+    issues.push(
+      issue({
+        key: "missing-purchase-note",
+        group: "wholesale",
+        severity: "low",
+        label: "Observacao de compra vazia",
+        message: "Adicione uma nota curta para orientar volume, revenda, retirada ou consulta por WhatsApp."
+      })
+    );
+  }
+
   if (product.priceCents <= 0) {
     issues.push(
       issue({
@@ -322,6 +389,7 @@ export async function getProductQualitySummary(): Promise<ProductQualitySummary>
     localUploadCount: items.filter((item) => item.primaryImage.startsWith("/uploads/products/")).length,
     svgDemoCount: items.filter((item) => item.issues.some((issueItem) => issueItem.key === "demo-svg-image")).length,
     defaultWeightCount: items.filter((item) => item.issues.some((issueItem) => issueItem.key === "default-weight")).length,
+    wholesaleIssueCount: items.filter((item) => item.issues.some((issueItem) => issueItem.group === "wholesale")).length,
     issueCounts: countIssues(items),
     items
   };

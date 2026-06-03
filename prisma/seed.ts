@@ -127,7 +127,7 @@ const launchReadinessItems = [
     itemKey: "catalog-real-products",
     group: "Catalogo",
     title: "Catalogo real de produtos",
-    description: "Importar SKUs reais, marcas, categorias, precos, descricoes, imagens, estoque, peso e status de venda.",
+    description: "Importar SKUs reais, marcas, categorias, precos, descricoes, imagens, estoque, peso, validade/lote e dados de compra no atacado.",
     priority: 1,
     sortOrder: 30
   },
@@ -471,6 +471,28 @@ function cents(value: number | null) {
   return Math.round(value * 100);
 }
 
+function wholesaleSeedDetails(product: (typeof products)[number]) {
+  const suggestedByCategory: Record<string, number> = {
+    skincare: 3,
+    makeup: 6,
+    fragrance: 2,
+    body: 3,
+    hair: 4,
+    tools: 6
+  };
+
+  return {
+    suggestedQuantity: suggestedByCategory[product.category] || 3,
+    kitRecommendation:
+      product.category === "tools"
+        ? "Combine com produtos de maquiagem para montar kit de revenda."
+        : `Combine com itens de ${product.subcategory.toLowerCase()} para montar reposicao.`,
+    wholesalePackage: "Venda por unidade; caixa fechada e volume maior sob consulta.",
+    validityNote: "Validade/lote sob conferencia no atendimento antes do envio.",
+    purchaseNote: "Para compra em volume, confirme estoque, cidade/UF e melhor forma de entrega pelo WhatsApp."
+  };
+}
+
 function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
@@ -503,6 +525,7 @@ async function main() {
     const brand = brandRecords.get(product.brand);
     const category = categoryRecords.get(product.category);
     if (!brand || !category) throw new Error(`Missing relation for ${product.slug}`);
+    const wholesaleDetails = wholesaleSeedDetails(product);
 
     const record = await prisma.product.upsert({
       where: { slug: product.slug },
@@ -514,6 +537,7 @@ async function main() {
         priceCents: cents(product.priceBRL) ?? 0,
         compareAtPriceCents: cents(product.compareAtPriceBRL),
         weightGrams: 150,
+        ...wholesaleDetails,
         image: product.image,
         gallery: [product.image],
         descriptionPt: product.descriptionPt,
@@ -538,6 +562,7 @@ async function main() {
         priceCents: cents(product.priceBRL) ?? 0,
         compareAtPriceCents: cents(product.compareAtPriceBRL),
         weightGrams: 150,
+        ...wholesaleDetails,
         image: product.image,
         gallery: [product.image],
         descriptionPt: product.descriptionPt,

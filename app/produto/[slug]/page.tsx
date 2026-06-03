@@ -12,6 +12,7 @@ import { getCategories, getProduct, getProducts, getRelatedProducts } from "@/li
 import { money } from "@/lib/money";
 import { productDiscountPercent, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
+import { productWholesaleLines } from "@/lib/product-wholesale";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
@@ -39,6 +40,7 @@ export default async function ProductPage({ params }: PageProps) {
   const whatsappHref = buildProductWhatsAppHref(product);
   const trustSignals = storeTrustSignals(storeProfile);
   const gallery = normalizeProductGallery(product.image, product.gallery);
+  const wholesaleLines = productWholesaleLines(product);
   const completionRecommendations = getCartCompletionRecommendations(products, [{ slug: product.slug, quantity: 1 }], {
     currentCategorySlug: product.category.slug,
     excludeSlug: product.slug,
@@ -93,6 +95,21 @@ export default async function ProductPage({ params }: PageProps) {
               <small>{siteConfig.productConversion.bundlePrompt}</small>
             </div>
           </div>
+          <section className="wholesale-info-panel" aria-labelledby="wholesale-info-title">
+            <div className="wholesale-info-heading">
+              <span>{siteConfig.productConversion.wholesaleInfoEyebrow}</span>
+              <h2 id="wholesale-info-title">{siteConfig.productConversion.wholesaleInfoTitle}</h2>
+            </div>
+            <div className="wholesale-info-grid">
+              {wholesaleLines.map((line) => (
+                <div className={line.fallback ? "is-fallback" : ""} key={line.key}>
+                  <span>{line.label}</span>
+                  <strong>{line.value}</strong>
+                </div>
+              ))}
+            </div>
+            <p>{siteConfig.productConversion.wholesaleInfoNote}</p>
+          </section>
           <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{badge}</span>)}</div>
           <StoreTrustSignals signals={trustSignals} compact />
           <dl className="spec-list">

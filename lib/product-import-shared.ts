@@ -21,6 +21,11 @@ export const productImportOptionalFields = [
   "finish",
   "volume",
   "weightGrams",
+  "suggestedQuantity",
+  "kitRecommendation",
+  "wholesalePackage",
+  "validityNote",
+  "purchaseNote",
   "rating",
   "reviewCount"
 ] as const;
@@ -63,6 +68,11 @@ export type ProductImportRow = {
   finish: string;
   volume: string;
   weightGrams: number;
+  suggestedQuantity: number | null;
+  kitRecommendation: string | null;
+  wholesalePackage: string | null;
+  validityNote: string | null;
+  purchaseNote: string | null;
   rating: number;
   reviewCount: number;
   operation: "create" | "update";
@@ -93,6 +103,13 @@ export type ProductImportCsvRecord = Record<ProductImportField, string | number 
 const headerAliases: Record<string, ProductImportField> = {
   compareatprice: "compareAtPrice",
   descriptionpt: "descriptionPt",
+  skintype: "skinType",
+  weightgrams: "weightGrams",
+  suggestedquantity: "suggestedQuantity",
+  kitrecommendation: "kitRecommendation",
+  wholesalepackage: "wholesalePackage",
+  validitynote: "validityNote",
+  purchasenote: "purchaseNote",
   reviewcount: "reviewCount"
 };
 
@@ -116,6 +133,11 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   finish: "Glow",
   volume: "30 ml",
   weightGrams: 150,
+  suggestedQuantity: 6,
+  kitRecommendation: "Combine com limpeza facial e protetor solar para montar kit de rotina.",
+  wholesalePackage: "Venda por unidade; caixa fechada e volume maior sob consulta.",
+  validityNote: "Validade e lote devem ser confirmados no recebimento do estoque real.",
+  purchaseNote: "Para revenda, confirme estoque e condicao de atacado pelo WhatsApp.",
   rating: "4,8",
   reviewCount: 12
 };
@@ -137,6 +159,11 @@ export const productImportHelpRows = [
   ["benefits, ingredients, badges", "Nao", "Separe varios itens com |."],
   ["skinType, finish, volume", "Nao", "Texto livre para filtros e detalhe do produto."],
   ["weightGrams", "Nao", "Peso unitario em gramas para cotacao de frete. Padrao 150."],
+  ["suggestedQuantity", "Nao", "Quantidade sugerida para compra de reposicao ou revenda."],
+  ["kitRecommendation", "Nao", "Texto curto de kit ou combinacao recomendada para atacado."],
+  ["wholesalePackage", "Nao", "Caixa fechada, pacote, grade ou condicao de atacado a confirmar."],
+  ["validityNote", "Nao", "Informacao de validade/lote ou aviso de conferencia operacional."],
+  ["purchaseNote", "Nao", "Observacao comercial para orientar compra em volume."],
   ["rating", "Nao", "Nota de 0 a 5. Padrao 4,8 quando vazio."],
   ["reviewCount", "Nao", "Quantidade inteira de avaliacoes."]
 ] as const;
@@ -274,6 +301,18 @@ function parseWeightGrams(value: string) {
   return { value: Math.max(1, Math.floor(weight)), valid: true };
 }
 
+function optionalNullableText(value: string) {
+  return value.trim() || null;
+}
+
+function parseOptionalPositiveInt(value: string) {
+  const raw = value.trim();
+  if (!raw) return { value: null, valid: true };
+  const quantity = Number(raw.replace(",", "."));
+  if (!Number.isFinite(quantity) || quantity <= 0) return { value: null, valid: false };
+  return { value: Math.floor(quantity), valid: true };
+}
+
 export function isAllowedProductImage(value: string) {
   const trimmed = value.trim();
   if (trimmed.startsWith("/assets/") || trimmed.startsWith("/uploads/products/") || trimmed.startsWith("/placeholder")) {
@@ -345,6 +384,7 @@ export function parseProductCsv(
     const priceCents = parseCents(raw.price || "");
     const compareAtPriceCents = raw.compareAtPrice ? parseCents(raw.compareAtPrice) : null;
     const weight = parseWeightGrams(raw.weightGrams || "");
+    const suggestedQuantity = parseOptionalPositiveInt(raw.suggestedQuantity || "");
     const stock = parseStock(raw.stock || "");
     const active = parseBoolean(raw.active || "");
     const image = raw.image?.trim() || "";
@@ -364,6 +404,7 @@ export function parseProductCsv(
     }
     if (stock < 0) errors.push("stock invalido");
     if (!weight.valid) errors.push("weightGrams deve ser um numero maior que zero");
+    if (!suggestedQuantity.valid) errors.push("suggestedQuantity deve ser um numero maior que zero quando preenchido");
     if (active === null) errors.push("active deve ser true/false, sim/nao ou 1/0");
     if (!image) errors.push("image obrigatorio");
     else if (!isAllowedProductImage(image)) {
@@ -405,6 +446,11 @@ export function parseProductCsv(
       finish: optionalText(raw.finish || "", "A ajustar"),
       volume: optionalText(raw.volume || "", "A ajustar"),
       weightGrams: weight.value,
+      suggestedQuantity: suggestedQuantity.value,
+      kitRecommendation: optionalNullableText(raw.kitRecommendation || ""),
+      wholesalePackage: optionalNullableText(raw.wholesalePackage || ""),
+      validityNote: optionalNullableText(raw.validityNote || ""),
+      purchaseNote: optionalNullableText(raw.purchaseNote || ""),
       rating: parseRating(raw.rating || ""),
       reviewCount: parseReviewCount(raw.reviewCount || ""),
       operation,

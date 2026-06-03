@@ -30,6 +30,17 @@ function positiveInt(formData: FormData, name: string, fallback = 0) {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : fallback;
 }
 
+function optionalPositiveInt(formData: FormData, name: string) {
+  const raw = field(formData, name);
+  if (!raw) return null;
+  const value = Number(raw.replace(",", "."));
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : null;
+}
+
+function nullableField(formData: FormData, name: string) {
+  return field(formData, name) || null;
+}
+
 function ratingValue(formData: FormData) {
   const value = Number(field(formData, "rating").replace(",", "."));
   if (!Number.isFinite(value)) return 4.8;
@@ -66,7 +77,9 @@ function revalidateCatalog(productSlug?: string) {
   revalidatePath("/categoria/[slug]", "page");
   revalidatePath("/admin");
   revalidatePath("/admin/produtos");
+  revalidatePath("/admin/produtos/qualidade");
   revalidatePath("/admin/importar-produtos");
+  revalidatePath("/admin/prontidao");
   if (productSlug) revalidatePath(`/produto/${productSlug}`);
 }
 
@@ -149,6 +162,7 @@ export async function updateProductDetailAction(formData: FormData) {
   const compareAtPriceCents = parseCents(field(formData, "compareAtPrice"));
   const quantity = positiveInt(formData, "quantity");
   const weightGrams = Math.max(1, positiveInt(formData, "weightGrams", 150));
+  const suggestedQuantity = optionalPositiveInt(formData, "suggestedQuantity");
   const reviewCount = positiveInt(formData, "reviewCount");
   const featuredRank = positiveInt(formData, "featuredRank", 1000);
   const active = formData.get("active") === "on";
@@ -159,6 +173,9 @@ export async function updateProductDetailAction(formData: FormData) {
   }
   if (compareAtPriceCents > 0 && compareAtPriceCents <= priceCents) {
     redirectError(detailPath, "O preco comparativo deve ser maior que o preco atual.");
+  }
+  if (field(formData, "suggestedQuantity") && suggestedQuantity === null) {
+    redirectError(detailPath, "Quantidade sugerida deve ser um numero maior que zero.");
   }
   if (!isAllowedProductImage(image)) {
     redirectError(detailPath, "A imagem deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
@@ -216,6 +233,11 @@ export async function updateProductDetailAction(formData: FormData) {
           finish: field(formData, "finish") || "A ajustar",
           volume: field(formData, "volume") || "A ajustar",
           weightGrams,
+          suggestedQuantity,
+          kitRecommendation: nullableField(formData, "kitRecommendation"),
+          wholesalePackage: nullableField(formData, "wholesalePackage"),
+          validityNote: nullableField(formData, "validityNote"),
+          purchaseNote: nullableField(formData, "purchaseNote"),
           rating: ratingValue(formData),
           reviewCount,
           stockStatus: quantity > 0 ? "Em estoque" : "Esgotado",
@@ -498,6 +520,8 @@ export async function importProductsAction(formData: FormData) {
     revalidatePath("/categoria/[slug]", "page");
     revalidatePath("/admin/produtos");
     revalidatePath("/admin/importar-produtos");
+    revalidatePath("/admin/produtos/qualidade");
+    revalidatePath("/admin/prontidao");
     redirectTo = `/admin/importar-produtos?created=${result.created}&updated=${result.updated}&stock=${result.stockUpdated}`;
   } catch (error) {
     const message =

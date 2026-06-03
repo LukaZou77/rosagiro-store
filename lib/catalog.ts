@@ -10,6 +10,11 @@ export type CatalogProduct = {
   priceCents: number;
   compareAtPriceCents: number | null;
   weightGrams: number;
+  suggestedQuantity: number | null;
+  kitRecommendation: string | null;
+  wholesalePackage: string | null;
+  validityNote: string | null;
+  purchaseNote: string | null;
   image: string;
   gallery: string[];
   descriptionPt: string;

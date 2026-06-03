@@ -111,10 +111,10 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
       status: catalogHasActionRequired ? "ACTION_REQUIRED" : hasCatalogDepth ? "READY" : "WARNING",
       severity: catalogHasActionRequired ? "high" : "medium",
       message: catalogHasActionRequired
-        ? `${input.productQuality.actionRequiredCount} produto(s) com lacunas criticas; ${input.productQuality.activeCount} ativos no catalogo.`
+        ? `${input.productQuality.actionRequiredCount} produto(s) com lacunas criticas; ${input.productQuality.wholesaleIssueCount} precisam atacado/validade real.`
         : hasCatalogDepth
           ? `${input.productQuality.activeCount} de ${input.productQuality.total} produtos ativos com checks criticos resolvidos.`
-          : `${input.productQuality.activeCount} de ${input.productQuality.total} produtos ativos; ainda parece catalogo piloto de 12 SKUs.`,
+          : `${input.productQuality.activeCount} de ${input.productQuality.total} produtos ativos; revise atacado, validade/lote e dados reais de SKU.`,
       actionHref: "/admin/produtos/qualidade"
     }),
     signal({

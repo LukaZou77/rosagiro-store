@@ -1,4 +1,5 @@
 import { money } from "@/lib/money";
+import { productWholesaleWhatsAppLines, type WholesaleProductDetails } from "@/lib/product-wholesale";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 
 type ProductContact = {
@@ -9,7 +10,7 @@ type ProductContact = {
   volume?: string;
   brand: { name: string };
   inventory?: { quantity: number } | null;
-};
+} & WholesaleProductDetails;
 
 type CartContactItem = {
   quantity: number;
@@ -52,6 +53,7 @@ export function buildCatalogWhatsAppHref(categoryLabel: string, productCount: nu
 
 export function buildProductWhatsAppHref(product: ProductContact) {
   const quantity = product.inventory?.quantity ?? null;
+  const wholesaleLines = productWholesaleWhatsAppLines(product);
   return buildHref(
     [
       siteConfig.whatsapp.messages.productGreeting,
@@ -62,6 +64,7 @@ export function buildProductWhatsAppHref(product: ProductContact) {
       product.volume ? `Volume: ${product.volume}` : "",
       quantity === null ? "" : `Estoque exibido: ${quantity} un.`,
       product.stockStatus ? `Status: ${product.stockStatus}` : "",
+      ...wholesaleLines,
       `Link: ${siteUrl(`/produto/${product.slug}`)}`,
       `Pedido minimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
       "Cidade/UF para entrega ou retirada: ",

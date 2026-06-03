@@ -34,6 +34,11 @@ export async function currentProductsCsv() {
     finish: product.finish,
     volume: product.volume,
     weightGrams: product.weightGrams,
+    suggestedQuantity: product.suggestedQuantity,
+    kitRecommendation: product.kitRecommendation,
+    wholesalePackage: product.wholesalePackage,
+    validityNote: product.validityNote,
+    purchaseNote: product.purchaseNote,
     rating: String(product.rating).replace(".", ","),
     reviewCount: product.reviewCount
   }));

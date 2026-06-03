@@ -14,7 +14,7 @@ type PageProps = {
 };
 
 const statusOptions: Array<"all" | ProductQualityStatus> = ["all", "ACTION_REQUIRED", "REVIEW", "READY"];
-const groupOptions: Array<"all" | ProductQualityGroup> = ["all", "media", "content", "operation", "promotion", "launch"];
+const groupOptions: Array<"all" | ProductQualityGroup> = ["all", "media", "content", "wholesale", "operation", "promotion", "launch"];
 
 function single(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -107,6 +107,10 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
         <p className="table-note">
           {summary.defaultWeightCount} produto(s) ainda usam 150g, que parece peso inicial. Confirme peso real para
           frete Anjun por CEP.
+        </p>
+        <p className="table-note">
+          {summary.wholesaleIssueCount} produto(s) precisam revisar quantidade sugerida, kit, caixa/atacado ou
+          validade/lote antes de vender como atacado real.
         </p>
       </section>
 
