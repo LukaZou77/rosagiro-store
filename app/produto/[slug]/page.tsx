@@ -51,9 +51,7 @@ export default async function ProductPage({ params }: PageProps) {
             {product.brand.name} / {product.subcategory}
           </p>
           <h1>{product.name}</h1>
-          <div className="rating">
-            Nota {product.rating.toFixed(1)} <span>({product.reviewCount} avaliacoes)</span>
-          </div>
+          <div className="rating">{siteConfig.productConversion.reviewFallback}</div>
           <p className="description">{product.descriptionPt}</p>
           <div className="price-line">
             <strong>{money(product.priceCents)}</strong>
@@ -84,7 +82,7 @@ export default async function ProductPage({ params }: PageProps) {
               <WhatsAppLink href={whatsappHref} className="button whatsapp">
                 {siteConfig.whatsapp.productCta}
               </WhatsAppLink>
-              <small>Mensagem com produto, preco, estoque e entrega.</small>
+              <small>{siteConfig.productConversion.bundlePrompt}</small>
             </div>
           </div>
           <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{badge}</span>)}</div>

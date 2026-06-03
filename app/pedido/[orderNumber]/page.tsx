@@ -38,10 +38,7 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
       <section className="confirmation order-confirmation">
         <p className="eyebrow">Pedido Bela Viva</p>
         <h1>{order.status === "PAID" ? "Compra confirmada." : "Pedido criado."}</h1>
-        <p>
-          {order.customerName}, acompanhe aqui o status do pedido. Em ambiente sandbox, pagamentos Mercado Pago nao
-          geram cobranca real.
-        </p>
+        <p>{order.customerName}, acompanhe aqui o status do pedido e confira os dados antes da entrega.</p>
         {mercadoPagoMessage ? <p className="payment-return-note">{mercadoPagoMessage}</p> : null}
         <div className="confirmation-card">
           <span>Numero do pedido</span>
@@ -53,9 +50,9 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
         </div>
         {order.payment?.provider === "MERCADO_PAGO" ? (
           <div className="address-match-card needs-review">
-            <span>Mercado Pago sandbox</span>
+            <span>Mercado Pago</span>
             <strong>{order.payment.providerStatus || "Aguardando retorno"}</strong>
-            <small>{order.payment.syncError || "Webhook aprovado marcara o pedido como pago automaticamente."}</small>
+            <small>{order.payment.syncError || "A confirmacao do provedor atualizara o pedido automaticamente."}</small>
           </div>
         ) : null}
         <div className={`address-match-card ${order.addressMatchStatus.toLowerCase().replace("_", "-")}`}>

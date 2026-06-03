@@ -154,7 +154,7 @@ export default async function PromotionsPage() {
                     <strong>{product.name}</strong>
                     <small>{product.badges[0] || product.category.label} / {productQuantity(product)} un.</small>
                   </span>
-                  <b>Nota {product.rating.toFixed(1)}</b>
+                  <b>{productQuantity(product) > 0 ? "Pronta entrega" : "Consultar"}</b>
                 </Link>
               ))
             ) : (

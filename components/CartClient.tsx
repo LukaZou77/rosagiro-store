@@ -87,10 +87,15 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
         ) : (
           <div className="empty-state">
             <strong>Seu carrinho esta vazio</strong>
-            <p>Explore categorias e adicione produtos para testar o fluxo.</p>
-            <Link className="button secondary" href="/categoria/all">
-              Explorar catalogo
-            </Link>
+            <p>Escolha produtos do catalogo ou veja as ofertas para montar seu pedido minimo de atacado.</p>
+            <div className="empty-actions">
+              <Link className="button primary" href="/categoria/all">
+                Explorar catalogo
+              </Link>
+              <Link className="button secondary" href="/promocoes">
+                Ver ofertas
+              </Link>
+            </div>
           </div>
         )}
       </div>
@@ -130,7 +135,7 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
           <CustomerCheckoutButton className="button primary wide">Continuar para checkout</CustomerCheckoutButton>
         ) : (
           <Link className="button primary wide disabled" href="/categoria/all">
-            Ver produtos
+            Montar pedido
           </Link>
         )}
       </aside>

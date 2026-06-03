@@ -26,9 +26,9 @@ export default async function SimulatedPaymentPage({ params }: PageProps) {
   return (
     <StoreShell categories={categories}>
       <section className="confirmation">
-        <p className="eyebrow">Pagamento simulado</p>
-        <h1>Confirme o pagamento para validar o fluxo.</h1>
-        <p>Este pedido nao gera cobranca real. Ao confirmar, o estoque sera reduzido como em uma compra paga.</p>
+        <p className="eyebrow">Confirmacao do pedido</p>
+        <h1>Confirme para reservar os itens.</h1>
+        <p>Ao confirmar, o pedido sera marcado como pago e o estoque sera reservado para acompanhamento.</p>
         <div className="confirmation-card">
           <span>Pedido</span>
           <strong>{order.orderNumber}</strong>

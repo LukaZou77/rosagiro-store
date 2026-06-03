@@ -84,7 +84,15 @@ export function storeProfileAddress(profile: StoreProfileView) {
 
 export function storeCnpjLabel(profile: StoreProfileView) {
   const digits = profile.cnpj.replace(/\D/g, "");
-  return digits.length === 14 && !/^0+$/.test(digits) ? `CNPJ ${profile.cnpj}` : "CNPJ em revisao";
+  return digits.length === 14 && !/^0+$/.test(digits) ? `CNPJ ${profile.cnpj}` : "Dados da loja";
+}
+
+function cleanPublicSignal(signal: string) {
+  const normalized = signal.trim();
+  if (!normalized) return "";
+  if (/preparacao|prepara\u00e7\u00e3o|teste|simulad/i.test(normalized)) return "";
+  if (/cnpj em revisao/i.test(normalized)) return "Dados da loja";
+  return normalized;
 }
 
 export function storeSocialLinks(profile: StoreProfileView) {
@@ -108,7 +116,27 @@ export function storeTrustSignals(profile: StoreProfileView, limit = 4) {
     storeCnpjLabel(profile),
     profile.businessHours,
     "Politicas de troca e entrega visiveis"
-  ].filter(Boolean);
+  ]
+    .map(cleanPublicSignal)
+    .filter(Boolean);
 
   return Array.from(new Set(signals)).slice(0, limit);
+}
+
+export function publicStoreProfileNotes(profile: StoreProfileView) {
+  const paymentNote = /simulad|teste|preparacao|prepara\u00e7\u00e3o/i.test(profile.paymentNote)
+    ? "Pix, cartao e confirmacao pelo atendimento estao disponiveis conforme a modalidade escolhida no checkout."
+    : profile.paymentNote;
+  const launchNote = /simulad|teste|preparacao|prepara\u00e7\u00e3o/i.test(profile.launchNote)
+    ? "Confira os dados da loja, canais de atendimento e politicas antes de finalizar sua compra."
+    : profile.launchNote;
+  const stateRegistration = /a ajustar|preparacao|prepara\u00e7\u00e3o/i.test(profile.stateRegistration)
+    ? "Consulte a loja"
+    : profile.stateRegistration;
+
+  return {
+    paymentNote,
+    launchNote,
+    stateRegistration
+  };
 }

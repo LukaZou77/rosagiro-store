@@ -6,6 +6,7 @@ import { getCategories } from "@/lib/catalog";
 import {
   getStoreProfile,
   storeCnpjLabel,
+  publicStoreProfileNotes,
   storeProfileAddress,
   storeSocialLinks,
   storeTrustSignals
@@ -20,6 +21,7 @@ export default async function StoreInformationPage() {
   const [categories, profile] = await Promise.all([getCategories(), getStoreProfile()]);
   const socialLinks = storeSocialLinks(profile);
   const trustSignals = storeTrustSignals(profile, 5);
+  const publicNotes = publicStoreProfileNotes(profile);
 
   return (
     <StoreShell categories={categories}>
@@ -27,10 +29,7 @@ export default async function StoreInformationPage() {
         <div>
           <p className="eyebrow">Loja / Confianca</p>
           <h1>Informacoes da loja Bela Viva</h1>
-          <p>
-            Dados comerciais, atendimento e orientacoes operacionais para comprar com mais clareza durante a fase de
-            preparacao da loja.
-          </p>
+          <p>Dados comerciais, atendimento e orientacoes operacionais para comprar com mais clareza.</p>
         </div>
         <StoreTrustSignals signals={trustSignals} showLink={false} />
       </section>
@@ -50,7 +49,7 @@ export default async function StoreInformationPage() {
             </div>
             <div>
               <dt>Inscricao estadual</dt>
-              <dd>{profile.stateRegistration}</dd>
+              <dd>{publicNotes.stateRegistration}</dd>
             </div>
           </dl>
         </article>
@@ -99,8 +98,8 @@ export default async function StoreInformationPage() {
 
         <article className="store-info-card">
           <span>Pagamento</span>
-          <h2>Ambiente de teste</h2>
-          <p>{profile.paymentNote}</p>
+          <h2>Formas de pagamento</h2>
+          <p>{publicNotes.paymentNote}</p>
           <Link href="/termos-de-uso">Ver termos de uso</Link>
         </article>
 
@@ -113,8 +112,8 @@ export default async function StoreInformationPage() {
 
         <article className="store-info-card launch-note">
           <span>Status</span>
-          <h2>Loja em preparacao</h2>
-          <p>{profile.launchNote}</p>
+          <h2>Antes de comprar</h2>
+          <p>{publicNotes.launchNote}</p>
         </article>
       </section>
     </StoreShell>

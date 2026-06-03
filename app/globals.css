@@ -3248,6 +3248,29 @@ legend {
   text-align: center;
 }
 
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.empty-checkout-shell {
+  align-items: start;
+}
+
+.empty-checkout-card {
+  display: grid;
+  gap: 14px;
+}
+
+.empty-checkout-card > p:not(.eyebrow) {
+  max-width: 62ch;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .confirmation {
   max-width: 720px;
   margin: 40px auto;

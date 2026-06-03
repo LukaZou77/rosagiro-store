@@ -30,6 +30,8 @@ export function buildGeneralWhatsAppHref(source = "loja") {
       siteConfig.whatsapp.messages.generalGreeting,
       `Canal: ${source}`,
       `Pedido minimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
+      "Cidade/UF: ",
+      "Compra para: revenda, reposicao ou uso profissional?",
       siteConfig.whatsapp.messages.generalQuestion
     ].join("\n")
   );
@@ -42,6 +44,7 @@ export function buildCatalogWhatsAppHref(categoryLabel: string, productCount: nu
       `Estou olhando o catalogo: ${categoryLabel}.`,
       `Produtos encontrados: ${productCount}.`,
       `Pedido minimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
+      "Cidade/UF para entrega ou retirada: ",
       "Pode me ajudar com estoque, retirada, transportadora ou excursao?"
     ].join("\n")
   );
@@ -61,6 +64,8 @@ export function buildProductWhatsAppHref(product: ProductContact) {
       product.stockStatus ? `Status: ${product.stockStatus}` : "",
       `Link: ${siteUrl(`/produto/${product.slug}`)}`,
       `Pedido minimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
+      "Cidade/UF para entrega ou retirada: ",
+      "Compra para revenda/reposicao? ",
       siteConfig.whatsapp.messages.productQuestion
     ]
       .filter(Boolean)
@@ -83,6 +88,8 @@ export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: n
       `Subtotal do carrinho: ${money(subtotalCents)}`,
       `Pedido minimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
       missingCents > 0 ? `Ainda faltam: ${money(missingCents)}` : "Lista acima do minimo sugerido.",
+      "Cidade/UF para entrega ou retirada: ",
+      "Compra para revenda/reposicao? ",
       siteConfig.whatsapp.messages.cartQuestion
     ].join("\n")
   );

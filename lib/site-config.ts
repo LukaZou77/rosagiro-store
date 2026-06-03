@@ -17,20 +17,20 @@ export const siteConfig = {
     cartCta: "Enviar lista pelo WhatsApp",
     messages: {
       generalGreeting: "Ola, Bela Viva! Quero atendimento para comprar no atacado.",
-      generalQuestion: "Pode me orientar sobre produtos, estoque e formas de entrega?",
+      generalQuestion: "Sou revendedora/lojista ou quero comprar para reposicao. Pode me orientar sobre produtos, estoque, cidade/UF e melhor forma de entrega?",
       productGreeting: "Ola, Bela Viva! Quero consultar este produto.",
-      productQuestion: "Pode confirmar estoque, condicao para atacado e melhor forma de entrega?",
+      productQuestion: "Pode confirmar estoque, condicao para atacado e indicar se compensa retirar, enviar por transportadora ou excursao para minha cidade?",
       cartGreeting: "Ola, Bela Viva! Quero confirmar esta lista de compra.",
-      cartQuestion: "Pode revisar estoque e me orientar sobre retirada, transportadora ou excursao?"
+      cartQuestion: "Pode revisar estoque, sugerir itens para completar o pedido minimo e me orientar sobre entrega/retirada para minha cidade?"
     }
   },
   marketplace: "Brasil",
   wholesale: {
     minimumOrderCents: 30000,
     minimumOrderTitle: "Pedido minimo",
-    minimumOrderText: "Pedido minimo R$ 300,00 para compras no atacado. Nesta fase o pedido de teste nao sera bloqueado.",
+    minimumOrderText: "Pedido minimo R$ 300,00 para compras no atacado. Se precisar completar a lista, fale com o atendimento.",
     headerStrip: "PEDIDO MINIMO R$ 300,00 - OFERTAS MULTIMARCAS - PIX, CEP E WHATSAPP",
-    storeTrust: "CNPJ e dados da loja serao revisados antes da publicacao oficial.",
+    storeTrust: "Dados comerciais, atendimento e politicas reunidos para uma compra mais segura.",
     deliveryModes: [
       "Retirada local mediante confirmacao",
       "Anjun D2D Pickup estimado por CEP",
@@ -56,7 +56,7 @@ export const siteConfig = {
   homePromotions: {
     promoBar: {
       label: "Ofertas no atacado",
-      text: "Pedido minimo R$ 300,00, Pix sandbox, frete por CEP e WhatsApp para revisar estoque e entrega.",
+      text: "Pedido minimo R$ 300,00, Pix, frete por CEP e WhatsApp para revisar estoque e entrega.",
       cta: "Ver ofertas",
       href: "/promocoes"
     },
@@ -69,7 +69,7 @@ export const siteConfig = {
     trustPoints: [
       "Pedido minimo R$ 300,00 sinalizado em toda compra",
       "Pedido multimarcas em um carrinho",
-      "Pix, cartao e simulador em ambiente de teste",
+      "Pix e cartao pelo checkout seguro",
       "Frete Anjun estimado por CEP",
       "WhatsApp para duvidas de estoque e entrega"
     ],
@@ -98,11 +98,11 @@ export const siteConfig = {
     wholesaleBand: {
       eyebrow: "Compra com volume",
       title: "Compra minima clara, WhatsApp rapido e entrega do jeito brasileiro.",
-      body: "A vitrine ja orienta pedido minimo, estoque, pronta entrega, Pix sandbox, frete por CEP e consulta por WhatsApp. Depois podemos adicionar preco por quantidade, cupons e tabelas de atacado sem refazer a experiencia.",
+      body: "A vitrine orienta pedido minimo, estoque, pronta entrega, Pix, frete por CEP e consulta por WhatsApp para quem compra para revenda ou reposicao.",
       primaryCta: "Ver todos os produtos",
       secondaryCta: "Falar no WhatsApp"
     },
-    shelfNote: "Use a importacao CSV para trocar nomes, precos, estoque e descricao quando os produtos reais chegarem."
+    shelfNote: "Confira estoque e combinacoes pelo WhatsApp antes de fechar pedidos de reposicao."
   },
   promotionsPage: {
     eyebrow: "Promocoes",
@@ -151,7 +151,9 @@ export const siteConfig = {
     freightText: "Anjun, retirada ou consulta no WhatsApp",
     cardMinimumHint: "R$ 300 minimo",
     detailPanelTitle: "Compra no atacado",
-    detailPanelNote: "Confira estoque, minimo de compra e frete antes de finalizar. O pedido de teste segue liberado nesta fase.",
+    detailPanelNote: "Confira estoque, pedido minimo e frete antes de finalizar. Para comprar em volume, o atendimento pode sugerir itens para completar sua lista.",
+    reviewFallback: "Produto em curadoria",
+    bundlePrompt: "Quer montar kit para revenda? Envie este item pelo WhatsApp e informe sua cidade/UF.",
     unavailableCta: "Consultar disponibilidade"
   },
   mobilePurchase: {
@@ -194,19 +196,19 @@ export const infoPages = {
     href: "/politica-de-privacidade",
     eyebrow: "Politica",
     title: "Politica de privacidade",
-    description: "Resumo editavel sobre como a Bela Viva pretende tratar dados de contato, entrega e pedidos.",
+    description: "Resumo editavel sobre como a Bela Viva trata dados de contato, entrega e pedidos.",
     sections: [
       {
         title: "Dados coletados",
-        body: "Ao adicionar produtos ou iniciar o checkout podemos solicitar nome e WhatsApp para atendimento e compra no atacado. No checkout tambem coletamos e-mail, CPF e endereco para criar o pedido e simular a entrega."
+        body: "Ao adicionar produtos ou iniciar o checkout podemos solicitar nome e WhatsApp para atendimento e compra no atacado. No checkout tambem coletamos e-mail, CPF e endereco para criar o pedido e organizar a entrega."
       },
       {
         title: "Uso das informacoes",
-        body: "Os dados sao usados para atendimento via WhatsApp, organizacao de clientes, processamento de pedidos e validacao operacional. Esta fase nao cria senha nem area publica de cliente."
+        body: "Os dados sao usados para atendimento via WhatsApp, organizacao de clientes, processamento de pedidos e validacao operacional. A primeira versao nao cria senha nem area publica de cliente."
       },
       {
         title: "Ajustes antes do lancamento",
-        body: "Este texto e um ponto de partida. Antes de publicar, revise com os dados reais da empresa, canais de suporte e politicas LGPD aplicaveis."
+        body: "Este texto deve ser mantido atualizado com os dados reais da empresa, canais de suporte e politicas LGPD aplicaveis."
       }
     ]
   },
@@ -215,19 +217,19 @@ export const infoPages = {
     href: "/termos-de-uso",
     eyebrow: "Termos",
     title: "Termos de uso",
-    description: "Condicoes iniciais para navegacao, pedidos de teste e uso da loja Bela Viva.",
+    description: "Condicoes iniciais para navegacao, pedidos e uso da loja Bela Viva.",
     sections: [
       {
-        title: "Loja em preparacao",
-        body: "A Bela Viva ainda esta em fase de construcao. Pedidos e pagamentos desta versao sao simulados e nao geram cobranca real."
+        title: "Uso da loja",
+        body: "A Bela Viva organiza produtos multimarcas de beleza para compras no atacado, reposicao e revenda, com atendimento de apoio pelo WhatsApp."
       },
       {
         title: "Catalogo e precos",
-        body: "Produtos, marcas, estoque e precos podem mudar durante a fase de ajustes. A versao final deve confirmar disponibilidade antes de concluir uma venda."
+        body: "Produtos, marcas, estoque e precos podem variar. A confirmacao final de disponibilidade e entrega pode ser feita pelo atendimento antes da conclusao da compra."
       },
       {
         title: "Contato",
-        body: "Duvidas comerciais, suporte e solicitacoes devem usar os canais oficiais exibidos na pagina de contato quando a loja for publicada."
+        body: "Duvidas comerciais, suporte e solicitacoes devem usar os canais oficiais exibidos na pagina de contato."
       }
     ]
   },
@@ -269,7 +271,7 @@ export const infoPages = {
       },
       {
         title: "Integracoes futuras",
-        body: "Esta fase ainda nao compra etiquetas nem chama API real de transportadora. Depois podemos conectar Melhor Envio, Anjun ou outra operacao sem refazer o checkout."
+        body: "A loja pode evoluir para novas integracoes de transporte sem alterar a experiencia principal de checkout e atendimento."
       }
     ]
   },
@@ -278,19 +280,19 @@ export const infoPages = {
     href: "/contato",
     eyebrow: "Atendimento",
     title: "Contato",
-    description: "Canais temporarios para revisar a experiencia de atendimento antes da publicacao oficial.",
+    description: "Canais para atendimento, duvidas sobre estoque, pedidos e compras no atacado.",
     sections: [
       {
         title: "E-mail",
-        body: "Use contato@belaviva.local como placeholder. Troque pelo e-mail real antes de publicar a loja."
+        body: "Use o e-mail informado pela loja para suporte, duvidas de pedido e contato comercial."
       },
       {
         title: "WhatsApp",
-        body: "Reserve este espaco para o numero comercial da Bela Viva e horarios de atendimento."
+        body: "O WhatsApp e o canal principal para confirmar estoque, montar lista de compra, combinar retirada ou tirar duvidas de entrega."
       },
       {
-        title: "Status da loja",
-        body: "A loja esta em fase de primeira versao. Pedidos feitos neste ambiente servem para teste operacional."
+        title: "Compra no atacado",
+        body: "Informe sua cidade/UF e se a compra e para revenda, reposicao ou uso profissional para receber uma orientacao mais rapida."
       }
     ]
   }

@@ -2,17 +2,17 @@ export const paymentMethods = [
   {
     value: "PIX",
     label: "Pix",
-    description: "No sandbox Mercado Pago abre o Checkout Pro; sem token local, segue pelo simulador."
+    description: "Forma preferida no Brasil. A confirmacao final aparece no acompanhamento do pedido."
   },
   {
     value: "CREDIT_CARD",
     label: "Cartao de credito",
-    description: "Checkout Pro sandbox para testes; dados reais de cartao nao sao coletados no site."
+    description: "Pagamento por checkout seguro; a Bela Viva nao armazena dados do cartao."
   },
   {
     value: "SIMULATED",
-    label: "Pagamento simulado",
-    description: "Ambiente de teste para validar pedido, estoque e pos-compra."
+    label: "Confirmar com atendimento",
+    description: "Use quando preferir que a equipe confirme estoque, entrega e condicoes pelo WhatsApp."
   }
 ] as const;
 
@@ -23,12 +23,12 @@ export function isPaymentMethod(value: string): value is PaymentMethodValue {
 }
 
 export function paymentMethodLabel(value?: string | null) {
-  return paymentMethods.find((method) => method.value === value)?.label || "Pagamento simulado";
+  return paymentMethods.find((method) => method.value === value)?.label || "Confirmar com atendimento";
 }
 
 export function paymentProviderLabel(value?: string | null) {
   if (value === "MERCADO_PAGO") return "Mercado Pago";
-  return "Simulado";
+  return "Atendimento";
 }
 
 export function paymentStatusLabel(value?: string | null) {
@@ -42,9 +42,9 @@ export function paymentStatusLabel(value?: string | null) {
 
 export function mercadoPagoReturnMessage(value?: string | null) {
   const labels: Record<string, string> = {
-    success: "Retorno recebido do Mercado Pago. A confirmacao final depende do webhook aprovado.",
-    pending: "Pagamento em analise no Mercado Pago. Vamos manter o pedido aguardando confirmacao.",
-    failure: "O Mercado Pago indicou falha ou cancelamento. Voce pode tentar novamente ou falar com o atendimento."
+    success: "Retorno recebido. A confirmacao final aparece quando o pagamento for aprovado.",
+    pending: "Pagamento em analise. Vamos manter o pedido aguardando confirmacao.",
+    failure: "O pagamento indicou falha ou cancelamento. Voce pode tentar novamente ou falar com o atendimento."
   };
   return labels[value || ""] || "";
 }

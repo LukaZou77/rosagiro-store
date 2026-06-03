@@ -1,15 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, writeCart } from "@/components/CartCount";
 import { useCustomerSession } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
+import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
 import { money } from "@/lib/money";
 import { paymentMethods, type PaymentMethodValue } from "@/lib/payments";
 import { siteConfig } from "@/lib/site-config";
+import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 type Product = {
   slug: string;
@@ -155,6 +158,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const selectedShipping = shippingQuote?.options.find((option) => option.method === shippingMethod) || null;
   const shipping = selectedShipping?.priceCents || 0;
   const total = subtotal - discount + shipping;
+  const emptyCheckoutWhatsAppHref = useMemo(() => buildGeneralWhatsAppHref("checkout sem itens"), []);
   const contactValue = useMemo(
     () => ({
       name: contactTouched.name ? contact.name : contact.name || customer?.name || "",
@@ -592,6 +596,41 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
       return;
     }
     router.push(result.redirectTo);
+  }
+
+  if (!items.length) {
+    return (
+      <section className="checkout-shell empty-checkout-shell">
+        <div className="cart-panel empty-checkout-card">
+          <p className="eyebrow">Checkout Bela Viva</p>
+          <h1>Monte sua lista antes de finalizar.</h1>
+          <p>
+            Seu carrinho esta vazio. Escolha produtos do catalogo ou fale no WhatsApp para receber sugestoes de kits,
+            pronta entrega e itens para completar o pedido minimo.
+          </p>
+          <MinimumOrderNotice subtotalCents={0} />
+          <div className="empty-actions">
+            <Link className="button primary" href="/categoria/all">
+              Explorar catalogo
+            </Link>
+            <Link className="button secondary" href="/promocoes">
+              Ver ofertas
+            </Link>
+            <WhatsAppLink className="button whatsapp" href={emptyCheckoutWhatsAppHref}>
+              Falar no WhatsApp
+            </WhatsAppLink>
+          </div>
+        </div>
+        <aside className="summary-panel">
+          <StoreTrustSignals signals={trustSignals} compact />
+          <div className="delivery-note">
+            {siteConfig.wholesale.deliveryModes.map((mode) => (
+              <span key={mode}>{mode}</span>
+            ))}
+          </div>
+        </aside>
+      </section>
+    );
   }
 
   return (
