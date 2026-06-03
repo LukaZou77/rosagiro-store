@@ -34,6 +34,10 @@ type Product = {
 
 const states = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
 const manualCepMessage = "Preencha manualmente se o CEP nao trouxer todos os dados.";
+const checkoutStepOrder = ["contact", "address", "payment"] as const;
+
+type CheckoutStep = (typeof checkoutStepOrder)[number];
+type ContactField = "name" | "phone" | "email" | "cpf";
 
 type CepStatus = "idle" | "loading" | "success" | "not-found" | "error";
 type AddressSearchStatus = "idle" | "loading" | "success" | "empty" | "disabled" | "error";
@@ -119,12 +123,26 @@ function addressSearchReadiness(value: string, address: Pick<AddressState, "stat
   return "";
 }
 
+function cleanDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function emailLooksValid(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function stepIndex(step: CheckoutStep) {
+  return checkoutStepOrder.indexOf(step);
+}
+
 export function CheckoutClient({ products, trustSignals }: { products: Product[]; trustSignals: string[] }) {
   const router = useRouter();
   const cart = useCart();
   const { customer, requireCustomerSession } = useCustomerSession();
-  const [contact, setContact] = useState({ name: "", phone: "" });
+  const [contact, setContact] = useState({ name: "", phone: "", email: "", cpf: "" });
   const [contactTouched, setContactTouched] = useState({ name: false, phone: false });
+  const [activeStep, setActiveStep] = useState<CheckoutStep>("contact");
+  const [stepError, setStepError] = useState("");
   const [shippingMethod, setShippingMethod] = useState<CheckoutShippingMethod>("RETIRADA_LOCAL");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("PIX");
   const [address, setAddress] = useState<AddressState>({
@@ -149,6 +167,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const addressSessionToken = useRef(makeAddressSessionToken());
+  const formRef = useRef<HTMLFormElement>(null);
   const skipNextAddressSearch = useRef(false);
   const lastAutofilledCep = useRef("");
   const autofilledFields = useRef<Record<AutoFillField, boolean>>({ ...emptyAutofillFields });
@@ -192,13 +211,56 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const contactValue = useMemo(
     () => ({
       name: contactTouched.name ? contact.name : contact.name || customer?.name || "",
-      phone: contactTouched.phone ? contact.phone : contact.phone || customer?.whatsapp || ""
+      phone: contactTouched.phone ? contact.phone : contact.phone || customer?.whatsapp || "",
+      email: contact.email,
+      cpf: contact.cpf
     }),
     [contact, contactTouched, customer]
   );
+  const contactComplete =
+    contactValue.name.trim().length >= 2 &&
+    emailLooksValid(contactValue.email) &&
+    cleanDigits(contactValue.phone).length >= 10 &&
+    cleanDigits(contactValue.cpf).length >= 11;
+  const addressComplete =
+    cepDigits(address.cep).length === 8 &&
+    Boolean(address.state) &&
+    address.city.trim().length > 0 &&
+    address.street.trim().length > 0 &&
+    address.number.trim().length > 0 &&
+    address.district.trim().length > 0;
+  const paymentComplete = contactComplete && addressComplete && Boolean(paymentMethod);
+  const stepComplete: Record<CheckoutStep, boolean> = {
+    contact: contactComplete,
+    address: addressComplete,
+    payment: paymentComplete
+  };
+  const paymentLabel = paymentMethods.find((method) => method.value === paymentMethod)?.label || "Pagamento";
+  const stepSummaries: Record<CheckoutStep, string> = {
+    contact: contactComplete
+      ? `${contactValue.name.trim()} · ${contactValue.phone.trim()}`
+      : siteConfig.checkout.steps.contact.summary,
+    address: addressComplete
+      ? `${address.city.trim()}/${address.state} · ${address.cep}`
+      : siteConfig.checkout.steps.address.summary,
+    payment: `${paymentLabel} · ${selectedShipping?.label || "Retirada local ou consulta"}`
+  };
+  const currentStepIndex = stepIndex(activeStep);
+  const checkoutStepCards = checkoutStepOrder.map((step, index) => ({
+    id: step,
+    number: index + 1,
+    title: siteConfig.checkout.steps[step].title,
+    summary: stepSummaries[step],
+    complete: stepComplete[step],
+    active: activeStep === step,
+    unlocked: index === 0 || checkoutStepOrder.slice(0, index).every((previousStep) => stepComplete[previousStep])
+  }));
+  const mobileCheckoutActionLabel =
+    activeStep === "payment" ? siteConfig.checkout.finalCta : siteConfig.checkout.nextCta;
 
   const prefillContactFromCustomer = useCallback((nextCustomer: { name: string; whatsapp: string }) => {
     setContact((current) => ({
+      ...current,
       name: current.name || nextCustomer.name,
       phone: current.phone || nextCustomer.whatsapp
     }));
@@ -209,9 +271,95 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     requireCustomerSession({ intent: "checkout", onSuccess: prefillContactFromCustomer });
   }, [customer, items.length, prefillContactFromCustomer, requireCustomerSession]);
 
-  function updateContact(field: "name" | "phone", value: string) {
+  function updateContact(field: ContactField, value: string) {
     setContact((current) => ({ ...current, [field]: value }));
-    setContactTouched((current) => ({ ...current, [field]: true }));
+    if (field === "name" || field === "phone") {
+      setContactTouched((current) => ({ ...current, [field]: true }));
+    }
+  }
+
+  function scrollToCheckoutStep(step: CheckoutStep) {
+    const target = document.querySelector(`[data-checkout-step="${step}"]`);
+    const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    target?.scrollIntoView({ block: "start", behavior });
+  }
+
+  function focusCheckoutField(name: string) {
+    const field = formRef.current?.querySelector<HTMLElement>(`[name="${name}"]`);
+    const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    field?.scrollIntoView({ block: "center", behavior });
+    field?.focus({ preventScroll: true });
+  }
+
+  function failStep(step: CheckoutStep, message: string, fieldName?: string) {
+    setActiveStep(step);
+    setStepError(message);
+    window.setTimeout(() => {
+      if (fieldName) {
+        focusCheckoutField(fieldName);
+        return;
+      }
+      scrollToCheckoutStep(step);
+    }, 0);
+    return false;
+  }
+
+  function validateCheckoutStep(step: CheckoutStep) {
+    if (step === "contact") {
+      if (contactValue.name.trim().length < 2) return failStep("contact", siteConfig.checkout.validation.name, "name");
+      if (!emailLooksValid(contactValue.email)) return failStep("contact", siteConfig.checkout.validation.email, "email");
+      if (cleanDigits(contactValue.phone).length < 10) return failStep("contact", siteConfig.checkout.validation.phone, "phone");
+      if (cleanDigits(contactValue.cpf).length < 11) return failStep("contact", siteConfig.checkout.validation.cpf, "cpf");
+    }
+
+    if (step === "address") {
+      if (cepDigits(address.cep).length !== 8) return failStep("address", siteConfig.checkout.validation.cep, "cep");
+      if (!address.state) return failStep("address", siteConfig.checkout.validation.state, "state");
+      if (!address.city.trim()) return failStep("address", siteConfig.checkout.validation.city, "city");
+      if (!address.street.trim()) return failStep("address", siteConfig.checkout.validation.street, "street");
+      if (!address.number.trim()) return failStep("address", siteConfig.checkout.validation.number, "number");
+      if (!address.district.trim()) return failStep("address", siteConfig.checkout.validation.district, "district");
+    }
+
+    if (step === "payment" && !paymentMethod) {
+      return failStep("payment", siteConfig.checkout.validation.payment);
+    }
+
+    setStepError("");
+    return true;
+  }
+
+  function goToStep(step: CheckoutStep) {
+    const targetIndex = stepIndex(step);
+    const firstLockedPrevious = checkoutStepOrder
+      .slice(0, targetIndex)
+      .find((previousStep) => !stepComplete[previousStep]);
+
+    if (firstLockedPrevious) {
+      validateCheckoutStep(firstLockedPrevious);
+      return;
+    }
+
+    setStepError("");
+    setActiveStep(step);
+    window.setTimeout(() => scrollToCheckoutStep(step), 0);
+  }
+
+  function goToNextStep() {
+    if (!validateCheckoutStep(activeStep)) return;
+    const nextStep = checkoutStepOrder[currentStepIndex + 1];
+    if (nextStep) {
+      setActiveStep(nextStep);
+      window.setTimeout(() => scrollToCheckoutStep(nextStep), 0);
+    }
+  }
+
+  function checkoutStepClass(step: CheckoutStep) {
+    const classes = ["checkout-step", `checkout-step-${step}`];
+    if (activeStep === step) classes.push("is-active");
+    if (activeStep !== step) classes.push("is-collapsed");
+    if (stepComplete[step]) classes.push("is-complete");
+    return classes.join(" ");
   }
 
   const clearAutofilledAddress = useCallback(() => {
@@ -579,6 +727,13 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   async function submit(formData: FormData) {
     setSubmitting(true);
     setError("");
+    for (const step of checkoutStepOrder) {
+      if (!validateCheckoutStep(step)) {
+        setSubmitting(false);
+        return;
+      }
+    }
+
     if (!customer) {
       setSubmitting(false);
       setError("Entre via WhatsApp para continuar o checkout.");
@@ -665,204 +820,279 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
 
   return (
     <section className="checkout-shell">
-      <form action={submit} className="checkout-form" id="checkout-form">
+      <form action={submit} className="checkout-form" id="checkout-form" ref={formRef} noValidate>
         <p className="eyebrow">Checkout Bela Viva</p>
         <h1>Entrega e pagamento</h1>
-        <fieldset>
-          <legend>Contato</legend>
-          <label>
-            Nome completo{" "}
-            <input
-              name="name"
-              autoComplete="name"
-              value={contactValue.name}
-              onChange={(event) => updateContact("name", event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            E-mail <input name="email" type="email" autoComplete="email" required />
-          </label>
-          <label>
-            WhatsApp{" "}
-            <input
-              name="phone"
-              placeholder="(11) 99999-9999"
-              value={contactValue.phone}
-              onChange={(event) => updateContact("phone", event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            CPF <input name="cpf" placeholder="000.000.000-00" required />
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>Endereco</legend>
-          <div className="form-grid">
+        <ol className="checkout-stepper" aria-label={siteConfig.checkout.stepperLabel}>
+          {checkoutStepCards.map((step) => (
+            <li key={step.id}>
+              <button
+                type="button"
+                className={step.active ? "is-active" : ""}
+                disabled={!step.unlocked}
+                aria-current={step.active ? "step" : undefined}
+                onClick={() => goToStep(step.id)}
+              >
+                <span className="checkout-step-number" aria-hidden="true">
+                  {step.complete ? "OK" : step.number}
+                </span>
+                <span>
+                  <strong>{step.title}</strong>
+                  <small>{step.complete ? siteConfig.checkout.completedLabel : step.summary}</small>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ol>
+        {stepError ? (
+          <div className="checkout-step-error" role="alert">
+            {stepError}
+          </div>
+        ) : null}
+        <fieldset className={checkoutStepClass("contact")} data-checkout-step="contact">
+          <legend>
+            <span>{siteConfig.checkout.steps.contact.title}</span>
+            <small>{stepSummaries.contact}</small>
+          </legend>
+          <div className="checkout-step-body">
             <label>
-              CEP
+              Nome completo{" "}
               <input
-                name="cep"
-                placeholder="00000-000"
-                autoComplete="postal-code"
-                inputMode="numeric"
-                value={address.cep}
-                onChange={(event) => updateAddress("cep", event.target.value)}
+                name="name"
+                autoComplete="name"
+                value={contactValue.name}
+                onChange={(event) => updateContact("name", event.target.value)}
                 required
               />
             </label>
             <label>
-              Estado
-              <select name="state" value={address.state} onChange={(event) => updateAddress("state", event.target.value)} required>
-                <option value="">UF</option>
-                {states.map((state) => (
-                  <option key={state} value={state}>
-                    {state}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <p className={`cep-status ${cepStatus}`} aria-live="polite">
-            {cepMessage}
-          </p>
-          <label>
-            Cidade <input name="city" autoComplete="address-level2" value={address.city} onChange={(event) => updateAddress("city", event.target.value)} required />
-          </label>
-          <div className="address-search">
-            <label htmlFor="address-search-input">Buscar rua pelo ViaCEP</label>
-            <div className="address-search-box">
+              E-mail{" "}
               <input
-                id="address-search-input"
-                type="search"
-                placeholder="Digite o nome da rua"
-                value={addressSearch}
-                onChange={handleAddressSearchChange}
-                onKeyDown={handleAddressSearchKeyDown}
-                role="combobox"
-                aria-autocomplete="list"
-                aria-expanded={addressSuggestions.length > 0}
-                aria-controls="address-suggestions"
-                aria-activedescendant={activeSuggestionIndex >= 0 ? `address-suggestion-${activeSuggestionIndex}` : undefined}
-                autoComplete="off"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={contactValue.email}
+                onChange={(event) => updateContact("email", event.target.value)}
+                required
               />
-              <span aria-hidden="true">Buscar</span>
+            </label>
+            <label>
+              WhatsApp{" "}
+              <input
+                name="phone"
+                placeholder="(11) 99999-9999"
+                value={contactValue.phone}
+                onChange={(event) => updateContact("phone", event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              CPF{" "}
+              <input
+                name="cpf"
+                placeholder="000.000.000-00"
+                inputMode="numeric"
+                value={contactValue.cpf}
+                onChange={(event) => updateContact("cpf", event.target.value)}
+                required
+              />
+            </label>
+            <div className="checkout-step-actions">
+              <button className="button primary" type="button" onClick={goToNextStep}>
+                {siteConfig.checkout.nextCta}
+              </button>
             </div>
-            {addressSuggestions.length > 0 ? (
-              <ul className="address-suggestions" id="address-suggestions" role="listbox">
-                {addressSuggestions.map((suggestion, index) => (
-                  <li
-                    id={`address-suggestion-${index}`}
-                    key={suggestion.placeId}
-                    role="option"
-                    aria-selected={index === activeSuggestionIndex}
-                  >
-                    <button
-                      type="button"
-                      onMouseDown={(event) => event.preventDefault()}
-                      onMouseEnter={() => setActiveSuggestionIndex(index)}
-                      onClick={() => void selectAddressSuggestion(suggestion)}
-                    >
-                      <span className="suggestion-marker" aria-hidden="true" />
-                      <span>
-                        <strong>{suggestion.mainText}</strong>
-                        <small>{suggestion.secondaryText || suggestion.fullText}</small>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <p className={`address-search-status ${addressSearchStatus}`} aria-live="polite">
-              {addressSearchMessage}
-            </p>
-          </div>
-          <label>
-            Rua <input name="street" autoComplete="address-line1" value={address.street} onChange={(event) => updateAddress("street", event.target.value)} required />
-          </label>
-          <div className="form-grid">
-            <label>
-              Numero <input name="number" autoComplete="address-line2" value={address.number} onChange={(event) => updateAddress("number", event.target.value)} required />
-            </label>
-            <label>
-              Complemento <input name="complement" value={address.complement} onChange={(event) => updateAddress("complement", event.target.value)} />
-            </label>
-          </div>
-          <div className="form-grid">
-            <label>
-              Bairro <input name="district" value={address.district} onChange={(event) => updateAddress("district", event.target.value)} required />
-            </label>
           </div>
         </fieldset>
-        <fieldset>
-          <legend>Entrega</legend>
-          <p className={`cep-status shipping-status ${shippingStatus}`} aria-live="polite">
-            {shippingMessage}
-          </p>
-          {shippingQuote?.options.length ? (
-            shippingQuote.options.map((option) => (
-              <label className="radio-card" key={option.method}>
+        <fieldset className={checkoutStepClass("address")} data-checkout-step="address">
+          <legend>
+            <span>{siteConfig.checkout.steps.address.title}</span>
+            <small>{stepSummaries.address}</small>
+          </legend>
+          <div className="checkout-step-body">
+            <div className="form-grid">
+              <label>
+                CEP
+                <input
+                  name="cep"
+                  placeholder="00000-000"
+                  autoComplete="postal-code"
+                  inputMode="numeric"
+                  value={address.cep}
+                  onChange={(event) => updateAddress("cep", event.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Estado
+                <select name="state" value={address.state} onChange={(event) => updateAddress("state", event.target.value)} required>
+                  <option value="">UF</option>
+                  {states.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className={`cep-status ${cepStatus}`} aria-live="polite">
+              {cepMessage}
+            </p>
+            <label>
+              Cidade <input name="city" autoComplete="address-level2" value={address.city} onChange={(event) => updateAddress("city", event.target.value)} required />
+            </label>
+            <div className="address-search">
+              <label htmlFor="address-search-input">Buscar rua pelo ViaCEP</label>
+              <div className="address-search-box">
+                <input
+                  id="address-search-input"
+                  type="search"
+                  placeholder="Digite o nome da rua"
+                  value={addressSearch}
+                  onChange={handleAddressSearchChange}
+                  onKeyDown={handleAddressSearchKeyDown}
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={addressSuggestions.length > 0}
+                  aria-controls="address-suggestions"
+                  aria-activedescendant={activeSuggestionIndex >= 0 ? `address-suggestion-${activeSuggestionIndex}` : undefined}
+                  autoComplete="off"
+                />
+                <span aria-hidden="true">Buscar</span>
+              </div>
+              {addressSuggestions.length > 0 ? (
+                <ul className="address-suggestions" id="address-suggestions" role="listbox">
+                  {addressSuggestions.map((suggestion, index) => (
+                    <li
+                      id={`address-suggestion-${index}`}
+                      key={suggestion.placeId}
+                      role="option"
+                      aria-selected={index === activeSuggestionIndex}
+                    >
+                      <button
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onMouseEnter={() => setActiveSuggestionIndex(index)}
+                        onClick={() => void selectAddressSuggestion(suggestion)}
+                      >
+                        <span className="suggestion-marker" aria-hidden="true" />
+                        <span>
+                          <strong>{suggestion.mainText}</strong>
+                          <small>{suggestion.secondaryText || suggestion.fullText}</small>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <p className={`address-search-status ${addressSearchStatus}`} aria-live="polite">
+                {addressSearchMessage}
+              </p>
+            </div>
+            <label>
+              Rua <input name="street" autoComplete="address-line1" value={address.street} onChange={(event) => updateAddress("street", event.target.value)} required />
+            </label>
+            <div className="form-grid">
+              <label>
+                Numero <input name="number" autoComplete="address-line2" value={address.number} onChange={(event) => updateAddress("number", event.target.value)} required />
+              </label>
+              <label>
+                Complemento <input name="complement" value={address.complement} onChange={(event) => updateAddress("complement", event.target.value)} />
+              </label>
+            </div>
+            <div className="form-grid">
+              <label>
+                Bairro <input name="district" value={address.district} onChange={(event) => updateAddress("district", event.target.value)} required />
+              </label>
+            </div>
+            <div className="checkout-step-subsection">
+              <h2>Entrega</h2>
+              <p className={`cep-status shipping-status ${shippingStatus}`} aria-live="polite">
+                {shippingMessage}
+              </p>
+              {shippingQuote?.options.length ? (
+                shippingQuote.options.map((option) => (
+                  <label className="radio-card" key={option.method}>
+                    <input
+                      type="radio"
+                      name="shipping"
+                      checked={shippingMethod === option.method}
+                      onChange={() => setShippingMethod(option.method)}
+                    />
+                    <span>
+                      <strong>{option.label}</strong>
+                      <small>
+                        {option.priceCents === 0 ? "R$ 0,00" : money(option.priceCents)} / peso cobrado{" "}
+                        {(option.billableWeightGrams / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg
+                      </small>
+                      <small>{option.zone ? `${option.city}/${option.state} - ${option.zone}` : option.estimate}</small>
+                    </span>
+                  </label>
+                ))
+              ) : (
+                <label className="radio-card">
+                  <input
+                    type="radio"
+                    name="shipping"
+                    checked={shippingMethod === "RETIRADA_LOCAL"}
+                    onChange={() => setShippingMethod("RETIRADA_LOCAL")}
+                  />
+                  <span>
+                    <strong>Retirada local</strong>
+                    <small>R$ 0,00 / combine pelo atendimento</small>
+                  </span>
+                </label>
+              )}
+              <div className="delivery-note inline">
+                {siteConfig.wholesale.deliveryModes.map((mode) => (
+                  <span key={mode}>{mode}</span>
+                ))}
+              </div>
+            </div>
+            <div className="checkout-step-actions">
+              <button className="button secondary" type="button" onClick={() => goToStep("contact")}>
+                {siteConfig.checkout.backCta}
+              </button>
+              <button className="button primary" type="button" onClick={goToNextStep}>
+                {siteConfig.checkout.nextCta}
+              </button>
+            </div>
+          </div>
+        </fieldset>
+        <fieldset className={checkoutStepClass("payment")} data-checkout-step="payment">
+          <legend>
+            <span>{siteConfig.checkout.steps.payment.title}</span>
+            <small>{stepSummaries.payment}</small>
+          </legend>
+          <div className="checkout-step-body">
+            {paymentMethods.map((method) => (
+              <label className="radio-card" key={method.value}>
                 <input
                   type="radio"
-                  name="shipping"
-                  checked={shippingMethod === option.method}
-                  onChange={() => setShippingMethod(option.method)}
+                  name="paymentMethod"
+                  value={method.value}
+                  checked={paymentMethod === method.value}
+                  onChange={() => setPaymentMethod(method.value)}
                 />
                 <span>
-                  <strong>{option.label}</strong>
-                  <small>
-                    {option.priceCents === 0 ? "R$ 0,00" : money(option.priceCents)} / peso cobrado{" "}
-                    {(option.billableWeightGrams / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg
-                  </small>
-                  <small>{option.zone ? `${option.city}/${option.state} - ${option.zone}` : option.estimate}</small>
+                  <strong>{method.label}</strong>
+                  <small>{method.description}</small>
                 </span>
               </label>
-            ))
-          ) : (
-            <label className="radio-card">
-              <input
-                type="radio"
-                name="shipping"
-                checked={shippingMethod === "RETIRADA_LOCAL"}
-                onChange={() => setShippingMethod("RETIRADA_LOCAL")}
-              />
-              <span>
-                <strong>Retirada local</strong>
-                <small>R$ 0,00 / combine pelo atendimento</small>
-              </span>
-            </label>
-          )}
-          <div className="delivery-note inline">
-            {siteConfig.wholesale.deliveryModes.map((mode) => (
-              <span key={mode}>{mode}</span>
             ))}
+            <div className="form-error" role="alert">
+              {error}
+            </div>
+            <div className="checkout-step-actions">
+              <button className="button secondary" type="button" onClick={() => goToStep("address")}>
+                {siteConfig.checkout.backCta}
+              </button>
+              <button className="button primary wide" type="submit" disabled={submitting || !items.length}>
+                {submitting ? "Criando pedido..." : siteConfig.checkout.finalCta}
+              </button>
+            </div>
           </div>
         </fieldset>
-        <fieldset>
-          <legend>Pagamento</legend>
-          {paymentMethods.map((method) => (
-            <label className="radio-card" key={method.value}>
-              <input
-                type="radio"
-                name="paymentMethod"
-                value={method.value}
-                checked={paymentMethod === method.value}
-                onChange={() => setPaymentMethod(method.value)}
-              />
-              <span>
-                <strong>{method.label}</strong>
-                <small>{method.description}</small>
-              </span>
-            </label>
-          ))}
-        </fieldset>
-        <div className="form-error" role="alert">
-          {error}
-        </div>
-        <button className="button primary wide" type="submit" disabled={submitting || !items.length}>
-          {submitting ? "Criando pedido..." : "Finalizar pedido"}
-        </button>
       </form>
       <aside className="summary-panel">
         <MinimumOrderNotice subtotalCents={subtotal} compact />
@@ -918,8 +1148,14 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
           <span>{siteConfig.mobilePurchase.checkoutBarLabel}</span>
           <strong>{money(total)}</strong>
         </div>
-        <button className="button primary" type="submit" form="checkout-form" disabled={submitting || !items.length}>
-          {submitting ? "Criando..." : siteConfig.mobilePurchase.checkoutSubmit}
+        <button
+          className="button primary"
+          type={activeStep === "payment" ? "submit" : "button"}
+          form={activeStep === "payment" ? "checkout-form" : undefined}
+          disabled={submitting || !items.length}
+          onClick={activeStep === "payment" ? undefined : goToNextStep}
+        >
+          {submitting ? "Criando..." : mobileCheckoutActionLabel}
         </button>
       </div>
     </section>

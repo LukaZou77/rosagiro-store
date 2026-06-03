@@ -173,6 +173,41 @@ export const siteConfig = {
     productWhatsAppCta: "WhatsApp",
     checkoutBarLabel: "Total do pedido",
     checkoutSubmit: "Finalizar"
+  },
+  checkout: {
+    stepperLabel: "Etapas do checkout",
+    completedLabel: "Completo",
+    editCta: "Editar",
+    nextCta: "Continuar",
+    backCta: "Voltar",
+    finalCta: "Finalizar pedido",
+    steps: {
+      contact: {
+        title: "Contato",
+        summary: "Nome, e-mail, CPF e WhatsApp para atendimento."
+      },
+      address: {
+        title: "Endereco e frete",
+        summary: "CEP, entrega, retirada ou frete por consulta."
+      },
+      payment: {
+        title: "Pagamento",
+        summary: "Pix, cartao ou confirmacao pelo atendimento."
+      }
+    },
+    validation: {
+      name: "Informe seu nome completo para continuar.",
+      email: "Informe um e-mail valido.",
+      phone: "Informe seu WhatsApp com DDD.",
+      cpf: "Informe CPF com 11 digitos.",
+      cep: "Informe um CEP com 8 digitos.",
+      state: "Escolha o estado.",
+      city: "Informe a cidade.",
+      street: "Informe a rua.",
+      number: "Informe o numero.",
+      district: "Informe o bairro.",
+      payment: "Escolha uma forma de pagamento."
+    }
   }
 };
 
