@@ -26,6 +26,7 @@ export function AdminShell({
           <Link href="/admin/categorias">Categorias</Link>
           <Link href="/admin/importar-produtos">Importar / Exportar</Link>
           <Link href="/admin/frete">Frete</Link>
+          <Link href="/admin/pagamentos">Pagamentos</Link>
           <Link href="/admin/pedidos">Pedidos</Link>
           <Link href="/admin/clientes">Clientes</Link>
           <Link href="/admin/loja">Loja / Confianca</Link>

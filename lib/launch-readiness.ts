@@ -1,4 +1,5 @@
 import type { StoreProfile } from "@/src/generated/prisma/client";
+import { buildPaymentConfigDiagnostics } from "@/lib/payment-config-diagnostics";
 import type { ProductQualitySummary } from "@/lib/product-quality";
 
 export type LaunchReadinessSignalStatus = "READY" | "WARNING" | "ACTION_REQUIRED";
@@ -73,12 +74,7 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
   const hasCatalogDepth = input.productQuality.activeCount > 12;
   const catalogHasActionRequired = input.productQuality.actionRequiredCount > 0 || input.productQuality.activeCount === 0;
   const catalogHasReview = input.productQuality.reviewCount > 0 || !hasCatalogDepth;
-  const paymentMode = (env.PAYMENT_MODE || "").trim();
-  const hasMercadoPagoSandbox =
-    paymentMode === "mercado_pago_sandbox" &&
-    Boolean(env.MERCADO_PAGO_ACCESS_TOKEN?.trim()) &&
-    Boolean(env.MERCADO_PAGO_WEBHOOK_SECRET?.trim()) &&
-    hasPublicUrl(env.NEXT_PUBLIC_SITE_URL);
+  const paymentDiagnostics = buildPaymentConfigDiagnostics(env);
   const hasDeployEnvironment =
     hasPublicUrl(env.NEXT_PUBLIC_SITE_URL) && Boolean(env.SESSION_SECRET?.trim()) && Boolean(env.DATABASE_URL?.trim());
   const hasGoogleMaps = Boolean(env.GOOGLE_MAPS_API_KEY?.trim());
@@ -138,12 +134,13 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
       key: "payment-sandbox",
       group: "Pagamento",
       label: "Mercado Pago sandbox",
-      status: hasMercadoPagoSandbox ? "READY" : "ACTION_REQUIRED",
+      status: paymentDiagnostics.status === "READY" ? "READY" : "ACTION_REQUIRED",
       severity: "high",
-      message: hasMercadoPagoSandbox
-        ? "Modo sandbox, token, webhook secret e URL publica parecem configurados."
-        : "Sandbox ainda depende de PAYMENT_MODE, token, webhook secret e URL HTTPS publica.",
-      actionHref: "/admin/prontidao"
+      message:
+        paymentDiagnostics.status === "READY"
+          ? "Sandbox, token, webhook secret e URL publica parecem configurados."
+          : paymentDiagnostics.fallbackMessage,
+      actionHref: "/admin/pagamentos"
     }),
     signal({
       key: "shipping-rates",

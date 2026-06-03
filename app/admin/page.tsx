@@ -4,15 +4,17 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getLaunchReadinessSnapshot, launchReadinessSignalLabels } from "@/lib/launch-readiness";
 import { money } from "@/lib/money";
+import { getPaymentDiagnosticSnapshot } from "@/lib/payment-diagnostics";
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
-  const [productCount, pendingOrders, paidOrders, revenue, launchSnapshot] = await Promise.all([
+  const [productCount, pendingOrders, paidOrders, revenue, launchSnapshot, paymentSnapshot] = await Promise.all([
     prisma.product.count(),
     prisma.order.count({ where: { status: "PENDING_PAYMENT" } }),
     prisma.order.count({ where: { status: "PAID" } }),
     prisma.order.aggregate({ where: { status: "PAID" }, _sum: { totalCents: true } }),
-    getLaunchReadinessSnapshot()
+    getLaunchReadinessSnapshot(),
+    getPaymentDiagnosticSnapshot()
   ]);
   const topIssues = launchSnapshot.highPriorityIssues.slice(0, 3);
 
@@ -40,6 +42,25 @@ export default async function AdminPage() {
           <strong>{money(revenue._sum.totalCents || 0)}</strong>
         </div>
       </div>
+
+      <section className={`import-panel payment-diagnostic-hero ${paymentSnapshot.status.toLowerCase().replace("_", "-")}`}>
+        <div className="readiness-group-heading">
+          <div>
+            <span>Pagamentos</span>
+            <h2>Mercado Pago sandbox</h2>
+          </div>
+          <strong>{paymentSnapshot.statusLabel}</strong>
+        </div>
+        <p className="table-note">{paymentSnapshot.fallbackMessage}</p>
+        <div className="admin-actions">
+          <Link className="button primary" href="/admin/pagamentos">
+            Abrir diagnostico
+          </Link>
+          <Link className="button secondary" href="/checkout">
+            Testar checkout
+          </Link>
+        </div>
+      </section>
 
       <section className="import-panel launch-summary">
         <div className="readiness-group-heading">
