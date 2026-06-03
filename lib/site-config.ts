@@ -164,7 +164,16 @@ export const siteConfig = {
     completionReachedTitle: "Produtos para combinar",
     completionReachedBody: "Inclua itens de reposicao ou revenda antes de finalizar.",
     completionAddCta: "Adicionar",
-    completionAddedCta: "Adicionado"
+    completionAddedCta: "Adicionado",
+    realnessEyebrow: "Compra no atacado",
+    realnessTitle: "Dados para decidir rapido",
+    realnessBody: "Confira estoque, validade/lote, quantidade sugerida e forma de entrega. Quando algum dado depender do lote recebido, o WhatsApp ajuda a confirmar antes de fechar volume.",
+    galleryRichHint: "Use a galeria para ver embalagem, textura, frente, verso e detalhes antes de montar sua lista.",
+    galleryLeanHint: "Foto principal cadastrada. Para comprar em quantidade, solicite fotos extras e detalhes do lote pelo WhatsApp.",
+    fichaTitle: "Ficha do produto",
+    fichaBody: "Informacoes comerciais usadas para compra, frete e reposicao. Revise no atendimento quando houver volume maior.",
+    deliveryTitle: "Entrega e atendimento",
+    deliveryBody: "A compra combina checkout com suporte humano para estoque, lote, retirada, transportadora ou excursao."
   },
   mobilePurchase: {
     filterTitle: "Filtrar e ordenar",

@@ -10,6 +10,12 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { getCategories, getProduct, getProducts, getRelatedProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
+import {
+  productDetailDecisionSignals,
+  productDetailGalleryState,
+  productDetailInfoItems,
+  productDetailServiceCards
+} from "@/lib/product-detail-standard";
 import { productDiscountPercent, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
 import { productWholesaleLines } from "@/lib/product-wholesale";
@@ -40,6 +46,10 @@ export default async function ProductPage({ params }: PageProps) {
   const whatsappHref = buildProductWhatsAppHref(product);
   const trustSignals = storeTrustSignals(storeProfile);
   const gallery = normalizeProductGallery(product.image, product.gallery);
+  const galleryState = productDetailGalleryState(gallery);
+  const decisionSignals = productDetailDecisionSignals(product, siteConfig.wholesale.minimumOrderCents);
+  const detailInfoItems = productDetailInfoItems(product);
+  const serviceCards = productDetailServiceCards(product);
   const wholesaleLines = productWholesaleLines(product);
   const completionRecommendations = getCartCompletionRecommendations(products, [{ slug: product.slug, quantity: 1 }], {
     currentCategorySlug: product.category.slug,
@@ -52,6 +62,10 @@ export default async function ProductPage({ params }: PageProps) {
       <section className="product-detail">
         <div className="product-media">
           <ProductGallery images={gallery} productName={product.name} />
+          <div className="product-media-standard">
+            <strong>{galleryState.label}</strong>
+            <span>{galleryState.isRich ? siteConfig.productConversion.galleryRichHint : siteConfig.productConversion.galleryLeanHint}</span>
+          </div>
         </div>
         <div className="product-info">
           <Link className="back-link" href={`/categoria/${product.category.slug}`}>
@@ -67,6 +81,21 @@ export default async function ProductPage({ params }: PageProps) {
             <strong>{money(product.priceCents)}</strong>
             {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : null}
           </div>
+          <section className="product-decision-panel" aria-labelledby="product-decision-title">
+            <div>
+              <p className="eyebrow">{siteConfig.productConversion.realnessEyebrow}</p>
+              <h2 id="product-decision-title">{siteConfig.productConversion.realnessTitle}</h2>
+              <p>{siteConfig.productConversion.realnessBody}</p>
+            </div>
+            <div className="product-decision-grid">
+              {decisionSignals.map((signal) => (
+                <div className={`product-decision-card ${signal.tone}`} key={`${signal.label}-${signal.value}`}>
+                  <span>{signal.label}</span>
+                  <strong>{signal.value}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
           <div className={`purchase-panel ${available ? "" : "is-unavailable"}`}>
             <div className="purchase-panel-heading">
               <span>{siteConfig.productConversion.detailPanelTitle}</span>
@@ -112,24 +141,6 @@ export default async function ProductPage({ params }: PageProps) {
           </section>
           <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{badge}</span>)}</div>
           <StoreTrustSignals signals={trustSignals} compact />
-          <dl className="spec-list">
-            <div>
-              <dt>Tipo</dt>
-              <dd>{product.skinType}</dd>
-            </div>
-            <div>
-              <dt>Acabamento</dt>
-              <dd>{product.finish}</dd>
-            </div>
-            <div>
-              <dt>Volume</dt>
-              <dd>{product.volume}</dd>
-            </div>
-            <div>
-              <dt>Status</dt>
-              <dd>{stockLabel}</dd>
-            </div>
-          </dl>
         </div>
       </section>
 
@@ -144,14 +155,51 @@ export default async function ProductPage({ params }: PageProps) {
         </WhatsAppLink>
       </div>
 
-      <section className="section detail-columns">
-        <div>
-          <h2>Beneficios</h2>
+      <section className="section product-realness-sections">
+        <div className="product-realness-card product-ficha-card">
+          <div className="section-heading compact">
+            <p className="eyebrow">Ficha comercial</p>
+            <h2>{siteConfig.productConversion.fichaTitle}</h2>
+            <p>{siteConfig.productConversion.fichaBody}</p>
+          </div>
+          <dl className="product-ficha-list">
+            {detailInfoItems.map((item) => (
+              <div key={item.label}>
+                <dt>{item.label}</dt>
+                <dd>{item.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <div className="product-realness-card">
+          <div className="section-heading compact">
+            <p className="eyebrow">Uso e composicao</p>
+            <h2>Beneficios</h2>
+          </div>
           <ul>{product.benefits.map((item) => <li key={item}>{item}</li>)}</ul>
         </div>
-        <div>
+        <div className="product-realness-card">
+          <div className="section-heading compact">
+            <p className="eyebrow">Composicao</p>
           <h2>Ingredientes-chave</h2>
+          </div>
           <ul>{product.ingredients.map((item) => <li key={item}>{item}</li>)}</ul>
+        </div>
+      </section>
+
+      <section className="section product-service-standard">
+        <div className="section-heading">
+          <p className="eyebrow">Suporte de compra</p>
+          <h2>{siteConfig.productConversion.deliveryTitle}</h2>
+          <p>{siteConfig.productConversion.deliveryBody}</p>
+        </div>
+        <div className="product-service-grid">
+          {serviceCards.map((card) => (
+            <div className={`product-service-card ${card.tone}`} key={card.label}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+            </div>
+          ))}
         </div>
       </section>
 

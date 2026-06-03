@@ -112,6 +112,10 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
           {summary.wholesaleIssueCount} produto(s) precisam revisar quantidade sugerida, kit, caixa/atacado ou
           validade/lote antes de vender como atacado real.
         </p>
+        <p className="table-note">
+          A pagina publica do produto agora destaca ficha comercial, fotos, validade/lote, quantidade sugerida e
+          atendimento. Quanto mais campos reais estiverem completos, menos o cliente precisa perguntar antes de comprar.
+        </p>
       </section>
 
       <section className="import-panel">
