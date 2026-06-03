@@ -1,6 +1,7 @@
 import { scryptSync, randomBytes } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { infoPages } from "../lib/site-config";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -463,6 +464,8 @@ const products = [
   }
 ];
 
+const siteInfoPageKeys = ["privacy", "terms", "returns", "shipping", "contact"] as const;
+
 function cents(value: number | null) {
   if (value === null) return null;
   return Math.round(value * 100);
@@ -583,6 +586,24 @@ async function main() {
     update: {},
     create: storeProfile
   });
+
+  for (const pageKey of siteInfoPageKeys) {
+    const page = infoPages[pageKey];
+    await prisma.siteInfoPage.upsert({
+      where: { pageKey },
+      update: {},
+      create: {
+        pageKey,
+        slug: page.slug,
+        href: page.href,
+        eyebrow: page.eyebrow,
+        title: page.title,
+        description: page.description,
+        sections: page.sections,
+        active: true
+      }
+    });
+  }
 
   for (const item of launchReadinessItems) {
     await prisma.launchReadinessItem.upsert({

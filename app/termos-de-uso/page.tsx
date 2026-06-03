@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import { InfoPage } from "@/components/InfoPage";
-import { infoPages } from "@/lib/site-config";
+import { getSiteInfoPage } from "@/lib/site-info-pages";
 
-const page = infoPages.terms;
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getSiteInfoPage("terms");
+  return {
+    title: page.title,
+    description: page.description
+  };
+}
 
-export const metadata: Metadata = {
-  title: page.title,
-  description: page.description
-};
-
-export default function TermsPage() {
+export default async function TermsPage() {
+  const page = await getSiteInfoPage("terms");
   return <InfoPage page={page} />;
 }

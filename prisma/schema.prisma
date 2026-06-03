@@ -311,6 +311,22 @@ model LaunchReadinessItem {
   @@index([status, priority])
 }
 
+model SiteInfoPage {
+  id          String   @id @default(cuid())
+  pageKey     String   @unique
+  slug        String   @unique
+  href        String   @unique
+  eyebrow     String
+  title       String
+  description String
+  sections    Json
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, slug])
+}
+
 model StoreProfile {
   id                String   @id @default("main")
   storeName         String   @default("Bela Viva")

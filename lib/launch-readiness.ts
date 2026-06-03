@@ -1,5 +1,4 @@
 import type { StoreProfile } from "@/src/generated/prisma/client";
-import { allInfoPages } from "@/lib/site-config";
 
 export type LaunchReadinessSignalStatus = "READY" | "WARNING" | "ACTION_REQUIRED";
 export type LaunchReadinessSignalSeverity = "low" | "medium" | "high";
@@ -230,6 +229,7 @@ export async function getLaunchReadinessSnapshot() {
     placeholderImageCount,
     productsWithoutWeightCount,
     activeShippingImportCount,
+    policyPageCount,
     readinessDoneCount,
     readinessTotalCount
   ] = await Promise.all([
@@ -239,6 +239,7 @@ export async function getLaunchReadinessSnapshot() {
     prisma.product.count({ where: { OR: [{ image: { contains: "placeholder" } }, { image: { equals: "" } }] } }),
     prisma.product.count({ where: { weightGrams: { lte: 0 } } }),
     prisma.shippingRateImport.count({ where: { active: true } }),
+    prisma.siteInfoPage.count({ where: { active: true } }),
     prisma.launchReadinessItem.count({ where: { status: "DONE" } }),
     prisma.launchReadinessItem.count()
   ]);
@@ -250,7 +251,7 @@ export async function getLaunchReadinessSnapshot() {
     placeholderImageCount,
     productsWithoutWeightCount,
     activeShippingImportCount,
-    policyPageCount: allInfoPages.length + 1,
+    policyPageCount: policyPageCount + 1,
     readinessDoneCount,
     readinessTotalCount
   });

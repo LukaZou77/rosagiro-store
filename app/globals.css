@@ -4069,6 +4069,48 @@ legend {
   font-weight: 900;
 }
 
+.policy-jump-list {
+  justify-content: flex-start;
+  margin-bottom: 16px;
+}
+
+.policy-editor-list {
+  display: grid;
+  gap: 18px;
+}
+
+.policy-editor {
+  scroll-margin-top: 18px;
+}
+
+.policy-editor > label,
+.policy-section-editor label {
+  display: grid;
+  gap: 8px;
+}
+
+.policy-section-list {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.policy-section-editor {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.policy-section-editor legend {
+  padding: 0 6px;
+  color: var(--rose-deep);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .freight-preview-card {
   display: grid;
   gap: 6px;

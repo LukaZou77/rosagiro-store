@@ -16,6 +16,7 @@ import {
 } from "@/lib/product-images";
 import { formatCep } from "@/lib/cep";
 import { STORE_PROFILE_ID } from "@/lib/store-profile";
+import { SiteInfoPageValidationError, validateSiteInfoPageInput } from "@/lib/site-info-pages";
 
 const statuses = ["PENDING_PAYMENT", "PAID", "FULFILLING", "SHIPPED", "CANCELED"] as const;
 const launchReadinessStatuses = ["PENDING", "IN_PROGRESS", "DONE", "BLOCKED"] as const;
@@ -420,6 +421,69 @@ export async function saveStoreProfileAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/loja");
   redirect("/admin/loja?saved=1");
+}
+
+export async function saveSiteInfoPageAction(formData: FormData) {
+  await requireAdmin();
+
+  const pageKey = field(formData, "pageKey");
+  const sectionTitles = formData.getAll("sectionTitle");
+  const sectionBodies = formData.getAll("sectionBody");
+  const sectionCount = Math.max(sectionTitles.length, sectionBodies.length);
+  const rawSections = Array.from({ length: sectionCount }).map((_, index) => ({
+    title: String(sectionTitles[index] || ""),
+    body: String(sectionBodies[index] || "")
+  }));
+
+  function parsePageInput() {
+    try {
+      return validateSiteInfoPageInput({
+        pageKey,
+        eyebrow: formData.get("eyebrow"),
+        title: formData.get("title"),
+        description: formData.get("description"),
+        sections: rawSections
+      });
+    } catch (error) {
+      const message =
+        error instanceof SiteInfoPageValidationError
+          ? error.message
+          : "Nao foi possivel validar esta pagina.";
+      redirectError(`/admin/politicas?pagina=${encodeURIComponent(pageKey)}`, message);
+    }
+  }
+
+  const page = parsePageInput();
+
+  await prisma.siteInfoPage.upsert({
+    where: { pageKey: page.pageKey },
+    update: {
+      slug: page.slug,
+      href: page.href,
+      eyebrow: page.eyebrow,
+      title: page.title,
+      description: page.description,
+      sections: page.sections,
+      active: true
+    },
+    create: {
+      pageKey: page.pageKey,
+      slug: page.slug,
+      href: page.href,
+      eyebrow: page.eyebrow,
+      title: page.title,
+      description: page.description,
+      sections: page.sections,
+      active: true
+    }
+  });
+
+  revalidatePath(page.href);
+  revalidatePath("/sitemap.xml");
+  revalidatePath("/admin");
+  revalidatePath("/admin/politicas");
+  revalidatePath("/admin/prontidao");
+  redirect(`/admin/politicas?pagina=${encodeURIComponent(page.pageKey)}&saved=1`);
 }
 
 export async function importProductsAction(formData: FormData) {

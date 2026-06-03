@@ -1,9 +1,11 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/db";
-import { allInfoPages, siteUrl } from "@/lib/site-config";
+import { getAllSiteInfoPages } from "@/lib/site-info-pages";
+import { siteUrl } from "@/lib/site-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticRoutes = ["", "/categoria/all", "/promocoes", ...allInfoPages.map((page) => page.href)].map(
+  const infoPages = await getAllSiteInfoPages();
+  const staticRoutes = ["", "/categoria/all", "/promocoes", ...infoPages.map((page) => page.href)].map(
     (path) => ({
       url: siteUrl(path),
       lastModified: new Date()
