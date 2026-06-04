@@ -185,15 +185,15 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     <StoreShell categories={categories}>
       <StructuredData
         data={breadcrumbJsonLd([
-          { name: "Inicio", path: "/" },
-          { name: "Catalogo", path: "/categoria/all" },
+            { name: "Início", path: "/" },
+          { name: "Catálogo", path: "/categoria/all" },
           { name: categoryLabel, path: `/categoria/${categorySlug}` }
         ])}
       />
       <section className="catalog-header">
-        <p className="eyebrow">Catalogo</p>
+        <p className="eyebrow">Catálogo</p>
         <h1>{categoryLabel}</h1>
-        <p>{products.length} produtos disponiveis, com filtros por categoria, marca e prioridade de compra.</p>
+        <p>{products.length} produtos disponíveis, com filtros por categoria, marca e prioridade de compra.</p>
         <div className="catalog-service-bar">
           <span>{siteConfig.wholesale.minimumOrderText}</span>
           <span>{siteConfig.wholesale.deliveryModes[1]}</span>
@@ -212,17 +212,17 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
           </span>
           <span>
             <strong>{lowStockCount}</strong>
-            Giro rapido
+            Giro rápido
           </span>
           <span>
             <strong>{siteConfig.productConversion.cardMinimumHint}</strong>
-            Compra minima
+            Compra mínima
           </span>
         </div>
       </section>
 
       <section className="catalog-layout">
-        <div className="catalog-filter-topbar" aria-label="Filtros e ordenacao do catalogo">
+        <div className="catalog-filter-topbar" aria-label="Filtros e ordenação do catálogo">
           <details>
             <summary>
               <span>Filtrar</span>
@@ -289,7 +289,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
                 </Link>
               </div>
             ) : (
-              <span className="catalog-result-hint">Use filtros para achar pronta entrega, oferta real ou marca especifica.</span>
+              <span className="catalog-result-hint">Use filtros para achar pronta entrega, oferta real ou marca específica.</span>
             )}
           </div>
           <div className="category-pills">
@@ -312,13 +312,13 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             ) : (
               <div className="empty-state">
                 <strong>Nenhum produto encontrado</strong>
-                <p>Tente limpar filtros, mudar a marca ou ver as promocoes disponiveis.</p>
+                <p>Tente limpar filtros, mudar a marca ou ver as promoções disponíveis.</p>
                 <div className="empty-actions">
                   <Link className="button secondary" href={clearHref}>
                     Limpar filtros
                   </Link>
                   <Link className="button primary" href="/promocoes">
-                    Ver promocoes
+                    Ver promoções
                   </Link>
                 </div>
               </div>

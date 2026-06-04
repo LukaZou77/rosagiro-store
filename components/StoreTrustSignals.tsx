@@ -3,7 +3,7 @@ import Link from "next/link";
 export function StoreTrustSignals({
   signals,
   title = "Compra com loja identificada",
-  body = "Confira dados da loja, atendimento, entrega e politicas antes de finalizar.",
+  body = "Confira dados da loja, atendimento, entrega e políticas antes de finalizar.",
   compact = false,
   showLink = true
 }: {
@@ -16,8 +16,8 @@ export function StoreTrustSignals({
   const visibleSignals = signals.filter(Boolean).slice(0, compact ? 3 : 5);
 
   return (
-    <aside className={compact ? "store-trust-card compact" : "store-trust-card"} aria-label="Informacoes de confianca da loja">
-      <span>Loja confiavel</span>
+    <aside className={compact ? "store-trust-card compact" : "store-trust-card"} aria-label="Informações de confiança da loja">
+      <span>Loja confiável</span>
       <strong>{title}</strong>
       {compact ? null : <p>{body}</p>}
       <div>
@@ -25,7 +25,7 @@ export function StoreTrustSignals({
           <small key={signal}>{signal}</small>
         ))}
       </div>
-      {showLink ? <Link href="/informacoes-da-loja">Ver informacoes da loja</Link> : null}
+      {showLink ? <Link href="/informacoes-da-loja">Ver informações da loja</Link> : null}
     </aside>
   );
 }

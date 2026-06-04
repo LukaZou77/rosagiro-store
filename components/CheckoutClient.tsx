@@ -33,7 +33,7 @@ type Product = {
 };
 
 const states = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
-const manualCepMessage = "Preencha manualmente se o CEP nao trouxer todos os dados.";
+const manualCepMessage = "Preencha manualmente se o CEP não trouxer todos os dados.";
 const checkoutStepOrder = ["contact", "address", "payment"] as const;
 
 type CheckoutStep = (typeof checkoutStepOrder)[number];
@@ -118,7 +118,7 @@ function makeAddressSessionToken() {
 }
 
 function addressSearchReadiness(value: string, address: Pick<AddressState, "state" | "city">) {
-  if (value.trim().length < 3) return "Digite pelo menos 3 caracteres para buscar sugestoes.";
+  if (value.trim().length < 3) return "Digite pelo menos 3 caracteres para buscar sugestões.";
   if (!address.state || address.city.trim().length < 3) return "Informe UF e cidade para buscar por rua.";
   return "";
 }
@@ -159,7 +159,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const [addressSearch, setAddressSearch] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
   const [addressSearchStatus, setAddressSearchStatus] = useState<AddressSearchStatus>("idle");
-  const [addressSearchMessage, setAddressSearchMessage] = useState("Digite rua, bairro ou cidade para buscar sugestoes.");
+  const [addressSearchMessage, setAddressSearchMessage] = useState("Digite rua, bairro ou cidade para buscar sugestões.");
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [shippingQuote, setShippingQuote] = useState<ShippingQuoteResponse | null>(null);
   const [shippingStatus, setShippingStatus] = useState<ShippingStatus>("idle");
@@ -391,7 +391,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
         setShippingMessage("Informe o CEP para estimar Anjun D2D Pickup.");
       } else if (digits.length < 8) {
         setCepStatus("idle");
-        setCepMessage("Digite os 8 numeros do CEP para buscar o endereco.");
+        setCepMessage("Digite os 8 números do CEP para buscar o endereço.");
         setShippingQuote(null);
         setShippingMethod("RETIRADA_LOCAL");
         setShippingStatus("idle");
@@ -445,7 +445,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     let timeoutId: number | undefined;
     const debounce = window.setTimeout(() => {
       setAddressSearchStatus("loading");
-      setAddressSearchMessage("Buscando enderecos...");
+      setAddressSearchMessage("Buscando endereços...");
       timeoutId = window.setTimeout(() => {
         timedOut = true;
         controller.abort();
@@ -476,7 +476,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
             setAddressSuggestions([]);
             setActiveSuggestionIndex(-1);
             setAddressSearchStatus("disabled");
-            setAddressSearchMessage(result.message || "Busca por endereco indisponivel agora. Use o CEP ou preencha manualmente.");
+            setAddressSearchMessage(result.message || "Busca por endereço indisponível agora. Use o CEP ou preencha manualmente.");
             return;
           }
 
@@ -484,14 +484,14 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
             setAddressSuggestions([]);
             setActiveSuggestionIndex(-1);
             setAddressSearchStatus("error");
-            setAddressSearchMessage(result.message || "Nao foi possivel buscar sugestoes agora. Preencha manualmente.");
+            setAddressSearchMessage(result.message || "Não foi possível buscar sugestões agora. Preencha manualmente.");
             return;
           }
 
           setAddressSuggestions(result.suggestions);
           setActiveSuggestionIndex(result.suggestions.length ? 0 : -1);
           setAddressSearchStatus(result.suggestions.length ? "success" : "empty");
-          setAddressSearchMessage(result.suggestions.length ? "Selecione uma sugestao para preencher o endereco." : "Nenhuma sugestao encontrada. Voce pode preencher manualmente.");
+          setAddressSearchMessage(result.suggestions.length ? "Selecione uma sugestão para preencher o endereço." : "Nenhuma sugestão encontrada. Você pode preencher manualmente.");
         })
         .catch((autocompleteError: unknown) => {
           if (!active) return;
@@ -500,7 +500,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
           setAddressSuggestions([]);
           setActiveSuggestionIndex(-1);
           setAddressSearchStatus("error");
-          setAddressSearchMessage(timedOut ? "Busca demorou demais. Use o CEP ou preencha manualmente." : "Nao foi possivel buscar sugestoes agora. Preencha manualmente.");
+          setAddressSearchMessage(timedOut ? "Busca demorou demais. Use o CEP ou preencha manualmente." : "Não foi possível buscar sugestões agora. Preencha manualmente.");
         });
     }, 450);
 
@@ -531,7 +531,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     setAddressSuggestions([]);
     setActiveSuggestionIndex(-1);
     setAddressSearchStatus("loading");
-    setAddressSearchMessage("Carregando endereco selecionado...");
+    setAddressSearchMessage("Carregando endereço selecionado...");
 
     try {
       const response = await fetch("/api/address/place-details", {
@@ -547,7 +547,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
 
       if (!response.ok || result.status !== "OK") {
         setAddressSearchStatus(result.status === "DISABLED" ? "disabled" : "error");
-        setAddressSearchMessage(result.message || "Nao foi possivel carregar o endereco selecionado. Preencha manualmente.");
+        setAddressSearchMessage(result.message || "Não foi possível carregar o endereço selecionado. Preencha manualmente.");
         return;
       }
 
@@ -580,7 +580,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     } catch {
       addressSessionToken.current = makeAddressSessionToken();
       setAddressSearchStatus("error");
-      setAddressSearchMessage("Nao foi possivel carregar o endereco selecionado. Preencha manualmente.");
+      setAddressSearchMessage("Não foi possível carregar o endereço selecionado. Preencha manualmente.");
     }
   }
 
@@ -622,7 +622,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
         if (result.status === "not-found") {
           if (lastAutofilledCep.current && lastAutofilledCep.current !== digits) clearAutofilledAddress();
           setCepStatus("not-found");
-          setCepMessage("CEP nao encontrado, preencha manualmente.");
+          setCepMessage("CEP não encontrado, preencha manualmente.");
           return;
         }
 
@@ -651,7 +651,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
         if (lookupError instanceof DOMException && lookupError.name === "AbortError" && !timedOut) return;
         if (lastAutofilledCep.current && lastAutofilledCep.current !== digits) clearAutofilledAddress();
         setCepStatus("error");
-        setCepMessage("Nao foi possivel consultar agora. Preencha manualmente.");
+        setCepMessage("Não foi possível consultar agora. Preencha manualmente.");
       });
 
     return () => {
@@ -694,7 +694,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
           setShippingQuote(null);
           setShippingMethod("RETIRADA_LOCAL");
           setShippingStatus("error");
-          setShippingMessage(result.message || "Nao foi possivel calcular o frete agora.");
+          setShippingMessage(result.message || "Não foi possível calcular o frete agora.");
           return;
         }
 
@@ -714,7 +714,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
         setShippingQuote(null);
         setShippingMethod("RETIRADA_LOCAL");
         setShippingStatus("error");
-        setShippingMessage("Nao foi possivel calcular o frete agora. Retirada local segue disponivel.");
+        setShippingMessage("Não foi possível calcular o frete agora. Retirada local segue disponível.");
       });
 
     return () => {
@@ -771,7 +771,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     setSubmitting(false);
 
     if (!response.ok || !result.orderNumber || !result.redirectTo) {
-      setError(result.error || "Nao foi possivel criar o pedido.");
+      setError(result.error || "Não foi possível criar o pedido.");
       return;
     }
 
@@ -790,13 +790,13 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
           <p className="eyebrow">Checkout Bela Viva</p>
           <h1>Monte sua lista antes de finalizar.</h1>
           <p>
-            Seu carrinho esta vazio. Escolha produtos do catalogo ou fale no WhatsApp para receber sugestoes de kits,
-            pronta entrega e itens para completar o pedido minimo.
+            Seu carrinho está vazio. Escolha produtos do catálogo ou fale no WhatsApp para receber sugestões de kits,
+            pronta entrega e itens para completar o pedido mínimo.
           </p>
           <MinimumOrderNotice subtotalCents={0} />
           <div className="empty-actions">
             <Link className="button primary" href="/categoria/all">
-              Explorar catalogo
+              Explorar catálogo
             </Link>
             <Link className="button secondary" href="/promocoes">
               Ver ofertas

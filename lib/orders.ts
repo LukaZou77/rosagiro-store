@@ -92,18 +92,18 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
   const rawPaymentMethod = cleanText((data as Partial<CheckoutInput>).paymentMethod).toUpperCase();
   const paymentMethod = isPaymentMethod(rawPaymentMethod) ? rawPaymentMethod : "SIMULATED";
 
-  if (!items.length) throw new OrderError("Seu carrinho esta vazio.");
+  if (!items.length) throw new OrderError("Seu carrinho está vazio.");
   if (!customer.name || !customer.email || !customer.phone || !customer.cpf) {
     throw new OrderError("Preencha todos os dados de contato.");
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) {
-    throw new OrderError("Informe um e-mail valido.");
+    throw new OrderError("Informe um e-mail válido.");
   }
   if (digits(customer.cpf).length !== 11) throw new OrderError("CPF deve ter 11 digitos.");
   if (!normalizedPhone) throw new OrderError("WhatsApp deve ser do Brasil e ter DDD.");
   if (digits(address.cep).length !== 8) throw new OrderError("CEP deve ter 8 digitos.");
   if (!address.state || !address.city || !address.district || !address.street || !address.number) {
-    throw new OrderError("Preencha todos os dados de endereco.");
+    throw new OrderError("Preencha todos os dados de endereço.");
   }
 
   return { items, customer, address, shippingMethod, paymentMethod };
@@ -125,9 +125,9 @@ export async function createOrder(input: CheckoutInput) {
 
   const lines = input.items.map((item) => {
     const product = productBySlug.get(item.slug);
-    if (!product) throw new OrderError("Um produto do carrinho nao esta mais disponivel.");
+    if (!product) throw new OrderError("Um produto do carrinho não está mais disponível.");
     if ((product.inventory?.quantity || 0) < item.quantity) {
-      throw new OrderError(`${product.name} nao tem estoque suficiente.`);
+      throw new OrderError(`${product.name} não tem estoque suficiente.`);
     }
     return {
       product,
@@ -151,7 +151,7 @@ export async function createOrder(input: CheckoutInput) {
     throw new OrderError(
       error instanceof Error
         ? error.message
-        : "Nao foi possivel recalcular o frete. Revise o CEP ou escolha retirada local."
+        : "Não foi possível recalcular o frete. Revise o CEP ou escolha retirada local."
     );
   }
   const total = totalCents(subtotal, discount, shippingQuote.shippingCents);
@@ -240,7 +240,7 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
       where: { orderNumber },
       include: { items: true, payment: true }
     });
-    if (!order) throw new OrderError("Pedido nao encontrado.", 404);
+    if (!order) throw new OrderError("Pedido não encontrado.", 404);
     if (order.status === "PAID") {
       const shouldRefreshProvider =
         paymentUpdate.provider === "MERCADO_PAGO" ||
@@ -262,7 +262,7 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
       }
       return order;
     }
-    if (order.status !== "PENDING_PAYMENT") throw new OrderError("Este pedido nao pode ser pago.");
+    if (order.status !== "PENDING_PAYMENT") throw new OrderError("Este pedido não pode ser pago.");
 
     const claimed = await tx.order.updateMany({
       where: { id: order.id, status: "PENDING_PAYMENT" },
@@ -274,11 +274,11 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
         include: { items: true, payment: true }
       });
       if (currentOrder?.status === "PAID") return currentOrder;
-      throw new OrderError("Este pedido nao pode ser pago.");
+      throw new OrderError("Este pedido não pode ser pago.");
     }
 
     for (const item of order.items) {
-      if (!item.productId) throw new OrderError(`${item.productName} nao esta mais disponivel.`);
+      if (!item.productId) throw new OrderError(`${item.productName} não está mais disponível.`);
       const updated = await tx.inventory.updateMany({
         where: {
           productId: item.productId,
@@ -288,7 +288,7 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
           quantity: { decrement: item.quantity }
         }
       });
-      if (updated.count !== 1) throw new OrderError(`${item.productName} nao tem estoque suficiente.`);
+      if (updated.count !== 1) throw new OrderError(`${item.productName} não tem estoque suficiente.`);
     }
 
     await tx.payment.update({

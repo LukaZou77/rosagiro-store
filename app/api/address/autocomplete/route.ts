@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       {
         status: "ERROR",
         suggestions: [],
-        message: "Nao foi possivel buscar sugestoes agora. Preencha manualmente."
+        message: "Não foi possível buscar sugestões agora. Preencha manualmente."
       },
       { status: 500 }
     );

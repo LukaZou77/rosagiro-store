@@ -111,7 +111,7 @@ function sandboxConfig() {
   const accessToken = cleanText(process.env.MERCADO_PAGO_ACCESS_TOKEN);
   const publicUrl = siteUrl();
   if (!accessToken || !publicUrl) {
-    throw new MercadoPagoError("Mercado Pago sandbox nao esta configurado.");
+    throw new MercadoPagoError("Mercado Pago sandbox não está configurado.");
   }
   return { accessToken, publicUrl };
 }
@@ -130,7 +130,7 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
     where: { orderNumber },
     include: { payment: true }
   });
-  if (!order || !order.payment) throw new MercadoPagoError("Pedido nao encontrado.", 404);
+  if (!order || !order.payment) throw new MercadoPagoError("Pedido não encontrado.", 404);
   if (!shouldUseMercadoPago(order.payment.method) || !mercadoPagoSandboxReady()) {
     return simulatedPaymentResult(order.orderNumber);
   }
@@ -203,7 +203,7 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
   const payload = (await response.json().catch(() => ({}))) as MercadoPagoPreferenceResponse & Record<string, unknown>;
 
   if (!response.ok) {
-    const message = cleanText(payload.message) || "Nao foi possivel criar a preferencia Mercado Pago.";
+    const message = cleanText(payload.message) || "Não foi possível criar a preferência Mercado Pago.";
     await prisma.payment.update({
       where: { orderId: order.id },
       data: {
@@ -219,7 +219,7 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
   const redirectTo = cleanText(payload.sandbox_init_point) || cleanText(payload.init_point);
   const preferenceId = cleanText(payload.id);
   if (!preferenceId || !redirectTo) {
-    const message = "Mercado Pago nao retornou uma URL de checkout.";
+    const message = "Mercado Pago não retornou uma URL de checkout.";
     await prisma.payment.update({
       where: { orderId: order.id },
       data: {
@@ -320,7 +320,7 @@ async function fetchPaymentDetails(paymentId: string) {
   });
   const payload = (await response.json().catch(() => ({}))) as MercadoPagoPaymentResponse & Record<string, unknown>;
   if (!response.ok) {
-    throw new MercadoPagoError(cleanText(payload.message) || "Nao foi possivel consultar o pagamento Mercado Pago.");
+    throw new MercadoPagoError(cleanText(payload.message) || "Não foi possível consultar o pagamento Mercado Pago.");
   }
   return payload;
 }
@@ -358,7 +358,7 @@ async function applyPaymentDetails(paymentDetails: MercadoPagoPaymentResponse & 
   };
 
   if (receivedAmountCents !== order.totalCents) {
-    const message = `Valor Mercado Pago nao confere: recebido ${receivedAmountCents ?? "desconhecido"} cents, pedido ${order.totalCents} cents.`;
+    const message = `Valor Mercado Pago não confere: recebido ${receivedAmountCents ?? "desconhecido"} cents, pedido ${order.totalCents} cents.`;
     await prisma.payment.update({
       where: { orderId: order.id },
       data: {

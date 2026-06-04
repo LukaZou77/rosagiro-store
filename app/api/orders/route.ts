@@ -22,6 +22,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error(error);
-    return NextResponse.json({ error: "Nao foi possivel criar o pedido." }, { status: 500 });
+    return NextResponse.json({ error: "Não foi possível criar o pedido." }, { status: 500 });
   }
 }

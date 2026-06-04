@@ -19,7 +19,7 @@ export const shippingConfig = {
   minBillableWeightGrams: 100,
   fallbackProductWeightGrams: 150,
   freeShippingEnabled: false,
-  manualFeesNote: "Base do frete calculada por CEP e peso. Seguro, ICMS/ISS e area de risco podem exigir confirmacao manual."
+  manualFeesNote: "Base do frete calculada por CEP e peso. Seguro, ICMS/ISS e área de risco podem exigir confirmação manual."
 } as const;
 
 export const anjunD2DPickupSheetName = "安骏快递价格表D2D Pickup";
@@ -353,7 +353,7 @@ function localPickupOption(productTotalWeightGrams: number, billable: number): S
     city: null,
     state: null,
     estimate: "Combinar retirada pelo atendimento",
-    note: "Retirada local sem cobranca de frete, mediante confirmacao de horario e disponibilidade."
+    note: "Retirada local sem cobrança de frete, mediante confirmação de horário e disponibilidade."
   };
 }
 
@@ -394,7 +394,7 @@ export async function quoteAnjunD2DPickup(cep: string, productTotalWeightGrams: 
     zone,
     city: rate.city,
     state: rate.destinationState,
-    estimate: "Prazo confirmado apos separacao",
+    estimate: "Prazo confirmado após separação",
     note: `${shippingConfig.originDisplay} -> ${rate.city}/${rate.destinationState}, zona ${zone}. ${shippingConfig.manualFeesNote}`
   } satisfies ShippingQuoteOption;
 }
@@ -438,7 +438,7 @@ export async function getShippingQuoteForCart(items: ShippingQuoteCartItem[], ce
   if (digits.length !== 8) {
     return {
       status: "INVALID_CEP",
-      message: "Informe um CEP com 8 digitos para calcular Anjun D2D Pickup.",
+      message: "Informe um CEP com 8 dígitos para calcular Anjun D2D Pickup.",
       options: [pickup],
       productWeightGrams: productTotalWeightGrams,
       billableWeightGrams: billable
@@ -522,7 +522,7 @@ export async function resolveOrderShipping({
   if (method === "ANJUN_D2D_PICKUP") {
     const option = await quoteAnjunD2DPickup(cep, productTotalWeightGrams);
     if (!option) {
-      throw new Error("Nao foi possivel calcular Anjun D2D Pickup para este CEP. Escolha retirada local ou fale no WhatsApp.");
+      throw new Error("Não foi possível calcular Anjun D2D Pickup para este CEP. Escolha retirada local ou fale no WhatsApp.");
     }
     return {
       method,

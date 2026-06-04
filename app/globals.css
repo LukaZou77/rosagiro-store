@@ -249,9 +249,9 @@ main {
 
 .hero {
   display: grid;
-  gap: 28px;
-  min-height: calc(100dvh - 122px);
-  padding: 36px clamp(16px, 5vw, 72px) 26px;
+  gap: 22px;
+  min-height: auto;
+  padding: 28px clamp(16px, 5vw, 72px) 22px;
   align-items: center;
 }
 
@@ -813,6 +813,41 @@ textarea:focus-visible {
   padding-bottom: 18px;
 }
 
+.home-trust-section {
+  display: grid;
+  gap: 12px;
+  padding: 14px clamp(16px, 5vw, 72px);
+  border-top: 1px solid rgba(var(--sage-rgb), 0.14);
+  border-bottom: 1px solid rgba(var(--sage-rgb), 0.14);
+  background:
+    linear-gradient(90deg, rgba(var(--mist-rgb), 0.88), rgba(255, 255, 255, 0.92), rgba(255, 244, 215, 0.42)),
+    var(--surface);
+}
+
+.home-trust-section .store-trust-card {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-trust-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.home-trust-shortcuts a {
+  min-height: 32px;
+  padding: 7px 10px;
+  border: 1px solid rgba(var(--sage-rgb), 0.18);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--sage);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
 .quick-action-grid {
   grid-template-columns: 1fr;
 }
@@ -1251,6 +1286,58 @@ textarea:focus-visible {
 }
 
 @media (max-width: 679px) {
+  .hero {
+    gap: 16px;
+    padding: 22px 20px 18px;
+  }
+
+  .hero-copy h1 {
+    margin-bottom: 10px;
+    font-size: clamp(1.85rem, 8.5vw, 2.08rem);
+    line-height: 1.02;
+  }
+
+  .hero p:not(.eyebrow) {
+    font-size: 0.96rem;
+  }
+
+  .wholesale-signal-row {
+    margin-top: 12px;
+  }
+
+  .hero-commerce-panel {
+    gap: 10px;
+  }
+
+  .hero-product {
+    padding: 10px;
+  }
+
+  .hero-product img {
+    aspect-ratio: 1.08 / 1;
+  }
+
+  .hero-product > span:not(.deal-label) {
+    margin-top: 9px;
+  }
+
+  .deal-list {
+    gap: 8px;
+  }
+
+  .hero-shop-actions {
+    gap: 12px;
+  }
+
+  .home-trust-section {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .home-trust-section .store-trust-card {
+    gap: 8px;
+  }
+
   .catalog-header {
     padding: 24px 20px 8px;
   }
@@ -5364,6 +5451,11 @@ a.readiness-signal:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .home-trust-section {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
   .wholesale-info-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -5538,7 +5630,9 @@ a.readiness-signal:focus-visible {
       "copy panel"
       "shop panel"
       "stats panel";
-    min-height: calc(100dvh - 122px);
+    min-height: min(760px, calc(100dvh - 122px));
+    padding-top: 42px;
+    padding-bottom: 32px;
   }
 
   .promo-route-hero {

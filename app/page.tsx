@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
+import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getFeaturedBrands, getProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
+import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 function discountLabel(product: Awaited<ReturnType<typeof getProducts>>[number]) {
@@ -14,11 +16,24 @@ function discountLabel(product: Awaited<ReturnType<typeof getProducts>>[number])
 }
 
 export default async function HomePage() {
-  const [categories, brands, products] = await Promise.all([getCategories(), getFeaturedBrands(), getProducts()]);
+  const [categories, brands, products, storeProfile] = await Promise.all([
+    getCategories(),
+    getFeaturedBrands(),
+    getProducts(),
+    getStoreProfile()
+  ]);
   const dealProducts = products.filter((product) => product.compareAtPriceCents).slice(0, 3);
   const heroProduct = dealProducts[0] || products[0];
   const secondaryDeals = (dealProducts.length > 1 ? dealProducts.slice(1) : products.filter((product) => product.slug !== heroProduct?.slug)).slice(0, 2);
   const whatsappHref = buildGeneralWhatsAppHref("home atacado");
+  const homeTrustSignals = Array.from(
+    new Set([
+      ...storeTrustSignals(storeProfile, 3),
+      "Pix e cartão no checkout",
+      "Retirada ou envio por CEP",
+      "Trocas e políticas visíveis"
+    ])
+  ).slice(0, 5);
   const stats = [
     { value: `${products.length}+`, label: siteConfig.homePromotions.stats.productsLabel },
     { value: `${categories.length}`, label: siteConfig.homePromotions.stats.categoriesLabel },
@@ -47,7 +62,7 @@ export default async function HomePage() {
         <div className="hero-commerce-panel" aria-label="Ofertas em destaque">
           <div className="panel-heading">
             <p className="eyebrow">Pronta entrega</p>
-            <strong>Ofertas e giro rapido</strong>
+            <strong>Ofertas e giro rápido</strong>
           </div>
           {heroProduct ? (
             <Link className="hero-product" href={`/produto/${heroProduct.slug}`} aria-label="Produto em destaque">
@@ -73,7 +88,7 @@ export default async function HomePage() {
         </div>
         <div className="hero-shop-actions">
           <form className="home-search" action="/categoria/all">
-            <label htmlFor="home-search-input">Buscar no catalogo</label>
+            <label htmlFor="home-search-input">Buscar no catálogo</label>
             <div>
               <input id="home-search-input" name="q" placeholder={siteConfig.homePromotions.searchPlaceholder} />
               <button className="button primary" type="submit">
@@ -86,7 +101,7 @@ export default async function HomePage() {
               {siteConfig.hero.primaryCta}
             </Link>
             <Link className="button secondary" href="/promocoes">
-              Ver promocoes
+              Ver promoções
             </Link>
             {heroProduct ? (
               <Link className="button secondary" href={`/produto/${heroProduct.slug}`}>
@@ -103,6 +118,20 @@ export default async function HomePage() {
             </div>
           ))}
         </dl>
+      </section>
+
+      <section className="home-trust-section" aria-label="Loja confiável">
+        <StoreTrustSignals
+          signals={homeTrustSignals}
+          title="Dados da loja, atendimento humano e compra acompanhada"
+          body="Veja os canais oficiais, políticas, entrega e formas de atendimento antes de montar seu pedido."
+        />
+        <div className="home-trust-shortcuts">
+          <Link href="/informacoes-da-loja">Dados da loja</Link>
+          <Link href="/entrega">Entrega e retirada</Link>
+          <Link href="/trocas-e-devolucoes">Trocas</Link>
+          <WhatsAppLink href={whatsappHref}>WhatsApp</WhatsAppLink>
+        </div>
       </section>
 
       <section className="section quick-action-section">

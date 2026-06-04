@@ -178,14 +178,14 @@ function disabledAutocomplete(): AddressAutocompleteResult {
   return {
     status: "DISABLED",
     suggestions: [],
-    message: "Busca por endereco indisponivel agora. Use o CEP ou preencha manualmente."
+    message: "Busca por endereço indisponível agora. Use o CEP ou preencha manualmente."
   };
 }
 
 function disabledDetails(): AddressDetailsResult {
   return {
     status: "DISABLED",
-    message: "Busca por endereco indisponivel agora. Use o CEP ou preencha manualmente."
+    message: "Busca por endereço indisponível agora. Use o CEP ou preencha manualmente."
   };
 }
 
@@ -231,7 +231,7 @@ export async function autocompleteViaCepAddress({
 
     return {
       status: "OK",
-      message: "Selecione um endereco ViaCEP para preencher os dados.",
+      message: "Selecione um endereço ViaCEP para preencher os dados.",
       suggestions: result.addresses.map((address) => ({
         placeId: makeViaCepPlaceId(address.cep),
         mainText: address.street || `CEP ${address.cep}`,
@@ -244,7 +244,7 @@ export async function autocompleteViaCepAddress({
     return {
       status: "ERROR",
       suggestions: [],
-      message: "Nao foi possivel consultar o ViaCEP agora. Preencha manualmente."
+      message: "Não foi possível consultar o ViaCEP agora. Preencha manualmente."
     };
   }
 }
@@ -258,7 +258,7 @@ export async function getViaCepPlaceDetails(placeId: string): Promise<AddressDet
     if (result.status !== "found") {
       return {
         status: "ERROR",
-        message: "Nao foi possivel carregar o endereco ViaCEP selecionado. Preencha manualmente."
+        message: "Não foi possível carregar o endereço ViaCEP selecionado. Preencha manualmente."
       };
     }
 
@@ -279,7 +279,7 @@ export async function getViaCepPlaceDetails(placeId: string): Promise<AddressDet
   } catch {
     return {
       status: "ERROR",
-      message: "Nao foi possivel carregar o endereco ViaCEP selecionado. Preencha manualmente."
+      message: "Não foi possível carregar o endereço ViaCEP selecionado. Preencha manualmente."
     };
   }
 }
@@ -317,7 +317,7 @@ export async function autocompleteAddress(input: string, sessionToken?: string):
     return {
       status: "ERROR",
       suggestions: [],
-      message: "Nao foi possivel buscar sugestoes agora. Preencha manualmente."
+      message: "Não foi possível buscar sugestões agora. Preencha manualmente."
     };
   }
 
@@ -351,7 +351,7 @@ export async function getAddressPlaceDetails(placeId: string, sessionToken?: str
   const cleanPlaceId = cleanText(placeId).slice(0, 256);
 
   if (!cleanPlaceId) {
-    return { status: "ERROR", message: "Selecione um endereco valido." };
+    return { status: "ERROR", message: "Selecione um endereço válido." };
   }
 
   if (!apiKey) {
@@ -375,7 +375,7 @@ export async function getAddressPlaceDetails(placeId: string, sessionToken?: str
   if (!data) {
     return {
       status: "ERROR",
-      message: "Nao foi possivel carregar o endereco selecionado. Preencha manualmente."
+      message: "Não foi possível carregar o endereço selecionado. Preencha manualmente."
     };
   }
 
@@ -402,7 +402,7 @@ export async function validateCheckoutAddress(address: CheckoutAddressForValidat
       granularity: null,
       latitude: null,
       longitude: null,
-      message: "Google Maps API key nao configurada; endereco salvo sem validacao externa.",
+      message: "Google Maps API key não configurada; endereço salvo sem validação externa.",
       checkedAt
     };
   }
@@ -439,7 +439,7 @@ export async function validateCheckoutAddress(address: CheckoutAddressForValidat
       granularity: null,
       latitude: null,
       longitude: null,
-      message: "Nao foi possivel validar o endereco agora; pedido salvo para conferencia manual.",
+      message: "Não foi possível validar o endereço agora; pedido salvo para conferência manual.",
       checkedAt
     };
   }

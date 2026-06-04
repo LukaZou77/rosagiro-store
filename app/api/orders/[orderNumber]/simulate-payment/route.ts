@@ -15,6 +15,6 @@ export async function POST(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error(error);
-    return NextResponse.json({ error: "Nao foi possivel confirmar o pagamento." }, { status: 500 });
+    return NextResponse.json({ error: "Não foi possível confirmar o pagamento." }, { status: 500 });
   }
 }

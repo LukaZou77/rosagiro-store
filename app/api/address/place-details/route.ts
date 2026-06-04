@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         status: "ERROR",
-        message: "Nao foi possivel carregar o endereco selecionado. Preencha manualmente."
+        message: "Não foi possível carregar o endereço selecionado. Preencha manualmente."
       },
       { status: 500 }
     );

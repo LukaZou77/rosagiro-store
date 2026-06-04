@@ -26,7 +26,7 @@ export function productDetailGalleryState(gallery: string[]) {
   return {
     count,
     isRich: count >= 3,
-    label: count === 1 ? "1 foto cadastrada" : `${count} fotos cadastradas`
+    label: count > 1 ? `${count} fotos para conferir detalhes` : "Clique na foto para ampliar"
   };
 }
 
@@ -46,12 +46,12 @@ export function productDetailServiceCards(): ProductDetailServiceCard[] {
   return [
     {
       label: "Frete por CEP",
-      value: "Anjun D2D Pickup no checkout; transportadora e excursao sob consulta.",
+      value: "Anjun D2D Pickup no checkout; transportadora e excursão sob consulta.",
       tone: "ready"
     },
     {
-      label: "Retirada / excursao",
-      value: "Combine retirada, transportadora ou excursao conforme sua cidade.",
+      label: "Retirada / excursão",
+      value: "Combine retirada, transportadora ou excursão conforme sua cidade.",
       tone: "ready"
     },
     {
@@ -61,7 +61,7 @@ export function productDetailServiceCards(): ProductDetailServiceCard[] {
     },
     {
       label: "Checkout",
-      value: "Preco, estoque e frete sao conferidos antes de finalizar o pedido.",
+      value: "Preço, estoque e frete são conferidos antes de finalizar o pedido.",
       tone: "assist"
     }
   ];

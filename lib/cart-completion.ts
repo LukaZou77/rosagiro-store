@@ -49,7 +49,7 @@ function productStock(product: Pick<CartCompletionProduct, "inventory">) {
 
 function recommendationReason(product: CartCompletionProduct, remainingCents: number, preferredCategories: Set<string>) {
   const discount = discountPercent(product);
-  if (remainingCents > 0 && product.priceCents <= remainingCents) return "Ajuda a fechar o minimo";
+  if (remainingCents > 0 && product.priceCents <= remainingCents) return "Ajuda a fechar o mínimo";
   if (discount > 0) return "Desconto real para completar";
   if (preferredCategories.has(product.category.slug)) return "Combina com sua lista";
   if (/mais vendido|favorito|oferta|novo/i.test(product.badges.join(" "))) return "Boa saida para reposicao";

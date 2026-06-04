@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       const acceptedQuantity = product ? Math.min(item.quantity, Math.max(stockQuantity, 0)) : 0;
       const lineTotalCents = product ? product.priceCents * acceptedQuantity : 0;
       const warning = !product
-        ? "Produto nao encontrado."
+        ? "Produto não encontrado."
         : !active
           ? "Produto indisponivel."
           : stockQuantity <= 0
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
         remainingToMinimumCents: siteConfig.wholesale.minimumOrderCents,
         minimumReached: false,
         recommendations: [],
-        error: "Nao foi possivel resumir o carrinho agora."
+        error: "Não foi possível resumir o carrinho agora."
       },
       { status: 500 }
     );

@@ -14,8 +14,8 @@ import {
 } from "@/lib/store-profile";
 
 export const metadata: Metadata = storefrontMetadata({
-  title: "Informacoes da loja",
-  description: "Dados comerciais, atendimento, entrega, pagamento e politicas da Bela Viva.",
+  title: "Informações da loja",
+  description: "Dados comerciais, atendimento, entrega, pagamento e políticas da Bela Viva.",
   path: "/informacoes-da-loja"
 });
 
@@ -29,20 +29,20 @@ export default async function StoreInformationPage() {
     <StoreShell categories={categories}>
       <section className="info-hero store-info-hero">
         <div>
-          <p className="eyebrow">Loja / Confianca</p>
-          <h1>Informacoes da loja Bela Viva</h1>
-          <p>Dados comerciais, atendimento e orientacoes operacionais para comprar com mais clareza.</p>
+          <p className="eyebrow">Loja / Confiança</p>
+          <h1>Informações da loja Bela Viva</h1>
+          <p>Dados comerciais, atendimento e orientações operacionais para comprar com mais clareza.</p>
         </div>
         <StoreTrustSignals signals={trustSignals} showLink={false} />
       </section>
 
       <section className="store-info-layout">
         <article className="store-info-card">
-          <span>Identificacao</span>
+          <span>Identificação</span>
           <h2>{profile.storeName}</h2>
           <dl>
             <div>
-              <dt>Razao social</dt>
+              <dt>Razão social</dt>
               <dd>{profile.legalName}</dd>
             </div>
             <div>
@@ -50,7 +50,7 @@ export default async function StoreInformationPage() {
               <dd>{storeCnpjLabel(profile)}</dd>
             </div>
             <div>
-              <dt>Inscricao estadual</dt>
+              <dt>Inscrição estadual</dt>
               <dd>{publicNotes.stateRegistration}</dd>
             </div>
           </dl>
@@ -69,7 +69,7 @@ export default async function StoreInformationPage() {
               <dd>{profile.email}</dd>
             </div>
             <div>
-              <dt>Horario</dt>
+              <dt>Horário</dt>
               <dd>{profile.businessHours}</dd>
             </div>
           </dl>
@@ -85,17 +85,17 @@ export default async function StoreInformationPage() {
         </article>
 
         <article className="store-info-card wide">
-          <span>Endereco</span>
-          <h2>Retirada e conferencia</h2>
+          <span>Endereço</span>
+          <h2>Retirada e conferência</h2>
           <p>{storeProfileAddress(profile)}</p>
           <p>{profile.pickupNote}</p>
         </article>
 
         <article className="store-info-card">
           <span>Entrega</span>
-          <h2>Transporte e excursao</h2>
+          <h2>Transporte e excursão</h2>
           <p>{profile.shippingNote}</p>
-          <Link href="/entrega">Ver politica de entrega</Link>
+          <Link href="/entrega">Ver política de entrega</Link>
         </article>
 
         <article className="store-info-card">
@@ -106,10 +106,10 @@ export default async function StoreInformationPage() {
         </article>
 
         <article className="store-info-card">
-          <span>Pos-compra</span>
-          <h2>Trocas e devolucoes</h2>
+          <span>Pós-compra</span>
+          <h2>Trocas e devoluções</h2>
           <p>{profile.exchangeNote}</p>
-          <Link href="/trocas-e-devolucoes">Ver politica de trocas</Link>
+          <Link href="/trocas-e-devolucoes">Ver política de trocas</Link>
         </article>
 
         <article className="store-info-card launch-note">

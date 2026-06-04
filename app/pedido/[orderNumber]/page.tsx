@@ -12,8 +12,8 @@ const addressMatchLabels: Record<string, string> = {
   VALIDATED: "Endereco validado",
   NEEDS_REVIEW: "Endereco para conferencia",
   FAILED: "Validacao indisponivel",
-  DISABLED: "Validacao nao configurada",
-  NOT_CHECKED: "Validacao nao executada"
+  DISABLED: "Validação não configurada",
+  NOT_CHECKED: "Validação não executada"
 };
 
 type PageProps = {
@@ -56,13 +56,13 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
           <div className="address-match-card needs-review">
             <span>Mercado Pago</span>
             <strong>{order.payment.providerStatus || "Aguardando retorno"}</strong>
-            <small>{order.payment.syncError || "A confirmacao do provedor atualizara o pedido automaticamente."}</small>
+            <small>{order.payment.syncError || "A confirmação do provedor atualizará o pedido automaticamente."}</small>
           </div>
         ) : null}
         <div className={`address-match-card ${order.addressMatchStatus.toLowerCase().replace("_", "-")}`}>
           <span>{addressMatchLabels[order.addressMatchStatus] || "Endereco salvo"}</span>
           <strong>{order.addressMatchFormatted || `${order.street}, ${order.number} - ${order.city}/${order.state}`}</strong>
-          <small>{order.addressMatchMessage || "Confira o endereco antes do envio."}</small>
+          <small>{order.addressMatchMessage || "Confira o endereço antes do envio."}</small>
         </div>
         <div className={`address-match-card ${order.shippingQuoteStatus.toLowerCase().replace("_", "-")}`}>
           <span>{order.shippingServiceLabel || "Entrega"}</span>

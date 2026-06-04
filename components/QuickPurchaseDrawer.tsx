@@ -94,12 +94,12 @@ export function QuickPurchaseDrawer() {
     })
       .then(async (response) => {
         const data = (await response.json()) as CartSummary;
-        if (!response.ok) throw new Error(data.error || "Nao foi possivel carregar o resumo.");
+        if (!response.ok) throw new Error(data.error || "Não foi possível carregar o resumo.");
         setSummaryState({ key: cartKey, data });
       })
       .catch((fetchError: Error) => {
         if (fetchError.name === "AbortError") return;
-        setErrorState({ key: cartKey, message: fetchError.message || "Nao foi possivel carregar o resumo." });
+        setErrorState({ key: cartKey, message: fetchError.message || "Não foi possível carregar o resumo." });
       });
 
     return () => controller.abort();
@@ -141,20 +141,20 @@ export function QuickPurchaseDrawer() {
   return (
     <>
       {count > 0 && !open && !hideFloatingEntry ? (
-        <button className="quick-purchase-fab" type="button" onClick={() => setOpen(true)} aria-label="Abrir pedido rapido">
+        <button className="quick-purchase-fab" type="button" onClick={() => setOpen(true)} aria-label="Abrir pedido rápido">
           <span>Pedido</span>
           <strong>{count}</strong>
         </button>
       ) : null}
       <div className={open ? "quick-drawer-shell open" : "quick-drawer-shell"} aria-hidden={!open}>
         <button className="quick-drawer-overlay" type="button" onClick={() => setOpen(false)} aria-label="Fechar painel de pedido" />
-        <aside className="quick-drawer" aria-label="Pedido rapido" aria-modal="true" role="dialog">
+        <aside className="quick-drawer" aria-label="Pedido rápido" aria-modal="true" role="dialog">
           <header className="quick-drawer-header">
             <div>
-              <span>Pedido rapido</span>
+              <span>Pedido rápido</span>
               <h2>Monte sua lista</h2>
             </div>
-            <button ref={closeButtonRef} type="button" onClick={() => setOpen(false)} aria-label="Fechar pedido rapido">
+            <button ref={closeButtonRef} type="button" onClick={() => setOpen(false)} aria-label="Fechar pedido rápido">
               Fechar
             </button>
           </header>
@@ -165,27 +165,27 @@ export function QuickPurchaseDrawer() {
                 <strong>Carrinho vazio</strong>
                 <p>Adicione produtos para montar sua compra de atacado.</p>
                 <Link className="button secondary wide" href="/categoria/all" onClick={() => setOpen(false)}>
-                  Ver catalogo
+                  Ver catálogo
                 </Link>
               </div>
             ) : loading && !summary ? (
               <div className="quick-loading">Carregando resumo do pedido...</div>
             ) : error ? (
               <div className="quick-empty">
-                <strong>Resumo indisponivel</strong>
+                <strong>Resumo indisponível</strong>
                 <p>{error}</p>
               </div>
             ) : summary ? (
               <>
-                <section className="quick-minimum" aria-label="Pedido minimo">
+                <section className="quick-minimum" aria-label="Pedido mínimo">
                   <div>
                     <span>{siteConfig.wholesale.minimumOrderTitle}</span>
                     <strong>{money(summary.minimumOrderCents)}</strong>
                   </div>
                   <p>
                     {summary.minimumReached
-                      ? "Lista acima do minimo sugerido para atacado."
-                      : `Faltam ${money(summary.remainingToMinimumCents)} para atingir o minimo sugerido.`}
+                      ? "Lista acima do mínimo sugerido para atacado."
+                      : `Faltam ${money(summary.remainingToMinimumCents)} para atingir o mínimo sugerido.`}
                   </p>
                   <div className="minimum-order-meter" aria-hidden="true">
                     <span style={{ width: `${progress}%` }} />
@@ -200,7 +200,7 @@ export function QuickPurchaseDrawer() {
                         <span>{line.brandName || "Produto"}</span>
                         <strong>{line.name}</strong>
                         <small>
-                          {line.available ? `${money(line.priceCents)} / ${line.stockQuantity} un. em estoque` : line.warning || "Indisponivel"}
+                          {line.available ? `${money(line.priceCents)} / ${line.stockQuantity} un. em estoque` : line.warning || "Indisponível"}
                         </small>
                         {line.warning ? <em>{line.warning}</em> : null}
                       </div>
@@ -239,7 +239,7 @@ export function QuickPurchaseDrawer() {
                   body={
                     summary.minimumReached
                       ? siteConfig.productConversion.completionReachedBody
-                      : `Faltam ${money(summary.remainingToMinimumCents)} para o minimo sugerido.`
+                      : `Faltam ${money(summary.remainingToMinimumCents)} para o mínimo sugerido.`
                   }
                 />
 

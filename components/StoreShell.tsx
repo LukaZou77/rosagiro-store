@@ -29,7 +29,7 @@ export async function StoreShell({
   return (
     <CustomerSessionProvider>
       <StructuredData data={[storeJsonLd(storeProfile), websiteJsonLd()]} />
-      <div className="store-alert" aria-label="Condicoes de compra">
+      <div className="store-alert" aria-label="Condições de compra">
         <span>{siteConfig.wholesale.headerStrip}</span>
         <Link href="/informacoes-da-loja">{storeCnpjLabel(storeProfile)}</Link>
         <WhatsAppLink href={generalWhatsAppHref}>{siteConfig.whatsapp.serviceLabel}</WhatsAppLink>
@@ -77,7 +77,7 @@ export async function StoreShell({
             </Link>
           ))}
           <Link href="/contato">Contato</Link>
-          <Link href="/informacoes-da-loja">Informacoes da loja</Link>
+          <Link href="/informacoes-da-loja">Informações da loja</Link>
         </nav>
         <div className="footer-trust-list" aria-label="Sinais de confianca">
           {trustSignals.map((signal) => (
@@ -95,8 +95,8 @@ export async function StoreShell({
         ) : null}
       </footer>
       <QuickPurchaseDrawer />
-      <nav className="mobile-tabs" aria-label="Navegacao principal">
-        <Link href="/">Inicio</Link>
+      <nav className="mobile-tabs" aria-label="Navegação principal">
+        <Link href="/">Início</Link>
         <Link href="/promocoes">Ofertas</Link>
         <Link href="/categoria/all">Categorias</Link>
         <Link href="/carrinho">Carrinho</Link>

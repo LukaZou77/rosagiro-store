@@ -79,7 +79,7 @@ export default async function ProductPage({ params }: PageProps) {
         data={[
           productJsonLd(product),
           breadcrumbJsonLd([
-            { name: "Inicio", path: "/" },
+            { name: "Início", path: "/" },
             { name: product.category.label, path: `/categoria/${product.category.slug}` },
             { name: product.name, path: `/produto/${product.slug}` }
           ])
@@ -126,7 +126,7 @@ export default async function ProductPage({ params }: PageProps) {
                 <strong>{siteConfig.productConversion.freightText}</strong>
               </div>
             </div>
-            <p>{discount > 0 ? `${discount}% OFF com preco comparativo cadastrado. ` : ""}{siteConfig.productConversion.detailPanelNote}</p>
+            <p>{discount > 0 ? `${discount}% OFF nesta oferta. ` : ""}{siteConfig.productConversion.detailPanelNote}</p>
             <div className="purchase-panel-actions">
               <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />
               <WhatsAppLink href={whatsappHref} className="button whatsapp">
@@ -140,7 +140,7 @@ export default async function ProductPage({ params }: PageProps) {
         </div>
       </section>
 
-      <div className="mobile-product-action-bar" aria-label="Compra rapida do produto">
+      <div className="mobile-product-action-bar" aria-label="Compra rápida do produto">
         <div>
           <span>{stockLabel}</span>
           <strong>{money(product.priceCents)}</strong>
@@ -221,7 +221,7 @@ export default async function ProductPage({ params }: PageProps) {
             recommendations={completionRecommendations}
             openDrawerOnAdd
             title={siteConfig.productConversion.completionTitle}
-            body={`Combine ${product.name} com itens em estoque para aproximar sua lista do pedido minimo.`}
+            body={`Combine ${product.name} com itens em estoque para aproximar sua lista do pedido mínimo.`}
           />
         ) : (
           <>

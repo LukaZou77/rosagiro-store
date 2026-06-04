@@ -40,23 +40,23 @@ export const defaultStoreProfile = {
   stateRegistration: "Isento ou a ajustar",
   cep: "00000-000",
   state: "SP",
-  city: "Sao Paulo",
+  city: "São Paulo",
   district: "A ajustar",
-  street: "Endereco em preparacao",
+  street: "Endereço a confirmar",
   number: "S/N",
-  complement: "Dados comerciais serao revisados antes da publicacao.",
+  complement: "Dados comerciais serão revisados antes da publicação.",
   email: "contato@belaviva.local",
   whatsapp: "+55 11 90000-0000",
-  businessHours: "Segunda a sexta, 9h as 18h",
+  businessHours: "Segunda a sexta, 9h às 18h",
   instagramUrl: "",
   facebookUrl: "",
   tiktokUrl: "",
-  pickupNote: "Retirada local mediante confirmacao pelo atendimento.",
-  shippingNote: "Anjun D2D Pickup, transportadora e excursao serao confirmadas antes do envio.",
-  paymentNote: "Pix, cartao e pagamento simulado estao preparados para a fase de testes.",
-  exchangeNote: "Trocas e devolucoes seguem politica propria antes da publicacao oficial.",
-  trustBadges: ["Loja em preparacao", "Atendimento por WhatsApp", "Pedido minimo sinalizado"],
-  launchNote: "Ambiente em preparacao: pedidos e pagamentos desta versao sao simulados."
+  pickupNote: "Retirada local mediante confirmação pelo atendimento.",
+  shippingNote: "Anjun D2D Pickup, transportadora e excursão serão confirmadas antes do envio.",
+  paymentNote: "Pix, cartão e checkout com atendimento estão disponíveis conforme a modalidade escolhida.",
+  exchangeNote: "Trocas e devoluções seguem política própria antes da publicação oficial.",
+  trustBadges: ["Atendimento por WhatsApp", "Pedido mínimo sinalizado", "Políticas visíveis"],
+  launchNote: "Confira os dados da loja, canais de atendimento e políticas antes de finalizar sua compra."
 } satisfies StoreProfileView;
 
 export const getStoreProfile = cache(async (): Promise<StoreProfileView> => {
@@ -92,6 +92,7 @@ function cleanPublicSignal(signal: string) {
   if (!normalized) return "";
   if (/preparacao|prepara\u00e7\u00e3o|teste|simulad/i.test(normalized)) return "";
   if (/cnpj em revisao/i.test(normalized)) return "Dados da loja";
+  if (/pedido minimo/i.test(normalized)) return "Pedido mínimo sinalizado";
   return normalized;
 }
 
@@ -115,7 +116,7 @@ export function storeTrustSignals(profile: StoreProfileView, limit = 4) {
     ...profile.trustBadges,
     storeCnpjLabel(profile),
     profile.businessHours,
-    "Politicas de troca e entrega visiveis"
+    "Políticas de troca e entrega visíveis"
   ]
     .map(cleanPublicSignal)
     .filter(Boolean);
@@ -125,10 +126,10 @@ export function storeTrustSignals(profile: StoreProfileView, limit = 4) {
 
 export function publicStoreProfileNotes(profile: StoreProfileView) {
   const paymentNote = /simulad|teste|preparacao|prepara\u00e7\u00e3o/i.test(profile.paymentNote)
-    ? "Pix, cartao e confirmacao pelo atendimento estao disponiveis conforme a modalidade escolhida no checkout."
+    ? "Pix, cartão e confirmação pelo atendimento estão disponíveis conforme a modalidade escolhida no checkout."
     : profile.paymentNote;
   const launchNote = /simulad|teste|preparacao|prepara\u00e7\u00e3o/i.test(profile.launchNote)
-    ? "Confira os dados da loja, canais de atendimento e politicas antes de finalizar sua compra."
+    ? "Confira os dados da loja, canais de atendimento e políticas antes de finalizar sua compra."
     : profile.launchNote;
   const stateRegistration = /a ajustar|preparacao|prepara\u00e7\u00e3o/i.test(profile.stateRegistration)
     ? "Consulte a loja"

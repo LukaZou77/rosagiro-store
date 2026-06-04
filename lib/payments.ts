@@ -7,7 +7,7 @@ export const paymentMethods = [
   {
     value: "CREDIT_CARD",
     label: "Cartao de credito",
-    description: "Pagamento por checkout seguro; a Bela Viva nao armazena dados do cartao."
+    description: "Pagamento por checkout seguro; a Bela Viva não armazena dados do cartão."
   },
   {
     value: "SIMULATED",
@@ -44,7 +44,7 @@ export function mercadoPagoReturnMessage(value?: string | null) {
   const labels: Record<string, string> = {
     success: "Retorno recebido. A confirmacao final aparece quando o pagamento for aprovado.",
     pending: "Pagamento em analise. Vamos manter o pedido aguardando confirmacao.",
-    failure: "O pagamento indicou falha ou cancelamento. Voce pode tentar novamente ou falar com o atendimento."
+    failure: "O pagamento indicou falha ou cancelamento. Você pode tentar novamente ou falar com o atendimento."
   };
   return labels[value || ""] || "";
 }

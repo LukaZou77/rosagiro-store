@@ -35,7 +35,7 @@ export async function POST(request: Request) {
         granularity: null,
         latitude: null,
         longitude: null,
-        message: "Nao foi possivel validar o endereco agora.",
+        message: "Não foi possível validar o endereço agora.",
         checkedAt: new Date().toISOString()
       },
       { status: 500 }

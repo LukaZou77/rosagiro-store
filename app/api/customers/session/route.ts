@@ -14,6 +14,6 @@ export async function POST(request: Request) {
     }
 
     console.error(error);
-    return NextResponse.json({ error: "Nao foi possivel iniciar o atendimento agora." }, { status: 500 });
+    return NextResponse.json({ error: "Não foi possível iniciar o atendimento agora." }, { status: 500 });
   }
 }

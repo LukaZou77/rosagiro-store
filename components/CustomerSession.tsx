@@ -107,7 +107,7 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
       const result = (await response.json()) as { customer?: CustomerSession; error?: string };
 
       if (!response.ok || !result.customer) {
-        setError(result.error || "Nao foi possivel entrar agora.");
+        setError(result.error || "Não foi possível entrar agora.");
         return;
       }
 
@@ -120,7 +120,7 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
       pendingAction.current = null;
       action?.onSuccess?.(result.customer);
     } catch {
-      setError("Nao foi possivel entrar agora. Tente novamente.");
+      setError("Não foi possível entrar agora. Tente novamente.");
     } finally {
       setSubmitting(false);
     }
@@ -172,7 +172,7 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
             </div>
           </label>
           <p className="customer-login-note">
-            Usamos nome e WhatsApp para atendimento, pedido e compra no atacado. Nao criamos senha nesta fase.{" "}
+            Usamos nome e WhatsApp para atendimento, pedido e compra no atacado. Não criamos senha nesta fase.{" "}
             <Link href="/politica-de-privacidade">Privacidade</Link>
           </p>
           <div className="form-error" role="alert">

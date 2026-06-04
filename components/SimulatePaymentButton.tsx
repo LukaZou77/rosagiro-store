@@ -16,7 +16,7 @@ export function SimulatePaymentButton({ orderNumber }: { orderNumber: string }) 
     setLoading(false);
 
     if (!response.ok || !result.ok) {
-      setError(result.error || "Nao foi possivel confirmar o pagamento.");
+      setError(result.error || "Não foi possível confirmar o pagamento.");
       return;
     }
 

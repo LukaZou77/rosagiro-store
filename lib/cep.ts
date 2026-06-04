@@ -115,7 +115,7 @@ export async function searchViaCepAddress({
   if (cleanStreet.length < 3) {
     return {
       status: "invalid",
-      message: "Digite pelo menos 3 caracteres para buscar sugestoes."
+      message: "Digite pelo menos 3 caracteres para buscar sugestões."
     };
   }
 
@@ -142,7 +142,7 @@ export async function searchViaCepAddress({
     if (!response.ok) {
       return {
         status: "error",
-        message: "Nao foi possivel consultar o ViaCEP agora. Preencha manualmente."
+        message: "Não foi possível consultar o ViaCEP agora. Preencha manualmente."
       };
     }
 
@@ -150,7 +150,7 @@ export async function searchViaCepAddress({
     if (!Array.isArray(data) || !data.length) {
       return {
         status: "empty",
-        message: "Nenhum endereco encontrado. Voce pode preencher manualmente."
+        message: "Nenhum endereço encontrado. Você pode preencher manualmente."
       };
     }
 
@@ -168,7 +168,7 @@ export async function searchViaCepAddress({
     if (!addresses.length) {
       return {
         status: "empty",
-        message: "Nenhum endereco encontrado. Voce pode preencher manualmente."
+        message: "Nenhum endereço encontrado. Você pode preencher manualmente."
       };
     }
 
@@ -176,7 +176,7 @@ export async function searchViaCepAddress({
   } catch {
     return {
       status: "error",
-      message: "Nao foi possivel consultar o ViaCEP agora. Preencha manualmente."
+      message: "Não foi possível consultar o ViaCEP agora. Preencha manualmente."
     };
   }
 }

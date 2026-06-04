@@ -15,14 +15,14 @@ export function MinimumOrderNotice({
   const reached = remaining === 0;
 
   return (
-    <section className={compact ? "minimum-order compact" : "minimum-order"} aria-label="Pedido minimo">
+    <section className={compact ? "minimum-order compact" : "minimum-order"} aria-label="Pedido mínimo">
       <div className="minimum-order-copy">
         <span>{siteConfig.wholesale.minimumOrderTitle}</span>
         <strong>{money(minimum)}</strong>
         <p>
           {reached
-            ? "Pedido acima do minimo sugerido para atacado."
-            : `Faltam ${money(remaining)} para atingir o minimo sugerido. Adicione mais itens ou fale com o atendimento.`}
+            ? "Pedido acima do mínimo sugerido para atacado."
+            : `Faltam ${money(remaining)} para atingir o mínimo sugerido. Adicione mais itens ou fale com o atendimento.`}
         </p>
       </div>
       <div className="minimum-order-meter" aria-hidden="true">

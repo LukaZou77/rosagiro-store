@@ -59,7 +59,7 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
     <section className="checkout-shell">
       <div className="cart-panel">
         <p className="eyebrow">Carrinho</p>
-        <h1>Sua selecao</h1>
+        <h1>Sua seleção</h1>
         <MinimumOrderNotice subtotalCents={subtotal} />
         {items.length ? (
           items.map((item) => (
@@ -99,11 +99,11 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
           ))
         ) : (
           <div className="empty-state">
-            <strong>Seu carrinho esta vazio</strong>
-            <p>Escolha produtos do catalogo ou veja as ofertas para montar seu pedido minimo de atacado.</p>
+            <strong>Seu carrinho está vazio</strong>
+            <p>Escolha produtos do catálogo ou veja as ofertas para montar seu pedido mínimo de atacado.</p>
             <div className="empty-actions">
               <Link className="button primary" href="/categoria/all">
-                Explorar catalogo
+                Explorar catálogo
               </Link>
               <Link className="button secondary" href="/promocoes">
                 Ver ofertas
@@ -131,7 +131,7 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
             <span>Total sem frete</span>
             <strong>{money(total)}</strong>
           </div>
-          <p>Frete Anjun D2D Pickup sera estimado por CEP no checkout. Retirada local continua disponivel.</p>
+          <p>Frete Anjun D2D Pickup será estimado por CEP no checkout. Retirada local continua disponível.</p>
         </div>
         <div className="delivery-note">
           {siteConfig.wholesale.deliveryModes.map((mode) => (
