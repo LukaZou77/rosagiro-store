@@ -1,0 +1,10 @@
+ALTER TABLE "StoreProfile" ALTER COLUMN "legalName" SET DEFAULT 'Bela Viva Comércio de Beleza Ltda.';
+ALTER TABLE "StoreProfile" ALTER COLUMN "city" SET DEFAULT 'São Paulo';
+ALTER TABLE "StoreProfile" ALTER COLUMN "street" SET DEFAULT 'Endereço em preparação';
+ALTER TABLE "StoreProfile" ALTER COLUMN "businessHours" SET DEFAULT 'Segunda a sexta, 9h às 18h';
+ALTER TABLE "StoreProfile" ALTER COLUMN "pickupNote" SET DEFAULT 'Retirada local mediante confirmação pelo atendimento.';
+ALTER TABLE "StoreProfile" ALTER COLUMN "shippingNote" SET DEFAULT 'Anjun D2D Pickup, transportadora e excursão serão confirmadas antes do envio.';
+ALTER TABLE "StoreProfile" ALTER COLUMN "paymentNote" SET DEFAULT 'Pix, cartão e pagamento com atendimento estão preparados para a fase de validação.';
+ALTER TABLE "StoreProfile" ALTER COLUMN "exchangeNote" SET DEFAULT 'Trocas e devoluções seguem política própria antes da publicação oficial.';
+ALTER TABLE "StoreProfile" ALTER COLUMN "trustBadges" SET DEFAULT ARRAY['Loja em preparação', 'Atendimento por WhatsApp', 'Pedido mínimo sinalizado']::TEXT[];
+ALTER TABLE "StoreProfile" ALTER COLUMN "launchNote" SET DEFAULT 'Ambiente em preparação: pedidos e pagamentos desta versão são simulados.';

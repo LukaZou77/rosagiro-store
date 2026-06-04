@@ -28,12 +28,12 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
-        <p className="eyebrow">Loja / Confianca</p>
+        <p className="eyebrow">Loja / Confiança</p>
         <h1>Dados da loja</h1>
-        <p>Edite as informacoes que aparecem na vitrine, no checkout e na pagina de confianca da Bela Viva.</p>
+        <p>Edite as informações que aparecem na vitrine, no checkout e na página de confiança da Bela Viva.</p>
         <div className="admin-actions">
           <Link className="button secondary" href="/informacoes-da-loja">
-            Ver pagina publica
+            Ver página pública
           </Link>
         </div>
       </div>
@@ -76,7 +76,7 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
               <input name="storeName" defaultValue={profile.storeName} required />
             </label>
             <label>
-              Razao social
+              Razão social
               <input name="legalName" defaultValue={profile.legalName} required />
             </label>
             <label>
@@ -84,19 +84,19 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
               <input name="cnpj" defaultValue={profile.cnpj} placeholder="00.000.000/0000-00" />
             </label>
             <label>
-              Inscricao estadual
+              Inscrição estadual
               <input name="stateRegistration" defaultValue={profile.stateRegistration} />
             </label>
           </div>
           <label>
-            Sinais de confianca
+            Sinais de confiança
             <textarea name="trustBadges" defaultValue={trustBadges} />
           </label>
-          <p className="table-note">Use | para separar os selos. Exemplo: Loja em preparacao | Atendimento por WhatsApp.</p>
+          <p className="table-note">Use | para separar os selos. Exemplo: Loja em preparação | Atendimento por WhatsApp.</p>
         </section>
 
         <section className="import-panel">
-          <h2>Endereco e atendimento</h2>
+          <h2>Endereço e atendimento</h2>
           <div className="form-grid">
             <label>
               CEP
@@ -119,12 +119,12 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
               <input name="street" defaultValue={profile.street} />
             </label>
             <label>
-              Numero
+              Número
               <input name="number" defaultValue={profile.number} />
             </label>
           </div>
           <label>
-            Complemento / observacao do endereco
+            Complemento / observação do endereço
             <input name="complement" defaultValue={profile.complement || ""} />
           </label>
           <div className="form-grid">
@@ -138,7 +138,7 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
             </label>
           </div>
           <label>
-            Horario de atendimento
+            Horário de atendimento
             <input name="businessHours" defaultValue={profile.businessHours} />
           </label>
         </section>
@@ -150,7 +150,7 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
             <textarea name="pickupNote" defaultValue={profile.pickupNote} />
           </label>
           <label>
-            Entrega / transportadora / excursao
+            Entrega / transportadora / excursão
             <textarea name="shippingNote" defaultValue={profile.shippingNote} />
           </label>
           <label>
@@ -158,11 +158,11 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
             <textarea name="paymentNote" defaultValue={profile.paymentNote} />
           </label>
           <label>
-            Trocas e devolucoes
+            Trocas e devoluções
             <textarea name="exchangeNote" defaultValue={profile.exchangeNote} />
           </label>
           <label>
-            Aviso de preparacao
+            Aviso de preparação
             <textarea name="launchNote" defaultValue={profile.launchNote} />
           </label>
         </section>
@@ -183,8 +183,8 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
               <input name="tiktokUrl" defaultValue={profile.tiktokUrl} placeholder="https://tiktok.com/..." />
             </label>
           </div>
-          <div className="store-profile-preview" aria-label="Previa dos dados da loja">
-            <span>Previa publica</span>
+          <div className="store-profile-preview" aria-label="Prévia dos dados da loja">
+            <span>Prévia pública</span>
             <strong>{profile.storeName}</strong>
             <small>{storeCnpjLabel(profile)}</small>
             <small>{storeProfileAddress(profile)}</small>

@@ -110,7 +110,7 @@ export const siteConfig = {
     body: "Uma vitrine direta para encontrar desconto real, itens de menor preço, campeões de giro e produtos com estoque para reposição.",
     primaryCta: "Comprar ofertas",
     secondaryCta: "Falar no WhatsApp",
-    heroBadge: "Promocao multimarcas",
+    heroBadge: "Promoção multimarcas",
     dealShelfTitle: "Descontos reais no catálogo",
     dealShelfBody: "Produtos com preço anterior cadastrado e oportunidade real para repor estoque.",
     emptyDealTitle: "Nenhuma oferta ativa no momento.",
@@ -271,14 +271,14 @@ export const infoPages = {
     href: "/termos-de-uso",
     eyebrow: "Termos",
     title: "Termos de uso",
-    description: "Condicoes iniciais para navegacao, pedidos e uso da loja Bela Viva.",
+    description: "Condições iniciais para navegação, pedidos e uso da loja Bela Viva.",
     sections: [
       {
         title: "Uso da loja",
-        body: "A Bela Viva organiza produtos multimarcas de beleza para compras no atacado, reposicao e revenda, com atendimento de apoio pelo WhatsApp."
+        body: "A Bela Viva organiza produtos multimarcas de beleza para compras no atacado, reposição e revenda, com atendimento de apoio pelo WhatsApp."
       },
       {
-        title: "Catalogo e precos",
+        title: "Catálogo e preços",
         body: "Produtos, marcas, estoque e preços podem variar. A confirmação final de disponibilidade e entrega pode ser feita pelo atendimento antes da conclusão da compra."
       },
       {
@@ -320,12 +320,12 @@ export const infoPages = {
         body: "A loja trabalha com estimativa de frete por CEP no checkout e retirada local mediante confirmação. Transportadora e excursão continuam como opções para consulta pelo WhatsApp."
       },
       {
-        title: "Cotacao por CEP",
+        title: "Cotação por CEP",
         body: "A primeira regra usa tabela Anjun D2D Pickup importada no admin, com origem São Paulo e cálculo por CEP e peso. Seguro, impostos e áreas especiais podem exigir confirmação manual."
       },
       {
         title: "Integrações futuras",
-        body: "A loja pode evoluir para novas integracoes de transporte sem alterar a experiencia principal de checkout e atendimento."
+        body: "A loja pode evoluir para novas integrações de transporte sem alterar a experiência principal de checkout e atendimento."
       }
     ]
   },

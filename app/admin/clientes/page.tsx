@@ -48,23 +48,23 @@ export default async function AdminCustomersPage() {
         <div>
           <span>Clientes</span>
           <strong>{totalCustomers}</strong>
-          <small>WhatsApp unico</small>
+          <small>WhatsApp único</small>
         </div>
         <div>
           <span>Com pedidos</span>
           <strong>{customersWithOrders}</strong>
-          <small>Ja criaram pedido local</small>
+          <small>Já criaram pedido local</small>
         </div>
         <div>
           <span>Uso</span>
           <strong>Interno</strong>
-          <small>Sem senha, OTP ou conta publica</small>
+          <small>Sem senha, OTP ou conta pública</small>
         </div>
       </div>
 
       <div className="admin-notice">
-        Esta primeira versao salva nome e WhatsApp para atendimento e compra no atacado. Nao cole tokens, documentos ou
-        observacoes sensiveis neste cadastro.
+        Esta primeira versão salva nome e WhatsApp para atendimento e compra no atacado. Não cole tokens, documentos ou
+        observações sensíveis neste cadastro.
       </div>
 
       <div className="admin-table">
@@ -79,8 +79,8 @@ export default async function AdminCustomersPage() {
               </div>
               <div>
                 <span>{customer.loginCount} entradas</span>
-                <small>Ultima entrada: {dateLabel(customer.lastLoginAt)}</small>
-                <small>Ultima atividade: {dateLabel(customer.lastSeenAt)}</small>
+                <small>Última entrada: {dateLabel(customer.lastLoginAt)}</small>
+                <small>Última atividade: {dateLabel(customer.lastSeenAt)}</small>
               </div>
               <div>
                 <span>{customer._count.orders} pedidos</span>
@@ -103,7 +103,7 @@ export default async function AdminCustomersPage() {
         {!customers.length ? (
           <div className="empty-state">
             <strong>Nenhum cliente ainda</strong>
-            <p>Quando um visitante entrar via WhatsApp antes de comprar, ele aparecera aqui.</p>
+            <p>Quando um visitante entrar via WhatsApp antes de comprar, ele aparecerá aqui.</p>
           </div>
         ) : null}
       </div>

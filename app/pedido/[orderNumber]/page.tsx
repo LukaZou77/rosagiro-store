@@ -69,7 +69,7 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
           <strong>
             {money(order.shippingCents)} / {order.shippingWeightGrams ? `${(order.shippingWeightGrams / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg` : "peso a conferir"}
           </strong>
-          <small>{order.shippingQuoteMessage || "Frete salvo para conferencia operacional."}</small>
+          <small>{order.shippingQuoteMessage || "Frete salvo para conferência operacional."}</small>
         </div>
         <div className="order-items">
           {order.items.map((item) => (

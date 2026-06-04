@@ -79,7 +79,7 @@ export async function StoreShell({
           <Link href="/contato">Contato</Link>
           <Link href="/informacoes-da-loja">Informações da loja</Link>
         </nav>
-        <div className="footer-trust-list" aria-label="Sinais de confianca">
+        <div className="footer-trust-list" aria-label="Sinais de confiança">
           {trustSignals.map((signal) => (
             <span key={signal}>{signal}</span>
           ))}

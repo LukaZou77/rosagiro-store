@@ -28,7 +28,7 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
       <div className="admin-heading">
         <p className="eyebrow">Categorias</p>
         <h1>Categorias e prateleiras</h1>
-        <p>Organize as entradas principais de navegacao e filtros do catalogo.</p>
+        <p>Organize as entradas principais de navegação e filtros do catálogo.</p>
       </div>
 
       {saved ? (

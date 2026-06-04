@@ -12,8 +12,8 @@ export const shippingConfig = {
   service: "D2D_PICKUP",
   serviceLabel: "Anjun D2D Pickup",
   originKey: "SP_SAO_PAULO",
-  originLabel: "SP-Sao Paulo",
-  originDisplay: "SP - Sao Paulo",
+  originLabel: "SP-São Paulo",
+  originDisplay: "SP - São Paulo",
   pickupLabel: "Retirada local",
   packagingWeightGrams: 150,
   minBillableWeightGrams: 100,
@@ -180,14 +180,14 @@ function parseAnjunRow(row: Row, rowNumber: number, errors: string[]): AnjunRate
 
   const rowErrors: string[] = [];
   if (!originLabel) rowErrors.push("origin vazio");
-  if (destinationState.length !== 2) rowErrors.push("UF invalida");
+  if (destinationState.length !== 2) rowErrors.push("UF inválida");
   if (!city) rowErrors.push("cidade vazia");
-  if (!cepStart || !cepEnd || cepStart > cepEnd) rowErrors.push("CEP inicial/final invalido");
+  if (!cepStart || !cepEnd || cepStart > cepEnd) rowErrors.push("CEP inicial/final inválido");
   if (!zone) rowErrors.push("zona vazia");
   if (ratesCents.length !== weightBands.length || ratesCents.some((rate) => rate <= 0)) {
-    rowErrors.push("faixas de peso invalidas");
+    rowErrors.push("faixas de peso inválidas");
   }
-  if (additionalKgCents <= 0) rowErrors.push("kg adicional invalido");
+  if (additionalKgCents <= 0) rowErrors.push("kg adicional inválido");
 
   if (rowErrors.length) {
     if (errors.length < 30) errors.push(`Linha ${rowNumber}: ${rowErrors.join(", ")}`);
@@ -215,7 +215,7 @@ export async function parseAnjunD2DPickupWorkbook(buffer: Buffer, sourceName: st
     rows = await readSheet(buffer, anjunD2DPickupSheetName);
   } catch {
     rows = [];
-    errors.push(`A planilha "${anjunD2DPickupSheetName}" nao foi encontrada no XLSX.`);
+    errors.push(`A planilha "${anjunD2DPickupSheetName}" não foi encontrada no XLSX.`);
   }
 
   const workbookRows = Math.max(0, rows.length - 2);
@@ -228,7 +228,7 @@ export async function parseAnjunD2DPickupWorkbook(buffer: Buffer, sourceName: st
   const origins = new Set(rates.map((rate) => rate.originKey));
   const sample = rates.find((rate) => rate.originKey === shippingConfig.originKey && rate.cepStart <= 1001000 && rate.cepEnd >= 1001000);
 
-  if (!rates.length && !errors.length) errors.push("Nenhuma linha valida foi encontrada no D2D Pickup.");
+  if (!rates.length && !errors.length) errors.push("Nenhuma linha válida foi encontrada no D2D Pickup.");
 
   return {
     summary: {
@@ -547,12 +547,12 @@ export async function resolveOrderShipping({
     shippingCents: shipping,
     carrier: "LEGACY",
     service: method,
-    serviceLabel: method === "EXPRESSA" ? "Entrega expressa legada" : "Entrega padrao legada",
+    serviceLabel: method === "EXPRESSA" ? "Entrega expressa legada" : "Entrega padrão legada",
     rateId: null,
     zone: null,
     city: null,
     weightGrams: billable,
-    estimate: method === "EXPRESSA" ? "2 a 3 dias uteis (legado)" : "4 a 7 dias uteis (legado)",
+    estimate: method === "EXPRESSA" ? "2 a 3 dias úteis (legado)" : "4 a 7 dias úteis (legado)",
     status: "LEGACY",
     message: "Pedido criado por fluxo antigo de frete fixo.",
     snapshot: {

@@ -19,7 +19,7 @@ function single(value: string | string[] | undefined) {
 }
 
 function dateLabel(value?: Date | null) {
-  if (!value) return "Conteudo padrao";
+  if (!value) return "Conteúdo padrão";
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short"
@@ -42,10 +42,10 @@ function PolicyEditor({ page }: { page: SiteInfoPageEditable }) {
           <h2>{page.title}</h2>
         </div>
         <Link className="button secondary" href={page.href}>
-          Ver pagina
+          Ver página
         </Link>
       </div>
-      <p className="table-note">Ultima atualizacao: {dateLabel(page.updatedAt)}. Use texto simples, sem HTML.</p>
+      <p className="table-note">Última atualização: {dateLabel(page.updatedAt)}. Use texto simples, sem HTML.</p>
 
       <div className="form-grid">
         <label>
@@ -53,25 +53,25 @@ function PolicyEditor({ page }: { page: SiteInfoPageEditable }) {
           <input name="eyebrow" defaultValue={page.eyebrow} required />
         </label>
         <label>
-          Titulo
+          Título
           <input name="title" defaultValue={page.title} required />
         </label>
       </div>
       <label>
-        Descricao
+        Descrição
         <textarea name="description" defaultValue={page.description} required />
       </label>
 
       <div className="policy-section-list">
         {sectionSlots.map((section, index) => (
           <fieldset className="policy-section-editor" key={`${page.pageKey}-${index}`}>
-            <legend>Secao {index + 1}</legend>
+            <legend>Seção {index + 1}</legend>
             <label>
-              Titulo da secao
+              Título da seção
               <input name="sectionTitle" defaultValue={section.title} />
             </label>
             <label>
-              Texto da secao
+              Texto da seção
               <textarea name="sectionBody" defaultValue={section.body} />
             </label>
           </fieldset>
@@ -92,17 +92,17 @@ export default async function AdminPoliciesPage({ searchParams }: PageProps) {
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
-        <p className="eyebrow">Politicas / Conteudo</p>
-        <h1>Paginas publicas editaveis</h1>
+        <p className="eyebrow">Políticas / Conteúdo</p>
+        <h1>Páginas públicas editáveis</h1>
         <p>
-          Ajuste os textos de privacidade, termos, trocas, entrega e contato. O conteudo salvo aparece na loja
-          imediatamente e continua marcado para revisao antes da venda real.
+          Ajuste os textos de privacidade, termos, trocas, entrega e contato. O conteúdo salvo aparece na loja
+          imediatamente e continua marcado para revisão antes da venda real.
         </p>
       </div>
 
       {saved ? (
         <div className="admin-notice success" role="status">
-          Conteudo salvo e publicado.
+          Conteúdo salvo e publicado.
         </div>
       ) : null}
       {error ? (
@@ -112,10 +112,10 @@ export default async function AdminPoliciesPage({ searchParams }: PageProps) {
       ) : null}
 
       <section className="admin-notice">
-        Estas paginas usam texto simples. Nao cole HTML, tokens, chaves de API ou dados sensiveis de ambiente.
+        Estas páginas usam texto simples. Não cole HTML, tokens, chaves de API ou dados sensíveis de ambiente.
       </section>
 
-      <div className="admin-actions policy-jump-list" aria-label="Atalhos para paginas editaveis">
+      <div className="admin-actions policy-jump-list" aria-label="Atalhos para páginas editáveis">
         {pages.map((page) => (
           <Link
             className={activePage === page.pageKey ? "button primary" : "button secondary"}

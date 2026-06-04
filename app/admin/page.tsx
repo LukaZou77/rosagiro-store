@@ -22,7 +22,7 @@ export default async function AdminPage() {
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
         <p className="eyebrow">Resumo</p>
-        <h1>Operacao Bela Viva</h1>
+        <h1>Operação Bela Viva</h1>
       </div>
       <div className="metric-grid">
         <Link href="/admin/produtos">
@@ -54,7 +54,7 @@ export default async function AdminPage() {
         <p className="table-note">{paymentSnapshot.fallbackMessage}</p>
         <div className="admin-actions">
           <Link className="button primary" href="/admin/pagamentos">
-            Abrir diagnostico
+            Abrir diagnóstico
           </Link>
           <Link className="button secondary" href="/checkout">
             Testar checkout
@@ -65,8 +65,8 @@ export default async function AdminPage() {
       <section className="import-panel launch-summary">
         <div className="readiness-group-heading">
           <div>
-            <span>Prontidao para venda real</span>
-            <h2>Saude de lancamento</h2>
+            <span>Prontidão para venda real</span>
+            <h2>Saúde de lançamento</h2>
           </div>
           <strong>
             {launchSnapshot.readyCount}/{launchSnapshot.signals.length}
@@ -82,7 +82,7 @@ export default async function AdminPage() {
             <strong>{launchSnapshot.warningCount}</strong>
           </div>
           <div>
-            <span>Acao necessaria</span>
+            <span>Ação necessária</span>
             <strong>{launchSnapshot.actionRequiredCount}</strong>
           </div>
         </div>
@@ -97,7 +97,7 @@ export default async function AdminPage() {
             ))}
           </div>
         ) : (
-          <div className="admin-notice success">Nenhum bloqueio alto detectado pelos checks automaticos.</div>
+          <div className="admin-notice success">Nenhum bloqueio alto detectado pelos checks automáticos.</div>
         )}
         <div className="admin-actions">
           <Link className="button primary" href="/admin/prontidao">

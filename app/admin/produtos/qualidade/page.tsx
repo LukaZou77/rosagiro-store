@@ -29,7 +29,7 @@ function statusLabel(status: "all" | ProductQualityStatus) {
 }
 
 function groupLabel(group: "all" | ProductQualityGroup) {
-  return group === "all" ? "Todas as areas" : productQualityGroupLabels[group];
+  return group === "all" ? "Todas as áreas" : productQualityGroupLabels[group];
 }
 
 export default async function AdminProductQualityPage({ searchParams }: PageProps) {
@@ -52,10 +52,10 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
-        <p className="eyebrow">Qualidade de catalogo</p>
+        <p className="eyebrow">Qualidade de catálogo</p>
         <h1>Produtos prontos para venda real</h1>
         <p>
-          Veja quais fichas ainda usam imagem de prototipo, galeria curta, peso padrao ou conteudo que precisa ser
+          Veja quais fichas ainda usam imagem de protótipo, galeria curta, peso padrão ou conteúdo que precisa ser
           confirmado antes de publicar a loja.
         </p>
         <div className="admin-actions">
@@ -75,32 +75,32 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
           <small>{summary.activeCount} ativos</small>
         </div>
         <div>
-          <span>Acao necessaria</span>
+          <span>Ação necessária</span>
           <strong>{summary.actionRequiredCount}</strong>
           <small>Bloqueiam venda real</small>
         </div>
         <div>
           <span>Revisar</span>
           <strong>{summary.reviewCount}</strong>
-          <small>Conferencias operacionais</small>
+          <small>Conferências operacionais</small>
         </div>
         <div>
           <span>Prontos</span>
           <strong>{summary.readyCount}</strong>
-          <small>Sem alerta automatico</small>
+          <small>Sem alerta automático</small>
         </div>
       </div>
 
       <section className="import-panel quality-storage-note">
         <div className="readiness-group-heading">
           <div>
-            <span>Midia real</span>
+            <span>Mídia real</span>
             <h2>Fotos, peso e storage</h2>
           </div>
           <strong>{summary.svgDemoCount + summary.localUploadCount}</strong>
         </div>
         <p className="table-note">
-          {summary.svgDemoCount} produto(s) ainda usam SVG de prototipo; {summary.localUploadCount} usam upload local.
+          {summary.svgDemoCount} produto(s) ainda usam SVG de protótipo; {summary.localUploadCount} usam upload local.
           Upload local serve para desenvolvimento, mas venda real em Vercel precisa de storage persistente como S3, R2
           ou Vercel Blob.
         </p>
@@ -113,7 +113,7 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
           validade/lote antes de vender como atacado real.
         </p>
         <p className="table-note">
-          A pagina publica do produto agora destaca ficha comercial, fotos, validade/lote, quantidade sugerida e
+          A página pública do produto agora destaca ficha comercial, fotos, validade/lote, quantidade sugerida e
           atendimento. Quanto mais campos reais estiverem completos, menos o cliente precisa perguntar antes de comprar.
         </p>
       </section>
@@ -139,7 +139,7 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
             </Link>
           ))}
           {!summary.issueCounts.length ? (
-            <div className="admin-notice success">Nenhum alerta automatico encontrado no catalogo atual.</div>
+            <div className="admin-notice success">Nenhum alerta automático encontrado no catálogo atual.</div>
           ) : null}
         </div>
       </section>
@@ -160,7 +160,7 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
           </select>
         </label>
         <label>
-          Area
+          Área
           <select name="group" defaultValue={group}>
             {groupOptions.map((option) => (
               <option value={option} key={option}>

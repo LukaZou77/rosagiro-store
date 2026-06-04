@@ -35,7 +35,7 @@ export type StoreProfileView = {
 export const defaultStoreProfile = {
   id: STORE_PROFILE_ID,
   storeName: "Bela Viva",
-  legalName: "Bela Viva Comercio de Beleza Ltda.",
+  legalName: "Bela Viva Comércio de Beleza Ltda.",
   cnpj: "00.000.000/0000-00",
   stateRegistration: "Isento ou a ajustar",
   cep: "00000-000",
@@ -91,8 +91,8 @@ function cleanPublicSignal(signal: string) {
   const normalized = signal.trim();
   if (!normalized) return "";
   if (/preparacao|prepara\u00e7\u00e3o|teste|simulad/i.test(normalized)) return "";
-  if (/cnpj em revisao/i.test(normalized)) return "Dados da loja";
-  if (/pedido minimo/i.test(normalized)) return "Pedido mínimo sinalizado";
+  if (/cnpj em revisao|cnpj em revisão/i.test(normalized)) return "Dados da loja";
+  if (/pedido minimo|pedido mínimo/i.test(normalized)) return "Pedido mínimo sinalizado";
   return normalized;
 }
 

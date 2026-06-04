@@ -9,7 +9,7 @@ import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/
 const statusLabels: Record<string, string> = {
   PENDING_PAYMENT: "Aguardando pagamento",
   PAID: "Pago",
-  FULFILLING: "Em separacao",
+  FULFILLING: "Em separação",
   SHIPPED: "Enviado",
   CANCELED: "Cancelado"
 };
@@ -18,8 +18,8 @@ const addressMatchLabels: Record<string, string> = {
   VALIDATED: "Validado",
   NEEDS_REVIEW: "Conferir manualmente",
   FAILED: "Falhou",
-  DISABLED: "Nao configurado",
-  NOT_CHECKED: "Nao checado"
+  DISABLED: "Não configurado",
+  NOT_CHECKED: "Não checado"
 };
 
 type PageProps = {
@@ -55,7 +55,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
           </p>
           <div className={`address-match-card admin ${order.addressMatchStatus.toLowerCase().replace("_", "-")}`}>
             <span>{addressMatchLabels[order.addressMatchStatus] || order.addressMatchStatus}</span>
-            <strong>{order.addressMatchFormatted || "Endereco salvo sem padronizacao externa"}</strong>
+            <strong>{order.addressMatchFormatted || "Endereço salvo sem padronização externa"}</strong>
             <small>{order.addressMatchMessage || "Confira antes do envio."}</small>
             {order.addressLatitude !== null && order.addressLongitude !== null ? (
               <small>
@@ -102,7 +102,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
               <strong>{money(order.shippingCents)}</strong>
             </div>
             <div>
-              <span>Metodo</span>
+              <span>Método</span>
               <strong>{order.shippingServiceLabel || order.shippingMethod}</strong>
             </div>
             <div className="summary-total">
@@ -115,7 +115,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
             <strong>
               {order.shippingCarrier || "Frete"} {order.shippingZone ? `/ ${order.shippingZone}` : ""}
             </strong>
-            <small>{order.shippingQuoteMessage || "Frete salvo para conferencia."}</small>
+            <small>{order.shippingQuoteMessage || "Frete salvo para conferência."}</small>
             {order.shippingWeightGrams ? (
               <small>
                 Peso cobrado: {(order.shippingWeightGrams / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg

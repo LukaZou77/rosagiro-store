@@ -2,11 +2,11 @@ export const paymentMethods = [
   {
     value: "PIX",
     label: "Pix",
-    description: "Forma preferida no Brasil. A confirmacao final aparece no acompanhamento do pedido."
+    description: "Forma preferida no Brasil. A confirmação final aparece no acompanhamento do pedido."
   },
   {
     value: "CREDIT_CARD",
-    label: "Cartao de credito",
+    label: "Cartão de crédito",
     description: "Pagamento por checkout seguro; a Bela Viva não armazena dados do cartão."
   },
   {
@@ -42,8 +42,8 @@ export function paymentStatusLabel(value?: string | null) {
 
 export function mercadoPagoReturnMessage(value?: string | null) {
   const labels: Record<string, string> = {
-    success: "Retorno recebido. A confirmacao final aparece quando o pagamento for aprovado.",
-    pending: "Pagamento em analise. Vamos manter o pedido aguardando confirmacao.",
+    success: "Retorno recebido. A confirmação final aparece quando o pagamento for aprovado.",
+    pending: "Pagamento em análise. Vamos manter o pedido aguardando confirmação.",
     failure: "O pagamento indicou falha ou cancelamento. Você pode tentar novamente ou falar com o atendimento."
   };
   return labels[value || ""] || "";

@@ -84,7 +84,7 @@ async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, in
       data: {
         slug: row.categorySlug,
         label: row.category,
-        note: "Ajustar descricao da categoria"
+        note: "Ajustar descrição da categoria"
       }
     }));
 
@@ -107,7 +107,7 @@ async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, in
           name: row.brand,
           logo: brandLogo(row.brand) || "BV",
           origin: "A ajustar",
-          descriptionPt: "Descricao da marca a ajustar.",
+          descriptionPt: "Descrição da marca a ajustar.",
           featured: false,
           categorySlugs: [category.slug]
         }

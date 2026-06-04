@@ -56,8 +56,8 @@ export default async function AdminNewProductPage({ searchParams }: PageProps) {
       <section className="import-panel new-product-guidance">
         <div className="readiness-group-heading">
           <div>
-            <span>Publicacao</span>
-            <h2>Salvar ja sincroniza com a loja</h2>
+            <span>Publicação</span>
+            <h2>Salvar já sincroniza com a loja</h2>
           </div>
           <strong>1</strong>
         </div>

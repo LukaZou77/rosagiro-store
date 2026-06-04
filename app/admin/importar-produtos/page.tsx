@@ -28,9 +28,9 @@ export default async function AdminProductImportPage({ searchParams }: PageProps
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
-        <p className="eyebrow">Importacao</p>
+        <p className="eyebrow">Importação</p>
         <h1>Importar / exportar produtos</h1>
-        <p>Use CSV para gravar no banco e XLSX como planilha editavel para organizar dados reais.</p>
+        <p>Use CSV para gravar no banco e XLSX como planilha editável para organizar dados reais.</p>
         <div className="admin-actions">
           <Link className="button secondary" href="/admin/importar-produtos/modelo-csv" prefetch={false}>
             Baixar CSV modelo
@@ -39,14 +39,14 @@ export default async function AdminProductImportPage({ searchParams }: PageProps
             Baixar XLSX modelo
           </Link>
           <Link className="button secondary" href="/admin/produtos/exportar" prefetch={false}>
-            Exportar catalogo CSV
+            Exportar catálogo CSV
           </Link>
         </div>
       </div>
 
       {hasResult ? (
         <div className="admin-notice success" role="status">
-          Importacao concluida: {created || 0} criados, {updated || 0} atualizados, {stock || 0} estoques sincronizados.
+          Importação concluída: {created || 0} criados, {updated || 0} atualizados, {stock || 0} estoques sincronizados.
         </div>
       ) : null}
       {error ? (

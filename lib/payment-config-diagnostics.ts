@@ -32,15 +32,15 @@ function check(input: PaymentDiagnosticCheck): PaymentDiagnosticCheck {
 function statusLabel(status: PaymentDiagnosticStatus) {
   if (status === "READY") return "Sandbox pronto";
   if (status === "WARNING") return "Usando fallback";
-  return "Acao necessaria";
+  return "Ação necessária";
 }
 
 function buildFallbackMessage(checks: PaymentDiagnosticCheck[]) {
   const blocking = checks.filter((item) => item.status === "ACTION_REQUIRED");
   if (!blocking.length) {
-    return "Pix e cartao podem abrir Checkout Pro sandbox quando o cliente finalizar pedido.";
+    return "Pix e cartão podem abrir Checkout Pro sandbox quando o cliente finalizar pedido.";
   }
-  return `Pix e cartao continuam caindo no pagamento simulado ate resolver: ${blocking
+  return `Pix e cartão continuam caindo no pagamento simulado até resolver: ${blocking
     .map((item) => item.label)
     .join(", ")}.`;
 }
@@ -64,10 +64,10 @@ function buildConfigChecks(env: NodeJS.ProcessEnv): PaymentDiagnosticCheck[] {
       severity: paymentMode === "mercado_pago_sandbox" ? "medium" : "high",
       message:
         paymentMode === "mercado_pago_sandbox"
-          ? "PAYMENT_MODE esta configurado para sandbox."
+          ? "PAYMENT_MODE está configurado para sandbox."
           : paymentMode === "simulated" || !paymentMode
-            ? "PAYMENT_MODE esta em modo simulado; Pix/cartao usam fallback local."
-            : "PAYMENT_MODE tem valor nao reconhecido para esta integracao."
+            ? "PAYMENT_MODE está em modo simulado; Pix/cartão usam fallback local."
+            : "PAYMENT_MODE tem valor não reconhecido para esta integração."
     }),
     check({
       key: "access-token",
@@ -75,8 +75,8 @@ function buildConfigChecks(env: NodeJS.ProcessEnv): PaymentDiagnosticCheck[] {
       status: hasAccessToken ? "READY" : "ACTION_REQUIRED",
       severity: "high",
       message: hasAccessToken
-        ? "Token existe no ambiente atual; valor nao e exibido."
-        : "MERCADO_PAGO_ACCESS_TOKEN ainda nao foi configurado."
+        ? "Token existe no ambiente atual; valor não é exibido."
+        : "MERCADO_PAGO_ACCESS_TOKEN ainda não foi configurado."
     }),
     check({
       key: "webhook-secret",
@@ -84,17 +84,17 @@ function buildConfigChecks(env: NodeJS.ProcessEnv): PaymentDiagnosticCheck[] {
       status: hasWebhookSecret ? "READY" : "ACTION_REQUIRED",
       severity: "high",
       message: hasWebhookSecret
-        ? "Secret existe para validar x-signature; valor nao e exibido."
-        : "MERCADO_PAGO_WEBHOOK_SECRET e obrigatorio para processar webhooks."
+        ? "Secret existe para validar x-signature; valor não é exibido."
+        : "MERCADO_PAGO_WEBHOOK_SECRET é obrigatório para processar webhooks."
     }),
     check({
       key: "public-url",
-      label: "URL publica HTTPS",
+      label: "URL pública HTTPS",
       status: hasPublicSiteUrl ? "READY" : "ACTION_REQUIRED",
       severity: "high",
       message: hasPublicSiteUrl
-        ? `NEXT_PUBLIC_SITE_URL parece publico; Mercado Pago pode chamar ${webhookEndpointPath}.`
-        : "NEXT_PUBLIC_SITE_URL ainda parece local, vazio ou sem HTTPS publico."
+        ? `NEXT_PUBLIC_SITE_URL parece público; Mercado Pago pode chamar ${webhookEndpointPath}.`
+        : "NEXT_PUBLIC_SITE_URL ainda parece local, vazio ou sem HTTPS público."
     })
   ];
 }

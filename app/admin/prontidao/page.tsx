@@ -12,15 +12,15 @@ type PageProps = {
 const statusLabels: Record<string, string> = {
   PENDING: "Pendente",
   IN_PROGRESS: "Em andamento",
-  DONE: "Concluido",
+  DONE: "Concluído",
   BLOCKED: "Bloqueado"
 };
 
 const statusDescriptions: Record<string, string> = {
   PENDING: "Ainda precisa ser resolvido antes da venda real.",
-  IN_PROGRESS: "Ja esta em preparacao ou aguardando validacao.",
-  DONE: "Conferido e pronto para a proxima etapa.",
-  BLOCKED: "Precisa de decisao, conta externa, dado real ou fornecedor."
+  IN_PROGRESS: "Já está em preparação ou aguardando validação.",
+  DONE: "Conferido e pronto para a próxima etapa.",
+  BLOCKED: "Precisa de decisão, conta externa, dado real ou fornecedor."
 };
 
 function single(value: string | string[] | undefined) {
@@ -37,7 +37,7 @@ function groupByReadiness<T extends { group: string }>(items: T[]) {
 
 function priorityLabel(priority: number) {
   if (priority <= 1) return "Alta";
-  if (priority === 2) return "Media";
+  if (priority === 2) return "Média";
   return "Baixa";
 }
 
@@ -62,17 +62,17 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
-        <p className="eyebrow">Prontidao / Launch</p>
+        <p className="eyebrow">Prontidão / Launch</p>
         <h1>Central de lacunas antes da venda real</h1>
         <p>
-          Registre o que ja foi implementado, mas ainda depende de dado real, credencial, conta externa,
-          fornecedor, politica ou revisao operacional antes de publicar a loja.
+          Registre o que já foi implementado, mas ainda depende de dado real, credencial, conta externa,
+          fornecedor, política ou revisão operacional antes de publicar a loja.
         </p>
       </div>
 
       {saved ? (
         <div className="admin-notice success" role="status">
-          Item de prontidao atualizado.
+          Item de prontidão atualizado.
         </div>
       ) : null}
       {error ? (
@@ -86,35 +86,35 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
           <span>Progresso</span>
           <strong>{completion}%</strong>
           <small>
-            {done} de {total} itens concluidos
+            {done} de {total} itens concluídos
           </small>
         </div>
         <div>
           <span>Pendentes / em andamento</span>
           <strong>{active}</strong>
-          <small>Itens que ainda precisam de acao</small>
+          <small>Itens que ainda precisam de ação</small>
         </div>
         <div>
           <span>Bloqueados</span>
           <strong>{blocked}</strong>
-          <small>Dependem de decisao, conta ou dado externo</small>
+          <small>Dependem de decisão, conta ou dado externo</small>
         </div>
         <div>
           <span>Uso</span>
           <strong>Interno</strong>
-          <small>Esta pagina nao aparece para clientes</small>
+          <small>Esta página não aparece para clientes</small>
         </div>
       </div>
 
       <div className="admin-notice">
-        Esta central nao le nem mostra valores de `.env.local`. Use os status para controlar a preparacao; mantenha
-        senhas, tokens e chaves fora do codigo.
+        Esta central não lê nem mostra valores de `.env.local`. Use os status para controlar a preparação; mantenha
+        senhas, tokens e chaves fora do código.
       </div>
 
       <section className="import-panel readiness-auto-checks">
         <div className="readiness-group-heading">
           <div>
-            <span>Checks automaticos</span>
+            <span>Checks automáticos</span>
             <h2>Leitura atual do sistema</h2>
           </div>
           <strong>
@@ -122,7 +122,7 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
           </strong>
         </div>
         <p className="table-note">
-          Estes sinais sao calculados a partir de dados do banco e presenca de variaveis de ambiente. Eles nao alteram
+          Estes sinais são calculados a partir de dados do banco e presença de variáveis de ambiente. Eles não alteram
           os status manuais abaixo e nunca exibem valores secretos.
         </p>
         <div className="launch-summary-grid">
@@ -135,7 +135,7 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
             <strong>{launchSnapshot.warningCount}</strong>
           </div>
           <div>
-            <span>Acao necessaria</span>
+            <span>Ação necessária</span>
             <strong>{launchSnapshot.actionRequiredCount}</strong>
           </div>
         </div>
@@ -193,7 +193,7 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
                       <textarea
                         name="notes"
                         defaultValue={item.notes}
-                        placeholder="Anote conta, responsavel, proxima verificacao ou bloqueio. Nao cole tokens."
+                        placeholder="Anote conta, responsável, próxima verificação ou bloqueio. Não cole tokens."
                       />
                     </label>
                     <button className="button secondary" type="submit">

@@ -3,7 +3,7 @@ import { currentProductsCsv } from "@/lib/product-export";
 
 export async function GET() {
   const admin = await getAdmin();
-  if (!admin) return new Response("Nao autorizado", { status: 401 });
+  if (!admin) return new Response("Não autorizado", { status: 401 });
 
   return new Response(await currentProductsCsv(), {
     headers: {

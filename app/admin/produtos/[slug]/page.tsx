@@ -39,7 +39,7 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
       <div className="admin-heading">
         <p className="eyebrow">Ficha de produto</p>
         <h1>{product.name}</h1>
-        <p>Edite a ficha completa que alimenta a vitrine, filtros, importacao e checkout.</p>
+        <p>Edite a ficha completa que alimenta a vitrine, filtros, importação e checkout.</p>
         <div className="admin-actions">
           <Link className="button secondary" href="/admin/produtos">
             Voltar para produtos
@@ -79,7 +79,7 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
             ))}
           </div>
         ) : (
-          <div className="admin-notice success">Nenhum alerta automatico encontrado para este produto.</div>
+          <div className="admin-notice success">Nenhum alerta automático encontrado para este produto.</div>
         )}
         <div className="admin-actions">
           <Link className="button secondary" href="/admin/produtos/qualidade">

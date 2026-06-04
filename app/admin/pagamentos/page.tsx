@@ -14,7 +14,7 @@ function formatDate(value: Date | null) {
 }
 
 function shortValue(value: string | null) {
-  if (!value) return "Nao registrado";
+  if (!value) return "Não registrado";
   if (value.length <= 22) return value;
   return `${value.slice(0, 10)}...${value.slice(-6)}`;
 }
@@ -26,17 +26,17 @@ export default async function AdminPaymentsPage() {
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
         <p className="eyebrow">Pagamentos</p>
-        <h1>Diagnostico Mercado Pago sandbox</h1>
+        <h1>Diagnóstico Mercado Pago sandbox</h1>
         <p>
-          Verifique por que Pix/cartao abrem Checkout Pro sandbox ou caem no pagamento simulado. Esta pagina e somente
-          leitura e nao mostra token, secret, database URL nem payload completo.
+          Verifique por que Pix/cartão abrem Checkout Pro sandbox ou caem no pagamento simulado. Esta página é somente
+          leitura e não mostra token, secret, database URL nem payload completo.
         </p>
         <div className="admin-actions">
           <Link className="button secondary" href="/admin/pedidos">
             Ver pedidos
           </Link>
           <Link className="button secondary" href="/admin/prontidao">
-            Ver prontidao
+            Ver prontidão
           </Link>
         </div>
       </div>
@@ -89,14 +89,14 @@ export default async function AdminPaymentsPage() {
         <div>
           <span>Webhooks</span>
           <strong>{snapshot.counts.webhookEvents}</strong>
-          <small>{snapshot.counts.invalidWebhookSignatures} assinatura(s) invalida(s)</small>
+          <small>{snapshot.counts.invalidWebhookSignatures} assinatura(s) inválida(s)</small>
         </div>
       </div>
 
       <section className="import-panel">
         <div className="readiness-group-heading">
           <div>
-            <span>Configuracao</span>
+            <span>Configuração</span>
             <h2>Checks de sandbox</h2>
           </div>
           <strong>{snapshot.configChecks.filter((item) => item.status === "READY").length}/{snapshot.configChecks.length}</strong>
@@ -104,14 +104,14 @@ export default async function AdminPaymentsPage() {
         <div className="readiness-signal-list">
           {snapshot.configChecks.map((item) => (
             <article className={`readiness-signal ${item.status.toLowerCase().replace("_", "-")}`} key={item.key}>
-              <span>{item.status === "READY" ? "Pronto" : item.status === "WARNING" ? "Revisar" : "Acao necessaria"}</span>
+              <span>{item.status === "READY" ? "Pronto" : item.status === "WARNING" ? "Revisar" : "Ação necessária"}</span>
               <strong>{item.label}</strong>
               <small>{item.message}</small>
             </article>
           ))}
         </div>
         <p className="table-note">
-          Webhook esperado: <strong>{snapshot.webhookEndpointPath}</strong>. Configure uma URL HTTPS publica antes de testar
+          Webhook esperado: <strong>{snapshot.webhookEndpointPath}</strong>. Configure uma URL HTTPS pública antes de testar
           callbacks do Mercado Pago.
         </p>
       </section>
@@ -129,7 +129,7 @@ export default async function AdminPaymentsPage() {
             <thead>
               <tr>
                 <th>Pedido</th>
-                <th>Metodo</th>
+                <th>Método</th>
                 <th>Status</th>
                 <th>Provider</th>
                 <th>IDs</th>
@@ -165,7 +165,7 @@ export default async function AdminPaymentsPage() {
                   </td>
                   <td>
                     <small>{formatDate(payment.lastWebhookAt)}</small>
-                    {payment.syncError ? <small>{payment.syncError}</small> : <small>Sem erro de sincronizacao</small>}
+                    {payment.syncError ? <small>{payment.syncError}</small> : <small>Sem erro de sincronização</small>}
                   </td>
                 </tr>
               ))}
@@ -194,7 +194,7 @@ export default async function AdminPaymentsPage() {
               <tr>
                 <th>Evento</th>
                 <th>Data ID</th>
-                <th>Tipo / acao</th>
+                <th>Tipo / ação</th>
                 <th>Assinatura</th>
                 <th>Processamento</th>
               </tr>
@@ -209,11 +209,11 @@ export default async function AdminPaymentsPage() {
                   <td>{shortValue(event.dataId)}</td>
                   <td>
                     <strong>{event.eventType || "Sem tipo"}</strong>
-                    <small>{event.action || "Sem acao"}</small>
+                    <small>{event.action || "Sem ação"}</small>
                   </td>
                   <td>
                     <span className={event.signatureValid ? "status-chip success" : "status-chip warning"}>
-                      {event.signatureValid ? "Valida" : "Invalida"}
+                      {event.signatureValid ? "Válida" : "Inválida"}
                     </span>
                   </td>
                   <td>
@@ -228,7 +228,7 @@ export default async function AdminPaymentsPage() {
         {!snapshot.recentWebhookEvents.length ? (
           <div className="empty-state">
             <strong>Nenhum webhook recebido</strong>
-            <p>Isso e esperado enquanto a loja estiver local ou sem URL HTTPS publica.</p>
+            <p>Isso é esperado enquanto a loja estiver local ou sem URL HTTPS pública.</p>
           </div>
         ) : null}
       </section>

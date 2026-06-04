@@ -71,7 +71,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       <div className="admin-heading">
         <p className="eyebrow">Produtos</p>
         <h1>Central de produtos</h1>
-        <p>Filtre, revise e abra cada item para editar a ficha completa do catalogo.</p>
+        <p>Filtre, revise e abra cada item para editar a ficha completa do catálogo.</p>
         <div className="admin-actions">
           <Link className="button primary" href="/admin/produtos/novo">
             Novo produto
@@ -106,7 +106,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           <strong>{outOfStockCount}</strong>
         </div>
         <Link href="/admin/produtos/qualidade">
-          <span>Qualidade critica</span>
+          <span>Qualidade crítica</span>
           <strong>{qualityActionCount}</strong>
         </Link>
       </div>

@@ -1,6 +1,7 @@
 import { scryptSync, randomBytes } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import type { Prisma } from "../src/generated/prisma/client";
 import { infoPages } from "../lib/site-config";
 
 const connectionString = process.env.DATABASE_URL;
@@ -14,12 +15,12 @@ const prisma = new PrismaClient({
 });
 
 const categories = [
-  { slug: "skincare", label: "Skincare", note: "Limpeza, tratamento e protecao diaria" },
-  { slug: "makeup", label: "Maquiagem", note: "Cor, acabamento e longa duracao" },
+  { slug: "skincare", label: "Skincare", note: "Limpeza, tratamento e proteção diária" },
+  { slug: "makeup", label: "Maquiagem", note: "Cor, acabamento e longa duração" },
   { slug: "fragrance", label: "Perfumes", note: "Assinaturas leves, florais e amadeiradas" },
-  { slug: "body", label: "Corpo", note: "Hidratacao, banho e cuidado sensorial" },
-  { slug: "hair", label: "Cabelos", note: "Rotinas para brilho, cachos e reparacao" },
-  { slug: "tools", label: "Acessorios", note: "Pinceis, necessaires e ferramentas" }
+  { slug: "body", label: "Corpo", note: "Hidratação, banho e cuidado sensorial" },
+  { slug: "hair", label: "Cabelos", note: "Rotinas para brilho, cachos e reparação" },
+  { slug: "tools", label: "Acessórios", note: "Pincéis, nécessaires e ferramentas" }
 ];
 
 const brands = [
@@ -27,7 +28,7 @@ const brands = [
     slug: "auralab",
     name: "AuraLab",
     logo: "AL",
-    origin: "Sao Paulo, Brasil",
+    origin: "São Paulo, Brasil",
     descriptionPt: "Skincare de textura leve para rotinas urbanas.",
     featured: true,
     categorySlugs: ["skincare", "body"]
@@ -37,7 +38,7 @@ const brands = [
     name: "Nativa Cura",
     logo: "NC",
     origin: "Curitiba, Brasil",
-    descriptionPt: "Formulas botanicas com toque profissional.",
+    descriptionPt: "Fórmulas botânicas com toque profissional.",
     featured: true,
     categorySlugs: ["skincare", "hair"]
   },
@@ -63,8 +64,8 @@ const brands = [
     slug: "linha-lume",
     name: "Linha Lume",
     logo: "LL",
-    origin: "Florianopolis, Brasil",
-    descriptionPt: "Cuidado capilar com finalizacao limpa e brilhante.",
+    origin: "Florianópolis, Brasil",
+    descriptionPt: "Cuidado capilar com finalização limpa e brilhante.",
     featured: false,
     categorySlugs: ["hair", "tools"]
   },
@@ -73,7 +74,7 @@ const brands = [
     name: "Bela Viva",
     logo: "BV",
     origin: "Brasil",
-    descriptionPt: "Curadoria propria para organizar rotinas de beleza.",
+    descriptionPt: "Curadoria própria para organizar rotinas de beleza.",
     featured: false,
     categorySlugs: ["tools"]
   }
@@ -82,28 +83,28 @@ const brands = [
 const storeProfile = {
   id: "main",
   storeName: "Bela Viva",
-  legalName: "Bela Viva Comercio de Beleza Ltda.",
+  legalName: "Bela Viva Comércio de Beleza Ltda.",
   cnpj: "00.000.000/0000-00",
   stateRegistration: "Isento ou a ajustar",
   cep: "00000-000",
   state: "SP",
-  city: "Sao Paulo",
+  city: "São Paulo",
   district: "A ajustar",
-  street: "Endereco em preparacao",
+  street: "Endereço em preparação",
   number: "S/N",
-  complement: "Dados comerciais serao revisados antes da publicacao.",
+  complement: "Dados comerciais serão revisados antes da publicação.",
   email: "contato@belaviva.local",
   whatsapp: "+55 11 90000-0000",
-  businessHours: "Segunda a sexta, 9h as 18h",
+  businessHours: "Segunda a sexta, 9h às 18h",
   instagramUrl: "",
   facebookUrl: "",
   tiktokUrl: "",
-  pickupNote: "Retirada local mediante confirmacao pelo atendimento.",
-  shippingNote: "Anjun D2D Pickup, transportadora e excursao serao confirmadas antes do envio.",
-  paymentNote: "Pix, cartao e pagamento simulado estao preparados para a fase de testes.",
-  exchangeNote: "Trocas e devolucoes seguem politica propria antes da publicacao oficial.",
-  trustBadges: ["Loja em preparacao", "Atendimento por WhatsApp", "Pedido minimo sinalizado"],
-  launchNote: "Ambiente em preparacao: pedidos e pagamentos desta versao sao simulados."
+  pickupNote: "Retirada local mediante confirmação pelo atendimento.",
+  shippingNote: "Anjun D2D Pickup, transportadora e excursão serão confirmadas antes do envio.",
+  paymentNote: "Pix, cartão e pagamento com atendimento estão preparados para a fase de validação.",
+  exchangeNote: "Trocas e devoluções seguem política própria antes da publicação oficial.",
+  trustBadges: ["Loja em preparação", "Atendimento por WhatsApp", "Pedido mínimo sinalizado"],
+  launchNote: "Ambiente em preparação: pedidos e pagamentos desta versão são simulados."
 };
 
 const launchReadinessItems = [
@@ -111,7 +112,7 @@ const launchReadinessItems = [
     itemKey: "store-legal-identity",
     group: "Loja",
     title: "Dados legais da loja",
-    description: "Substituir CNPJ, inscricao estadual, razao social, endereco comercial, e horario real de atendimento.",
+    description: "Substituir CNPJ, inscrição estadual, razão social, endereço comercial e horário real de atendimento.",
     priority: 1,
     sortOrder: 10
   },
@@ -125,17 +126,17 @@ const launchReadinessItems = [
   },
   {
     itemKey: "catalog-real-products",
-    group: "Catalogo",
-    title: "Catalogo real de produtos",
-    description: "Importar SKUs reais, marcas, categorias, precos, descricoes, imagens, estoque, peso, validade/lote e dados de compra no atacado.",
+    group: "Catálogo",
+    title: "Catálogo real de produtos",
+    description: "Importar SKUs reais, marcas, categorias, preços, descrições, imagens, estoque, peso, validade/lote e dados de compra no atacado.",
     priority: 1,
     sortOrder: 30
   },
   {
     itemKey: "catalog-media-quality",
-    group: "Catalogo",
-    title: "Imagens e midia de produto",
-    description: "Confirmar imagens finais dos produtos, padrao visual, links externos, ausencia de placeholders e migracao de uploads locais para armazenamento persistente antes da Vercel.",
+    group: "Catálogo",
+    title: "Imagens e mídia de produto",
+    description: "Confirmar imagens finais dos produtos, padrão visual, links externos, ausência de placeholders e migração de uploads locais para armazenamento persistente antes da Vercel.",
     priority: 2,
     sortOrder: 40
   },
@@ -151,13 +152,13 @@ const launchReadinessItems = [
     itemKey: "payment-live-cutover",
     group: "Pagamento",
     title: "Corte para pagamento real",
-    description: "Revisar credenciais live, webhook publico, valor recebido, estoque, chargeback, reembolso e monitoramento antes de cobrar clientes.",
+    description: "Revisar credenciais live, webhook público, valor recebido, estoque, chargeback, reembolso e monitoramento antes de cobrar clientes.",
     priority: 1,
     sortOrder: 60
   },
   {
     itemKey: "shipping-anjun-rates",
-    group: "Logistica",
+    group: "Logística",
     title: "Tabela Anjun e regras de frete",
     description: "Confirmar validade da tabela D2D Pickup, origem de envio, CEPs cobertos, peso de produtos e embalagem.",
     priority: 1,
@@ -165,55 +166,55 @@ const launchReadinessItems = [
   },
   {
     itemKey: "shipping-manual-fees",
-    group: "Logistica",
-    title: "Taxas e conferencia manual",
-    description: "Definir como tratar seguro, ICMS/ISS, area de risco, excursao, transportadora e excecoes antes de vender.",
+    group: "Logística",
+    title: "Taxas e conferência manual",
+    description: "Definir como tratar seguro, ICMS/ISS, área de risco, excursão, transportadora e exceções antes de vender.",
     priority: 2,
     sortOrder: 80
   },
   {
     itemKey: "address-google-maps",
-    group: "Endereco",
+    group: "Endereço",
     title: "Google Maps opcional",
-    description: "Se usar validacao Google, configurar API key restrita e conferir autocomplete, details e address validation.",
+    description: "Se usar validação Google, configurar API key restrita e conferir autocomplete, details e address validation.",
     priority: 3,
     sortOrder: 90
   },
   {
     itemKey: "address-manual-review",
-    group: "Endereco",
-    title: "Conferencia de endereco",
-    description: "Definir rotina operacional para enderecos com ViaCEP incompleto, Google desativado ou status needs review.",
+    group: "Endereço",
+    title: "Conferência de endereço",
+    description: "Definir rotina operacional para endereços com ViaCEP incompleto, Google desativado ou status needs review.",
     priority: 2,
     sortOrder: 100
   },
   {
     itemKey: "deploy-vercel-env",
     group: "Deploy",
-    title: "Ambiente Vercel e variaveis",
-    description: "Configurar dominio, NEXT_PUBLIC_SITE_URL, banco de producao, SESSION_SECRET, Mercado Pago e Google no ambiente correto.",
+    title: "Ambiente Vercel e variáveis",
+    description: "Configurar domínio, NEXT_PUBLIC_SITE_URL, banco de produção, SESSION_SECRET, Mercado Pago e Google no ambiente correto.",
     priority: 1,
     sortOrder: 110
   },
   {
     itemKey: "deploy-production-db",
     group: "Deploy",
-    title: "Banco de producao",
-    description: "Executar migrate deploy, seed controlado, importacao de dados reais e backup/rollback antes de publicar.",
+    title: "Banco de produção",
+    description: "Executar migrate deploy, seed controlado, importação de dados reais e backup/rollback antes de publicar.",
     priority: 1,
     sortOrder: 120
   },
   {
     itemKey: "ops-policies-lgpd",
-    group: "Operacao",
-    title: "Politicas e LGPD",
-    description: "Revisar termos, privacidade, trocas, devolucoes, entrega, atendimento, dados pessoais e regras de beleza.",
+    group: "Operação",
+    title: "Políticas e LGPD",
+    description: "Revisar termos, privacidade, trocas, devoluções, entrega, atendimento, dados pessoais e regras de beleza.",
     priority: 1,
     sortOrder: 130
   },
   {
     itemKey: "ops-seo-merchant",
-    group: "Operacao",
+    group: "Operação",
     title: "SEO e canais comerciais",
     description: "Validar metadata, sitemap, robots, Open Graph, Google Merchant/feed e dados estruturados antes de divulgar.",
     priority: 2,
@@ -232,7 +233,7 @@ const products = [
     compareAtPriceBRL: 179.9,
     image: "/assets/products/aura-serum.svg",
     descriptionPt: "Serum antioxidante de toque seco para luminosidade e tom mais uniforme.",
-    benefits: ["Ilumina sem pesar", "Textura rapida", "Bom sob protetor solar"],
+    benefits: ["Ilumina sem pesar", "Textura rápida", "Bom sob protetor solar"],
     ingredients: ["Vitamina C", "Ferulico", "Niacinamida"],
     skinType: "Todos os tipos",
     finish: "Natural luminoso",
@@ -252,7 +253,7 @@ const products = [
     compareAtPriceBRL: null,
     image: "/assets/products/nativa-cleanser.svg",
     descriptionPt: "Limpeza suave para remover oleosidade sem sensacao repuxada.",
-    benefits: ["pH gentil", "Nao resseca", "Uso diario"],
+    benefits: ["pH gentil", "Não resseca", "Uso diário"],
     ingredients: ["Cha verde", "Pantenol", "Glicerina"],
     skinType: "Mista e oleosa",
     finish: "Pele fresca",
@@ -312,7 +313,7 @@ const products = [
     compareAtPriceBRL: null,
     image: "/assets/products/flora-blush.svg",
     descriptionPt: "Blush cremoso de acabamento natural para um rubor fresco.",
-    benefits: ["Esfuma facil", "Nao marca textura", "Multifuncional"],
+    benefits: ["Esfuma fácil", "Não marca textura", "Multifuncional"],
     ingredients: ["Esqualano", "Pigmentos minerais", "Cera vegetal"],
     skinType: "Todos os tipos",
     finish: "Vicoso",
@@ -331,8 +332,8 @@ const products = [
     priceBRL: 76.9,
     compareAtPriceBRL: null,
     image: "/assets/products/noite-lip.svg",
-    descriptionPt: "Batom satin com pigmento intenso e conforto de longa duracao.",
-    benefits: ["Alta pigmentacao", "Nao craquela", "Cor sofisticada"],
+    descriptionPt: "Batom satin com pigmento intenso e conforto de longa duração.",
+    benefits: ["Alta pigmentação", "Não craquela", "Cor sofisticada"],
     ingredients: ["Oleo de ameixa", "Cera de arroz", "Vitamina E"],
     skinType: "Todos os tipos",
     finish: "Satin",
@@ -391,8 +392,8 @@ const products = [
     priceBRL: 109.9,
     compareAtPriceBRL: null,
     image: "/assets/products/corpo-amendoa.svg",
-    descriptionPt: "Hidratante corporal de absorcao rapida com perfume macio.",
-    benefits: ["Pele macia", "Nao mela", "Perfume elegante"],
+    descriptionPt: "Hidratante corporal de absorção rápida com perfume macio.",
+    benefits: ["Pele macia", "Não mela", "Perfume elegante"],
     ingredients: ["Oleo de amendoa", "Ceramidas", "Manteiga de cupuacu"],
     skinType: "Normal a seca",
     finish: "Aveludado",
@@ -412,7 +413,7 @@ const products = [
     compareAtPriceBRL: 105.9,
     image: "/assets/products/cachos-oleo.svg",
     descriptionPt: "Oleo leve para selar pontas, reduzir frizz e dar brilho.",
-    benefits: ["Brilho imediato", "Controle de frizz", "Nao pesa"],
+    benefits: ["Brilho imediato", "Controle de frizz", "Não pesa"],
     ingredients: ["Oleo de pracaxi", "Argan", "Vitamina E"],
     skinType: "Cabelos cacheados e ondulados",
     finish: "Brilho natural",
@@ -466,6 +467,177 @@ const products = [
 
 const siteInfoPageKeys = ["privacy", "terms", "returns", "shipping", "contact"] as const;
 
+const legacyStoreProfileCopy = {
+  legalName: "Bela Viva Comercio de Beleza Ltda.",
+  city: "Sao Paulo",
+  street: "Endereco em preparacao",
+  complement: "Dados comerciais serao revisados antes da publicacao.",
+  businessHours: "Segunda a sexta, 9h as 18h",
+  pickupNote: "Retirada local mediante confirmacao pelo atendimento.",
+  shippingNote: "Anjun D2D Pickup, transportadora e excursao serao confirmadas antes do envio.",
+  paymentNote: "Pix, cartao e pagamento simulado estao preparados para a fase de testes.",
+  exchangeNote: "Trocas e devolucoes seguem politica propria antes da publicacao oficial.",
+  launchNote: "Ambiente em preparacao: pedidos e pagamentos desta versao sao simulados."
+} as const;
+
+const legacyStoreTrustBadges = ["Loja em preparacao", "Atendimento por WhatsApp", "Pedido minimo sinalizado"];
+
+const legacyInfoPageDefaults = {
+  contact: {
+    description: "Canais temporarios para revisar a experiencia de atendimento antes da publicacao oficial.",
+    sections: [
+      {
+        title: "E-mail",
+        body: "Use contato@belaviva.local como placeholder. Troque pelo e-mail real antes de publicar a loja."
+      },
+      {
+        title: "WhatsApp",
+        body: "Reserve este espaco para o numero comercial da Bela Viva e horarios de atendimento."
+      },
+      {
+        title: "Status da loja",
+        body: "A loja esta em fase de primeira versao. Pedidos feitos neste ambiente servem para teste operacional."
+      }
+    ]
+  },
+  privacy: {
+    eyebrow: "Politica",
+    title: "Politica de privacidade",
+    description: "Resumo editavel sobre como a Bela Viva pretende tratar dados de contato, entrega e pedidos.",
+    sections: [
+      {
+        title: "Dados coletados",
+        body: "Ao adicionar produtos ou iniciar o checkout podemos solicitar nome e WhatsApp para atendimento e compra no atacado. No checkout tambem coletamos e-mail, CPF e endereco para criar o pedido e simular a entrega."
+      },
+      {
+        title: "Uso das informacoes",
+        body: "Os dados sao usados para atendimento via WhatsApp, organizacao de clientes, processamento de pedidos e validacao operacional. Esta fase nao cria senha nem area publica de cliente."
+      },
+      {
+        title: "Ajustes antes do lancamento",
+        body: "Este texto e um ponto de partida. Antes de publicar, revise com os dados reais da empresa, canais de suporte e politicas LGPD aplicaveis."
+      }
+    ]
+  },
+  returns: {
+    eyebrow: "Pos-compra",
+    title: "Trocas e devolucoes",
+    description: "Base editavel para uma politica clara de troca, arrependimento e produtos avariados.",
+    sections: [
+      {
+        title: "Prazo de arrependimento",
+        body: "Reserve este bloco para a regra final de arrependimento em compras online, incluindo prazos, canais e condicoes do produto."
+      },
+      {
+        title: "Produto com avaria",
+        body: "Oriente o cliente a guardar embalagem, nota e fotos do item. A regra final deve definir como o atendimento aprova troca ou reembolso."
+      },
+      {
+        title: "Itens de beleza",
+        body: "Por higiene e seguranca, produtos abertos podem ter condicoes especificas. Ajuste esta politica antes de operar vendas reais."
+      }
+    ]
+  },
+  terms: {
+    description: "Condicoes iniciais para navegacao, pedidos de teste e uso da loja Bela Viva.",
+    sections: [
+      {
+        title: "Loja em preparacao",
+        body: "A Bela Viva ainda esta em fase de construcao. Pedidos e pagamentos desta versao sao simulados e nao geram cobranca real."
+      },
+      {
+        title: "Catalogo e precos",
+        body: "Produtos, marcas, estoque e precos podem mudar durante a fase de ajustes. A versao final deve confirmar disponibilidade antes de concluir uma venda."
+      },
+      {
+        title: "Contato",
+        body: "Duvidas comerciais, suporte e solicitacoes devem usar os canais oficiais exibidos na pagina de contato quando a loja for publicada."
+      }
+    ]
+  },
+  shipping: {
+    description: "Informacoes iniciais sobre modalidades de entrega para pedidos no Brasil.",
+    sections: [
+      {
+        title: "Modalidades",
+        body: "A loja trabalha com estimativa de frete por CEP no checkout e retirada local mediante confirmacao. Transportadora e excursao continuam como opcoes para consulta pelo WhatsApp."
+      },
+      {
+        title: "Cotacao por CEP",
+        body: "A primeira regra usa tabela Anjun D2D Pickup importada no admin, com origem Sao Paulo e calculo por CEP e peso. Seguro, impostos e areas especiais podem exigir confirmacao manual."
+      },
+      {
+        title: "Integracoes futuras",
+        body: "Esta fase ainda nao compra etiquetas nem chama API real de transportadora. Depois podemos conectar Melhor Envio, Anjun ou outra operacao sem refazer o checkout."
+      }
+    ]
+  }
+} as const;
+
+const legacyLaunchReadinessCopy: Record<string, Partial<{ group: string; title: string; description: string }>> = {
+  "store-legal-identity": {
+    description: "Substituir CNPJ, inscricao estadual, razao social, endereco comercial, e horario real de atendimento."
+  },
+  "catalog-real-products": {
+    group: "Catalogo",
+    title: "Catalogo real de produtos",
+    description: "Importar SKUs reais, marcas, categorias, precos, descricoes, imagens, estoque, peso, validade/lote e dados de compra no atacado."
+  },
+  "catalog-media-quality": {
+    group: "Catalogo",
+    title: "Imagens e midia de produto",
+    description: "Confirmar imagens finais dos produtos, padrao visual, links externos, ausencia de placeholders e migracao de uploads locais para armazenamento persistente antes da Vercel."
+  },
+  "shipping-anjun-rates": {
+    group: "Logistica"
+  },
+  "shipping-manual-fees": {
+    group: "Logistica",
+    title: "Taxas e conferencia manual",
+    description: "Definir como tratar seguro, ICMS/ISS, area de risco, excursao, transportadora e excecoes antes de vender."
+  },
+  "address-google-maps": {
+    group: "Endereco",
+    description: "Se usar validacao Google, configurar API key restrita e conferir autocomplete, details e address validation."
+  },
+  "address-manual-review": {
+    group: "Endereco",
+    title: "Conferencia de endereco",
+    description: "Definir rotina operacional para enderecos com ViaCEP incompleto, Google desativado ou status needs review."
+  },
+  "deploy-vercel-env": {
+    title: "Ambiente Vercel e variaveis",
+    description: "Configurar dominio, NEXT_PUBLIC_SITE_URL, banco de producao, SESSION_SECRET, Mercado Pago e Google no ambiente correto."
+  },
+  "deploy-production-db": {
+    title: "Banco de producao",
+    description: "Executar migrate deploy, seed controlado, importacao de dados reais e backup/rollback antes de publicar."
+  },
+  "ops-policies-lgpd": {
+    group: "Operacao",
+    title: "Politicas e LGPD",
+    description: "Revisar termos, privacidade, trocas, devolucoes, entrega, atendimento, dados pessoais e regras de beleza."
+  },
+  "ops-seo-merchant": {
+    group: "Operacao"
+  }
+};
+
+function comparableSections(input: unknown) {
+  if (!Array.isArray(input)) return [];
+  return input.map((section) => {
+    const item = section as { title?: unknown; body?: unknown };
+    return {
+      title: String(item.title || ""),
+      body: String(item.body || "")
+    };
+  });
+}
+
+function jsonEquals(left: unknown, right: unknown) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 function cents(value: number | null) {
   if (value === null) return null;
   return Math.round(value * 100);
@@ -488,7 +660,7 @@ function wholesaleSeedDetails(product: (typeof products)[number]) {
         ? "Combine com produtos de maquiagem para montar kit de revenda."
         : `Combine com itens de ${product.subcategory.toLowerCase()} para montar reposicao.`,
     wholesalePackage: "Venda por unidade; caixa fechada e volume maior sob consulta.",
-    validityNote: "Validade/lote sob conferencia no atendimento antes do envio.",
+    validityNote: "Validade/lote sob conferência no atendimento antes do envio.",
     purchaseNote: "Para compra em volume, confirme estoque, cidade/UF e melhor forma de entrega pelo WhatsApp."
   };
 }
@@ -497,6 +669,70 @@ function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
   return `scrypt$${salt}$${hash}`;
+}
+
+async function applyExactDefaultCopyBackfills() {
+  for (const [fieldName, legacyValue] of Object.entries(legacyStoreProfileCopy)) {
+    const nextValue = storeProfile[fieldName as keyof typeof legacyStoreProfileCopy];
+    const where = { id: storeProfile.id, [fieldName]: legacyValue } satisfies Prisma.StoreProfileWhereInput;
+    const data = { [fieldName]: nextValue } satisfies Prisma.StoreProfileUpdateManyMutationInput;
+    await prisma.storeProfile.updateMany({
+      where,
+      data
+    });
+  }
+
+  await prisma.storeProfile.updateMany({
+    where: { id: storeProfile.id, trustBadges: { equals: legacyStoreTrustBadges } },
+    data: { trustBadges: storeProfile.trustBadges }
+  });
+
+  for (const pageKey of siteInfoPageKeys) {
+    const legacyPage = legacyInfoPageDefaults[pageKey as keyof typeof legacyInfoPageDefaults];
+    const nextPage = infoPages[pageKey];
+    if (!legacyPage) continue;
+
+    for (const fieldName of ["eyebrow", "title", "description"] as const) {
+      const legacyText = (legacyPage as Partial<Record<typeof fieldName, string>>)[fieldName];
+      if (legacyText) {
+        const where = { pageKey, [fieldName]: legacyText } satisfies Prisma.SiteInfoPageWhereInput;
+        const data = { [fieldName]: nextPage[fieldName] } satisfies Prisma.SiteInfoPageUpdateManyMutationInput;
+        await prisma.siteInfoPage.updateMany({
+          where,
+          data
+        });
+      }
+    }
+
+    if ("sections" in legacyPage && legacyPage.sections) {
+      const currentPage = await prisma.siteInfoPage.findUnique({
+        where: { pageKey },
+        select: { sections: true }
+      });
+      if (currentPage && jsonEquals(comparableSections(currentPage.sections), comparableSections(legacyPage.sections))) {
+        await prisma.siteInfoPage.update({
+          where: { pageKey },
+          data: { sections: nextPage.sections }
+        });
+      }
+    }
+  }
+
+  for (const item of launchReadinessItems) {
+    const legacy = legacyLaunchReadinessCopy[item.itemKey];
+    if (!legacy) continue;
+
+    for (const fieldName of ["group", "title", "description"] as const) {
+      const legacyValue = legacy[fieldName];
+      if (!legacyValue) continue;
+      const where = { itemKey: item.itemKey, [fieldName]: legacyValue } satisfies Prisma.LaunchReadinessItemWhereInput;
+      const data = { [fieldName]: item[fieldName] } satisfies Prisma.LaunchReadinessItemUpdateManyMutationInput;
+      await prisma.launchReadinessItem.updateMany({
+        where,
+        data
+      });
+    }
+  }
 }
 
 async function main() {
@@ -634,15 +870,14 @@ async function main() {
     await prisma.launchReadinessItem.upsert({
       where: { itemKey: item.itemKey },
       update: {
-        group: item.group,
-        title: item.title,
-        description: item.description,
         priority: item.priority,
         sortOrder: item.sortOrder
       },
       create: item
     });
   }
+
+  await applyExactDefaultCopyBackfills();
 }
 
 main()

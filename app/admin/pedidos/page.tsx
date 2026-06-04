@@ -9,7 +9,7 @@ import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/
 const statusLabels: Record<string, string> = {
   PENDING_PAYMENT: "Aguardando pagamento",
   PAID: "Pago",
-  FULFILLING: "Em separacao",
+  FULFILLING: "Em separação",
   SHIPPED: "Enviado",
   CANCELED: "Cancelado"
 };

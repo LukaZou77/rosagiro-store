@@ -24,7 +24,7 @@ export function AdminFreightImportClient() {
     formData.append("file", file);
     const response = await fetch(endpoint, { method: "POST", body: formData });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Nao foi possivel processar a planilha.");
+    if (!response.ok) throw new Error(data.error || "Não foi possível processar a planilha.");
     return data;
   }
 
@@ -35,10 +35,10 @@ export function AdminFreightImportClient() {
     try {
       const nextPreview = (await submitFile("/api/admin/frete/preview")) as AnjunImportPreview;
       setPreview(nextPreview);
-      setMessage(nextPreview.canImport ? "Pre-visualizacao pronta para confirmar." : "Revise os erros antes de importar.");
+      setMessage(nextPreview.canImport ? "Pré-visualização pronta para confirmar." : "Revise os erros antes de importar.");
     } catch (error) {
       setPreview(null);
-      setMessage(error instanceof Error ? error.message : "Nao foi possivel pre-visualizar.");
+      setMessage(error instanceof Error ? error.message : "Não foi possível pré-visualizar.");
     } finally {
       setBusy("idle");
     }
@@ -53,7 +53,7 @@ export function AdminFreightImportClient() {
       setMessage("Tabela de frete importada e ativada.");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Nao foi possivel importar.");
+      setMessage(error instanceof Error ? error.message : "Não foi possível importar.");
     } finally {
       setBusy("idle");
     }
@@ -75,15 +75,15 @@ export function AdminFreightImportClient() {
               setFile(nextFile);
               setPreview(null);
               setResult(null);
-              setMessage(nextFile ? "Clique em pre-visualizar para validar D2D Pickup." : "");
+              setMessage(nextFile ? "Clique em pré-visualizar para validar D2D Pickup." : "");
             }}
           />
         </label>
         <div className="field-helper">
-          <strong>Servico</strong>
+          <strong>Serviço</strong>
           <span>D2D Pickup</span>
-          <strong>Origem de cotacao</strong>
-          <span>SP-Sao Paulo</span>
+          <strong>Origem de cotação</strong>
+          <span>SP-São Paulo</span>
           <strong>Arquivo</strong>
           <span>{file?.name || "Nenhum arquivo selecionado"}</span>
         </div>
@@ -91,19 +91,19 @@ export function AdminFreightImportClient() {
           {busy === "preview" ? "Lendo planilha..." : "Pre-visualizar tabela"}
         </button>
         <button className="button primary wide" type="button" disabled={!canImport} onClick={() => void confirmImport()}>
-          {busy === "import" ? "Importando frete..." : "Confirmar importacao"}
+          {busy === "import" ? "Importando frete..." : "Confirmar importação"}
         </button>
         <p className="table-note">
-          O arquivo original fica no seu computador. O banco recebe somente linhas estruturadas de CEP, peso e preco.
+          O arquivo original fica no seu computador. O banco recebe somente linhas estruturadas de CEP, peso e preço.
         </p>
       </section>
 
       <section className="import-panel" aria-live="polite">
         <div className="import-summary">
           <span className={preview?.canImport || result ? "status-chip success" : "status-chip"}>
-            {result ? "Importado" : preview ? (preview.canImport ? "Pronto para importar" : "Com erros") : "Aguardando pre-visualizacao"}
+            {result ? "Importado" : preview ? (preview.canImport ? "Pronto para importar" : "Com erros") : "Aguardando pré-visualização"}
           </span>
-          <span>{message || "Envie a planilha para validar linhas, UFs, zonas e preco de amostra."}</span>
+          <span>{message || "Envie a planilha para validar linhas, UFs, zonas e preço de amostra."}</span>
         </div>
 
         {summary ? (
@@ -127,20 +127,20 @@ export function AdminFreightImportClient() {
               </div>
             </div>
             <div className="freight-preview-card">
-              <span>Amostra de cotacao</span>
+              <span>Amostra de cotação</span>
               <strong>CEP {summary.sampleCep}</strong>
               <small>
-                0,1 kg em SP-Sao Paulo: {summary.sampleRateCents ? money(summary.sampleRateCents) : "sem linha de amostra"}
+                0,1 kg em SP-São Paulo: {summary.sampleRateCents ? money(summary.sampleRateCents) : "sem linha de amostra"}
               </small>
               <small>
-                Origens na planilha: {summary.originCount}. O checkout usa SP-Sao Paulo nesta primeira versao.
+                Origens na planilha: {summary.originCount}. O checkout usa SP-São Paulo nesta primeira versão.
               </small>
             </div>
           </>
         ) : (
           <div className="empty-state">
-            <strong>Importacao segura</strong>
-            <p>Primeiro validamos a aba D2D Pickup, depois a confirmacao grava uma nova tabela ativa.</p>
+            <strong>Importação segura</strong>
+            <p>Primeiro validamos a aba D2D Pickup, depois a confirmação grava uma nova tabela ativa.</p>
           </div>
         )}
 

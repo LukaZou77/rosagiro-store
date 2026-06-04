@@ -69,7 +69,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           />
         </label>
         <p className="table-note">
-          Em produto novo, voce pode preencher um caminho manual ou apenas enviar imagens abaixo. Aceita /assets/...,
+          Em produto novo, você pode preencher um caminho manual ou apenas enviar imagens abaixo. Aceita /assets/...,
           /uploads/products/..., /placeholder... ou URL http(s).
         </p>
 
@@ -77,7 +77,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           <div className="product-gallery-heading">
             <div>
               <strong>Galeria do produto</strong>
-              <small>Ate {PRODUCT_GALLERY_LIMIT} imagens. A principal aparece nos cards e no carrinho.</small>
+              <small>Até {PRODUCT_GALLERY_LIMIT} imagens. A principal aparece nos cards e no carrinho.</small>
             </div>
             <span>{gallery.length}/{PRODUCT_GALLERY_LIMIT}</span>
           </div>
@@ -110,7 +110,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             <input name="firstUploadAsPrimary" type="checkbox" defaultChecked={!isEdit} />
             Usar a primeira imagem enviada como principal
           </label>
-          <p className="table-note">JPG, PNG ou WebP. Maximo 5MB por imagem. SVG continua apenas em /assets ja existentes.</p>
+          <p className="table-note">JPG, PNG ou WebP. Máximo 5MB por imagem. SVG continua apenas em /assets já existentes.</p>
         </div>
       </section>
 
@@ -149,7 +149,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
         </div>
 
         <label>
-          Descricao
+          Descrição
           <textarea name="descriptionPt" defaultValue={product?.descriptionPt || ""} required />
         </label>
 
@@ -180,7 +180,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           <div className="product-gallery-heading">
             <div>
               <strong>Dados de atacado</strong>
-              <small>Informacoes exibidas no produto e enviadas na consulta por WhatsApp.</small>
+              <small>Informações exibidas no produto e enviadas na consulta por WhatsApp.</small>
             </div>
           </div>
           <div className="form-grid">
@@ -228,7 +228,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             </label>
           </div>
           <p className="table-note">
-            Use esses campos para orientar revendedoras e lojistas. Eles nao criam desconto automatico nem alteram o checkout.
+            Use esses campos para orientar revendedoras e lojistas. Eles não criam desconto automático nem alteram o checkout.
           </p>
         </div>
 
@@ -246,7 +246,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             <textarea name="badges" defaultValue={pipeListValue(product?.badges)} />
           </label>
         </div>
-        <p className="table-note">Use | para separar varios itens, igual ao CSV.</p>
+        <p className="table-note">Use | para separar vários itens, igual ao CSV.</p>
 
         <div className="form-grid">
           <label>
@@ -266,7 +266,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             <input name="rating" defaultValue={isEdit ? String(product?.rating ?? 0).replace(".", ",") : "0"} />
           </label>
           <label>
-            Avaliacoes
+            Avaliações
             <input name="reviewCount" type="number" min="0" defaultValue={numberValue(product?.reviewCount, 0)} />
           </label>
         </div>

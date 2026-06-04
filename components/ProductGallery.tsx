@@ -209,7 +209,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
         </div>
         {hasCarousel ? (
           <button
-            aria-label="Proxima imagem"
+            aria-label="Próxima imagem"
             className="product-gallery-arrow next"
             onClick={() => moveImage(1)}
             type="button"
@@ -256,7 +256,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
               <img className="product-lightbox-image" draggable={false} src={activeImage} alt={productName} />
               {hasCarousel ? (
                 <button
-                  aria-label="Proxima imagem"
+                  aria-label="Próxima imagem"
                   className="product-lightbox-arrow next"
                   onClick={() => moveImage(1)}
                   type="button"

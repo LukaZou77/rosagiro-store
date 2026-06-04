@@ -46,7 +46,7 @@ function uploadExtension(file: File) {
 
 function assertLocalStorage() {
   if (PRODUCT_UPLOAD_STORAGE !== "local") {
-    throw new Error("Armazenamento de imagens ainda esta configurado apenas para local nesta versao.");
+    throw new Error("Armazenamento de imagens ainda está configurado apenas para local nesta versão.");
   }
 }
 
@@ -56,7 +56,7 @@ export function extractProductUploads(entries: FormDataEntryValue[]) {
 
 export function assertGalleryCapacity(existingImages: string[], uploadCount: number) {
   if (existingImages.length + uploadCount > PRODUCT_GALLERY_LIMIT) {
-    throw new Error(`Cada produto aceita no maximo ${PRODUCT_GALLERY_LIMIT} imagens.`);
+    throw new Error(`Cada produto aceita no máximo ${PRODUCT_GALLERY_LIMIT} imagens.`);
   }
 }
 
@@ -75,7 +75,7 @@ export async function saveProductImageUploads(productSlug: string, files: File[]
       throw new Error("Envie apenas imagens JPG, PNG ou WebP.");
     }
     if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
-      throw new Error("Cada imagem deve ter no maximo 5MB.");
+      throw new Error("Cada imagem deve ter no máximo 5MB.");
     }
 
     const fileName = `${Date.now()}-${randomBytes(6).toString("hex")}.${extension}`;

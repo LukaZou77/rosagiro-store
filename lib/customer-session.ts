@@ -72,7 +72,7 @@ export function parseCustomerSessionPayload(payload: unknown) {
   }
 
   if (name.length > 80) {
-    throw new CustomerSessionError("Nome muito longo. Use ate 80 caracteres.");
+    throw new CustomerSessionError("Nome muito longo. Use até 80 caracteres.");
   }
 
   if (!normalized) {

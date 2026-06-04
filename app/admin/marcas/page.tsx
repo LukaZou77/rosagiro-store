@@ -27,7 +27,7 @@ export default async function AdminBrandsPage({ searchParams }: PageProps) {
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
         <p className="eyebrow">Marcas</p>
-        <h1>Marcas do catalogo</h1>
+        <h1>Marcas do catálogo</h1>
         <p>Organize as marcas multimarcas que aparecem nos produtos, filtros e vitrines.</p>
       </div>
 
@@ -64,8 +64,8 @@ export default async function AdminBrandsPage({ searchParams }: PageProps) {
             </label>
           </div>
           <label>
-            Descricao
-            <textarea name="descriptionPt" placeholder="Descricao da marca para uso interno e vitrine." />
+            Descrição
+            <textarea name="descriptionPt" placeholder="Descrição da marca para uso interno e vitrine." />
           </label>
           <button className="button primary" type="submit">
             Criar marca
@@ -98,7 +98,7 @@ export default async function AdminBrandsPage({ searchParams }: PageProps) {
                 </label>
               </div>
               <label>
-                Descricao
+                Descrição
                 <textarea name="descriptionPt" defaultValue={brand.descriptionPt} />
               </label>
               <div className="admin-row-meta">

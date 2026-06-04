@@ -28,7 +28,7 @@ export function AdminProductImportClient({
   }
 
   function delta(value: number | null, formatter: (input: number) => string) {
-    if (value === null || value === 0) return "sem mudanca";
+    if (value === null || value === 0) return "sem mudança";
     const prefix = value > 0 ? "+" : "";
     return `${prefix}${formatter(value)}`;
   }
@@ -41,17 +41,17 @@ export function AdminProductImportClient({
           <input type="file" accept=".csv,text/csv" onChange={onFileChange} />
         </label>
         <label>
-          Conteudo do CSV
+          Conteúdo do CSV
           <textarea
             className="csv-textarea"
             name="csvText"
             value={csvText}
             onChange={(event) => setCsvText(event.target.value)}
-            placeholder="Cole aqui o conteudo do CSV ou escolha um arquivo."
+            placeholder="Cole aqui o conteúdo do CSV ou escolha um arquivo."
           />
         </label>
         <div className="field-helper">
-          <strong>Campos obrigatorios</strong>
+          <strong>Campos obrigatórios</strong>
           <span>{productImportRequiredFields.join(", ")}</span>
           <strong>Campos opcionais</strong>
           <span>{productImportOptionalFields.join(", ")}</span>
@@ -105,7 +105,7 @@ export function AdminProductImportClient({
               <thead>
                 <tr>
                   <th>Linha</th>
-                  <th>Acao</th>
+                  <th>Ação</th>
                   <th>Produto</th>
                   <th>Marca / categoria</th>
                   <th>Preco</th>
@@ -153,13 +153,13 @@ export function AdminProductImportClient({
           </div>
         ) : (
           <div className="empty-state">
-            <strong>Importacao flexivel</strong>
-            <p>Escolha um CSV para pre-visualizar criacoes, atualizacoes, erros, estoque e imagens antes de gravar.</p>
+            <strong>Importação flexível</strong>
+            <p>Escolha um CSV para pré-visualizar criações, atualizações, erros, estoque e imagens antes de gravar.</p>
           </div>
         )}
 
         <button className="button primary wide" type="submit" disabled={!canImport}>
-          Confirmar importacao
+          Confirmar importação
         </button>
       </div>
     </div>

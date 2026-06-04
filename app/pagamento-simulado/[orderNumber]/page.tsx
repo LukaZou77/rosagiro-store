@@ -13,7 +13,7 @@ type PageProps = {
   params: Promise<{ orderNumber: string }>;
 };
 
-export const metadata: Metadata = noIndexMetadata("Pagamento", "Confirmacao de pagamento Bela Viva.");
+export const metadata: Metadata = noIndexMetadata("Pagamento", "Confirmação de pagamento Bela Viva.");
 
 export default async function SimulatedPaymentPage({ params }: PageProps) {
   const { orderNumber } = await params;
@@ -30,9 +30,9 @@ export default async function SimulatedPaymentPage({ params }: PageProps) {
   return (
     <StoreShell categories={categories}>
       <section className="confirmation">
-        <p className="eyebrow">Confirmacao do pedido</p>
+        <p className="eyebrow">Confirmação do pedido</p>
         <h1>Confirme para reservar os itens.</h1>
-        <p>Ao confirmar, o pedido sera marcado como pago e o estoque sera reservado para acompanhamento.</p>
+        <p>Ao confirmar, o pedido será marcado como pago e o estoque será reservado para acompanhamento.</p>
         <div className="confirmation-card">
           <span>Pedido</span>
           <strong>{order.orderNumber}</strong>

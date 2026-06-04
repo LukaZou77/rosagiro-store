@@ -34,8 +34,8 @@ export default async function AdminFreightPage() {
         <p className="eyebrow">Frete</p>
         <h1>Tabela Anjun D2D Pickup</h1>
         <p>
-          Importe a planilha XLSX para simular frete por CEP e peso. Esta fase nao compra etiqueta, nao chama API real e
-          nao cobra seguro ou impostos automaticamente.
+          Importe a planilha XLSX para simular frete por CEP e peso. Esta fase não compra etiqueta, não chama API real e
+          não cobra seguro ou impostos automaticamente.
         </p>
       </div>
 
@@ -60,12 +60,12 @@ export default async function AdminFreightPage() {
 
       {latestBatch ? (
         <div className="admin-notice success" role="status">
-          Ultima importacao: {latestBatch.sourceName} / {latestBatch.sourceSheet} /{" "}
+          Última importação: {latestBatch.sourceName} / {latestBatch.sourceSheet} /{" "}
           {latestBatch.createdAt.toLocaleString("pt-BR")}. Origem de checkout: {shippingConfig.originDisplay}.
         </div>
       ) : (
         <div className="admin-notice error" role="alert">
-          Nenhuma tabela Anjun ativa. O checkout exibira retirada local e orientara consulta manual ate a importacao.
+          Nenhuma tabela Anjun ativa. O checkout exibirá retirada local e orientará consulta manual até a importação.
         </div>
       )}
 

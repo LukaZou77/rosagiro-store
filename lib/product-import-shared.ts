@@ -124,10 +124,10 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   active: true,
   image: "/assets/products/aura-serum.svg",
   gallery: "/assets/products/aura-serum.svg",
-  descriptionPt: "Descricao curta do produto para a vitrine.",
+  descriptionPt: "Descrição curta do produto para a vitrine.",
   compareAtPrice: "109,90",
   benefits: "Luminosidade|Textura leve",
-  ingredients: "Vitamina C|Acido hialuronico",
+  ingredients: "Vitamina C|Ácido hialurônico",
   badges: "Novo|Favorito",
   skinType: "Todos os tipos",
   finish: "Glow",
@@ -137,35 +137,35 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   kitRecommendation: "Combine com limpeza facial e protetor solar para montar kit de rotina.",
   wholesalePackage: "Venda por unidade; caixa fechada e volume maior sob consulta.",
   validityNote: "Validade e lote devem ser confirmados no recebimento do estoque real.",
-  purchaseNote: "Para revenda, confirme estoque e condicao de atacado pelo WhatsApp.",
+  purchaseNote: "Para revenda, confirme estoque e condição de atacado pelo WhatsApp.",
   rating: "4,8",
   reviewCount: 12
 };
 
 export const productImportHelpRows = [
-  ["Campo", "Obrigatorio", "Como preencher"],
-  ["slug", "Sim", "Identificador unico. Use letras, numeros e hifens. Ex: serum-vitamina-c"],
+  ["Campo", "Obrigatório", "Como preencher"],
+  ["slug", "Sim", "Identificador único. Use letras, números e hifens. Ex: serum-vitamina-c"],
   ["name", "Sim", "Nome comercial do produto."],
-  ["brand", "Sim", "Marca. Se nao existir, a importacao cria automaticamente."],
+  ["brand", "Sim", "Marca. Se não existir, a importação cria automaticamente."],
   ["category", "Sim", "Categoria ou slug da categoria. Ex: skincare, maquiagem, perfumes."],
   ["subcategory", "Sim", "Grupo de prateleira. Ex: Serum, Base, Batom, Pincel."],
-  ["price", "Sim", "Preco em BRL. Aceita 89,90 ou 89.90."],
+  ["price", "Sim", "Preço em BRL. Aceita 89,90 ou 89.90."],
   ["stock", "Sim", "Quantidade inteira em estoque."],
-  ["active", "Sim", "true/false, sim/nao, 1/0, ativo/inativo."],
+  ["active", "Sim", "true/false, sim/não, 1/0, ativo/inativo."],
   ["image", "Sim", "Use /assets/..., /uploads/products/..., /placeholder... ou URL http(s)."],
-  ["descriptionPt", "Sim", "Descricao em portugues para a vitrine."],
-  ["compareAtPrice", "Nao", "Preco comparativo maior que o preco atual."],
-  ["gallery", "Nao", "Ate 6 imagens separadas por |. A imagem principal tambem entra na galeria."],
-  ["benefits, ingredients, badges", "Nao", "Separe varios itens com |."],
-  ["skinType, finish, volume", "Nao", "Texto livre para filtros e detalhe do produto."],
-  ["weightGrams", "Nao", "Peso unitario em gramas para cotacao de frete. Padrao 150."],
-  ["suggestedQuantity", "Nao", "Quantidade sugerida para compra de reposicao ou revenda."],
-  ["kitRecommendation", "Nao", "Texto curto de kit ou combinacao recomendada para atacado."],
-  ["wholesalePackage", "Nao", "Caixa fechada, pacote, grade ou condicao de atacado a confirmar."],
-  ["validityNote", "Nao", "Informacao de validade/lote ou aviso de conferencia operacional."],
-  ["purchaseNote", "Nao", "Observacao comercial para orientar compra em volume."],
-  ["rating", "Nao", "Nota de 0 a 5. Padrao 4,8 quando vazio."],
-  ["reviewCount", "Nao", "Quantidade inteira de avaliacoes."]
+  ["descriptionPt", "Sim", "Descrição em português para a vitrine."],
+  ["compareAtPrice", "Não", "Preço comparativo maior que o preço atual."],
+  ["gallery", "Não", "Até 6 imagens separadas por |. A imagem principal também entra na galeria."],
+  ["benefits, ingredients, badges", "Não", "Separe vários itens com |."],
+  ["skinType, finish, volume", "Não", "Texto livre para filtros e detalhe do produto."],
+  ["weightGrams", "Não", "Peso unitário em gramas para cotação de frete. Padrão 150."],
+  ["suggestedQuantity", "Não", "Quantidade sugerida para compra de reposição ou revenda."],
+  ["kitRecommendation", "Não", "Texto curto de kit ou combinação recomendada para atacado."],
+  ["wholesalePackage", "Não", "Caixa fechada, pacote, grade ou condição de atacado a confirmar."],
+  ["validityNote", "Não", "Informação de validade/lote ou aviso de conferência operacional."],
+  ["purchaseNote", "Não", "Observação comercial para orientar compra em volume."],
+  ["rating", "Não", "Nota de 0 a 5. Padrão 4,8 quando vazio."],
+  ["reviewCount", "Não", "Quantidade inteira de avaliações."]
 ] as const;
 
 function canonicalHeader(value: string) {
@@ -261,7 +261,7 @@ function parseStock(value: string) {
 function parseBoolean(value: string) {
   const normalized = value.trim().toLowerCase();
   if (["1", "true", "sim", "yes", "ativo", "active", "publicado"].includes(normalized)) return true;
-  if (["0", "false", "nao", "no", "inativo", "inactive", "rascunho"].includes(normalized)) return false;
+  if (["0", "false", "nao", "não", "no", "inativo", "inactive", "rascunho"].includes(normalized)) return false;
   return null;
 }
 
@@ -393,25 +393,25 @@ export function parseProductCsv(
     const existing = existingBySlug.get(slug);
 
     if (slug) slugCounts.set(slug, (slugCounts.get(slug) || 0) + 1);
-    if (!slug) errors.push("slug obrigatorio");
-    if (!name) errors.push("name obrigatorio");
-    if (!brand) errors.push("brand obrigatorio");
-    if (!category) errors.push("category obrigatorio");
-    if (!subcategory) errors.push("subcategory obrigatorio");
+    if (!slug) errors.push("slug obrigatório");
+    if (!name) errors.push("name obrigatório");
+    if (!brand) errors.push("brand obrigatório");
+    if (!category) errors.push("category obrigatório");
+    if (!subcategory) errors.push("subcategory obrigatório");
     if (priceCents <= 0) errors.push("price deve ser maior que zero");
     if (compareAtPriceCents !== null && compareAtPriceCents <= priceCents) {
       errors.push("compareAtPrice deve ser maior que price");
     }
-    if (stock < 0) errors.push("stock invalido");
-    if (!weight.valid) errors.push("weightGrams deve ser um numero maior que zero");
-    if (!suggestedQuantity.valid) errors.push("suggestedQuantity deve ser um numero maior que zero quando preenchido");
-    if (active === null) errors.push("active deve ser true/false, sim/nao ou 1/0");
-    if (!image) errors.push("image obrigatorio");
+    if (stock < 0) errors.push("stock inválido");
+    if (!weight.valid) errors.push("weightGrams deve ser um número maior que zero");
+    if (!suggestedQuantity.valid) errors.push("suggestedQuantity deve ser um número maior que zero quando preenchido");
+    if (active === null) errors.push("active deve ser true/false, sim/não ou 1/0");
+    if (!image) errors.push("image obrigatório");
     else if (!isAllowedProductImage(image)) {
       errors.push("image deve ser /assets/..., /uploads/products/..., /placeholder... ou URL http(s)");
     }
     if (Array.from(new Set([image, ...gallery].filter(Boolean))).length > PRODUCT_GALLERY_LIMIT) {
-      errors.push(`gallery aceita no maximo ${PRODUCT_GALLERY_LIMIT} imagens incluindo a principal`);
+      errors.push(`gallery aceita no máximo ${PRODUCT_GALLERY_LIMIT} imagens incluindo a principal`);
     }
     for (const galleryImage of gallery) {
       if (!isAllowedProductImage(galleryImage)) {
@@ -419,7 +419,7 @@ export function parseProductCsv(
         break;
       }
     }
-    if (!descriptionPt) errors.push("descriptionPt obrigatorio");
+    if (!descriptionPt) errors.push("descriptionPt obrigatório");
 
     const operation: ProductImportRow["operation"] = existing ? "update" : "create";
 

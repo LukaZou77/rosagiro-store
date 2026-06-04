@@ -69,7 +69,7 @@ function optionalHttpUrl(value: string, fieldLabel: string) {
     // Fall through to the shared error below.
   }
 
-  redirectError("/admin/loja", `${fieldLabel} deve ser uma URL http(s) valida.`);
+  redirectError("/admin/loja", `${fieldLabel} deve ser uma URL http(s) válida.`);
 }
 
 function revalidateCatalog(productSlug?: string) {
@@ -112,13 +112,13 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const active = formData.get("active") === "on";
 
   if (!name || !brandId || !categoryId || !subcategory || !descriptionPt || priceCents <= 0) {
-    redirectError(options.detailPath, "Preencha os campos obrigatorios do produto.");
+    redirectError(options.detailPath, "Preencha os campos obrigatórios do produto.");
   }
   if (compareAtPriceCents > 0 && compareAtPriceCents <= priceCents) {
-    redirectError(options.detailPath, "O preco comparativo deve ser maior que o preco atual.");
+    redirectError(options.detailPath, "O preço comparativo deve ser maior que o preço atual.");
   }
   if (field(formData, "suggestedQuantity") && suggestedQuantity === null) {
-    redirectError(options.detailPath, "Quantidade sugerida deve ser um numero maior que zero.");
+    redirectError(options.detailPath, "Quantidade sugerida deve ser um número maior que zero.");
   }
   if (image && !isAllowedProductImage(image)) {
     redirectError(options.detailPath, "A imagem deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
@@ -128,7 +128,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
     prisma.brand.findUnique({ where: { id: brandId } }),
     prisma.category.findUnique({ where: { id: categoryId } })
   ]);
-  if (!brand || !category) redirectError(options.detailPath, "Marca ou categoria invalida.");
+  if (!brand || !category) redirectError(options.detailPath, "Marca ou categoria inválida.");
 
   const existingGallery = normalizeProductGallery(options.existingImage || "", options.existingGallery || []);
   const removedImages = new Set(cleanGalleryInput(formData.getAll("removeGalleryImage")));
@@ -147,7 +147,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
     assertGalleryCapacity(baseGallery, uploadFiles.length);
     uploadedImages = await saveProductImageUploads(options.productSlug, uploadFiles);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Nao foi possivel salvar as imagens enviadas.";
+    const message = error instanceof Error ? error.message : "Não foi possível salvar as imagens enviadas.";
     redirectError(options.detailPath, message);
   }
 
@@ -264,7 +264,7 @@ export async function updateProductDetailAction(formData: FormData) {
   const product = productId
     ? await prisma.product.findUnique({ where: { id: productId }, select: { slug: true, image: true, gallery: true } })
     : null;
-  if (!product) redirectError("/admin/produtos", "Produto nao encontrado.");
+  if (!product) redirectError("/admin/produtos", "Produto não encontrado.");
 
   const detailPath = `/admin/produtos/${product.slug}`;
   const prepared = await prepareProductFormPayload(formData, {
@@ -289,7 +289,7 @@ export async function updateProductDetailAction(formData: FormData) {
     ]);
   } catch {
     await deleteLocalProductImages(product.slug, prepared.uploadedImages);
-    redirectError(detailPath, "Nao foi possivel salvar o produto. Tente novamente.");
+    redirectError(detailPath, "Não foi possível salvar o produto. Tente novamente.");
   }
 
   await deleteLocalProductImages(product.slug, prepared.removedImages.filter((galleryImage) => !prepared.gallery.includes(galleryImage)));
@@ -307,7 +307,7 @@ export async function createProductAction(formData: FormData) {
 
   if (!name || !slug) redirectError(detailPath, "Informe o nome do produto para gerar o slug.");
   const existingProduct = await prisma.product.findUnique({ where: { slug }, select: { id: true } });
-  if (existingProduct) redirectError(detailPath, "Este slug ja existe. Use outro identificador para o produto.");
+  if (existingProduct) redirectError(detailPath, "Este slug já existe. Use outro identificador para o produto.");
 
   const prepared = await prepareProductFormPayload(formData, {
     detailPath,
@@ -334,7 +334,7 @@ export async function createProductAction(formData: FormData) {
     });
   } catch {
     await deleteLocalProductImages(slug, prepared.uploadedImages);
-    redirectError(detailPath, "Nao foi possivel criar o produto. Verifique os dados e tente novamente.");
+    redirectError(detailPath, "Não foi possível criar o produto. Verifique os dados e tente novamente.");
   }
 
   revalidateCatalog(product.slug);
@@ -348,7 +348,7 @@ export async function saveBrandAction(formData: FormData) {
   const name = field(formData, "name");
   const logo = field(formData, "logo").slice(0, 8).toUpperCase();
   const origin = field(formData, "origin") || "A ajustar";
-  const descriptionPt = field(formData, "descriptionPt") || "Descricao da marca a ajustar.";
+  const descriptionPt = field(formData, "descriptionPt") || "Descrição da marca a ajustar.";
   const featured = formData.get("featured") === "on";
   const slug = slugify(name);
   let redirectTo = "/admin/marcas?saved=1";
@@ -376,7 +376,7 @@ export async function saveBrandAction(formData: FormData) {
     }
     revalidateCatalog();
   } catch {
-    redirectTo = `/admin/marcas?error=${encodeURIComponent("Nao foi possivel salvar a marca. Verifique duplicidade de nome ou slug.")}`;
+    redirectTo = `/admin/marcas?error=${encodeURIComponent("Não foi possível salvar a marca. Verifique duplicidade de nome ou slug.")}`;
   }
 
   redirect(redirectTo);
@@ -387,7 +387,7 @@ export async function saveCategoryAction(formData: FormData) {
 
   const id = field(formData, "categoryId");
   const label = field(formData, "label");
-  const note = field(formData, "note") || "Ajustar descricao da categoria.";
+  const note = field(formData, "note") || "Ajustar descrição da categoria.";
   const slug = slugify(label);
   let redirectTo = "/admin/categorias?saved=1";
 
@@ -401,7 +401,7 @@ export async function saveCategoryAction(formData: FormData) {
     }
     revalidateCatalog();
   } catch {
-    redirectTo = `/admin/categorias?error=${encodeURIComponent("Nao foi possivel salvar a categoria. Verifique duplicidade de nome ou slug.")}`;
+    redirectTo = `/admin/categorias?error=${encodeURIComponent("Não foi possível salvar a categoria. Verifique duplicidade de nome ou slug.")}`;
   }
 
   redirect(redirectTo);
@@ -454,11 +454,11 @@ export async function saveStoreProfileAction(formData: FormData) {
   const launchNote = field(formData, "launchNote");
   const trustBadges = parsePipeList(field(formData, "trustBadges")).slice(0, 8);
 
-  if (!storeName || !legalName) redirectError("/admin/loja", "Informe nome da loja e razao social.");
-  if (cnpj && onlyDigits(cnpj).length !== 14) redirectError("/admin/loja", "CNPJ deve ter 14 digitos.");
-  if (cep && onlyDigits(cep).length !== 8) redirectError("/admin/loja", "CEP deve ter 8 digitos.");
+  if (!storeName || !legalName) redirectError("/admin/loja", "Informe nome da loja e razão social.");
+  if (cnpj && onlyDigits(cnpj).length !== 14) redirectError("/admin/loja", "CNPJ deve ter 14 dígitos.");
+  if (cep && onlyDigits(cep).length !== 8) redirectError("/admin/loja", "CEP deve ter 8 dígitos.");
   if (state && state.length !== 2) redirectError("/admin/loja", "UF deve ter 2 letras.");
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirectError("/admin/loja", "E-mail invalido.");
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirectError("/admin/loja", "E-mail inválido.");
 
   await prisma.storeProfile.upsert({
     where: { id: STORE_PROFILE_ID },
@@ -550,7 +550,7 @@ export async function saveSiteInfoPageAction(formData: FormData) {
       const message =
         error instanceof SiteInfoPageValidationError
           ? error.message
-          : "Nao foi possivel validar esta pagina.";
+          : "Não foi possível validar esta página.";
       redirectError(`/admin/politicas?pagina=${encodeURIComponent(pageKey)}`, message);
     }
   }
@@ -605,7 +605,7 @@ export async function importProductsAction(formData: FormData) {
     redirectTo = `/admin/importar-produtos?created=${result.created}&updated=${result.updated}&stock=${result.stockUpdated}`;
   } catch (error) {
     const message =
-      error instanceof ProductImportError ? error.message : "Nao foi possivel importar o catalogo.";
+      error instanceof ProductImportError ? error.message : "Não foi possível importar o catálogo.";
     redirectTo = `/admin/importar-produtos?error=${encodeURIComponent(message)}`;
   }
 
@@ -619,7 +619,7 @@ export async function updateLaunchReadinessItemAction(formData: FormData) {
   const status = field(formData, "status");
   const notes = field(formData, "notes").slice(0, 1200);
   if (!itemKey || !launchReadinessStatuses.includes(status as (typeof launchReadinessStatuses)[number])) {
-    redirectError("/admin/prontidao", "Item ou status invalido.");
+    redirectError("/admin/prontidao", "Item ou status inválido.");
   }
 
   const result = await prisma.launchReadinessItem.updateMany({
@@ -630,7 +630,7 @@ export async function updateLaunchReadinessItemAction(formData: FormData) {
     }
   });
   if (result.count === 0) {
-    redirectError("/admin/prontidao", "Item de prontidao nao encontrado.");
+    redirectError("/admin/prontidao", "Item de prontidão não encontrado.");
   }
 
   revalidatePath("/admin");

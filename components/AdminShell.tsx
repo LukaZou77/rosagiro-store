@@ -29,9 +29,9 @@ export function AdminShell({
           <Link href="/admin/pagamentos">Pagamentos</Link>
           <Link href="/admin/pedidos">Pedidos</Link>
           <Link href="/admin/clientes">Clientes</Link>
-          <Link href="/admin/loja">Loja / Confianca</Link>
-          <Link href="/admin/politicas">Politicas / Conteudo</Link>
-          <Link href="/admin/prontidao">Prontidao / Launch</Link>
+          <Link href="/admin/loja">Loja / Confiança</Link>
+          <Link href="/admin/politicas">Políticas / Conteúdo</Link>
+          <Link href="/admin/prontidao">Prontidão / Launch</Link>
           <Link href="/">Ver loja</Link>
         </nav>
         <form action={logoutAction}>

@@ -51,16 +51,16 @@ export type ProductWithQualityRelations = Prisma.ProductGetPayload<{
 export const productQualityStatusLabels: Record<ProductQualityStatus, string> = {
   READY: "Pronto",
   REVIEW: "Revisar",
-  ACTION_REQUIRED: "Acao necessaria"
+  ACTION_REQUIRED: "Ação necessária"
 };
 
 export const productQualityGroupLabels: Record<ProductQualityGroup, string> = {
-  media: "Midia",
-  content: "Conteudo",
+  media: "Mídia",
+  content: "Conteúdo",
   wholesale: "Atacado",
-  operation: "Operacao",
-  promotion: "Promocao",
-  launch: "Publicacao"
+  operation: "Operação",
+  promotion: "Promoção",
+  launch: "Publicação"
 };
 
 const PLACEHOLDER_PATTERN = /placeholder/i;
@@ -93,9 +93,9 @@ function statusFromIssues(issues: ProductQualityIssue[]): ProductQualityStatus {
 }
 
 function statusMessage(status: ProductQualityStatus) {
-  if (status === "READY") return "Ficha pronta para revisao final de venda.";
+  if (status === "READY") return "Ficha pronta para revisão final de venda.";
   if (status === "ACTION_REQUIRED") return "Precisa corrigir itens importantes antes de vender.";
-  return "Boa base, mas ainda precisa conferencias operacionais.";
+  return "Boa base, mas ainda precisa de conferências operacionais.";
 }
 
 export function evaluateProductQuality(product: ProductWithQualityRelations): ProductQualityResult {
@@ -120,8 +120,8 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         key: "demo-svg-image",
         group: "media",
         severity: "high",
-        label: "Imagem de demonstracao",
-        message: "A vitrine ainda usa SVG de prototipo; envie fotos reais antes da venda."
+        label: "Imagem de demonstração",
+        message: "A vitrine ainda usa SVG de protótipo; envie fotos reais antes da venda."
       })
     );
   }
@@ -145,7 +145,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         group: "launch",
         severity: "medium",
         label: "Imagem local",
-        message: "Upload local funciona no desenvolvimento, mas precisa migrar para storage persistente na producao."
+        message: "Upload local funciona no desenvolvimento, mas precisa migrar para storage persistente na produção."
       })
     );
   }
@@ -156,8 +156,8 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         key: "weak-description",
         group: "content",
         severity: "medium",
-        label: "Descricao incompleta",
-        message: "Inclua descricao comercial clara, uso, beneficio e contexto de compra no atacado."
+        label: "Descrição incompleta",
+        message: "Inclua descrição comercial clara, uso, benefício e contexto de compra no atacado."
       })
     );
   }
@@ -168,8 +168,8 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         key: "missing-benefits",
         group: "content",
         severity: "medium",
-        label: "Beneficios a revisar",
-        message: "Preencha pelo menos dois beneficios reais separados para a vitrine."
+        label: "Benefícios a revisar",
+        message: "Preencha pelo menos dois benefícios reais separados para a vitrine."
       })
     );
   }
@@ -181,7 +181,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         group: "content",
         severity: "medium",
         label: "Ingredientes a revisar",
-        message: "Informe composicao, ativo principal ou material para reduzir duvidas no WhatsApp."
+        message: "Informe composição, ativo principal ou material para reduzir dúvidas no WhatsApp."
       })
     );
   }
@@ -205,7 +205,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         group: "content",
         severity: "low",
         label: "Marca sem ficha real",
-        message: "Complete origem e descricao da marca para melhorar confianca e filtros."
+        message: "Complete origem e descrição da marca para melhorar confiança e filtros."
       })
     );
   }
@@ -216,7 +216,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         key: "category-data-draft",
         group: "content",
         severity: "low",
-        label: "Categoria sem descricao",
+        label: "Categoria sem descrição",
         message: "Complete a nota da categoria para orientar compra por prateleira."
       })
     );
@@ -229,7 +229,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         group: "wholesale",
         severity: "medium",
         label: "Quantidade sugerida ausente",
-        message: "Informe uma quantidade sugerida para orientar compra de reposicao ou revenda."
+        message: "Informe uma quantidade sugerida para orientar compra de reposição ou revenda."
       })
     );
   }
@@ -241,7 +241,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         group: "wholesale",
         severity: "medium",
         label: "Kit recomendado a revisar",
-        message: "Inclua combinacao real para kit, rotina ou reposicao sem prometer desconto automatico."
+        message: "Inclua combinação real para kit, rotina ou reposição sem prometer desconto automático."
       })
     );
   }
@@ -253,7 +253,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         group: "wholesale",
         severity: "medium",
         label: "Atacado/caixa sem regra real",
-        message: "Preencha caixa fechada, pacote, grade ou condicao de atacado que a equipe possa confirmar."
+        message: "Preencha caixa fechada, pacote, grade ou condição de atacado que a equipe possa confirmar."
       })
     );
   }
@@ -265,7 +265,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         group: "wholesale",
         severity: "medium",
         label: "Validade/lote a confirmar",
-        message: "Inclua validade minima, lote ou regra clara de conferencia antes de vender."
+        message: "Inclua validade mínima, lote ou regra clara de conferência antes de vender."
       })
     );
   }
@@ -276,7 +276,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         key: "missing-purchase-note",
         group: "wholesale",
         severity: "low",
-        label: "Observacao de compra vazia",
+        label: "Observação de compra vazia",
         message: "Adicione uma nota curta para orientar volume, revenda, retirada ou consulta por WhatsApp."
       })
     );
@@ -288,8 +288,8 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         key: "invalid-price",
         group: "operation",
         severity: "high",
-        label: "Preco invalido",
-        message: "Produto precisa de preco maior que zero para checkout."
+        label: "Preço inválido",
+        message: "Produto precisa de preço maior que zero para checkout."
       })
     );
   }
@@ -312,7 +312,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         key: "default-weight",
         group: "operation",
         severity: "medium",
-        label: "Peso padrao",
+        label: "Peso padrão",
         message: "150g parece valor inicial; confirme o peso real para frete Anjun."
       })
     );
@@ -324,8 +324,8 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         key: "invalid-compare-price",
         group: "promotion",
         severity: "high",
-        label: "Desconto invalido",
-        message: "Preco comparativo deve ser maior que o preco atual para exibir desconto real."
+        label: "Desconto inválido",
+        message: "Preço comparativo deve ser maior que o preço atual para exibir desconto real."
       })
     );
   }

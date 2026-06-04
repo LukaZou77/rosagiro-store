@@ -35,7 +35,7 @@ type BuildSnapshotInput = {
 
 const localEmailPattern = /(?:\.local$|@example\.|@test\.|contato@belaviva\.local$)/i;
 const placeholderPhonePattern = /90000|0000-0000|00000000/;
-const placeholderAddressPattern = /preparacao|a ajustar|s\/n|endereco/i;
+const placeholderAddressPattern = /preparacao|preparação|a ajustar|s\/n|endereco|endereço/i;
 
 function onlyDigits(value?: string | null) {
   return (value || "").replace(/\D/g, "");
@@ -84,12 +84,12 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
     signal({
       key: "store-identity",
       group: "Loja",
-      label: "Dados legais e endereco",
+      label: "Dados legais e endereço",
       status: profileHasRealIdentity ? "READY" : "ACTION_REQUIRED",
       severity: "high",
       message: profileHasRealIdentity
-        ? "CNPJ e endereco parecem substituidos por dados reais."
-        : "CNPJ, endereco ou numero ainda parecem placeholders; substitua antes da venda real.",
+        ? "CNPJ e endereço parecem substituídos por dados reais."
+        : "CNPJ, endereço ou número ainda parecem placeholders; substitua antes da venda real.",
       actionHref: "/admin/loja"
     }),
     signal({
@@ -107,28 +107,28 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
     }),
     signal({
       key: "catalog-real-data",
-      group: "Catalogo",
-      label: "Catalogo real",
+      group: "Catálogo",
+      label: "Catálogo real",
       status: catalogHasActionRequired ? "ACTION_REQUIRED" : hasCatalogDepth ? "READY" : "WARNING",
       severity: catalogHasActionRequired ? "high" : "medium",
       message: catalogHasActionRequired
-        ? `${input.productQuality.actionRequiredCount} produto(s) com lacunas criticas; ${input.productQuality.wholesaleIssueCount} precisam atacado/validade real.`
+        ? `${input.productQuality.actionRequiredCount} produto(s) com lacunas críticas; ${input.productQuality.wholesaleIssueCount} precisam atacado/validade real.`
         : hasCatalogDepth
-          ? `${input.productQuality.activeCount} de ${input.productQuality.total} produtos ativos com checks criticos resolvidos.`
+          ? `${input.productQuality.activeCount} de ${input.productQuality.total} produtos ativos com checks críticos resolvidos.`
           : `${input.productQuality.activeCount} de ${input.productQuality.total} produtos ativos; revise atacado, validade/lote e dados reais de SKU.`,
       actionHref: "/admin/produtos/qualidade"
     }),
     signal({
       key: "catalog-media-weight",
-      group: "Catalogo",
-      label: "Midia e peso",
+      group: "Catálogo",
+      label: "Mídia e peso",
       status: catalogHasActionRequired ? "ACTION_REQUIRED" : catalogHasReview ? "WARNING" : "READY",
       severity: catalogHasActionRequired ? "high" : "medium",
       message: catalogHasActionRequired
-        ? `${input.productQuality.actionRequiredCount} produto(s) com lacunas criticas; ${input.productQuality.svgDemoCount} ainda usam SVG de prototipo.`
+        ? `${input.productQuality.actionRequiredCount} produto(s) com lacunas críticas; ${input.productQuality.svgDemoCount} ainda usam SVG de protótipo.`
         : catalogHasReview
-          ? `${input.productQuality.reviewCount} produto(s) precisam revisao; ${input.productQuality.defaultWeightCount} usam peso padrao de 150g.`
-          : "Produtos ativos passaram nos checks automaticos de midia, conteudo e peso.",
+          ? `${input.productQuality.reviewCount} produto(s) precisam revisão; ${input.productQuality.defaultWeightCount} usam peso padrão de 150g.`
+          : "Produtos ativos passaram nos checks automáticos de mídia, conteúdo e peso.",
       actionHref: "/admin/produtos/qualidade"
     }),
     signal({
@@ -139,75 +139,75 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
       severity: "high",
       message:
         paymentDiagnostics.status === "READY"
-          ? "Sandbox, token, webhook secret e URL publica parecem configurados."
+          ? "Sandbox, token, webhook secret e URL pública parecem configurados."
           : paymentDiagnostics.fallbackMessage,
       actionHref: "/admin/pagamentos"
     }),
     signal({
       key: "shipping-rates",
-      group: "Logistica",
+      group: "Logística",
       label: "Tabela Anjun ativa",
       status: input.activeShippingImportCount > 0 ? "READY" : "ACTION_REQUIRED",
       severity: "high",
       message:
         input.activeShippingImportCount > 0
           ? "Existe tabela Anjun ativa para estimar frete por CEP e peso."
-          : "Nenhuma tabela Anjun ativa; checkout ficara limitado a retirada/consulta manual.",
+          : "Nenhuma tabela Anjun ativa; checkout ficará limitado a retirada/consulta manual.",
       actionHref: "/admin/frete"
     }),
     signal({
       key: "address-validation",
-      group: "Endereco",
-      label: "Endereco e CEP",
+      group: "Endereço",
+      label: "Endereço e CEP",
       status: hasGoogleMaps ? "READY" : "WARNING",
       severity: "medium",
       message: hasGoogleMaps
-        ? "Google Maps key existe para validacao opcional; ViaCEP continua como fallback."
-        : "Google Maps esta desativado; checkout usa ViaCEP e preenchimento manual.",
+        ? "Google Maps key existe para validação opcional; ViaCEP continua como fallback."
+        : "Google Maps está desativado; checkout usa ViaCEP e preenchimento manual.",
       actionHref: "/admin/prontidao"
     }),
     signal({
       key: "deploy-env",
       group: "Deploy",
-      label: "Ambiente publico",
+      label: "Ambiente público",
       status: hasDeployEnvironment ? "READY" : "ACTION_REQUIRED",
       severity: "high",
       message: hasDeployEnvironment
-        ? "URL publica, session secret e database url existem no ambiente atual."
+        ? "URL pública, session secret e database url existem no ambiente atual."
         : "Ambiente atual ainda parece local ou incompleto para venda real.",
       actionHref: "/admin/prontidao"
     }),
     signal({
       key: "policies-seo",
-      group: "Operacao",
-      label: "Politicas e SEO",
+      group: "Operação",
+      label: "Políticas e SEO",
       status: input.policyPageCount >= 6 ? "WARNING" : "ACTION_REQUIRED",
       severity: "medium",
       message:
         input.policyPageCount >= 6
-          ? "Paginas basicas existem, mas ainda precisam revisao juridica/operacional real."
-          : "Politicas, SEO ou paginas publicas basicas ainda estao incompletas.",
+          ? "Páginas básicas existem, mas ainda precisam revisão jurídica/operacional real."
+          : "Políticas, SEO ou páginas públicas básicas ainda estão incompletas.",
       actionHref: "/admin/prontidao"
     }),
     signal({
       key: "seo-baseline",
-      group: "Operacao",
+      group: "Operação",
       label: "SEO/GEO baseline",
       status: hasSeoPublicBase && input.policyPageCount >= 6 ? "WARNING" : "ACTION_REQUIRED",
       severity: "medium",
       message:
         hasSeoPublicBase && input.policyPageCount >= 6
-          ? "Metadata, sitemap, robots e llms.txt podem ser auditados no dominio publico; rode SEO audit antes do go-live."
-          : "Configure NEXT_PUBLIC_SITE_URL com HTTPS publico e revise paginas publicas antes do audit SEO final.",
+          ? "Metadata, sitemap, robots e llms.txt podem ser auditados no domínio público; rode SEO audit antes do go-live."
+          : "Configure NEXT_PUBLIC_SITE_URL com HTTPS público e revise páginas públicas antes do audit SEO final.",
       actionHref: "/admin/prontidao"
     }),
     signal({
       key: "manual-readiness",
-      group: "Operacao",
+      group: "Operação",
       label: "Checklist manual",
       status: input.readinessTotalCount && input.readinessDoneCount === input.readinessTotalCount ? "READY" : "WARNING",
       severity: "medium",
-      message: `${input.readinessDoneCount} de ${input.readinessTotalCount} itens manuais marcados como concluidos.`,
+      message: `${input.readinessDoneCount} de ${input.readinessTotalCount} itens manuais marcados como concluídos.`,
       actionHref: "/admin/prontidao"
     })
   ];
@@ -229,7 +229,7 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
 export const launchReadinessSignalLabels: Record<LaunchReadinessSignalStatus, string> = {
   READY: "Pronto",
   WARNING: "Revisar",
-  ACTION_REQUIRED: "Acao necessaria"
+  ACTION_REQUIRED: "Ação necessária"
 };
 
 export async function getLaunchReadinessSnapshot() {
