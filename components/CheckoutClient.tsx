@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useCart, writeCart } from "@/components/CartCount";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
@@ -164,6 +164,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const [shippingQuote, setShippingQuote] = useState<ShippingQuoteResponse | null>(null);
   const [shippingStatus, setShippingStatus] = useState<ShippingStatus>("idle");
   const [shippingMessage, setShippingMessage] = useState("Informe o CEP para estimar Anjun D2D Pickup.");
+  const [mobileFieldFocused, setMobileFieldFocused] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const addressSessionToken = useRef(makeAddressSessionToken());
@@ -257,6 +258,9 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   }));
   const mobileCheckoutActionLabel =
     activeStep === "payment" ? siteConfig.checkout.finalCta : siteConfig.checkout.nextCta;
+  const mobileCheckoutBarLabel = mobileFieldFocused
+    ? siteConfig.checkout.mobile.editingLabel
+    : siteConfig.mobilePurchase.checkoutBarLabel;
 
   const prefillContactFromCustomer = useCallback((nextCustomer: { name: string; whatsapp: string }) => {
     setContact((current) => ({
@@ -302,6 +306,32 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
       scrollToCheckoutStep(step);
     }, 0);
     return false;
+  }
+
+  function handleCheckoutFocus(event: FocusEvent<HTMLFormElement>) {
+    if (event.target instanceof HTMLElement && event.target.matches("input, select, textarea")) {
+      setMobileFieldFocused(true);
+    }
+  }
+
+  function handleCheckoutBlur(event: FocusEvent<HTMLFormElement>) {
+    const nextTarget = event.relatedTarget;
+    if (
+      nextTarget instanceof HTMLElement &&
+      event.currentTarget.contains(nextTarget) &&
+      nextTarget.matches("input, select, textarea")
+    ) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      const activeElement = document.activeElement;
+      setMobileFieldFocused(
+        activeElement instanceof HTMLElement &&
+          Boolean(formRef.current?.contains(activeElement)) &&
+          activeElement.matches("input, select, textarea")
+      );
+    }, 0);
   }
 
   function validateCheckoutStep(step: CheckoutStep) {
@@ -354,6 +384,15 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     }
   }
 
+  function handleMobileCheckoutAction() {
+    if (activeStep === "payment") {
+      formRef.current?.requestSubmit();
+      return;
+    }
+
+    goToNextStep();
+  }
+
   function checkoutStepClass(step: CheckoutStep) {
     const classes = ["checkout-step", `checkout-step-${step}`];
     if (activeStep === step) classes.push("is-active");
@@ -395,7 +434,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
         setShippingQuote(null);
         setShippingMethod("RETIRADA_LOCAL");
         setShippingStatus("idle");
-        setShippingMessage("Informe o CEP com 8 digitos para estimar Anjun D2D Pickup.");
+        setShippingMessage("Informe o CEP com 8 dígitos para estimar Anjun D2D Pickup.");
       } else {
         setCepStatus("loading");
         setCepMessage("Buscando CEP...");
@@ -572,10 +611,10 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
       autofilledFields.current = nextAutofilledFields;
       if (formattedCep) lastAutofilledCep.current = cepDigits(formattedCep);
       setAddressSearchStatus("success");
-      setAddressSearchMessage("Endereco selecionado. Confira numero e complemento antes de finalizar.");
+      setAddressSearchMessage("Endereço selecionado. Confira número e complemento antes de finalizar.");
       if (formattedCep) {
         setCepStatus("success");
-        setCepMessage("Endereco encontrado. Complete numero e complemento se necessario.");
+        setCepMessage("Endereço encontrado. Complete número e complemento se necessário.");
       }
     } catch {
       addressSessionToken.current = makeAddressSessionToken();
@@ -643,7 +682,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
         autofilledFields.current = nextAutofilledFields;
         lastAutofilledCep.current = digits;
         setCepStatus("success");
-        setCepMessage("Endereco encontrado. Complete numero e complemento se necessario.");
+        setCepMessage("Endereço encontrado. Complete número e complemento se necessário.");
       })
       .catch((lookupError: unknown) => {
         if (!active) return;
@@ -820,7 +859,15 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
 
   return (
     <section className="checkout-shell">
-      <form action={submit} className="checkout-form" id="checkout-form" ref={formRef} noValidate>
+      <form
+        action={submit}
+        className="checkout-form"
+        id="checkout-form"
+        ref={formRef}
+        onFocus={handleCheckoutFocus}
+        onBlur={handleCheckoutBlur}
+        noValidate
+      >
         <p className="eyebrow">Checkout Bela Viva</p>
         <h1>Entrega e pagamento</h1>
         <ol className="checkout-stepper" aria-label={siteConfig.checkout.stepperLabel}>
@@ -910,7 +957,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
             <small>{stepSummaries.address}</small>
           </legend>
           <div className="checkout-step-body">
-            <div className="form-grid">
+            <div className="form-grid compact-mobile-grid cep-state-grid">
               <label>
                 CEP
                 <input
@@ -992,9 +1039,9 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
             <label>
               Rua <input name="street" autoComplete="address-line1" value={address.street} onChange={(event) => updateAddress("street", event.target.value)} required />
             </label>
-            <div className="form-grid">
+            <div className="form-grid compact-mobile-grid number-complement-grid">
               <label>
-                Numero <input name="number" autoComplete="address-line2" value={address.number} onChange={(event) => updateAddress("number", event.target.value)} required />
+                Número <input name="number" autoComplete="address-line2" value={address.number} onChange={(event) => updateAddress("number", event.target.value)} required />
               </label>
               <label>
                 Complemento <input name="complement" value={address.complement} onChange={(event) => updateAddress("complement", event.target.value)} />
@@ -1136,24 +1183,23 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
             <span>Frete base</span>
             <strong>{shipping === 0 ? "R$ 0,00" : money(shipping)}</strong>
           </div>
-          {selectedShipping ? <p>{selectedShipping.note}</p> : <p>Frete Anjun sera calculado apos informar o CEP.</p>}
+          {selectedShipping ? <p>{selectedShipping.note}</p> : <p>Frete Anjun será calculado após informar o CEP.</p>}
           <div className="summary-total">
             <span>Total</span>
             <strong>{money(total)}</strong>
           </div>
         </div>
       </aside>
-      <div className="mobile-checkout-bar" aria-label="Resumo rapido do checkout">
+      <div className={mobileFieldFocused ? "mobile-checkout-bar editing" : "mobile-checkout-bar"} aria-label="Resumo rápido do checkout">
         <div>
-          <span>{siteConfig.mobilePurchase.checkoutBarLabel}</span>
+          <span>{mobileCheckoutBarLabel}</span>
           <strong>{money(total)}</strong>
         </div>
         <button
           className="button primary"
-          type={activeStep === "payment" ? "submit" : "button"}
-          form={activeStep === "payment" ? "checkout-form" : undefined}
+          type="button"
           disabled={submitting || !items.length}
-          onClick={activeStep === "payment" ? undefined : goToNextStep}
+          onClick={handleMobileCheckoutAction}
         >
           {submitting ? "Criando..." : mobileCheckoutActionLabel}
         </button>

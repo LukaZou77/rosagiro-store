@@ -12,7 +12,7 @@ export const paymentMethods = [
   {
     value: "SIMULATED",
     label: "Confirmar com atendimento",
-    description: "Use quando preferir que a equipe confirme estoque, entrega e condicoes pelo WhatsApp."
+    description: "Use quando preferir que a equipe confirme estoque, entrega e condições pelo WhatsApp."
   }
 ] as const;
 

@@ -9,9 +9,9 @@ import { mercadoPagoReturnMessage, paymentMethodLabel, paymentProviderLabel, pay
 import { noIndexMetadata } from "@/lib/seo";
 
 const addressMatchLabels: Record<string, string> = {
-  VALIDATED: "Endereco validado",
-  NEEDS_REVIEW: "Endereco para conferencia",
-  FAILED: "Validacao indisponivel",
+  VALIDATED: "Endereço validado",
+  NEEDS_REVIEW: "Endereço para conferência",
+  FAILED: "Validação indisponível",
   DISABLED: "Validação não configurada",
   NOT_CHECKED: "Validação não executada"
 };
@@ -45,7 +45,7 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
         <p>{order.customerName}, acompanhe aqui o status do pedido e confira os dados antes da entrega.</p>
         {mercadoPagoMessage ? <p className="payment-return-note">{mercadoPagoMessage}</p> : null}
         <div className="confirmation-card">
-          <span>Numero do pedido</span>
+          <span>Número do pedido</span>
           <strong>{order.orderNumber}</strong>
           <small>
             Status: {order.status.replace("_", " ")} / {paymentProviderLabel(order.payment?.provider)} -{" "}
@@ -60,7 +60,7 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
           </div>
         ) : null}
         <div className={`address-match-card ${order.addressMatchStatus.toLowerCase().replace("_", "-")}`}>
-          <span>{addressMatchLabels[order.addressMatchStatus] || "Endereco salvo"}</span>
+          <span>{addressMatchLabels[order.addressMatchStatus] || "Endereço salvo"}</span>
           <strong>{order.addressMatchFormatted || `${order.street}, ${order.number} - ${order.city}/${order.state}`}</strong>
           <small>{order.addressMatchMessage || "Confira o endereço antes do envio."}</small>
         </div>
@@ -80,7 +80,7 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
           ))}
         </div>
         <Link className="button primary" href="/">
-          Voltar ao inicio
+          Voltar ao início
         </Link>
       </section>
     </StoreShell>

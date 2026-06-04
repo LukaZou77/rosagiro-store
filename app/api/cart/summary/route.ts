@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       const warning = !product
         ? "Produto não encontrado."
         : !active
-          ? "Produto indisponivel."
+          ? "Produto indisponível."
           : stockQuantity <= 0
             ? "Produto sem estoque."
             : item.quantity > stockQuantity

@@ -452,7 +452,7 @@ export async function getShippingQuoteForCart(items: ShippingQuoteCartItem[], ce
     status: anjun ? "OK" : "NO_RATE",
     message: anjun
       ? `Frete base encontrado para ${formatCep(digits)}. Peso cobrado: ${formatWeight(billable)}.`
-      : "Nao encontramos tabela Anjun para este CEP. Use retirada local ou fale no WhatsApp.",
+      : "Não encontramos tabela Anjun para este CEP. Use retirada local ou fale no WhatsApp.",
     options,
     productWeightGrams: productTotalWeightGrams,
     billableWeightGrams: billable

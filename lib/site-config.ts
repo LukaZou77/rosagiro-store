@@ -120,7 +120,7 @@ export const siteConfig = {
     lowPriceTitle: "Menor preço para completar pedido",
     hotShelfTitle: "Mais procurados para revenda",
     stockShelfTitle: "Pronta entrega e reposição",
-    shelfNote: "Os destaques usam campos atuais do produto: desconto real, badges, estoque, avaliacao, marca e categoria.",
+    shelfNote: "Os destaques usam campos atuais do produto: desconto real, tags, estoque, avaliação, marca e categoria.",
     signals: [
       "Pedido mínimo R$ 300",
       "Desconto real quando existe preço comparativo",
@@ -187,6 +187,9 @@ export const siteConfig = {
     nextCta: "Continuar",
     backCta: "Voltar",
     finalCta: "Finalizar pedido",
+    mobile: {
+      editingLabel: "Preenchendo dados"
+    },
     steps: {
       contact: {
         title: "Contato",
@@ -228,7 +231,7 @@ export const storefrontLinks = [
 export const legalLinks = [
   { href: "/politica-de-privacidade", label: "Privacidade" },
   { href: "/termos-de-uso", label: "Termos" },
-  { href: "/trocas-e-devolucoes", label: "Trocas e devolucoes" },
+  { href: "/trocas-e-devolucoes", label: "Trocas e devoluções" },
   { href: "/entrega", label: "Entrega" }
 ];
 
@@ -245,9 +248,9 @@ export const infoPages = {
   privacy: {
     slug: "politica-de-privacidade",
     href: "/politica-de-privacidade",
-    eyebrow: "Politica",
-    title: "Politica de privacidade",
-    description: "Resumo editavel sobre como a Bela Viva trata dados de contato, entrega e pedidos.",
+    eyebrow: "Política",
+    title: "Política de privacidade",
+    description: "Resumo editável sobre como a Bela Viva trata dados de contato, entrega e pedidos.",
     sections: [
       {
         title: "Dados coletados",
@@ -280,20 +283,20 @@ export const infoPages = {
       },
       {
         title: "Contato",
-        body: "Duvidas comerciais, suporte e solicitacoes devem usar os canais oficiais exibidos na pagina de contato."
+        body: "Dúvidas comerciais, suporte e solicitações devem usar os canais oficiais exibidos na página de contato."
       }
     ]
   },
   returns: {
     slug: "trocas-e-devolucoes",
     href: "/trocas-e-devolucoes",
-    eyebrow: "Pos-compra",
-    title: "Trocas e devolucoes",
-    description: "Base editavel para uma politica clara de troca, arrependimento e produtos avariados.",
+    eyebrow: "Pós-compra",
+    title: "Trocas e devoluções",
+    description: "Base editável para uma política clara de troca, arrependimento e produtos avariados.",
     sections: [
       {
         title: "Prazo de arrependimento",
-        body: "Reserve este bloco para a regra final de arrependimento em compras online, incluindo prazos, canais e condicoes do produto."
+        body: "Reserve este bloco para a regra final de arrependimento em compras online, incluindo prazos, canais e condições do produto."
       },
       {
         title: "Produto com avaria",
@@ -301,7 +304,7 @@ export const infoPages = {
       },
       {
         title: "Itens de beleza",
-        body: "Por higiene e seguranca, produtos abertos podem ter condicoes especificas. Ajuste esta politica antes de operar vendas reais."
+        body: "Por higiene e segurança, produtos abertos podem ter condições específicas. Ajuste esta política antes de operar vendas reais."
       }
     ]
   },

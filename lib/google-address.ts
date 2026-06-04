@@ -463,8 +463,8 @@ export async function validateCheckoutAddress(address: CheckoutAddressForValidat
     latitude: data.result.geocode?.location?.latitude ?? null,
     longitude: data.result.geocode?.location?.longitude ?? null,
     message: needsReview
-      ? "Endereco salvo com alerta para conferencia manual."
-      : "Endereco validado pela base do Google Maps.",
+      ? "Endereço salvo com alerta para conferência manual."
+      : "Endereço validado pela base do Google Maps.",
     checkedAt
   };
 }

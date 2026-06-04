@@ -78,7 +78,7 @@ export function validateSiteInfoPageInput(input: {
   sections: unknown;
 }) {
   if (!isSiteInfoPageKey(input.pageKey)) {
-    throw new SiteInfoPageValidationError("Pagina de politica invalida.");
+    throw new SiteInfoPageValidationError("Página de política inválida.");
   }
 
   const defaults = siteInfoPageDefault(input.pageKey);
@@ -88,26 +88,26 @@ export function validateSiteInfoPageInput(input: {
   const sections = normalizeSiteInfoSections(input.sections);
 
   if (!eyebrow || !title || !description) {
-    throw new SiteInfoPageValidationError("Preencha chamada, titulo e descricao.");
+    throw new SiteInfoPageValidationError("Preencha chamada, título e descrição.");
   }
   if (!sections.length) {
-    throw new SiteInfoPageValidationError("Cadastre pelo menos uma secao com titulo e texto.");
+    throw new SiteInfoPageValidationError("Cadastre pelo menos uma seção com título e texto.");
   }
   if (sections.length > SITE_INFO_PAGE_SECTION_LIMIT) {
-    throw new SiteInfoPageValidationError(`Cada pagina aceita no maximo ${SITE_INFO_PAGE_SECTION_LIMIT} secoes.`);
+    throw new SiteInfoPageValidationError(`Cada página aceita no máximo ${SITE_INFO_PAGE_SECTION_LIMIT} seções.`);
   }
   for (const [index, section] of sections.entries()) {
     if (!section.title || !section.body) {
-      throw new SiteInfoPageValidationError(`Complete titulo e texto da secao ${index + 1}.`);
+      throw new SiteInfoPageValidationError(`Complete título e texto da seção ${index + 1}.`);
     }
   }
 
   assertPlainText("Chamada", eyebrow);
-  assertPlainText("Titulo", title);
-  assertPlainText("Descricao", description);
+  assertPlainText("Título", title);
+  assertPlainText("Descrição", description);
   for (const [index, section] of sections.entries()) {
-    assertPlainText(`Titulo da secao ${index + 1}`, section.title);
-    assertPlainText(`Texto da secao ${index + 1}`, section.body);
+    assertPlainText(`Título da seção ${index + 1}`, section.title);
+    assertPlainText(`Texto da seção ${index + 1}`, section.body);
   }
 
   return {
@@ -202,7 +202,7 @@ export function siteInfoPageLabel(pageKey: SiteInfoPageKey) {
   const labels: Record<SiteInfoPageKey, string> = {
     privacy: "Privacidade",
     terms: "Termos de uso",
-    returns: "Trocas e devolucoes",
+    returns: "Trocas e devoluções",
     shipping: "Entrega",
     contact: "Contato"
   };

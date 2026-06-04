@@ -11,6 +11,7 @@ import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { getCategories, getProduct, getProducts, getRelatedProducts } from "@/lib/catalog";
+import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import {
   productDetailGalleryState,
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product || !product.active) {
-    return noIndexMetadata("Produto", "Produto Bela Viva indisponivel.");
+    return noIndexMetadata("Produto", "Produto Bela Viva indisponível.");
   }
 
   return storefrontMetadata({
@@ -135,7 +136,7 @@ export default async function ProductPage({ params }: PageProps) {
               <small>{siteConfig.productConversion.bundlePrompt}</small>
             </div>
           </div>
-          <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{badge}</span>)}</div>
+          <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{customerDisplayText(badge)}</span>)}</div>
           <StoreTrustSignals signals={trustSignals} compact />
         </div>
       </section>

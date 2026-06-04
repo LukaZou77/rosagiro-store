@@ -63,22 +63,25 @@ export function QuickPurchaseDrawer() {
   const [errorState, setErrorState] = useState<{ key: string; message: string } | null>(null);
   const count = cartQuantity(cart);
   const cartKey = useMemo(() => JSON.stringify(cart), [cart]);
+  const drawerDisabled = pathname === "/checkout";
+  const drawerOpen = open && !drawerDisabled;
 
   useEffect(() => {
     return subscribeQuickPurchaseOpen(() => {
+      if (drawerDisabled) return;
       setOpen(true);
       window.setTimeout(() => closeButtonRef.current?.focus(), 0);
     });
-  }, []);
+  }, [drawerDisabled]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") setOpen(false);
     }
 
-    if (open) window.addEventListener("keydown", onKeyDown);
+    if (drawerOpen) window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open]);
+  }, [drawerOpen]);
 
   useEffect(() => {
     if (!cart.length) {
@@ -134,19 +137,19 @@ export function QuickPurchaseDrawer() {
   const hasValidLines = whatsappItems.length > 0;
   const hideFloatingEntry =
     pathname.startsWith("/produto/") ||
-    pathname === "/checkout" ||
+    drawerDisabled ||
     pathname.startsWith("/pagamento-simulado/") ||
     pathname.startsWith("/pedido/");
 
   return (
     <>
-      {count > 0 && !open && !hideFloatingEntry ? (
+      {count > 0 && !drawerOpen && !hideFloatingEntry ? (
         <button className="quick-purchase-fab" type="button" onClick={() => setOpen(true)} aria-label="Abrir pedido rápido">
           <span>Pedido</span>
           <strong>{count}</strong>
         </button>
       ) : null}
-      <div className={open ? "quick-drawer-shell open" : "quick-drawer-shell"} aria-hidden={!open}>
+      <div className={drawerOpen ? "quick-drawer-shell open" : "quick-drawer-shell"} aria-hidden={!drawerOpen}>
         <button className="quick-drawer-overlay" type="button" onClick={() => setOpen(false)} aria-label="Fechar painel de pedido" />
         <aside className="quick-drawer" aria-label="Pedido rápido" aria-modal="true" role="dialog">
           <header className="quick-drawer-header">

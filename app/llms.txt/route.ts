@@ -13,7 +13,7 @@ export async function GET() {
   const contactLines = [
     store.whatsapp ? `- WhatsApp: ${store.whatsapp}` : "",
     store.email ? `- Email: ${store.email}` : "",
-    store.address ? `- Endereco comercial: ${store.address}` : ""
+    store.address ? `- Endereço comercial: ${store.address}` : ""
   ].filter(Boolean);
 
   const body = [
@@ -22,13 +22,13 @@ export async function GET() {
     `${store.name} e um ecommerce multimarcas de beleza para compras no atacado no Brasil.`,
     store.description,
     "",
-    "## Principais paginas",
+    "## Principais páginas",
     `- Inicio: ${siteUrl("/")}`,
     `- Catalogo: ${siteUrl("/categoria/all")}`,
     `- Promoções: ${siteUrl("/promocoes")}`,
     `- Informações da loja: ${siteUrl("/informacoes-da-loja")}`,
     `- Entrega: ${siteUrl("/entrega")}`,
-    `- Trocas e devolucoes: ${siteUrl("/trocas-e-devolucoes")}`,
+    `- Trocas e devoluções: ${siteUrl("/trocas-e-devolucoes")}`,
     `- Privacidade: ${siteUrl("/politica-de-privacidade")}`,
     "",
     "## Categorias",
@@ -38,7 +38,7 @@ export async function GET() {
     ...productLines,
     "",
     "## Atendimento",
-    ...(contactLines.length ? contactLines : ["- Atendimento comercial disponivel pelos canais publicados no site."]),
+    ...(contactLines.length ? contactLines : ["- Atendimento comercial disponível pelos canais publicados no site."]),
     "",
     "## Observacoes para agentes e buscadores",
     "- O catálogo é focado em beleza multimarcas, revenda, reposição, pronta entrega e compra mínima no atacado.",

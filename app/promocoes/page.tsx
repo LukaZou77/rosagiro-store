@@ -4,6 +4,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { discountPercent, getCategories, getPromotionCollections } from "@/lib/catalog";
+import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import { productQuantity, productStockLabel } from "@/lib/product-conversion";
 import { storefrontMetadata } from "@/lib/seo";
@@ -11,7 +12,7 @@ import { siteConfig } from "@/lib/site-config";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 export const metadata: Metadata = storefrontMetadata({
-  title: "Promocoes",
+  title: "Promoções",
   description: "Ofertas, descontos reais e produtos de pronta entrega para compras de beleza no atacado.",
   path: "/promocoes"
 });
@@ -34,7 +35,7 @@ export default async function PromotionsPage() {
           <p className="eyebrow">{promo.eyebrow}</p>
           <h1>{promo.title}</h1>
           <p>{promo.body}</p>
-          <div className="wholesale-signal-row" aria-label="Sinais de promocao">
+          <div className="wholesale-signal-row" aria-label="Sinais de promoção">
             {promo.signals.map((signal) => (
               <span key={signal}>{signal}</span>
             ))}
@@ -143,7 +144,7 @@ export default async function PromotionsPage() {
         <div>
           <div className="section-heading">
             <div>
-              <p className="eyebrow">Giro rapido</p>
+              <p className="eyebrow">Giro rápido</p>
               <h2>{promo.hotShelfTitle}</h2>
             </div>
           </div>
@@ -154,14 +155,14 @@ export default async function PromotionsPage() {
                   <img src={product.image} alt={product.name} />
                   <span>
                     <strong>{product.name}</strong>
-                    <small>{product.badges[0] || product.category.label} / {productQuantity(product)} un.</small>
+                    <small>{customerDisplayText(product.badges[0] || product.category.label)} / {productQuantity(product)} un.</small>
                   </span>
                   <b>{productQuantity(product) > 0 ? "Pronta entrega" : "Consultar"}</b>
                 </Link>
               ))
             ) : (
               <div className="empty-state">
-                <p>Nenhum item de giro rapido cadastrado ainda.</p>
+                <p>Nenhum item de giro rápido cadastrado ainda.</p>
               </div>
             )}
           </div>

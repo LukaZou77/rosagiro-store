@@ -99,9 +99,9 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) {
     throw new OrderError("Informe um e-mail válido.");
   }
-  if (digits(customer.cpf).length !== 11) throw new OrderError("CPF deve ter 11 digitos.");
+  if (digits(customer.cpf).length !== 11) throw new OrderError("CPF deve ter 11 dígitos.");
   if (!normalizedPhone) throw new OrderError("WhatsApp deve ser do Brasil e ter DDD.");
-  if (digits(address.cep).length !== 8) throw new OrderError("CEP deve ter 8 digitos.");
+  if (digits(address.cep).length !== 8) throw new OrderError("CEP deve ter 8 dígitos.");
   if (!address.state || !address.city || !address.district || !address.street || !address.number) {
     throw new OrderError("Preencha todos os dados de endereço.");
   }

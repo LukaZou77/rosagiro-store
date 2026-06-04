@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import type { CatalogProduct } from "@/lib/catalog";
+import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import {
   productDiscountPercent,
@@ -49,7 +50,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         {product.badges.length || !available ? (
           <div className="mini-badge-row">
             {product.badges.slice(0, 2).map((badge) => (
-              <span key={badge}>{badge}</span>
+              <span key={badge}>{customerDisplayText(badge)}</span>
             ))}
             {!available ? <span>{siteConfig.productConversion.unavailableCta}</span> : null}
           </div>

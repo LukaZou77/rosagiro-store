@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { customerDisplayText } from "@/lib/display-text";
 
 export type CatalogProduct = {
   id: string;
@@ -39,10 +40,29 @@ const productInclude = {
   inventory: true
 } as const;
 
+function withProductDisplayText(product: CatalogProduct): CatalogProduct {
+  return {
+    ...product,
+    subcategory: customerDisplayText(product.subcategory),
+    badges: product.badges.map(customerDisplayText),
+    category: {
+      ...product.category,
+      label: customerDisplayText(product.category.label),
+      note: customerDisplayText(product.category.note)
+    }
+  };
+}
+
 export async function getCategories() {
   const order = ["skincare", "makeup", "fragrance", "body", "hair", "tools"];
   const categories = await prisma.category.findMany();
-  return categories.sort((a, b) => order.indexOf(a.slug) - order.indexOf(b.slug));
+  return categories
+    .sort((a, b) => order.indexOf(a.slug) - order.indexOf(b.slug))
+    .map((category) => ({
+      ...category,
+      label: customerDisplayText(category.label),
+      note: customerDisplayText(category.note)
+    }));
 }
 
 export async function getFeaturedBrands() {
@@ -98,7 +118,7 @@ export async function getProducts(options: {
               : { featuredRank: "asc" }
   });
 
-  const catalogProducts = products as CatalogProduct[];
+  const catalogProducts = (products as CatalogProduct[]).map(withProductDisplayText);
   return dealFilter === "real-deal"
     ? catalogProducts.filter((product) => discountPercent(product) > 0)
     : catalogProducts;
@@ -144,7 +164,7 @@ export async function getProduct(slug: string) {
     include: productInclude
   });
 
-  return product as CatalogProduct | null;
+  return product ? withProductDisplayText(product as CatalogProduct) : null;
 }
 
 export async function getRelatedProducts(categorySlug: string, currentSlug: string) {
@@ -159,5 +179,5 @@ export async function getRelatedProducts(categorySlug: string, currentSlug: stri
     orderBy: { featuredRank: "asc" }
   });
 
-  return products as CatalogProduct[];
+  return (products as CatalogProduct[]).map(withProductDisplayText);
 }
