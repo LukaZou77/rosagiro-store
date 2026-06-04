@@ -57,14 +57,25 @@ export async function getProducts(options: {
   brandName?: string;
   query?: string;
   sort?: string;
+  stockFilter?: string;
+  dealFilter?: string;
   activeOnly?: boolean;
 } = {}) {
-  const { categorySlug, brandName, query, sort = "featured", activeOnly = true } = options;
+  const { categorySlug, brandName, query, sort = "featured", stockFilter = "all", dealFilter = "all", activeOnly = true } = options;
   const products = await prisma.product.findMany({
     where: {
       active: activeOnly ? true : undefined,
       category: categorySlug && categorySlug !== "all" ? { slug: categorySlug } : undefined,
       brand: brandName && brandName !== "all" ? { name: brandName } : undefined,
+      inventory:
+        stockFilter === "ready"
+          ? { quantity: { gt: 0 } }
+          : stockFilter === "low"
+            ? { quantity: { gt: 0, lte: 6 } }
+            : stockFilter === "out"
+              ? { quantity: 0 }
+              : undefined,
+      compareAtPriceCents: dealFilter === "real-deal" ? { not: null } : undefined,
       OR: query
         ? [
             { name: { contains: query, mode: "insensitive" } },
@@ -84,12 +95,13 @@ export async function getProducts(options: {
             ? { name: "asc" }
             : sort === "name-desc"
               ? { name: "desc" }
-              : sort === "rating"
-                ? { rating: "desc" }
-                : { featuredRank: "asc" }
+              : { featuredRank: "asc" }
   });
 
-  return products as CatalogProduct[];
+  const catalogProducts = products as CatalogProduct[];
+  return dealFilter === "real-deal"
+    ? catalogProducts.filter((product) => discountPercent(product) > 0)
+    : catalogProducts;
 }
 
 export function discountPercent(product: CatalogProduct) {
