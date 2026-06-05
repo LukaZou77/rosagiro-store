@@ -826,7 +826,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     return (
       <section className="checkout-shell empty-checkout-shell">
         <div className="cart-panel empty-checkout-card">
-          <p className="eyebrow">Checkout Bela Viva</p>
+          <p className="eyebrow">Checkout RosaGiro</p>
           <h1>Monte sua lista antes de finalizar.</h1>
           <p>
             Seu carrinho está vazio. Escolha produtos do catálogo ou fale no WhatsApp para receber sugestões de kits,
@@ -868,7 +868,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
         onBlur={handleCheckoutBlur}
         noValidate
       >
-        <p className="eyebrow">Checkout Bela Viva</p>
+        <p className="eyebrow">Checkout RosaGiro</p>
         <h1>Entrega e pagamento</h1>
         <ol className="checkout-stepper" aria-label={siteConfig.checkout.stepperLabel}>
           {checkoutStepCards.map((step) => (

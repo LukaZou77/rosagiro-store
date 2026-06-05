@@ -52,7 +52,7 @@ export default async function AdminBrandsPage({ searchParams }: PageProps) {
             </label>
             <label>
               Logo curto
-              <input name="logo" placeholder="BV" maxLength={8} />
+              <input name="logo" placeholder="RG" maxLength={8} />
             </label>
             <label>
               Origem

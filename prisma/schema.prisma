@@ -334,8 +334,8 @@ model SiteInfoPage {
 
 model StoreProfile {
   id                String   @id @default("main")
-  storeName         String   @default("Bela Viva")
-  legalName         String   @default("Bela Viva Comércio de Beleza Ltda.")
+  storeName         String   @default("RosaGiro")
+  legalName         String   @default("RosaGiro Comércio de Cosméticos Ltda.")
   cnpj              String   @default("00.000.000/0000-00")
   stateRegistration String   @default("Isento ou a ajustar")
   cep               String   @default("00000-000")
@@ -345,7 +345,7 @@ model StoreProfile {
   street            String   @default("Endereço em preparação")
   number            String   @default("S/N")
   complement        String?
-  email             String   @default("contato@belaviva.local")
+  email             String   @default("contato@rosagiro.local")
   whatsapp          String   @default("+55 11 90000-0000")
   businessHours     String   @default("Segunda a sexta, 9h às 18h")
   instagramUrl      String   @default("")

@@ -15,7 +15,7 @@ import {
 
 export const metadata: Metadata = storefrontMetadata({
   title: "Informações da loja",
-  description: "Dados comerciais, atendimento, entrega, pagamento e políticas da Bela Viva.",
+  description: "Dados comerciais, atendimento, entrega, pagamento e políticas da RosaGiro.",
   path: "/informacoes-da-loja"
 });
 
@@ -30,7 +30,7 @@ export default async function StoreInformationPage() {
       <section className="info-hero store-info-hero">
         <div>
           <p className="eyebrow">Loja / Confiança</p>
-          <h1>Informações da loja Bela Viva</h1>
+          <h1>Informações da loja RosaGiro</h1>
           <p>Dados comerciais, atendimento e orientações operacionais para comprar com mais clareza.</p>
         </div>
         <StoreTrustSignals signals={trustSignals} showLink={false} />

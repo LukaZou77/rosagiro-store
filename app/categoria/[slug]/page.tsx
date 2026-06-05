@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const categorySlug = slug || "all";
   const { currentCategory, label, products } = await categorySeoContext(categorySlug);
   if (categorySlug !== "all" && !currentCategory) {
-    return noIndexMetadata("Categoria", "Categoria Bela Viva indisponível.");
+    return noIndexMetadata("Categoria", "Categoria RosaGiro indisponível.");
   }
   const path = `/categoria/${categorySlug}`;
   return storefrontMetadata({

@@ -112,7 +112,7 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
 function makeOrderNumber() {
   const stamp = Date.now().toString(36).toUpperCase();
   const suffix = randomInt(1000, 9999);
-  return `BV-${stamp}-${suffix}`;
+  return `RG-${stamp}-${suffix}`;
 }
 
 export async function createOrder(input: CheckoutInput) {

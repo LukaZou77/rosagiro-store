@@ -12,9 +12,9 @@ export function AdminShell({
     <main className="admin-shell">
       <aside className="admin-sidebar">
         <Link className="brand" href="/admin">
-          <span className="brand-mark">BV</span>
+          <span className="brand-mark">RG</span>
           <span>
-            <strong>Bela Viva</strong>
+            <strong>RosaGiro</strong>
             <small>admin</small>
           </span>
         </Link>

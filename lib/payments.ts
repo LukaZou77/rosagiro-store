@@ -7,7 +7,7 @@ export const paymentMethods = [
   {
     value: "CREDIT_CARD",
     label: "Cartão de crédito",
-    description: "Pagamento por checkout seguro; a Bela Viva não armazena dados do cartão."
+    description: "Pagamento por checkout seguro; a RosaGiro não armazena dados do cartão."
   },
   {
     value: "SIMULATED",

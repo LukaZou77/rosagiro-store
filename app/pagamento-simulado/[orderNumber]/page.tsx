@@ -13,7 +13,7 @@ type PageProps = {
   params: Promise<{ orderNumber: string }>;
 };
 
-export const metadata: Metadata = noIndexMetadata("Pagamento", "Confirmação de pagamento Bela Viva.");
+export const metadata: Metadata = noIndexMetadata("Pagamento", "Confirmação de pagamento RosaGiro.");
 
 export default async function SimulatedPaymentPage({ params }: PageProps) {
   const { orderNumber } = await params;

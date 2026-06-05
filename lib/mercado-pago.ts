@@ -153,7 +153,7 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
     items: [
       {
         id: order.orderNumber,
-        title: `Pedido Bela Viva ${order.orderNumber}`,
+        title: `Pedido RosaGiro ${order.orderNumber}`,
         quantity: 1,
         currency_id: "BRL",
         unit_price: centsToAmount(order.totalCents)
@@ -185,7 +185,7 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
     auto_return: "approved",
     notification_url: `${config.publicUrl}/api/webhooks/mercado-pago`,
     external_reference: order.orderNumber,
-    statement_descriptor: "BELA VIVA",
+    statement_descriptor: "ROSAGIRO",
     metadata: {
       order_number: order.orderNumber,
       payment_method_requested: order.payment.method

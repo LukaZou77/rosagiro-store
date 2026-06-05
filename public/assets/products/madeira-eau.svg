@@ -9,7 +9,7 @@
     <rect x="420" y="122" width="78" height="72" rx="16" fill="#443428"/>
     <rect x="410" y="388" width="98" height="178" rx="12" fill="#fbfaf7" opacity=".82"/>
     <text x="459" y="460" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="4" fill="#443428">EAU</text>
-    <text x="459" y="512" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#443428">BELA VIVA</text>
+    <text x="459" y="512" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#443428">ROSAGIRO</text>
     <path d="M274 224 C214 250 190 318 212 374 C278 348 304 284 274 224 Z" fill="#789480" opacity=".55"/>
     <path d="M636 268 C696 292 728 354 714 416 C646 402 604 334 636 268 Z" fill="#b97974" opacity=".42"/>
   </svg>

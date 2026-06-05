@@ -10,7 +10,7 @@ export async function GET() {
   return new Response(createProductTemplateXlsx(), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": 'attachment; filename="bela-viva-produtos-template.xlsx"'
+      "Content-Disposition": 'attachment; filename="rosagiro-produtos-template.xlsx"'
     }
   });
 }

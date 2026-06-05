@@ -22,7 +22,7 @@ export default async function AdminPage() {
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
         <p className="eyebrow">Resumo</p>
-        <h1>Operação Bela Viva</h1>
+        <h1>Operação RosaGiro</h1>
       </div>
       <div className="metric-grid">
         <Link href="/admin/produtos">

@@ -36,10 +36,10 @@ export async function StoreShell({
       </div>
       <header className="topbar">
         <Link className="brand" href="/">
-          <span className="brand-mark">BV</span>
+          <span className="brand-mark">RG</span>
           <span>
-            <strong>Bela Viva</strong>
-            <small>beleza multimarcas</small>
+            <strong>RosaGiro</strong>
+            <small>{siteConfig.tagline}</small>
           </span>
         </Link>
         <nav className="desktop-nav" aria-label="Categorias">
@@ -61,7 +61,7 @@ export async function StoreShell({
       <footer className="site-footer">
         <div>
           <Link className="brand" href="/">
-            <span className="brand-mark">BV</span>
+            <span className="brand-mark">RG</span>
             <span>
               <strong>{siteConfig.name}</strong>
               <small>{siteConfig.tagline}</small>

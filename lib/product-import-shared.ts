@@ -116,7 +116,7 @@ const headerAliases: Record<string, ProductImportField> = {
 export const productImportTemplateRecord: ProductImportCsvRecord = {
   slug: "serum-vitamina-c-exemplo",
   name: "Serum Vitamina C Exemplo",
-  brand: "Bela Viva",
+  brand: "RosaGiro",
   category: "skincare",
   subcategory: "Serum",
   price: "89,90",

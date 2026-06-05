@@ -17,9 +17,9 @@ export async function GET() {
   ].filter(Boolean);
 
   const body = [
-    "# Bela Viva",
+    "# RosaGiro",
     "",
-    `${store.name} é um ecommerce multimarcas de beleza para compras no atacado no Brasil.`,
+    `${store.name} é um atacado de cosméticos em São Paulo para compras de revenda no Brasil.`,
     store.description,
     "",
     "## Principais páginas",
@@ -41,7 +41,7 @@ export async function GET() {
     ...(contactLines.length ? contactLines : ["- Atendimento comercial disponível pelos canais publicados no site."]),
     "",
     "## Observações para agentes e buscadores",
-    "- O catálogo é focado em beleza multimarcas, revenda, reposição, pronta entrega e compra mínima no atacado.",
+    "- O catálogo é focado em cosméticos no atacado em São Paulo, revenda, reposição, pronta entrega e compra mínima no atacado.",
     "- Páginas administrativas, APIs, carrinho, checkout, pagamento e pedidos não devem ser usadas como fonte pública de indexação.",
     "- Consulte sitemap.xml e robots.txt para regras de rastreamento atualizadas."
   ].join("\n");

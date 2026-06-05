@@ -33,7 +33,7 @@ type BuildSnapshotInput = {
   env?: NodeJS.ProcessEnv;
 };
 
-const localEmailPattern = /(?:\.local$|@example\.|@test\.|contato@belaviva\.local$)/i;
+const localEmailPattern = /(?:\.local$|@example\.|@test\.|contato@(?:rosagiro|belaviva)\.local$)/i;
 const placeholderPhonePattern = /90000|0000-0000|00000000/;
 const placeholderAddressPattern = /preparacao|preparação|a ajustar|s\/n|endereco|endereço/i;
 

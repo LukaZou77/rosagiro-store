@@ -21,7 +21,7 @@ type PageProps = {
   searchParams?: Promise<{ mp?: string }>;
 };
 
-export const metadata: Metadata = noIndexMetadata("Pedido", "Acompanhamento de pedido Bela Viva.");
+export const metadata: Metadata = noIndexMetadata("Pedido", "Acompanhamento de pedido RosaGiro.");
 
 export default async function OrderPage({ params, searchParams }: PageProps) {
   const { orderNumber } = await params;
@@ -40,7 +40,7 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
   return (
     <StoreShell categories={categories}>
       <section className="confirmation order-confirmation">
-        <p className="eyebrow">Pedido Bela Viva</p>
+        <p className="eyebrow">Pedido RosaGiro</p>
         <h1>{order.status === "PAID" ? "Compra confirmada." : "Pedido criado."}</h1>
         <p>{order.customerName}, acompanhe aqui o status do pedido e confira os dados antes da entrega.</p>
         {mercadoPagoMessage ? <p className="payment-return-note">{mercadoPagoMessage}</p> : null}

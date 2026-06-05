@@ -1,4 +1,4 @@
-# Bela Viva Store
+# RosaGiro Store
 
 Next.js + Prisma + PostgreSQL ecommerce workspace for a Brazilian Portuguese multibrand beauty store.
 

@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: `${siteConfig.name} | Beleza multimarcas`,
+    default: `${siteConfig.name} | ${siteConfig.tagline}`,
     template: `%s | ${siteConfig.name}`
   },
   description: siteConfig.description,
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pt_BR",
     siteName: siteConfig.name,
-    title: `${siteConfig.name} | Beleza multimarcas`,
+    title: `${siteConfig.name} | ${siteConfig.tagline}`,
     description: siteConfig.description,
     url: siteUrl()
   },

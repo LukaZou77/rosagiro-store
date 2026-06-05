@@ -70,11 +70,11 @@ const brands = [
     categorySlugs: ["hair", "tools"]
   },
   {
-    slug: "bela-viva",
-    name: "Bela Viva",
-    logo: "BV",
-    origin: "Brasil",
-    descriptionPt: "Curadoria própria para organizar rotinas de beleza.",
+    slug: "rosagiro",
+    name: "RosaGiro",
+    logo: "RG",
+    origin: "São Paulo, Brasil",
+    descriptionPt: "Curadoria própria para organizar compras de cosméticos no atacado.",
     featured: false,
     categorySlugs: ["tools"]
   }
@@ -82,8 +82,8 @@ const brands = [
 
 const storeProfile = {
   id: "main",
-  storeName: "Bela Viva",
-  legalName: "Bela Viva Comércio de Beleza Ltda.",
+  storeName: "RosaGiro",
+  legalName: "RosaGiro Comércio de Cosméticos Ltda.",
   cnpj: "00.000.000/0000-00",
   stateRegistration: "Isento ou a ajustar",
   cep: "00000-000",
@@ -93,7 +93,7 @@ const storeProfile = {
   street: "Endereço em preparação",
   number: "S/N",
   complement: "Dados comerciais serão revisados antes da publicação.",
-  email: "contato@belaviva.local",
+  email: "contato@rosagiro.local",
   whatsapp: "+55 11 90000-0000",
   businessHours: "Segunda a sexta, 9h às 18h",
   instagramUrl: "",
@@ -445,7 +445,7 @@ const products = [
   },
   {
     slug: "necessaire-viagem",
-    brand: "Bela Viva",
+    brand: "RosaGiro",
     name: "Necessaire Curadoria",
     category: "tools",
     subcategory: "Organizacao",
@@ -461,14 +461,14 @@ const products = [
     rating: 4.6,
     reviewCount: 36,
     stockStatus: "Em estoque",
-    badges: ["Bela Viva"]
+    badges: ["RosaGiro"]
   }
 ];
 
 const siteInfoPageKeys = ["privacy", "terms", "returns", "shipping", "contact"] as const;
 
 const legacyStoreProfileCopy = {
-  legalName: "Bela Viva Comercio de Beleza Ltda.",
+  legalName: "RosaGiro Comercio de Cosmeticos Ltda.",
   city: "Sao Paulo",
   street: "Endereco em preparacao",
   complement: "Dados comerciais serao revisados antes da publicacao.",
@@ -488,11 +488,11 @@ const legacyInfoPageDefaults = {
     sections: [
       {
         title: "E-mail",
-        body: "Use contato@belaviva.local como placeholder. Troque pelo e-mail real antes de publicar a loja."
+        body: "Use contato@rosagiro.local como placeholder. Troque pelo e-mail real antes de publicar a loja."
       },
       {
         title: "WhatsApp",
-        body: "Reserve este espaco para o numero comercial da Bela Viva e horarios de atendimento."
+        body: "Reserve este espaco para o numero comercial da RosaGiro e horarios de atendimento."
       },
       {
         title: "Status da loja",
@@ -503,7 +503,7 @@ const legacyInfoPageDefaults = {
   privacy: {
     eyebrow: "Politica",
     title: "Politica de privacidade",
-    description: "Resumo editavel sobre como a Bela Viva pretende tratar dados de contato, entrega e pedidos.",
+    description: "Resumo editavel sobre como a RosaGiro pretende tratar dados de contato, entrega e pedidos.",
     sections: [
       {
         title: "Dados coletados",
@@ -539,11 +539,11 @@ const legacyInfoPageDefaults = {
     ]
   },
   terms: {
-    description: "Condicoes iniciais para navegacao, pedidos de teste e uso da loja Bela Viva.",
+    description: "Condicoes iniciais para navegacao, pedidos de teste e uso da loja RosaGiro.",
     sections: [
       {
         title: "Loja em preparacao",
-        body: "A Bela Viva ainda esta em fase de construcao. Pedidos e pagamentos desta versao sao simulados e nao geram cobranca real."
+        body: "A RosaGiro ainda esta em fase de construcao. Pedidos e pagamentos desta versao sao simulados e nao geram cobranca real."
       },
       {
         title: "Catalogo e precos",
@@ -823,20 +823,24 @@ async function main() {
     });
   }
 
-  const email = process.env.ADMIN_EMAIL || "admin@belaviva.local";
+  const configuredAdminEmail = process.env.ADMIN_EMAIL?.trim();
+  const email =
+    configuredAdminEmail && !/^admin@belaviva\.local$/i.test(configuredAdminEmail)
+      ? configuredAdminEmail
+      : "admin@rosagiro.local";
   const password = process.env.ADMIN_PASSWORD;
   if (!password) throw new Error("ADMIN_PASSWORD is required for seeding.");
 
   await prisma.adminUser.upsert({
     where: { email },
     update: {
-      name: "Bela Viva Admin",
+      name: "RosaGiro Admin",
       passwordHash: hashPassword(password),
       active: true
     },
     create: {
       email,
-      name: "Bela Viva Admin",
+      name: "RosaGiro Admin",
       passwordHash: hashPassword(password),
       active: true
     }
@@ -883,7 +887,7 @@ async function main() {
 main()
   .then(async () => {
     await prisma.$disconnect();
-    console.log("Bela Viva seed complete.");
+    console.log("RosaGiro seed complete.");
   })
   .catch(async (error) => {
     console.error(error);

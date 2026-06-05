@@ -8,7 +8,7 @@ export async function GET() {
   return new Response(productImportTemplateCsv(), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="bela-viva-produtos-template.csv"'
+      "Content-Disposition": 'attachment; filename="rosagiro-produtos-template.csv"'
     }
   });
 }

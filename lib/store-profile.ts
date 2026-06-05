@@ -34,8 +34,8 @@ export type StoreProfileView = {
 
 export const defaultStoreProfile = {
   id: STORE_PROFILE_ID,
-  storeName: "Bela Viva",
-  legalName: "Bela Viva Comércio de Beleza Ltda.",
+  storeName: "RosaGiro",
+  legalName: "RosaGiro Comércio de Cosméticos Ltda.",
   cnpj: "00.000.000/0000-00",
   stateRegistration: "Isento ou a ajustar",
   cep: "00000-000",
@@ -45,7 +45,7 @@ export const defaultStoreProfile = {
   street: "Endereço a confirmar",
   number: "S/N",
   complement: "Dados comerciais serão revisados antes da publicação.",
-  email: "contato@belaviva.local",
+  email: "contato@rosagiro.local",
   whatsapp: "+55 11 90000-0000",
   businessHours: "Segunda a sexta, 9h às 18h",
   instagramUrl: "",

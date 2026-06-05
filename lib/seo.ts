@@ -26,7 +26,7 @@ function absoluteImageUrl(path: string | null | undefined) {
 }
 
 function publicEmail(value: string) {
-  return /(?:\.local$|@example\.|@test\.|contato@belaviva\.local$)/i.test(value) ? undefined : value;
+  return /(?:\.local$|@example\.|@test\.|contato@(?:rosagiro|belaviva)\.local$)/i.test(value) ? undefined : value;
 }
 
 function publicPhone(value: string) {
@@ -187,7 +187,7 @@ export function productMetaDescription(product: CatalogProduct) {
 
 export function categoryMetaDescription(label: string, count: number) {
   return compactText(
-    `${label} no catálogo Bela Viva: ${count} produto(s) de beleza multimarcas para revenda, pronta entrega, pedido mínimo R$ 300,00, frete por CEP e WhatsApp.`
+    `${label} no catálogo RosaGiro: ${count} produto(s) de cosméticos no atacado em São Paulo para revenda, pronta entrega, pedido mínimo R$ 300,00, frete por CEP e WhatsApp.`
   );
 }
 

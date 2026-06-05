@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product || !product.active) {
-    return noIndexMetadata("Produto", "Produto Bela Viva indisponível.");
+    return noIndexMetadata("Produto", "Produto RosaGiro indisponível.");
   }
 
   return storefrontMetadata({

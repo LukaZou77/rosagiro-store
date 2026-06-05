@@ -192,8 +192,8 @@ export function createProductTemplateXlsx() {
       name: "docProps/core.xml",
       content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <dc:title>Bela Viva product import template</dc:title>
-  <dc:creator>Bela Viva</dc:creator>
+  <dc:title>RosaGiro product import template</dc:title>
+  <dc:creator>RosaGiro</dc:creator>
   <dcterms:created xsi:type="dcterms:W3CDTF">2026-05-31T00:00:00Z</dcterms:created>
 </cp:coreProperties>`
     },
@@ -201,7 +201,7 @@ export function createProductTemplateXlsx() {
       name: "docProps/app.xml",
       content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
-  <Application>Bela Viva</Application>
+  <Application>RosaGiro</Application>
 </Properties>`
     },
     {

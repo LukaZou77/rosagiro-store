@@ -1,8 +1,8 @@
-# Bela Viva Independent Store Handoff
+# RosaGiro Independent Store Handoff
 
 ## Project Direction
 
-- Site name: Bela Viva.
+- Site name: RosaGiro.
 - Market: Brazil.
 - Language: Brazilian Portuguese.
 - Category: multibrand beauty and cosmetics independent store.

@@ -1,11 +1,11 @@
 const whatsappPhone = "5511900000000";
 
 export const siteConfig = {
-  name: "Bela Viva",
-  tagline: "beleza multimarcas",
-  description: "Bela Viva, ecommerce multimarcas de beleza para o Brasil.",
+  name: "RosaGiro",
+  tagline: "Atacado de cosméticos em São Paulo",
+  description: "RosaGiro, atacado de cosméticos em São Paulo para revenda no Brasil.",
   defaultUrl: "http://localhost:3000",
-  supportEmail: "contato@belaviva.local",
+  supportEmail: "contato@rosagiro.local",
   whatsapp: {
     phone: whatsappPhone,
     displayNumber: "+55 11 90000-0000",
@@ -16,11 +16,11 @@ export const siteConfig = {
     productSecondaryCta: "Tirar dúvida",
     cartCta: "Enviar lista pelo WhatsApp",
     messages: {
-      generalGreeting: "Olá, Bela Viva! Quero atendimento para comprar no atacado.",
+      generalGreeting: "Olá, RosaGiro! Quero atendimento para comprar no atacado.",
       generalQuestion: "Sou revendedora/lojista ou quero comprar para reposição. Pode me orientar sobre produtos, estoque, cidade/UF e melhor forma de entrega?",
-      productGreeting: "Olá, Bela Viva! Quero consultar este produto.",
+      productGreeting: "Olá, RosaGiro! Quero consultar este produto.",
       productQuestion: "Pode confirmar estoque, condição para atacado e indicar se compensa retirar, enviar por transportadora ou excursão para minha cidade?",
-      cartGreeting: "Olá, Bela Viva! Quero confirmar esta lista de compra.",
+      cartGreeting: "Olá, RosaGiro! Quero confirmar esta lista de compra.",
       cartQuestion: "Pode revisar estoque, sugerir itens para completar o pedido mínimo e me orientar sobre entrega/retirada para minha cidade?"
     }
   },
@@ -39,7 +39,7 @@ export const siteConfig = {
     shelfSignals: ["Pedido mínimo R$ 300", "Ofertas e pronta entrega", "Compra para revenda", "WhatsApp rápido"]
   },
   hero: {
-    eyebrow: "Atacadão de beleza multimarcas",
+    eyebrow: "Atacado de cosméticos em São Paulo",
     title: "Ofertas para revenda, kits e reposição com compra rápida.",
     body: "Skincare, maquiagem, perfumes, cabelo e acessórios com sinal de estoque, pedido mínimo, frete por CEP e atendimento no WhatsApp.",
     primaryCta: "Comprar pelo catálogo",
@@ -250,7 +250,7 @@ export const infoPages = {
     href: "/politica-de-privacidade",
     eyebrow: "Política",
     title: "Política de privacidade",
-    description: "Resumo editável sobre como a Bela Viva trata dados de contato, entrega e pedidos.",
+    description: "Resumo editável sobre como a RosaGiro trata dados de contato, entrega e pedidos.",
     sections: [
       {
         title: "Dados coletados",
@@ -271,11 +271,11 @@ export const infoPages = {
     href: "/termos-de-uso",
     eyebrow: "Termos",
     title: "Termos de uso",
-    description: "Condições iniciais para navegação, pedidos e uso da loja Bela Viva.",
+    description: "Condições iniciais para navegação, pedidos e uso da loja RosaGiro.",
     sections: [
       {
         title: "Uso da loja",
-        body: "A Bela Viva organiza produtos multimarcas de beleza para compras no atacado, reposição e revenda, com atendimento de apoio pelo WhatsApp."
+        body: "A RosaGiro organiza produtos multimarcas de beleza para compras no atacado, reposição e revenda, com atendimento de apoio pelo WhatsApp."
       },
       {
         title: "Catálogo e preços",

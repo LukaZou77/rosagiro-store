@@ -15,11 +15,11 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
   return (
     <main className="login-screen">
       <form action={loginAction} className="checkout-form login-card">
-        <p className="eyebrow">Bela Viva Admin</p>
+        <p className="eyebrow">RosaGiro Admin</p>
         <h1>Entrar</h1>
         <label>
           E-mail
-          <input name="email" type="email" defaultValue="admin@belaviva.local" required />
+          <input name="email" type="email" defaultValue="admin@rosagiro.local" required />
         </label>
         <label>
           Senha
