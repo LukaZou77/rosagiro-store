@@ -26,7 +26,7 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
           <input name="password" type="password" required />
         </label>
         <div className="form-error" role="alert">
-          {hasError ? "E-mail ou senha invalidos." : ""}
+          {hasError ? "E-mail ou senha inválidos." : ""}
         </div>
         <button className="button primary wide" type="submit">
           Acessar admin

@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getLaunchReadinessSnapshot, launchReadinessSignalLabels } from "@/lib/launch-readiness";
+import { prelaunchGoNoGoGates, prelaunchSteps } from "@/lib/prelaunch-checklist";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -110,6 +111,52 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
         Esta central não lê nem mostra valores de `.env.local`. Use os status para controlar a preparação; mantenha
         senhas, tokens e chaves fora do código.
       </div>
+
+      <section className="import-panel prelaunch-sequence-panel">
+        <div className="readiness-group-heading">
+          <div>
+            <span>Roteiro de go-live</span>
+            <h2>Ordem prática para sair do local e vender de verdade</h2>
+          </div>
+          <strong>11 passos</strong>
+        </div>
+        <p className="table-note">
+          Siga esta ordem para não misturar dado real, pagamento, storage e deploy antes de a loja estar pronta para
+          receber pedidos reais.
+        </p>
+        <div className="prelaunch-step-list">
+          {prelaunchSteps.map((step) => (
+            <article className="prelaunch-step" key={step.index}>
+              <span className="prelaunch-step-index">{step.index}</span>
+              <div>
+                <h3>{step.title}</h3>
+                <p>{step.summary}</p>
+              </div>
+              <Link className="button secondary" href={step.actionHref}>
+                {step.actionLabel}
+              </Link>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="import-panel prelaunch-gate-panel">
+        <div className="readiness-group-heading">
+          <div>
+            <span>Go / No-Go</span>
+            <h2>Portões mínimos antes de abrir venda real</h2>
+          </div>
+          <strong>{prelaunchGoNoGoGates.length}</strong>
+        </div>
+        <div className="prelaunch-gate-grid">
+          {prelaunchGoNoGoGates.map((gate) => (
+            <article className="prelaunch-gate" key={gate.label}>
+              <strong>{gate.label}</strong>
+              <p>{gate.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section className="import-panel readiness-auto-checks">
         <div className="readiness-group-heading">

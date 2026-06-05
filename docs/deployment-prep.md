@@ -49,6 +49,12 @@ npm run db:migrate
 npm run db:seed
 ```
 
+## Prelaunch sequence
+
+- Use `/admin/prontidao` as the operating control center before real sales.
+- Complete store identity, public policies, real catalog data, persistent image storage, freight rules, Mercado Pago sandbox, production deployment, SEO checks, full black-box purchase QA, and a controlled soft launch in that order.
+- Keep the detailed operator checklist in `docs/prelaunch-checklist.md`.
+
 ## Operational notes
 
 - Keep `.env.local` local and never commit it.

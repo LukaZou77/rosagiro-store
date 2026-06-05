@@ -5295,6 +5295,66 @@ a.readiness-signal:focus-visible {
   font-weight: 800;
 }
 
+.prelaunch-sequence-panel,
+.prelaunch-gate-panel {
+  margin-bottom: 16px;
+}
+
+.prelaunch-step-list {
+  display: grid;
+  gap: 10px;
+}
+
+.prelaunch-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.prelaunch-step-index {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--rose-deep);
+  color: white;
+  font-weight: 950;
+}
+
+.prelaunch-step h3,
+.prelaunch-gate strong {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+
+.prelaunch-step p,
+.prelaunch-gate p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.prelaunch-gate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.prelaunch-gate {
+  padding: 12px;
+  border: 1px solid rgba(var(--sage-rgb), 0.2);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(var(--mist-rgb), 0.76), rgba(255, 255, 255, 0.9));
+}
+
 .readiness-groups,
 .readiness-list {
   display: grid;
@@ -5396,6 +5456,16 @@ a.readiness-signal:focus-visible {
 }
 
 @media (max-width: 520px) {
+  .prelaunch-step {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .prelaunch-step .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
   .checkout-step-actions {
     display: grid;
   }
