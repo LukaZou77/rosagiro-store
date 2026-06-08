@@ -54,6 +54,11 @@ function removeLine(slug: string) {
   writeCart(readCart().filter((item) => item.slug !== slug));
 }
 
+function lineSummaryLabel(line: Pick<SummaryLine, "available" | "warning" | "priceCents">) {
+  if (!line.available) return line.warning || "Indisponível";
+  return `${money(line.priceCents)} / Em estoque`;
+}
+
 export function QuickPurchaseDrawer() {
   const pathname = usePathname();
   const cart = useCart();
@@ -202,9 +207,7 @@ export function QuickPurchaseDrawer() {
                       <div className="quick-line-info">
                         <span>{line.brandName || "Produto"}</span>
                         <strong>{line.name}</strong>
-                        <small>
-                          {line.available ? `${money(line.priceCents)} / ${line.stockQuantity} un. em estoque` : line.warning || "Indisponível"}
-                        </small>
+                        <small>{lineSummaryLabel(line)}</small>
                         {line.warning ? <em>{line.warning}</em> : null}
                       </div>
                       <div className="quick-line-actions">

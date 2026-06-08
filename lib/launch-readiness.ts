@@ -75,6 +75,8 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
   const catalogHasActionRequired = input.productQuality.actionRequiredCount > 0 || input.productQuality.activeCount === 0;
   const catalogHasReview = input.productQuality.reviewCount > 0 || !hasCatalogDepth;
   const paymentDiagnostics = buildPaymentConfigDiagnostics(env);
+  const hasPixAccount = Boolean(profile?.pixPaymentEnabled && profile.pixKey.trim());
+  const hasBusinessPixAccount = Boolean(hasPixAccount && profile?.pixAccountType === "BUSINESS");
   const hasDeployEnvironment =
     hasPublicUrl(env.NEXT_PUBLIC_SITE_URL) && Boolean(env.SESSION_SECRET?.trim()) && Boolean(env.DATABASE_URL?.trim());
   const hasGoogleMaps = Boolean(env.GOOGLE_MAPS_API_KEY?.trim());
@@ -142,6 +144,19 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
           ? "Sandbox, token, webhook secret e URL pública parecem configurados."
           : paymentDiagnostics.fallbackMessage,
       actionHref: "/admin/pagamentos"
+    }),
+    signal({
+      key: "payment-pix-account",
+      group: "Pagamento",
+      label: "Conta Pix de recebimento",
+      status: hasBusinessPixAccount ? "READY" : hasPixAccount ? "WARNING" : "ACTION_REQUIRED",
+      severity: hasBusinessPixAccount ? "medium" : "high",
+      message: hasBusinessPixAccount
+        ? "Pix empresarial/PJ configurado nos dados da loja."
+        : hasPixAccount
+          ? "Pix pessoal temporário configurado; use para soft launch e troque para conta PJ antes de escalar vendas."
+          : "Nenhuma conta Pix ativa cadastrada; configure em Loja / Confiança para receber manualmente.",
+      actionHref: "/admin/loja"
     }),
     signal({
       key: "shipping-rates",

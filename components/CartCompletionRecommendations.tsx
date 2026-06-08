@@ -72,9 +72,7 @@ export function CartCompletionRecommendations({
                 <Link href={`/produto/${recommendation.slug}`}>
                   <strong>{recommendation.name}</strong>
                 </Link>
-                <small>
-                  {recommendation.brandName} / {recommendation.stockQuantity} un. pronta entrega
-                </small>
+                <small>{recommendation.brandName} / Em estoque</small>
                 <div className="completion-price">
                   <b>{money(recommendation.priceCents)}</b>
                   {hasDiscount ? <em>De {money(recommendation.compareAtPriceCents || 0)}</em> : null}

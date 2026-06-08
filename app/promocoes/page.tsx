@@ -26,7 +26,7 @@ export default async function PromotionsPage() {
   const strongestDiscount = dealProducts.reduce((max, product) => Math.max(max, discountPercent(product)), 0);
   const readyStock = products.filter((product) => (product.inventory?.quantity || 0) > 0).length;
   const heroDiscount = heroProduct ? discountPercent(heroProduct) : 0;
-  const heroStock = heroProduct ? productQuantity(heroProduct) : 0;
+  const heroAvailable = heroProduct ? productQuantity(heroProduct) > 0 : false;
 
   return (
     <StoreShell categories={categories}>
@@ -59,7 +59,7 @@ export default async function PromotionsPage() {
               <strong>{heroProduct.name}</strong>
               <p>{heroProduct.subcategory}</p>
               <small className="promo-feature-stock">
-                {heroStock > 0 ? `${heroStock} un. pronta entrega` : "Disponibilidade sob consulta"}
+                {heroAvailable ? "Em estoque" : "Disponibilidade sob consulta"}
               </small>
               <div className="price-line compact">
                 <strong>{money(heroProduct.priceCents)}</strong>
@@ -155,9 +155,9 @@ export default async function PromotionsPage() {
                   <img src={product.image} alt={product.name} />
                   <span>
                     <strong>{product.name}</strong>
-                    <small>{customerDisplayText(product.badges[0] || product.category.label)} / {productQuantity(product)} un.</small>
+                    <small>{customerDisplayText(product.badges[0] || product.category.label)} / {productStockLabel(product)}</small>
                   </span>
-                  <b>{productQuantity(product) > 0 ? "Pronta entrega" : "Consultar"}</b>
+                  <b>{productQuantity(product) > 0 ? "Em estoque" : "Consultar"}</b>
                 </Link>
               ))
             ) : (

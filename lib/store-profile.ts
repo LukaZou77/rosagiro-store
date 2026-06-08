@@ -27,10 +27,46 @@ export type StoreProfileView = {
   pickupNote: string;
   shippingNote: string;
   paymentNote: string;
+  pixPaymentEnabled: boolean;
+  pixAccountType: string;
+  pixRecipientName: string;
+  pixRecipientDocument: string;
+  pixKeyType: string;
+  pixKey: string;
+  pixBankName: string;
+  pixInstructions: string;
   exchangeNote: string;
   trustBadges: string[];
   launchNote: string;
 };
+
+export const pixAccountTypeOptions = [
+  { value: "TEMPORARY_PERSONAL", label: "Pix pessoal temporário" },
+  { value: "BUSINESS", label: "Pix empresarial / PJ" }
+] as const;
+
+export const pixKeyTypeOptions = [
+  { value: "CPF", label: "CPF" },
+  { value: "CNPJ", label: "CNPJ" },
+  { value: "EMAIL", label: "E-mail" },
+  { value: "PHONE", label: "Telefone" },
+  { value: "RANDOM", label: "Chave aleatória" }
+] as const;
+
+export type PublicPixPaymentAccount = {
+  accountType: string;
+  accountTypeLabel: string;
+  recipientName: string;
+  recipientDocument: string;
+  keyType: string;
+  keyTypeLabel: string;
+  key: string;
+  bankName: string;
+  instructions: string;
+  temporary: boolean;
+};
+
+type PixPaymentPayload = Partial<PublicPixPaymentAccount> | null | undefined;
 
 export const defaultStoreProfile = {
   id: STORE_PROFILE_ID,
@@ -54,6 +90,14 @@ export const defaultStoreProfile = {
   pickupNote: "Retirada local mediante confirmação pelo atendimento.",
   shippingNote: "Anjun D2D Pickup, transportadora e excursão serão confirmadas antes do envio.",
   paymentNote: "Pix, cartão e checkout com atendimento estão disponíveis conforme a modalidade escolhida.",
+  pixPaymentEnabled: false,
+  pixAccountType: "TEMPORARY_PERSONAL",
+  pixRecipientName: "",
+  pixRecipientDocument: "",
+  pixKeyType: "RANDOM",
+  pixKey: "",
+  pixBankName: "",
+  pixInstructions: "Finalize o pedido, faça o Pix e envie o comprovante pelo WhatsApp para confirmação do atendimento.",
   exchangeNote: "Trocas e devoluções seguem política própria antes da publicação oficial.",
   trustBadges: ["Atendimento por WhatsApp", "Pedido mínimo sinalizado", "Políticas visíveis"],
   launchNote: "Confira os dados da loja, canais de atendimento e políticas antes de finalizar sua compra."
@@ -139,5 +183,53 @@ export function publicStoreProfileNotes(profile: StoreProfileView) {
     paymentNote,
     launchNote,
     stateRegistration
+  };
+}
+
+function optionLabel(options: readonly { value: string; label: string }[], value: string) {
+  return options.find((option) => option.value === value)?.label || value;
+}
+
+export function getPublicPixPaymentAccount(profile: StoreProfileView): PublicPixPaymentAccount | null {
+  const key = profile.pixKey.trim();
+  if (!profile.pixPaymentEnabled || !key) return null;
+
+  const accountType = profile.pixAccountType || "TEMPORARY_PERSONAL";
+  const keyType = profile.pixKeyType || "RANDOM";
+
+  return {
+    accountType,
+    accountTypeLabel: optionLabel(pixAccountTypeOptions, accountType),
+    recipientName: profile.pixRecipientName.trim() || profile.storeName,
+    recipientDocument: profile.pixRecipientDocument.trim(),
+    keyType,
+    keyTypeLabel: optionLabel(pixKeyTypeOptions, keyType),
+    key,
+    bankName: profile.pixBankName.trim(),
+    instructions: profile.pixInstructions.trim() || defaultStoreProfile.pixInstructions,
+    temporary: accountType === "TEMPORARY_PERSONAL"
+  };
+}
+
+export function pixPaymentAccountFromPayload(payload: unknown): PublicPixPaymentAccount | null {
+  if (!payload || typeof payload !== "object") return null;
+  const data = payload as PixPaymentPayload;
+  const key = String(data?.key || "").trim();
+  if (!key) return null;
+
+  const accountType = String(data?.accountType || "TEMPORARY_PERSONAL");
+  const keyType = String(data?.keyType || "RANDOM");
+
+  return {
+    accountType,
+    accountTypeLabel: String(data?.accountTypeLabel || optionLabel(pixAccountTypeOptions, accountType)),
+    recipientName: String(data?.recipientName || "").trim(),
+    recipientDocument: String(data?.recipientDocument || "").trim(),
+    keyType,
+    keyTypeLabel: String(data?.keyTypeLabel || optionLabel(pixKeyTypeOptions, keyType)),
+    key,
+    bankName: String(data?.bankName || "").trim(),
+    instructions: String(data?.instructions || defaultStoreProfile.pixInstructions).trim(),
+    temporary: Boolean(data?.temporary ?? accountType === "TEMPORARY_PERSONAL")
   };
 }

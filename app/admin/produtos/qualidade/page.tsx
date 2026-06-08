@@ -186,7 +186,7 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
                 <span className={`status-chip ${statusClass(item.status)}`}>{item.statusLabel}</span>
                 <span className="status-chip">{item.galleryCount} foto(s)</span>
                 <span className={item.stock > 0 ? "status-chip success" : "status-chip warning"}>
-                  {item.stock > 0 ? `${item.stock} un.` : "Sem estoque"}
+                  {item.stock > 0 ? "Em estoque" : "Sem estoque"}
                 </span>
                 {item.hasRealDiscount ? <span className="status-chip success">Desconto real</span> : null}
               </div>

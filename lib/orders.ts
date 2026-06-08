@@ -7,6 +7,7 @@ import { validateCheckoutAddress } from "@/lib/google-address";
 import { discountCents, subtotalCents, totalCents } from "@/lib/money";
 import { isPaymentMethod, type PaymentMethodValue } from "@/lib/payments";
 import { resolveOrderShipping } from "@/lib/shipping";
+import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
 import type { Prisma } from "@/src/generated/prisma/client";
 
 export type CartInput = {
@@ -157,6 +158,7 @@ export async function createOrder(input: CheckoutInput) {
   const total = totalCents(subtotal, discount, shippingQuote.shippingCents);
   const addressMatch = await validateCheckoutAddress(input.address);
   const customer = await upsertCustomerFromContact(input.customer.name, input.customer.phone);
+  const pixAccount = input.paymentMethod === "PIX" ? getPublicPixPaymentAccount(await getStoreProfile()) : null;
 
   const order = await prisma.order.create({
     data: {
@@ -213,7 +215,10 @@ export async function createOrder(input: CheckoutInput) {
       payment: {
         create: {
           method: input.paymentMethod,
-          amountCents: total
+          amountCents: total,
+          providerStatus: pixAccount ? "manual_pix_pending" : null,
+          providerStatusDetail: pixAccount ? "Aguardando comprovante Pix pelo atendimento." : null,
+          providerPayload: pixAccount ? (pixAccount satisfies Prisma.InputJsonValue) : undefined
         }
       }
     },

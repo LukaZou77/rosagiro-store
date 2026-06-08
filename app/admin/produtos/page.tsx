@@ -177,7 +177,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                     {product.active ? "Ativo" : "Inativo"}
                   </span>
                   <span className={quantity > 0 ? "status-chip success" : "status-chip warning"}>
-                    {quantity > 0 ? `${quantity} un.` : "Esgotado"}
+                    {quantity > 0 ? "Em estoque" : "Esgotado"}
                   </span>
                   {quality ? (
                     <span className={`status-chip quality-${quality.status.toLowerCase().replace("_", "-")}`}>

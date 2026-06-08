@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { updateOrderStatusAction } from "@/app/admin/actions";
+import { confirmManualPixPaymentAction, updateOrderStatusAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -24,11 +24,19 @@ const addressMatchLabels: Record<string, string> = {
 
 type PageProps = {
   params: Promise<{ orderNumber: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function AdminOrderDetailPage({ params }: PageProps) {
+function single(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function AdminOrderDetailPage({ params, searchParams }: PageProps) {
   const admin = await requireAdmin();
   const { orderNumber } = await params;
+  const query = searchParams ? await searchParams : {};
+  const saved = single(query.saved);
+  const error = single(query.error);
   const order = await prisma.order.findUnique({
     where: { orderNumber },
     include: { items: true, payment: true }
@@ -41,6 +49,16 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
         <p className="eyebrow">Pedido</p>
         <h1>{order.orderNumber}</h1>
       </div>
+      {saved ? (
+        <div className="admin-notice success" role="status">
+          Pedido atualizado com sucesso.
+        </div>
+      ) : null}
+      {error ? (
+        <div className="admin-notice error" role="alert">
+          {error}
+        </div>
+      ) : null}
       <section className="admin-detail-grid">
         <div className="cart-panel">
           <h2>Cliente</h2>
@@ -133,6 +151,17 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
               {order.payment.lastWebhookAt ? <small>Webhook: {order.payment.lastWebhookAt.toLocaleString("pt-BR")}</small> : null}
               {order.payment.syncError ? <small>{order.payment.syncError}</small> : null}
             </div>
+          ) : null}
+          {order.payment?.method === "PIX" && order.status === "PENDING_PAYMENT" ? (
+            <form action={confirmManualPixPaymentAction} className="address-match-card admin needs-review manual-pix-admin-card">
+              <input type="hidden" name="orderNumber" value={order.orderNumber} />
+              <span>Pix manual</span>
+              <strong>Confirme somente depois de conferir o comprovante no WhatsApp ou extrato.</strong>
+              <small>Esta ação marca o pedido como pago, atualiza o pagamento e reserva/baixa o estoque.</small>
+              <button className="button primary" type="submit">
+                Confirmar Pix recebido
+              </button>
+            </form>
           ) : null}
         </div>
       </section>

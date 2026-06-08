@@ -25,6 +25,11 @@ function buildHref(message: string) {
   return `${siteConfig.whatsapp.baseHref}?text=${encodeURIComponent(message)}`;
 }
 
+function stockAvailabilityLabel(quantity: number | null) {
+  if (quantity === null) return "";
+  return quantity > 0 ? "Disponibilidade: em estoque" : "Disponibilidade: sob consulta";
+}
+
 export function buildGeneralWhatsAppHref(source = "loja") {
   return buildHref(
     [
@@ -62,7 +67,7 @@ export function buildProductWhatsAppHref(product: ProductContact) {
       `Marca: ${product.brand.name}`,
       `Preço: ${money(product.priceCents)}`,
       product.volume ? `Volume: ${product.volume}` : "",
-      quantity === null ? "" : `Estoque exibido: ${quantity} un.`,
+      stockAvailabilityLabel(quantity),
       product.stockStatus ? `Status: ${product.stockStatus}` : "",
       ...wholesaleLines,
       `Link: ${siteUrl(`/produto/${product.slug}`)}`,
@@ -94,6 +99,18 @@ export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: n
       "Cidade/UF para entrega ou retirada: ",
       "Compra para revenda/reposição? ",
       siteConfig.whatsapp.messages.cartQuestion
+    ].join("\n")
+  );
+}
+
+export function buildOrderPaymentWhatsAppHref(orderNumber: string, totalCents: number) {
+  return buildHref(
+    [
+      siteConfig.whatsapp.messages.cartGreeting,
+      `Pedido: ${orderNumber}`,
+      `Total: ${money(totalCents)}`,
+      "Acabei de fazer ou vou fazer o Pix.",
+      "Posso enviar o comprovante por aqui para confirmação do atendimento?"
     ].join("\n")
   );
 }

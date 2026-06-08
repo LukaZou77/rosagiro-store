@@ -14,28 +14,23 @@ export function productQuantity(product: Pick<CatalogProduct, "inventory">) {
 export function productStockTone(product: Pick<CatalogProduct, "inventory">): ProductStockTone {
   const quantity = productQuantity(product);
   if (quantity <= 0) return "out";
-  if (quantity <= 6) return "low";
   return "ready";
 }
 
 export function productStockLabel(product: Pick<CatalogProduct, "inventory">) {
   const quantity = productQuantity(product);
-  if (quantity <= 0) return "Esgotado";
-  if (quantity <= 6) return `Ultimas ${quantity} un.`;
-  return `${quantity} un. pronta entrega`;
+  if (quantity <= 0) return "Sem estoque";
+  return "Em estoque";
 }
 
 export function productShortStockLabel(product: Pick<CatalogProduct, "inventory">) {
-  const quantity = productQuantity(product);
-  if (quantity <= 0) return "Esgotado";
-  if (quantity <= 6) return `${quantity} un.`;
-  return `${quantity} un.`;
+  return productStockLabel(product);
 }
 
 export function productHeroBadge(product: Pick<CatalogProduct, "badges" | "compareAtPriceCents" | "priceCents" | "inventory" | "stockStatus">) {
   const discount = productDiscountPercent(product);
   if (discount > 0) return `${discount}% OFF`;
-  if (productStockTone(product) === "low") return "Ultimas unidades";
+  if (productStockTone(product) === "ready") return "Pronta entrega";
   return product.badges[0] || product.stockStatus;
 }
 

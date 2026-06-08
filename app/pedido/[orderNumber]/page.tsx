@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PixPaymentInfo } from "@/components/PixPaymentInfo";
 import { StoreShell } from "@/components/StoreShell";
+import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
 import { mercadoPagoReturnMessage, paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 import { noIndexMetadata } from "@/lib/seo";
+import { getPublicPixPaymentAccount, getStoreProfile, pixPaymentAccountFromPayload } from "@/lib/store-profile";
+import { buildOrderPaymentWhatsAppHref } from "@/lib/whatsapp";
 
 const addressMatchLabels: Record<string, string> = {
   VALIDATED: "Endereço validado",
@@ -26,16 +30,22 @@ export const metadata: Metadata = noIndexMetadata("Pedido", "Acompanhamento de p
 export default async function OrderPage({ params, searchParams }: PageProps) {
   const { orderNumber } = await params;
   const query = searchParams ? await searchParams : {};
-  const [categories, order] = await Promise.all([
+  const [categories, order, storeProfile] = await Promise.all([
     getCategories(),
     prisma.order.findUnique({
       where: { orderNumber },
       include: { items: true, payment: true }
-    })
+    }),
+    getStoreProfile()
   ]);
 
   if (!order) notFound();
   const mercadoPagoMessage = mercadoPagoReturnMessage(query.mp);
+  const pixAccount =
+    order.payment?.method === "PIX"
+      ? pixPaymentAccountFromPayload(order.payment.providerPayload) || getPublicPixPaymentAccount(storeProfile)
+      : null;
+  const paymentWhatsAppHref = buildOrderPaymentWhatsAppHref(order.orderNumber, order.totalCents);
 
   return (
     <StoreShell categories={categories}>
@@ -58,6 +68,14 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
             <strong>{order.payment.providerStatus || "Aguardando retorno"}</strong>
             <small>{order.payment.syncError || "A confirmação do provedor atualizará o pedido automaticamente."}</small>
           </div>
+        ) : null}
+        {pixAccount && order.status !== "PAID" ? (
+          <>
+            <PixPaymentInfo account={pixAccount} orderNumber={order.orderNumber} totalCents={order.totalCents} />
+            <WhatsAppLink className="button whatsapp" href={paymentWhatsAppHref}>
+              Enviar comprovante pelo WhatsApp
+            </WhatsAppLink>
+          </>
         ) : null}
         <div className={`address-match-card ${order.addressMatchStatus.toLowerCase().replace("_", "-")}`}>
           <span>{addressMatchLabels[order.addressMatchStatus] || "Endereço salvo"}</span>

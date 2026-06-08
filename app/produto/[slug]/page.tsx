@@ -120,7 +120,7 @@ export default async function ProductPage({ params }: PageProps) {
               </div>
               <div>
                 <span>{siteConfig.productConversion.stockLabel}</span>
-                <strong>{available ? `${quantity} un.` : "Sob consulta"}</strong>
+                <strong>{stockLabel}</strong>
               </div>
               <div>
                 <span>{siteConfig.productConversion.freightLabel}</span>

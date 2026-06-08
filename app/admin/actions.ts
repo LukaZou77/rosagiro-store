@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { clearAdminSession, requireAdmin, setAdminSession, verifyPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
+import { markOrderPaid, OrderError } from "@/lib/orders";
 import { importProductsFromCsv, ProductImportError } from "@/lib/product-import";
 import { isAllowedProductImage, normalizeProductGallery, parseCents, parsePipeList, slugify } from "@/lib/product-import-shared";
 import {
@@ -15,7 +16,7 @@ import {
   saveProductImageUploads
 } from "@/lib/product-images";
 import { formatCep } from "@/lib/cep";
-import { STORE_PROFILE_ID } from "@/lib/store-profile";
+import { pixAccountTypeOptions, pixKeyTypeOptions, STORE_PROFILE_ID } from "@/lib/store-profile";
 import { SiteInfoPageValidationError, validateSiteInfoPageInput } from "@/lib/site-info-pages";
 
 const statuses = ["PENDING_PAYMENT", "PAID", "FULFILLING", "SHIPPED", "CANCELED"] as const;
@@ -70,6 +71,19 @@ function optionalHttpUrl(value: string, fieldLabel: string) {
   }
 
   redirectError("/admin/loja", `${fieldLabel} deve ser uma URL http(s) válida.`);
+}
+
+function includesOption(options: readonly { value: string }[], value: string) {
+  return options.some((option) => option.value === value);
+}
+
+function validatePixKey(type: string, key: string) {
+  if (!key) return false;
+  if (type === "CPF") return onlyDigits(key).length === 11;
+  if (type === "CNPJ") return onlyDigits(key).length === 14;
+  if (type === "EMAIL") return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(key);
+  if (type === "PHONE") return onlyDigits(key).length >= 10;
+  return key.length >= 8;
 }
 
 function revalidateCatalog(productSlug?: string) {
@@ -427,6 +441,41 @@ export async function updateOrderStatusAction(formData: FormData) {
   revalidatePath(`/pedido/${orderNumber}`);
 }
 
+export async function confirmManualPixPaymentAction(formData: FormData) {
+  await requireAdmin();
+
+  const orderNumber = field(formData, "orderNumber");
+  const detailPath = `/admin/pedidos/${orderNumber}`;
+  if (!orderNumber) redirectError("/admin/pedidos", "Pedido inválido.");
+
+  const order = await prisma.order.findUnique({
+    where: { orderNumber },
+    include: { payment: true }
+  });
+  if (!order) redirectError("/admin/pedidos", "Pedido não encontrado.");
+  if (order.payment?.method !== "PIX") redirectError(detailPath, "Este pedido não foi criado com Pix.");
+
+  try {
+    await markOrderPaid(orderNumber, {
+      provider: "SIMULATED",
+      providerPaymentId: `manual-pix-${orderNumber}`,
+      providerExternalReference: orderNumber,
+      providerStatus: "manual_pix_confirmed",
+      providerStatusDetail: "Comprovante Pix conferido manualmente no admin.",
+      paidAt: new Date()
+    });
+  } catch (error) {
+    const message = error instanceof OrderError ? error.message : "Não foi possível confirmar o Pix manual.";
+    redirectError(detailPath, message);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/pedidos");
+  revalidatePath(detailPath);
+  revalidatePath(`/pedido/${orderNumber}`);
+  redirect(`${detailPath}?saved=1`);
+}
+
 export async function saveStoreProfileAction(formData: FormData) {
   await requireAdmin();
 
@@ -450,6 +499,18 @@ export async function saveStoreProfileAction(formData: FormData) {
   const pickupNote = field(formData, "pickupNote");
   const shippingNote = field(formData, "shippingNote");
   const paymentNote = field(formData, "paymentNote");
+  const pixPaymentEnabled = formData.get("pixPaymentEnabled") === "on";
+  const pixAccountType = includesOption(pixAccountTypeOptions, field(formData, "pixAccountType"))
+    ? field(formData, "pixAccountType")
+    : "TEMPORARY_PERSONAL";
+  const pixRecipientName = field(formData, "pixRecipientName");
+  const pixRecipientDocument = field(formData, "pixRecipientDocument");
+  const pixKeyType = includesOption(pixKeyTypeOptions, field(formData, "pixKeyType")) ? field(formData, "pixKeyType") : "RANDOM";
+  const pixKey = field(formData, "pixKey");
+  const pixBankName = field(formData, "pixBankName");
+  const pixInstructions =
+    field(formData, "pixInstructions") ||
+    "Finalize o pedido, faça o Pix e envie o comprovante pelo WhatsApp para confirmação do atendimento.";
   const exchangeNote = field(formData, "exchangeNote");
   const launchNote = field(formData, "launchNote");
   const trustBadges = parsePipeList(field(formData, "trustBadges")).slice(0, 8);
@@ -459,6 +520,10 @@ export async function saveStoreProfileAction(formData: FormData) {
   if (cep && onlyDigits(cep).length !== 8) redirectError("/admin/loja", "CEP deve ter 8 dígitos.");
   if (state && state.length !== 2) redirectError("/admin/loja", "UF deve ter 2 letras.");
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirectError("/admin/loja", "E-mail inválido.");
+  if (pixPaymentEnabled && !pixRecipientName) redirectError("/admin/loja", "Informe o nome do recebedor Pix.");
+  if (pixPaymentEnabled && !validatePixKey(pixKeyType, pixKey)) {
+    redirectError("/admin/loja", "Chave Pix inválida para o tipo selecionado.");
+  }
 
   await prisma.storeProfile.upsert({
     where: { id: STORE_PROFILE_ID },
@@ -483,6 +548,14 @@ export async function saveStoreProfileAction(formData: FormData) {
       pickupNote,
       shippingNote,
       paymentNote,
+      pixPaymentEnabled,
+      pixAccountType,
+      pixRecipientName,
+      pixRecipientDocument,
+      pixKeyType,
+      pixKey,
+      pixBankName,
+      pixInstructions,
       exchangeNote,
       trustBadges,
       launchNote
@@ -509,6 +582,14 @@ export async function saveStoreProfileAction(formData: FormData) {
       pickupNote,
       shippingNote,
       paymentNote,
+      pixPaymentEnabled,
+      pixAccountType,
+      pixRecipientName,
+      pixRecipientDocument,
+      pixKeyType,
+      pixKey,
+      pixBankName,
+      pixInstructions,
       exchangeNote,
       trustBadges,
       launchNote
@@ -520,8 +601,12 @@ export async function saveStoreProfileAction(formData: FormData) {
   revalidatePath("/produto/[slug]", "page");
   revalidatePath("/carrinho");
   revalidatePath("/checkout");
+  revalidatePath("/pagamento-simulado/[orderNumber]", "page");
+  revalidatePath("/pedido/[orderNumber]", "page");
   revalidatePath("/admin");
   revalidatePath("/admin/loja");
+  revalidatePath("/admin/prontidao");
+  revalidatePath("/admin/pagamentos");
   redirect("/admin/loja?saved=1");
 }
 

@@ -2,7 +2,7 @@ export const paymentMethods = [
   {
     value: "PIX",
     label: "Pix",
-    description: "Forma preferida no Brasil. A confirmação final aparece no acompanhamento do pedido."
+    description: "Crie o pedido e use os dados Pix exibidos para enviar o comprovante pelo WhatsApp."
   },
   {
     value: "CREDIT_CARD",

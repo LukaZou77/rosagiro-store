@@ -3,7 +3,15 @@ import { saveStoreProfileAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { getLaunchReadinessSnapshot, launchReadinessSignalLabels } from "@/lib/launch-readiness";
-import { getStoreProfile, storeCnpjLabel, storeProfileAddress, storeTrustSignals } from "@/lib/store-profile";
+import {
+  getPublicPixPaymentAccount,
+  getStoreProfile,
+  pixAccountTypeOptions,
+  pixKeyTypeOptions,
+  storeCnpjLabel,
+  storeProfileAddress,
+  storeTrustSignals
+} from "@/lib/store-profile";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -24,6 +32,7 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
   const error = single(params.error);
   const trustBadges = profile.trustBadges.join(" | ");
   const storeSignals = launchSnapshot.signals.filter((signal) => signal.group === "Loja");
+  const pixAccount = getPublicPixPaymentAccount(profile);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -157,6 +166,76 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
             Pagamento
             <textarea name="paymentNote" defaultValue={profile.paymentNote} />
           </label>
+          <div className="admin-subpanel pix-account-admin-panel">
+            <div>
+              <h3>Conta Pix para recebimento manual</h3>
+              <p className="table-note">
+                Use como transição enquanto a conta PJ não fica pronta. Não coloque dados no código: ao trocar para Pix
+                empresarial, atualize estes campos aqui.
+              </p>
+            </div>
+            <label className="checkbox-line">
+              <input name="pixPaymentEnabled" type="checkbox" defaultChecked={profile.pixPaymentEnabled} /> Exibir dados
+              Pix após o cliente criar pedido com Pix
+            </label>
+            <div className="form-grid">
+              <label>
+                Tipo de conta
+                <select name="pixAccountType" defaultValue={profile.pixAccountType}>
+                  {pixAccountTypeOptions.map((option) => (
+                    <option value={option.value} key={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Tipo de chave
+                <select name="pixKeyType" defaultValue={profile.pixKeyType}>
+                  {pixKeyTypeOptions.map((option) => (
+                    <option value={option.value} key={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="form-grid">
+              <label>
+                Nome do recebedor
+                <input name="pixRecipientName" defaultValue={profile.pixRecipientName} placeholder="Nome exibido no Pix" />
+              </label>
+              <label>
+                CPF/CNPJ do recebedor
+                <input name="pixRecipientDocument" defaultValue={profile.pixRecipientDocument} placeholder="Opcional" />
+              </label>
+            </div>
+            <div className="form-grid">
+              <label>
+                Chave Pix
+                <input name="pixKey" defaultValue={profile.pixKey} placeholder="CPF, e-mail, telefone ou chave aleatória" />
+              </label>
+              <label>
+                Banco / instituição
+                <input name="pixBankName" defaultValue={profile.pixBankName} placeholder="Opcional" />
+              </label>
+            </div>
+            <label>
+              Instruções para o cliente
+              <textarea name="pixInstructions" defaultValue={profile.pixInstructions} />
+            </label>
+            <div className={`address-match-card admin ${pixAccount?.temporary ? "needs-review" : pixAccount ? "validated" : "disabled"}`}>
+              <span>{pixAccount ? "Pix configurado" : "Pix não exibido"}</span>
+              <strong>{pixAccount ? `${pixAccount.keyTypeLabel}: ${pixAccount.key}` : "Preencha e habilite para mostrar ao cliente."}</strong>
+              <small>
+                {pixAccount?.temporary
+                  ? "Conta pessoal temporária: trocar para conta PJ antes de escalar vendas."
+                  : pixAccount
+                    ? "Conta empresarial pronta para conferência operacional."
+                    : "Sem dados Pix públicos no checkout/pagamento."}
+              </small>
+            </div>
+          </div>
           <label>
             Trocas e devoluções
             <textarea name="exchangeNote" defaultValue={profile.exchangeNote} />

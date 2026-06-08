@@ -54,7 +54,7 @@ export async function POST(request: Request) {
           : stockQuantity <= 0
             ? "Produto sem estoque."
             : item.quantity > stockQuantity
-              ? `Ajustado para ${stockQuantity} un. em estoque.`
+              ? "Quantidade ajustada ao estoque disponível."
               : "";
 
       return {
