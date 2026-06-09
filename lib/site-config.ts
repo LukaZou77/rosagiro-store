@@ -6,6 +6,14 @@ export const siteConfig = {
   description: "RosaGiro, atacado de cosméticos em São Paulo para revenda no Brasil.",
   defaultUrl: "http://localhost:3000",
   supportEmail: "rosagiroatacado@gmail.com",
+  brandAssets: {
+    avatar: "/brand/rosagiro-avatar.png",
+    headerImage: "/brand/rosagiro-logo-header.png",
+    icon64: "/brand/rosagiro-icon-64.png",
+    icon180: "/brand/rosagiro-icon-180.png",
+    icon512: "/brand/rosagiro-icon-512.png",
+    ogImage: "/brand/rosagiro-og.png"
+  },
   whatsapp: {
     phone: whatsappPhone,
     displayNumber: "+55 11 97079-2390",

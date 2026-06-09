@@ -15,13 +15,19 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     title: `${siteConfig.name} | ${siteConfig.tagline}`,
     description: siteConfig.description,
-    url: siteUrl()
+    url: siteUrl(),
+    images: [{ url: siteUrl(siteConfig.brandAssets.ogImage) }]
   },
   alternates: {
     canonical: siteUrl()
   },
   icons: {
-    icon: "/icon.svg"
+    icon: [
+      { url: siteConfig.brandAssets.icon64, sizes: "64x64", type: "image/png" },
+      { url: siteConfig.brandAssets.icon512, sizes: "512x512", type: "image/png" },
+      { url: "/icon.svg", type: "image/svg+xml" }
+    ],
+    apple: [{ url: siteConfig.brandAssets.icon180, sizes: "180x180", type: "image/png" }]
   }
 };
 

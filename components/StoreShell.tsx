@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/BrandLogo";
 import { CartCount } from "@/components/CartCount";
 import { CustomerSessionProvider } from "@/components/CustomerSession";
 import { QuickPurchaseDrawer } from "@/components/QuickPurchaseDrawer";
@@ -38,11 +39,7 @@ export async function StoreShell({
       </div>
       <header className="topbar">
         <Link className="brand" href="/">
-          <span className="brand-mark">RG</span>
-          <span>
-            <strong>RosaGiro</strong>
-            <small>{siteConfig.tagline}</small>
-          </span>
+          <BrandLogo />
         </Link>
         <nav className="desktop-nav" aria-label="Categorias">
           {categories.slice(0, 5).map((category) => (
@@ -63,11 +60,7 @@ export async function StoreShell({
       <footer className="site-footer">
         <div>
           <Link className="brand" href="/">
-            <span className="brand-mark">RG</span>
-            <span>
-              <strong>{siteConfig.name}</strong>
-              <small>{siteConfig.tagline}</small>
-            </span>
+            <BrandLogo />
           </Link>
           <p>{siteConfig.description}</p>
           <p className="store-trust">{siteConfig.wholesale.storeTrust}</p>

@@ -17,7 +17,7 @@ function compactText(value: string, maxLength = 155) {
 }
 
 function absoluteImageUrl(path: string | null | undefined) {
-  if (!path) return siteUrl("/icon.svg");
+  if (!path) return siteUrl(siteConfig.brandAssets.ogImage);
   try {
     return new URL(path).toString();
   } catch {
@@ -70,7 +70,7 @@ export function storefrontMetadata(input: {
 }): Metadata {
   const canonical = publicCanonical(input.path);
   const description = compactText(input.description);
-  const image = absoluteImageUrl(input.image || "/icon.svg");
+  const image = absoluteImageUrl(input.image || siteConfig.brandAssets.ogImage);
 
   return {
     title: input.title,

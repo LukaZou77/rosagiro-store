@@ -141,6 +141,54 @@ main {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.brand-logo-header-image {
+  display: block;
+  width: clamp(190px, 24vw, 330px);
+  height: auto;
+  object-fit: contain;
+}
+
+.brand-logo-icon {
+  display: none;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.brand-logo-copy {
+  display: none;
+  gap: 1px;
+  min-width: 0;
+}
+
+.brand-logo-copy strong {
+  color: var(--promo-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.18rem;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.brand-logo-copy small {
+  overflow: hidden;
+  max-width: 220px;
+  color: var(--brass);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brand-mark {
@@ -163,6 +211,21 @@ main {
 .brand small {
   color: var(--muted);
   font-size: 0.76rem;
+}
+
+.brand .brand-logo-copy strong {
+  color: var(--promo-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.18rem;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.brand .brand-logo-copy small {
+  color: var(--brass);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.12;
 }
 
 .desktop-nav {
@@ -1286,6 +1349,33 @@ textarea:focus-visible {
 }
 
 @media (max-width: 679px) {
+  .topbar {
+    gap: 10px;
+    min-height: 66px;
+  }
+
+  .topbar .brand-logo-icon {
+    display: block;
+    width: 42px;
+    height: 42px;
+  }
+
+  .topbar .brand-logo-header-image {
+    display: none;
+  }
+
+  .topbar .brand-logo-copy strong {
+    font-size: 1.06rem;
+  }
+
+  .topbar .brand-logo-copy {
+    display: grid;
+  }
+
+  .topbar .brand-logo-copy small {
+    display: none;
+  }
+
   .hero {
     gap: 16px;
     padding: 22px 20px 18px;
