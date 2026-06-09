@@ -9,6 +9,7 @@ import { useCustomerSession } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
+import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
 import { money } from "@/lib/money";
@@ -136,6 +137,7 @@ function stepIndex(step: CheckoutStep) {
 }
 
 export function CheckoutClient({ products, trustSignals }: { products: Product[]; trustSignals: string[] }) {
+  const whatsappPhone = useWhatsAppPhone();
   const router = useRouter();
   const cart = useCart();
   const { customer, requireCustomerSession } = useCustomerSession();
@@ -192,7 +194,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
   const selectedShipping = shippingQuote?.options.find((option) => option.method === shippingMethod) || null;
   const shipping = selectedShipping?.priceCents || 0;
   const total = subtotal - discount + shipping;
-  const emptyCheckoutWhatsAppHref = useMemo(() => buildGeneralWhatsAppHref("checkout sem itens"), []);
+  const emptyCheckoutWhatsAppHref = useMemo(() => buildGeneralWhatsAppHref("checkout sem itens", whatsappPhone), [whatsappPhone]);
   const checkoutWhatsAppItems = useMemo(
     () =>
       items.map((item) => ({
@@ -206,8 +208,8 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     [items]
   );
   const checkoutWhatsAppHref = useMemo(
-    () => buildCartWhatsAppHref(checkoutWhatsAppItems, subtotal),
-    [checkoutWhatsAppItems, subtotal]
+    () => buildCartWhatsAppHref(checkoutWhatsAppItems, subtotal, whatsappPhone),
+    [checkoutWhatsAppItems, subtotal, whatsappPhone]
   );
   const contactValue = useMemo(
     () => ({

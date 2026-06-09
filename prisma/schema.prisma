@@ -346,7 +346,7 @@ model StoreProfile {
   number            String   @default("S/N")
   complement        String?
   email             String   @default("contato@rosagiro.local")
-  whatsapp          String   @default("+55 11 90000-0000")
+  whatsapp          String   @default("+55 11 97079-2390")
   businessHours     String   @default("Segunda a sexta, 9h às 18h")
   instagramUrl      String   @default("")
   facebookUrl       String   @default("")

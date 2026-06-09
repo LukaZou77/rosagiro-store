@@ -61,7 +61,7 @@ export default async function ProductPage({ params }: PageProps) {
   const stockLabel = productStockLabel(product);
   const stockTone = productStockTone(product);
   const discount = productDiscountPercent(product);
-  const whatsappHref = buildProductWhatsAppHref(product);
+  const whatsappHref = buildProductWhatsAppHref(product, storeProfile.whatsapp);
   const trustSignals = storeTrustSignals(storeProfile);
   const gallery = normalizeProductGallery(product.image, product.gallery);
   const galleryState = productDetailGalleryState(gallery);
@@ -232,7 +232,7 @@ export default async function ProductPage({ params }: PageProps) {
             </div>
             <div className="product-grid compact">
               {related.map((item) => (
-                <ProductCard product={item} key={item.slug} />
+                <ProductCard product={item} whatsappPhone={storeProfile.whatsapp} key={item.slug} />
               ))}
             </div>
           </>

@@ -1,4 +1,4 @@
-const whatsappPhone = "5511900000000";
+const whatsappPhone = "5511970792390";
 
 export const siteConfig = {
   name: "RosaGiro",
@@ -8,7 +8,7 @@ export const siteConfig = {
   supportEmail: "contato@rosagiro.local",
   whatsapp: {
     phone: whatsappPhone,
-    displayNumber: "+55 11 90000-0000",
+    displayNumber: "+55 11 97079-2390",
     baseHref: `https://wa.me/${whatsappPhone}`,
     label: "WhatsApp",
     serviceLabel: "Atendimento WhatsApp",

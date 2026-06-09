@@ -7,6 +7,7 @@ import { readCart, subscribeQuickPurchaseOpen, useCart, writeCart } from "@/comp
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { CustomerCheckoutButton } from "@/components/CustomerSession";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
+import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
 import type { CartCompletionRecommendation } from "@/lib/cart-completion";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
@@ -61,6 +62,7 @@ function lineSummaryLabel(line: Pick<SummaryLine, "available" | "warning" | "pri
 
 export function QuickPurchaseDrawer() {
   const pathname = usePathname();
+  const whatsappPhone = useWhatsAppPhone();
   const cart = useCart();
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -132,8 +134,8 @@ export function QuickPurchaseDrawer() {
     [summary]
   );
   const whatsappHref = useMemo(
-    () => buildCartWhatsAppHref(whatsappItems, summary?.subtotalCents || 0),
-    [summary?.subtotalCents, whatsappItems]
+    () => buildCartWhatsAppHref(whatsappItems, summary?.subtotalCents || 0, whatsappPhone),
+    [summary?.subtotalCents, whatsappItems, whatsappPhone]
   );
   const progress =
     summary && summary.minimumOrderCents > 0

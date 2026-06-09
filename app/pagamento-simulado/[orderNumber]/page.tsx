@@ -35,7 +35,7 @@ export default async function SimulatedPaymentPage({ params }: PageProps) {
     order.payment?.method === "PIX"
       ? pixPaymentAccountFromPayload(order.payment.providerPayload) || getPublicPixPaymentAccount(storeProfile)
       : null;
-  const paymentWhatsAppHref = buildOrderPaymentWhatsAppHref(order.orderNumber, order.totalCents);
+  const paymentWhatsAppHref = buildOrderPaymentWhatsAppHref(order.orderNumber, order.totalCents, storeProfile.whatsapp);
 
   return (
     <StoreShell categories={categories}>

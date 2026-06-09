@@ -21,8 +21,18 @@ type CartContactItem = {
   };
 };
 
-function buildHref(message: string) {
-  return `${siteConfig.whatsapp.baseHref}?text=${encodeURIComponent(message)}`;
+export function cleanWhatsAppPhone(phone?: string | null) {
+  const digits = (phone || "").replace(/\D/g, "");
+  if (digits.length >= 10) return digits.startsWith("55") ? digits : `55${digits}`;
+  return siteConfig.whatsapp.phone;
+}
+
+export function buildWhatsAppBaseHref(phone?: string | null) {
+  return `https://wa.me/${cleanWhatsAppPhone(phone)}`;
+}
+
+function buildHref(message: string, phone?: string | null) {
+  return `${buildWhatsAppBaseHref(phone)}?text=${encodeURIComponent(message)}`;
 }
 
 function stockAvailabilityLabel(quantity: number | null) {
@@ -30,7 +40,7 @@ function stockAvailabilityLabel(quantity: number | null) {
   return quantity > 0 ? "Disponibilidade: em estoque" : "Disponibilidade: sob consulta";
 }
 
-export function buildGeneralWhatsAppHref(source = "loja") {
+export function buildGeneralWhatsAppHref(source = "loja", phone?: string | null) {
   return buildHref(
     [
       siteConfig.whatsapp.messages.generalGreeting,
@@ -39,11 +49,12 @@ export function buildGeneralWhatsAppHref(source = "loja") {
       "Cidade/UF: ",
       "Compra para: revenda, reposição ou uso profissional?",
       siteConfig.whatsapp.messages.generalQuestion
-    ].join("\n")
+    ].join("\n"),
+    phone
   );
 }
 
-export function buildCatalogWhatsAppHref(categoryLabel: string, productCount: number) {
+export function buildCatalogWhatsAppHref(categoryLabel: string, productCount: number, phone?: string | null) {
   return buildHref(
     [
       siteConfig.whatsapp.messages.generalGreeting,
@@ -52,11 +63,12 @@ export function buildCatalogWhatsAppHref(categoryLabel: string, productCount: nu
       `Pedido mínimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
       "Cidade/UF para entrega ou retirada: ",
       "Pode me ajudar com estoque, retirada, transportadora ou excursão?"
-    ].join("\n")
+    ].join("\n"),
+    phone
   );
 }
 
-export function buildProductWhatsAppHref(product: ProductContact) {
+export function buildProductWhatsAppHref(product: ProductContact, phone?: string | null) {
   const quantity = product.inventory?.quantity ?? null;
   const wholesaleLines = productWholesaleWhatsAppLines(product);
   return buildHref(
@@ -77,12 +89,13 @@ export function buildProductWhatsAppHref(product: ProductContact) {
       siteConfig.whatsapp.messages.productQuestion
     ]
       .filter(Boolean)
-      .join("\n")
+      .join("\n"),
+    phone
   );
 }
 
-export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: number) {
-  if (!items.length) return buildGeneralWhatsAppHref("carrinho vazio");
+export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: number, phone?: string | null) {
+  if (!items.length) return buildGeneralWhatsAppHref("carrinho vazio", phone);
 
   const missingCents = Math.max(siteConfig.wholesale.minimumOrderCents - subtotalCents, 0);
   const lines = items.map(
@@ -99,11 +112,12 @@ export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: n
       "Cidade/UF para entrega ou retirada: ",
       "Compra para revenda/reposição? ",
       siteConfig.whatsapp.messages.cartQuestion
-    ].join("\n")
+    ].join("\n"),
+    phone
   );
 }
 
-export function buildOrderPaymentWhatsAppHref(orderNumber: string, totalCents: number) {
+export function buildOrderPaymentWhatsAppHref(orderNumber: string, totalCents: number, phone?: string | null) {
   return buildHref(
     [
       siteConfig.whatsapp.messages.cartGreeting,
@@ -111,6 +125,7 @@ export function buildOrderPaymentWhatsAppHref(orderNumber: string, totalCents: n
       `Total: ${money(totalCents)}`,
       "Acabei de fazer ou vou fazer o Pix.",
       "Posso enviar o comprovante por aqui para confirmação do atendimento?"
-    ].join("\n")
+    ].join("\n"),
+    phone
   );
 }

@@ -8,6 +8,7 @@ import { CustomerCheckoutButton } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
+import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
@@ -31,6 +32,7 @@ type Product = {
 
 export function CartClient({ products, trustSignals }: { products: Product[]; trustSignals: string[] }) {
   const cart = useCart();
+  const whatsappPhone = useWhatsAppPhone();
 
   const productMap = useMemo(() => new Map(products.map((product) => [product.slug, product])), [products]);
   const items = useMemo(
@@ -43,7 +45,7 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0), [items]);
   const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
   const total = subtotal - discount;
-  const whatsappHref = useMemo(() => buildCartWhatsAppHref(items, subtotal), [items, subtotal]);
+  const whatsappHref = useMemo(() => buildCartWhatsAppHref(items, subtotal, whatsappPhone), [items, subtotal, whatsappPhone]);
   const recommendations = useMemo(
     () => getCartCompletionRecommendations(products, cart, { limit: 4 }),
     [cart, products]

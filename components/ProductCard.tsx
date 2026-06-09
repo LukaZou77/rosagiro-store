@@ -16,7 +16,7 @@ import {
 import { siteConfig } from "@/lib/site-config";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 
-export function ProductCard({ product }: { product: CatalogProduct }) {
+export function ProductCard({ product, whatsappPhone }: { product: CatalogProduct; whatsappPhone?: string | null }) {
   const quantity = productQuantity(product);
   const available = quantity > 0;
   const discount = productDiscountPercent(product);
@@ -25,7 +25,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
   const stockLabel = productStockLabel(product);
   const shortStockLabel = productShortStockLabel(product);
   const purchaseSignals = productPurchaseSignals(product);
-  const whatsappHref = buildProductWhatsAppHref(product);
+  const whatsappHref = buildProductWhatsAppHref(product, whatsappPhone);
 
   return (
     <article className={available ? "product-card" : "product-card is-unavailable"}>

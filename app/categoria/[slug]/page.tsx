@@ -8,6 +8,7 @@ import { getCategories, getProducts } from "@/lib/catalog";
 import { productDiscountPercent, productQuantity } from "@/lib/product-conversion";
 import { breadcrumbJsonLd, categoryMetaDescription, noIndexMetadata, storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
+import { getStoreProfile } from "@/lib/store-profile";
 import { buildCatalogWhatsAppHref } from "@/lib/whatsapp";
 
 type PageProps = {
@@ -156,14 +157,15 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const sort = safeSort(value(queryParams.sort) || "featured");
   const stockFilter = safeStock(value(queryParams.stock) || "all");
   const dealFilter = safeDeal(value(queryParams.deal) || "all");
-  const [categories, baseProducts, products] = await Promise.all([
+  const [categories, baseProducts, products, storeProfile] = await Promise.all([
     getCategories(),
     getProducts({ categorySlug }),
-    getProducts({ categorySlug, brandName: brand, query, sort, stockFilter, dealFilter })
+    getProducts({ categorySlug, brandName: brand, query, sort, stockFilter, dealFilter }),
+    getStoreProfile()
   ]);
   const currentCategory = categories.find((category) => category.slug === categorySlug);
   const categoryLabel = categorySlug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria";
-  const whatsappHref = buildCatalogWhatsAppHref(categoryLabel, products.length);
+  const whatsappHref = buildCatalogWhatsAppHref(categoryLabel, products.length, storeProfile.whatsapp);
   const brandOptions = [...new Set(baseProducts.map((product) => product.brand.name))].sort();
   const sortLabel = sortLabels[sort] || sortLabels.featured;
   const clearHref = catalogHref(categorySlug, {});
@@ -308,7 +310,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
           </div>
           <div className="product-grid">
             {products.length ? (
-              products.map((product) => <ProductCard product={product} key={product.slug} />)
+              products.map((product) => <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />)
             ) : (
               <div className="empty-state">
                 <strong>Nenhum produto encontrado</strong>

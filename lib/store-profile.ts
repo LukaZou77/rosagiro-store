@@ -82,7 +82,7 @@ export const defaultStoreProfile = {
   number: "S/N",
   complement: "Dados comerciais serão revisados antes da publicação.",
   email: "contato@rosagiro.local",
-  whatsapp: "+55 11 90000-0000",
+  whatsapp: "+55 11 97079-2390",
   businessHours: "Segunda a sexta, 9h às 18h",
   instagramUrl: "",
   facebookUrl: "",

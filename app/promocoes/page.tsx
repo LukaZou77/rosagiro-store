@@ -9,6 +9,7 @@ import { money } from "@/lib/money";
 import { productQuantity, productStockLabel } from "@/lib/product-conversion";
 import { storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
+import { getStoreProfile } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 export const metadata: Metadata = storefrontMetadata({
@@ -18,10 +19,10 @@ export const metadata: Metadata = storefrontMetadata({
 });
 
 export default async function PromotionsPage() {
-  const [categories, collections] = await Promise.all([getCategories(), getPromotionCollections()]);
+  const [categories, collections, storeProfile] = await Promise.all([getCategories(), getPromotionCollections(), getStoreProfile()]);
   const { products, dealProducts, lowPriceProducts, hotProducts, stockReadyProducts } = collections;
   const promo = siteConfig.promotionsPage;
-  const whatsappHref = buildGeneralWhatsAppHref("promocoes");
+  const whatsappHref = buildGeneralWhatsAppHref("promocoes", storeProfile.whatsapp);
   const heroProduct = dealProducts[0] || hotProducts[0] || lowPriceProducts[0] || products[0];
   const strongestDiscount = dealProducts.reduce((max, product) => Math.max(max, discountPercent(product)), 0);
   const readyStock = products.filter((product) => (product.inventory?.quantity || 0) > 0).length;
@@ -104,7 +105,7 @@ export default async function PromotionsPage() {
         </div>
         <div className="product-grid">
           {dealProducts.length ? (
-            dealProducts.map((product) => <ProductCard product={product} key={product.slug} />)
+            dealProducts.map((product) => <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />)
           ) : (
             <div className="empty-state">
               <h3>{promo.emptyDealTitle}</h3>
@@ -179,7 +180,7 @@ export default async function PromotionsPage() {
         </div>
         <div className="product-grid">
           {stockReadyProducts.length ? (
-            stockReadyProducts.map((product) => <ProductCard product={product} key={product.slug} />)
+            stockReadyProducts.map((product) => <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />)
           ) : (
             <div className="empty-state">
               <h3>{promo.emptyStockTitle}</h3>

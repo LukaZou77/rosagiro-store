@@ -4,6 +4,7 @@ import { CustomerSessionProvider } from "@/components/CustomerSession";
 import { QuickPurchaseDrawer } from "@/components/QuickPurchaseDrawer";
 import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
+import { WhatsAppProvider } from "@/components/WhatsAppProvider";
 import { storeJsonLd, websiteJsonLd } from "@/lib/seo";
 import { legalLinks, siteConfig, storefrontLinks } from "@/lib/site-config";
 import { getStoreProfile, storeCnpjLabel, storeSocialLinks, storeTrustSignals } from "@/lib/store-profile";
@@ -21,13 +22,14 @@ export async function StoreShell({
   categories: CategoryLink[];
   children: React.ReactNode;
 }) {
-  const generalWhatsAppHref = buildGeneralWhatsAppHref("navegacao principal");
   const storeProfile = await getStoreProfile();
+  const generalWhatsAppHref = buildGeneralWhatsAppHref("navegacao principal", storeProfile.whatsapp);
   const trustSignals = storeTrustSignals(storeProfile, 3);
   const socialLinks = storeSocialLinks(storeProfile);
 
   return (
     <CustomerSessionProvider>
+      <WhatsAppProvider phone={storeProfile.whatsapp}>
       <StructuredData data={[storeJsonLd(storeProfile), websiteJsonLd()]} />
       <div className="store-alert" aria-label="Condições de compra">
         <span>{siteConfig.wholesale.headerStrip}</span>
@@ -102,6 +104,7 @@ export async function StoreShell({
         <Link href="/carrinho">Carrinho</Link>
         <WhatsAppLink href={generalWhatsAppHref}>{siteConfig.whatsapp.label}</WhatsAppLink>
       </nav>
+      </WhatsAppProvider>
     </CustomerSessionProvider>
   );
 }

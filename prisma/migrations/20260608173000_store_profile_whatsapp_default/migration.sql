@@ -1,0 +1,1 @@
+ALTER TABLE "StoreProfile" ALTER COLUMN "whatsapp" SET DEFAULT '+55 11 97079-2390';

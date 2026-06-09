@@ -25,7 +25,7 @@ export default async function HomePage() {
   const dealProducts = products.filter((product) => product.compareAtPriceCents).slice(0, 3);
   const heroProduct = dealProducts[0] || products[0];
   const secondaryDeals = (dealProducts.length > 1 ? dealProducts.slice(1) : products.filter((product) => product.slug !== heroProduct?.slug)).slice(0, 2);
-  const whatsappHref = buildGeneralWhatsAppHref("home atacado");
+  const whatsappHref = buildGeneralWhatsAppHref("home atacado", storeProfile.whatsapp);
   const homeTrustSignals = Array.from(
     new Set([
       ...storeTrustSignals(storeProfile, 3),
@@ -210,7 +210,7 @@ export default async function HomePage() {
         </div>
         <div className="product-grid">
           {products.slice(0, 8).map((product) => (
-            <ProductCard product={product} key={product.slug} />
+            <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />
           ))}
         </div>
       </section>

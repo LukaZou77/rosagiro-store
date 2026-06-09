@@ -94,7 +94,7 @@ const storeProfile = {
   number: "S/N",
   complement: "Dados comerciais serão revisados antes da publicação.",
   email: "contato@rosagiro.local",
-  whatsapp: "+55 11 90000-0000",
+  whatsapp: "+55 11 97079-2390",
   businessHours: "Segunda a sexta, 9h às 18h",
   instagramUrl: "",
   facebookUrl: "",
@@ -477,6 +477,7 @@ const siteInfoPageKeys = ["privacy", "terms", "returns", "shipping", "contact"] 
 
 const legacyStoreProfileCopy = {
   legalName: "RosaGiro Comercio de Cosmeticos Ltda.",
+  whatsapp: "+55 11 90000-0000",
   city: "Sao Paulo",
   street: "Endereco em preparacao",
   complement: "Dados comerciais serao revisados antes da publicacao.",
