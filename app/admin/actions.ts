@@ -515,7 +515,7 @@ export async function saveStoreProfileAction(formData: FormData) {
   const launchNote = field(formData, "launchNote");
   const trustBadges = parsePipeList(field(formData, "trustBadges")).slice(0, 8);
 
-  if (!storeName || !legalName) redirectError("/admin/loja", "Informe nome da loja e razão social.");
+  if (!storeName) redirectError("/admin/loja", "Informe o nome da loja.");
   if (cnpj && onlyDigits(cnpj).length !== 14) redirectError("/admin/loja", "CNPJ deve ter 14 dígitos.");
   if (cep && onlyDigits(cep).length !== 8) redirectError("/admin/loja", "CEP deve ter 8 dígitos.");
   if (state && state.length !== 2) redirectError("/admin/loja", "UF deve ter 2 letras.");
@@ -598,6 +598,9 @@ export async function saveStoreProfileAction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/informacoes-da-loja");
+  revalidatePath("/contato");
+  revalidatePath("/sitemap.xml");
+  revalidatePath("/llms.txt");
   revalidatePath("/produto/[slug]", "page");
   revalidatePath("/carrinho");
   revalidatePath("/checkout");

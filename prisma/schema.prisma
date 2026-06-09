@@ -335,7 +335,7 @@ model SiteInfoPage {
 model StoreProfile {
   id                String   @id @default("main")
   storeName         String   @default("RosaGiro")
-  legalName         String   @default("RosaGiro Comércio de Cosméticos Ltda.")
+  legalName         String   @default("")
   cnpj              String   @default("00.000.000/0000-00")
   stateRegistration String   @default("Isento ou a ajustar")
   cep               String   @default("00000-000")
@@ -345,7 +345,7 @@ model StoreProfile {
   street            String   @default("Endereço em preparação")
   number            String   @default("S/N")
   complement        String?
-  email             String   @default("contato@rosagiro.local")
+  email             String   @default("rosagiroatacado@gmail.com")
   whatsapp          String   @default("+55 11 97079-2390")
   businessHours     String   @default("Segunda a sexta, 9h às 18h")
   instagramUrl      String   @default("")

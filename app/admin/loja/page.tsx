@@ -85,8 +85,8 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
               <input name="storeName" defaultValue={profile.storeName} required />
             </label>
             <label>
-              Razão social
-              <input name="legalName" defaultValue={profile.legalName} required />
+              Razão social / empresa (opcional)
+              <input name="legalName" defaultValue={profile.legalName} placeholder="Preencha quando a conta PJ estiver pronta" />
             </label>
             <label>
               CNPJ

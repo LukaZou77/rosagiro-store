@@ -6,6 +6,7 @@ import { getCategories } from "@/lib/catalog";
 import { storefrontMetadata } from "@/lib/seo";
 import {
   getStoreProfile,
+  publicLegalName,
   storeCnpjLabel,
   publicStoreProfileNotes,
   storeProfileAddress,
@@ -24,6 +25,7 @@ export default async function StoreInformationPage() {
   const socialLinks = storeSocialLinks(profile);
   const trustSignals = storeTrustSignals(profile, 5);
   const publicNotes = publicStoreProfileNotes(profile);
+  const legalName = publicLegalName(profile);
 
   return (
     <StoreShell categories={categories}>
@@ -41,10 +43,12 @@ export default async function StoreInformationPage() {
           <span>Identificação</span>
           <h2>{profile.storeName}</h2>
           <dl>
-            <div>
-              <dt>Razão social</dt>
-              <dd>{profile.legalName}</dd>
-            </div>
+            {legalName ? (
+              <div>
+                <dt>Razão social</dt>
+                <dd>{legalName}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>CNPJ</dt>
               <dd>{storeCnpjLabel(profile)}</dd>

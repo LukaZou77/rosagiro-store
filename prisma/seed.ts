@@ -83,7 +83,7 @@ const brands = [
 const storeProfile = {
   id: "main",
   storeName: "RosaGiro",
-  legalName: "RosaGiro Comércio de Cosméticos Ltda.",
+  legalName: "",
   cnpj: "00.000.000/0000-00",
   stateRegistration: "Isento ou a ajustar",
   cep: "00000-000",
@@ -93,7 +93,7 @@ const storeProfile = {
   street: "Endereço em preparação",
   number: "S/N",
   complement: "Dados comerciais serão revisados antes da publicação.",
-  email: "contato@rosagiro.local",
+  email: "rosagiroatacado@gmail.com",
   whatsapp: "+55 11 97079-2390",
   businessHours: "Segunda a sexta, 9h às 18h",
   instagramUrl: "",
@@ -477,6 +477,7 @@ const siteInfoPageKeys = ["privacy", "terms", "returns", "shipping", "contact"] 
 
 const legacyStoreProfileCopy = {
   legalName: "RosaGiro Comercio de Cosmeticos Ltda.",
+  email: "contato@rosagiro.local",
   whatsapp: "+55 11 90000-0000",
   city: "Sao Paulo",
   street: "Endereco em preparacao",
@@ -582,6 +583,21 @@ const legacyInfoPageDefaults = {
     ]
   }
 } as const;
+
+const previousContactSections = [
+  {
+    title: "E-mail",
+    body: "Use o e-mail informado pela loja para suporte, dúvidas de pedido e contato comercial."
+  },
+  {
+    title: "WhatsApp",
+    body: "O WhatsApp é o canal principal para confirmar estoque, montar lista de compra, combinar retirada ou tirar dúvidas de entrega."
+  },
+  {
+    title: "Compra no atacado",
+    body: "Informe sua cidade/UF e se a compra é para revenda, reposição ou uso profissional para receber uma orientação mais rápida."
+  }
+] as const;
 
 const legacyLaunchReadinessCopy: Record<string, Partial<{ group: string; title: string; description: string }>> = {
   "store-legal-identity": {
@@ -692,6 +708,16 @@ async function applyExactDefaultCopyBackfills() {
   }
 
   await prisma.storeProfile.updateMany({
+    where: {
+      id: storeProfile.id,
+      legalName: {
+        in: ["RosaGiro Comércio de Cosméticos Ltda.", "RosaGiro化妆品贸易有限公司"]
+      }
+    },
+    data: { legalName: "" }
+  });
+
+  await prisma.storeProfile.updateMany({
     where: { id: storeProfile.id, trustBadges: { equals: legacyStoreTrustBadges } },
     data: { trustBadges: storeProfile.trustBadges }
   });
@@ -725,6 +751,17 @@ async function applyExactDefaultCopyBackfills() {
         });
       }
     }
+  }
+
+  const contactPage = await prisma.siteInfoPage.findUnique({
+    where: { pageKey: "contact" },
+    select: { sections: true }
+  });
+  if (contactPage && jsonEquals(comparableSections(contactPage.sections), comparableSections(previousContactSections))) {
+    await prisma.siteInfoPage.update({
+      where: { pageKey: "contact" },
+      data: { sections: infoPages.contact.sections }
+    });
   }
 
   for (const item of launchReadinessItems) {

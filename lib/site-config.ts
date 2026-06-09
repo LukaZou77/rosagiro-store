@@ -5,7 +5,7 @@ export const siteConfig = {
   tagline: "Atacado de cosméticos em São Paulo",
   description: "RosaGiro, atacado de cosméticos em São Paulo para revenda no Brasil.",
   defaultUrl: "http://localhost:3000",
-  supportEmail: "contato@rosagiro.local",
+  supportEmail: "rosagiroatacado@gmail.com",
   whatsapp: {
     phone: whatsappPhone,
     displayNumber: "+55 11 97079-2390",
@@ -338,7 +338,7 @@ export const infoPages = {
     sections: [
       {
         title: "E-mail",
-        body: "Use o e-mail informado pela loja para suporte, dúvidas de pedido e contato comercial."
+        body: "Use rosagiroatacado@gmail.com para suporte, dúvidas de pedido e contato comercial."
       },
       {
         title: "WhatsApp",

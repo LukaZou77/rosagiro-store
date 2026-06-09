@@ -71,7 +71,7 @@ type PixPaymentPayload = Partial<PublicPixPaymentAccount> | null | undefined;
 export const defaultStoreProfile = {
   id: STORE_PROFILE_ID,
   storeName: "RosaGiro",
-  legalName: "RosaGiro Comércio de Cosméticos Ltda.",
+  legalName: "",
   cnpj: "00.000.000/0000-00",
   stateRegistration: "Isento ou a ajustar",
   cep: "00000-000",
@@ -81,7 +81,7 @@ export const defaultStoreProfile = {
   street: "Endereço a confirmar",
   number: "S/N",
   complement: "Dados comerciais serão revisados antes da publicação.",
-  email: "contato@rosagiro.local",
+  email: "rosagiroatacado@gmail.com",
   whatsapp: "+55 11 97079-2390",
   businessHours: "Segunda a sexta, 9h às 18h",
   instagramUrl: "",
@@ -129,6 +129,13 @@ export function storeProfileAddress(profile: StoreProfileView) {
 export function storeCnpjLabel(profile: StoreProfileView) {
   const digits = profile.cnpj.replace(/\D/g, "");
   return digits.length === 14 && !/^0+$/.test(digits) ? `CNPJ ${profile.cnpj}` : "Dados da loja";
+}
+
+export function publicLegalName(profile: StoreProfileView) {
+  const value = profile.legalName.trim();
+  if (!value) return "";
+  if (/bela viva|rosa giro|rosagiro.*(com[eé]rcio|cosm[eé]tico|ltda|limitada)|化妆品贸易有限公司/i.test(value)) return "";
+  return value;
 }
 
 function cleanPublicSignal(signal: string) {
