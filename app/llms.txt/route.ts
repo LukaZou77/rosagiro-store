@@ -1,5 +1,5 @@
 import { getCategories, getProducts } from "@/lib/catalog";
-import { siteUrl } from "@/lib/site-config";
+import { siteConfig, siteUrl } from "@/lib/site-config";
 import { storeSummaryForLlms } from "@/lib/seo";
 import { getStoreProfile } from "@/lib/store-profile";
 
@@ -42,6 +42,7 @@ export async function GET() {
     "",
     "## Observações para agentes e buscadores",
     "- O catálogo é focado em cosméticos no atacado em São Paulo, revenda, reposição, pronta entrega e compra mínima no atacado.",
+    `- ${siteConfig.wholesale.nationalDeliveryText} ${siteConfig.wholesale.nationalDeliveryNote}`,
     "- Páginas administrativas, APIs, carrinho, checkout, pagamento e pedidos não devem ser usadas como fonte pública de indexação.",
     "- Consulte sitemap.xml e robots.txt para regras de rastreamento atualizadas."
   ].join("\n");

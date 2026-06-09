@@ -25,11 +25,11 @@ export const siteConfig = {
     cartCta: "Enviar lista pelo WhatsApp",
     messages: {
       generalGreeting: "Olá, RosaGiro! Quero atendimento para comprar no atacado.",
-      generalQuestion: "Sou revendedora/lojista ou quero comprar para reposição. Pode me orientar sobre produtos, estoque, cidade/UF e melhor forma de entrega?",
+      generalQuestion: "Sou revendedora/lojista ou quero comprar para reposição. Pode me orientar sobre produtos, estoque, cidade/UF e cotação de entrega para todo o Brasil?",
       productGreeting: "Olá, RosaGiro! Quero consultar este produto.",
-      productQuestion: "Pode confirmar estoque, condição para atacado e indicar se compensa retirar, enviar por transportadora ou excursão para minha cidade?",
+      productQuestion: "Pode confirmar estoque, condição para atacado e indicar a melhor opção de entrega nacional, retirada, transportadora ou excursão?",
       cartGreeting: "Olá, RosaGiro! Quero confirmar esta lista de compra.",
-      cartQuestion: "Pode revisar estoque, sugerir itens para completar o pedido mínimo e me orientar sobre entrega/retirada para minha cidade?"
+      cartQuestion: "Pode revisar estoque, sugerir itens para completar o pedido mínimo e me orientar sobre entrega para todo o Brasil, retirada ou excursão?"
     }
   },
   marketplace: "Brasil",
@@ -37,19 +37,22 @@ export const siteConfig = {
     minimumOrderCents: 30000,
     minimumOrderTitle: "Pedido mínimo",
     minimumOrderText: "Pedido mínimo R$ 300,00 para compras no atacado. Se precisar completar a lista, fale com o atendimento.",
-    headerStrip: "PEDIDO MÍNIMO R$ 300,00 - OFERTAS MULTIMARCAS - PIX, CEP E WHATSAPP",
+    headerStrip: "PEDIDO MÍNIMO R$ 300,00 - ENTREGA PARA TODO O BRASIL - PIX, CEP E WHATSAPP",
     storeTrust: "Dados comerciais, atendimento e políticas reunidos para uma compra mais segura.",
+    nationalDeliveryLabel: "Entrega para todo o Brasil",
+    nationalDeliveryText: "Enviamos para todo o Brasil com cotação por CEP.",
+    nationalDeliveryNote: "Algumas regiões podem exigir confirmação de cobertura, prazo, seguro ou taxa adicional pelo WhatsApp.",
     deliveryModes: [
+      "Entrega para todo o Brasil com cotação por CEP",
       "Retirada local mediante confirmação",
-      "Anjun D2D Pickup estimado por CEP",
-      "Transportadora ou excursão sob consulta"
+      "Anjun, transportadora ou excursão sob consulta"
     ],
-    shelfSignals: ["Pedido mínimo R$ 300", "Ofertas e pronta entrega", "Compra para revenda", "WhatsApp rápido"]
+    shelfSignals: ["Pedido mínimo R$ 300", "Entrega para todo o Brasil", "Compra para revenda", "WhatsApp rápido"]
   },
   hero: {
     eyebrow: "Atacado de cosméticos em São Paulo",
     title: "Ofertas para revenda, kits e reposição com compra rápida.",
-    body: "Skincare, maquiagem, perfumes, cabelo e acessórios com sinal de estoque, pedido mínimo, frete por CEP e atendimento no WhatsApp.",
+    body: "Skincare, maquiagem, perfumes, cabelo e acessórios com sinal de estoque, pedido mínimo, cotação por CEP para todo o Brasil e atendimento no WhatsApp.",
     primaryCta: "Comprar pelo catálogo",
     secondaryCta: "Comprar destaque"
   },
@@ -64,7 +67,7 @@ export const siteConfig = {
   homePromotions: {
     promoBar: {
       label: "Ofertas no atacado",
-      text: "Pedido mínimo R$ 300,00, Pix, frete por CEP e WhatsApp para revisar estoque e entrega.",
+      text: "Pedido mínimo R$ 300,00, Pix, entrega para todo o Brasil com cotação por CEP e WhatsApp para revisar estoque.",
       cta: "Ver ofertas",
       href: "/promocoes"
     },
@@ -78,7 +81,7 @@ export const siteConfig = {
       "Pedido mínimo R$ 300,00 sinalizado em toda compra",
       "Pedido multimarcas em um carrinho",
       "Pix e cartão pelo checkout seguro",
-      "Frete Anjun estimado por CEP",
+      "Entrega para todo o Brasil com cotação por CEP",
       "WhatsApp para dúvidas de estoque e entrega"
     ],
     quickActions: [
@@ -105,8 +108,8 @@ export const siteConfig = {
     ],
     wholesaleBand: {
       eyebrow: "Compra com volume",
-      title: "Compra mínima clara, WhatsApp rápido e entrega do jeito brasileiro.",
-      body: "A vitrine orienta pedido mínimo, estoque, pronta entrega, Pix, frete por CEP e consulta por WhatsApp para quem compra para revenda ou reposição.",
+      title: "Compra mínima clara, WhatsApp rápido e entrega para todo o Brasil.",
+      body: "A vitrine orienta pedido mínimo, estoque, pronta entrega, Pix, cotação por CEP para todo o Brasil e consulta por WhatsApp para quem compra para revenda ou reposição.",
       primaryCta: "Ver todos os produtos",
       secondaryCta: "Falar no WhatsApp"
     },
@@ -133,6 +136,7 @@ export const siteConfig = {
       "Pedido mínimo R$ 300",
       "Desconto real quando existe preço comparativo",
       "Produtos multimarcas para revenda",
+      "Entrega para todo o Brasil",
       "Pix, CEP e WhatsApp visíveis"
     ],
     tiles: [
@@ -146,7 +150,7 @@ export const siteConfig = {
       },
       {
         label: "Atacado local",
-        text: "Pedido mínimo, retirada, transportadora e excursão continuam visíveis."
+        text: "Pedido mínimo, cotação nacional por CEP, retirada, transportadora e excursão continuam visíveis."
       }
     ]
   },
@@ -156,15 +160,15 @@ export const siteConfig = {
     minimumLabel: "Mínimo atacado",
     stockLabel: "Estoque",
     freightLabel: "Frete por CEP",
-    freightText: "Anjun, retirada ou consulta no WhatsApp",
+    freightText: "Cotação por CEP para todo o Brasil",
     cardMinimumHint: "R$ 300 mínimo",
     detailPanelTitle: "Compra no atacado",
-    detailPanelNote: "Confira estoque, pedido mínimo e frete antes de finalizar. Para comprar em volume, o atendimento pode sugerir itens para completar sua lista.",
+    detailPanelNote: "Confira estoque, pedido mínimo e frete por CEP antes de finalizar. Entregamos para todo o Brasil com confirmação de cobertura quando necessário.",
     reviewFallback: "Produto em curadoria",
     bundlePrompt: "Quer montar kit para revenda? Envie este item pelo WhatsApp e informe sua cidade/UF.",
     wholesaleInfoEyebrow: "Compra para revenda",
     wholesaleInfoTitle: "Detalhes para atacado",
-    wholesaleInfoNote: "Use estas informações para montar reposição, kit ou caixa. Se for comprar volume maior, confirme validade/lote e entrega pelo WhatsApp.",
+    wholesaleInfoNote: "Use estas informações para montar reposição, kit ou caixa. Se for comprar volume maior, confirme validade/lote e cotação de entrega nacional pelo WhatsApp.",
     unavailableCta: "Consultar disponibilidade",
     completionEyebrow: "Completar pedido",
     completionTitle: "Combine para fechar pedido mínimo",
@@ -178,7 +182,7 @@ export const siteConfig = {
     fichaTitle: "Ficha do produto",
     fichaBody: "Informações de marca, categoria, tamanho, textura e peso usadas para escolher o item certo.",
     deliveryTitle: "Entrega e atendimento",
-    deliveryBody: "A compra combina checkout com suporte humano para estoque, lote, retirada, transportadora ou excursão."
+    deliveryBody: "A compra combina checkout com suporte humano para estoque, lote, entrega para todo o Brasil, retirada, transportadora ou excursão."
   },
   mobilePurchase: {
     filterTitle: "Filtrar e ordenar",
@@ -205,7 +209,7 @@ export const siteConfig = {
       },
       address: {
         title: "Endereço e frete",
-        summary: "CEP, entrega, retirada ou frete por consulta."
+        summary: "CEP, entrega nacional, retirada ou frete por consulta."
       },
       payment: {
         title: "Pagamento",
@@ -321,11 +325,11 @@ export const infoPages = {
     href: "/entrega",
     eyebrow: "Entrega",
     title: "Entrega e frete",
-    description: "Informações iniciais sobre modalidades de entrega para pedidos no Brasil.",
+    description: "Informações iniciais sobre entrega nacional e modalidades de frete para pedidos no Brasil.",
     sections: [
       {
         title: "Modalidades",
-        body: "A loja trabalha com estimativa de frete por CEP no checkout e retirada local mediante confirmação. Transportadora e excursão continuam como opções para consulta pelo WhatsApp."
+        body: "Enviamos para todo o Brasil com cotação por CEP no checkout. Retirada local, transportadora e excursão continuam como opções de consulta pelo WhatsApp."
       },
       {
         title: "Cotação por CEP",
@@ -333,7 +337,7 @@ export const infoPages = {
       },
       {
         title: "Integrações futuras",
-        body: "A loja pode evoluir para novas integrações de transporte sem alterar a experiência principal de checkout e atendimento."
+        body: "Algumas regiões podem exigir confirmação de cobertura, prazo, seguro, imposto ou taxa adicional pelo WhatsApp antes do envio."
       }
     ]
   },

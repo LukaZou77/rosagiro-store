@@ -4,6 +4,7 @@ import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { getCategories } from "@/lib/catalog";
 import { storefrontMetadata } from "@/lib/seo";
+import { siteConfig } from "@/lib/site-config";
 import {
   getStoreProfile,
   publicLegalName,
@@ -98,7 +99,9 @@ export default async function StoreInformationPage() {
         <article className="store-info-card">
           <span>Entrega</span>
           <h2>Transporte e excursão</h2>
+          <strong>{siteConfig.wholesale.nationalDeliveryText}</strong>
           <p>{profile.shippingNote}</p>
+          <p>{siteConfig.wholesale.nationalDeliveryNote}</p>
           <Link href="/entrega">Ver política de entrega</Link>
         </article>
 

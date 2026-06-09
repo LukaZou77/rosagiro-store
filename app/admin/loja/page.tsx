@@ -3,6 +3,7 @@ import { saveStoreProfileAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { getLaunchReadinessSnapshot, launchReadinessSignalLabels } from "@/lib/launch-readiness";
+import { mercadoPagoInstallmentOptions } from "@/lib/payments";
 import {
   getPublicPixPaymentAccount,
   getStoreProfile,
@@ -166,6 +167,24 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
             Pagamento
             <textarea name="paymentNote" defaultValue={profile.paymentNote} />
           </label>
+          <div className="admin-subpanel pix-account-admin-panel">
+            <div>
+              <h3>Cartão de crédito / parcelamento</h3>
+              <p className="table-note">
+                Define o máximo de parcelas enviado ao Checkout Pro do Mercado Pago. O checkout mostra “até Xx”, sem prometer juros zero.
+              </p>
+            </div>
+            <label>
+              Parcelamento máximo
+              <select name="mercadoPagoMaxInstallments" defaultValue={profile.mercadoPagoMaxInstallments}>
+                {mercadoPagoInstallmentOptions.map((option) => (
+                  <option value={option} key={option}>
+                    até {option}x
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <div className="admin-subpanel pix-account-admin-panel">
             <div>
               <h3>Conta Pix para recebimento manual</h3>

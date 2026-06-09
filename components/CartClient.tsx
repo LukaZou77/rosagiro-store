@@ -133,7 +133,9 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
             <span>Total sem frete</span>
             <strong>{money(total)}</strong>
           </div>
-          <p>Frete Anjun D2D Pickup será estimado por CEP no checkout. Retirada local continua disponível.</p>
+          <p>
+            {siteConfig.wholesale.nationalDeliveryText} {siteConfig.wholesale.nationalDeliveryNote}
+          </p>
         </div>
         <div className="delivery-note">
           {siteConfig.wholesale.deliveryModes.map((mode) => (

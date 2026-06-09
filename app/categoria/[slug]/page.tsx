@@ -198,7 +198,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         <p>{products.length} produtos disponíveis, com filtros por categoria, marca e prioridade de compra.</p>
         <div className="catalog-service-bar">
           <span>{siteConfig.wholesale.minimumOrderText}</span>
-          <span>{siteConfig.wholesale.deliveryModes[1]}</span>
+          <span>{siteConfig.wholesale.nationalDeliveryLabel}</span>
           <WhatsAppLink href={whatsappHref} className="service-whatsapp">
             {siteConfig.whatsapp.serviceLabel}
           </WhatsAppLink>

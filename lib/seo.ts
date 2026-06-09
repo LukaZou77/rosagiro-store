@@ -181,13 +181,13 @@ export function productJsonLd(product: CatalogProduct) {
 export function productMetaDescription(product: CatalogProduct) {
   const stock = (product.inventory?.quantity || 0) > 0 ? "pronta entrega" : "disponibilidade sob consulta";
   return compactText(
-    `${product.name} da ${product.brand.name}: ${product.descriptionPt} Preço ${money(product.priceCents)}, ${stock}, compra no atacado com pedido mínimo R$ 300,00 e atendimento WhatsApp.`
+    `${product.name} da ${product.brand.name}: ${product.descriptionPt} Preço ${money(product.priceCents)}, ${stock}, compra no atacado com pedido mínimo R$ 300,00, cotação por CEP para todo o Brasil e atendimento WhatsApp.`
   );
 }
 
 export function categoryMetaDescription(label: string, count: number) {
   return compactText(
-    `${label} no catálogo RosaGiro: ${count} produto(s) de cosméticos no atacado em São Paulo para revenda, pronta entrega, pedido mínimo R$ 300,00, frete por CEP e WhatsApp.`
+    `${label} no catálogo RosaGiro: ${count} produto(s) de cosméticos no atacado em São Paulo para revenda, pronta entrega, pedido mínimo R$ 300,00, entrega para todo o Brasil com cotação por CEP e WhatsApp.`
   );
 }
 

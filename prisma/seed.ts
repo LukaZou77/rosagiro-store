@@ -100,7 +100,7 @@ const storeProfile = {
   facebookUrl: "",
   tiktokUrl: "",
   pickupNote: "Retirada local mediante confirmação pelo atendimento.",
-  shippingNote: "Anjun D2D Pickup, transportadora e excursão serão confirmadas antes do envio.",
+  shippingNote: "Enviamos para todo o Brasil com cotação por CEP. Algumas regiões podem exigir confirmação de cobertura, prazo, seguro ou taxa adicional pelo WhatsApp.",
   paymentNote: "Pix, cartão e pagamento com atendimento estão preparados para a fase de validação.",
   pixPaymentEnabled: false,
   pixAccountType: "TEMPORARY_PERSONAL",
@@ -109,9 +109,10 @@ const storeProfile = {
   pixKeyType: "RANDOM",
   pixKey: "",
   pixBankName: "",
+  mercadoPagoMaxInstallments: 6,
   pixInstructions: "Finalize o pedido, faça o Pix e envie o comprovante pelo WhatsApp para confirmação do atendimento.",
   exchangeNote: "Trocas e devoluções seguem política própria antes da publicação oficial.",
-  trustBadges: ["Loja em preparação", "Atendimento por WhatsApp", "Pedido mínimo sinalizado"],
+  trustBadges: ["Atendimento por WhatsApp", "Entrega para todo o Brasil", "Pedido mínimo sinalizado"],
   launchNote: "Ambiente em preparação: pedidos e pagamentos desta versão são simulados."
 };
 
@@ -484,7 +485,7 @@ const legacyStoreProfileCopy = {
   complement: "Dados comerciais serao revisados antes da publicacao.",
   businessHours: "Segunda a sexta, 9h as 18h",
   pickupNote: "Retirada local mediante confirmacao pelo atendimento.",
-  shippingNote: "Anjun D2D Pickup, transportadora e excursao serao confirmadas antes do envio.",
+  shippingNote: "Enviamos para todo o Brasil com cotação por CEP. Algumas regiões podem exigir confirmação de cobertura, prazo, seguro ou taxa adicional pelo WhatsApp.",
   paymentNote: "Pix, cartao e pagamento simulado estao preparados para a fase de testes.",
   exchangeNote: "Trocas e devolucoes seguem politica propria antes da publicacao oficial.",
   launchNote: "Ambiente em preparacao: pedidos e pagamentos desta versao sao simulados."
@@ -566,11 +567,11 @@ const legacyInfoPageDefaults = {
     ]
   },
   shipping: {
-    description: "Informacoes iniciais sobre modalidades de entrega para pedidos no Brasil.",
+    description: "Informações iniciais sobre entrega nacional e modalidades de frete para pedidos no Brasil.",
     sections: [
       {
         title: "Modalidades",
-        body: "A loja trabalha com estimativa de frete por CEP no checkout e retirada local mediante confirmacao. Transportadora e excursao continuam como opcoes para consulta pelo WhatsApp."
+        body: "Enviamos para todo o Brasil com cotação por CEP no checkout. Retirada local, transportadora e excursão continuam como opções de consulta pelo WhatsApp."
       },
       {
         title: "Cotacao por CEP",
@@ -578,7 +579,7 @@ const legacyInfoPageDefaults = {
       },
       {
         title: "Integracoes futuras",
-        body: "Esta fase ainda nao compra etiquetas nem chama API real de transportadora. Depois podemos conectar Melhor Envio, Anjun ou outra operacao sem refazer o checkout."
+        body: "Algumas regiões podem exigir confirmação de cobertura, prazo, seguro, imposto ou taxa adicional pelo WhatsApp antes do envio."
       }
     ]
   }

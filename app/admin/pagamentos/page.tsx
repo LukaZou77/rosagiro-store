@@ -91,6 +91,11 @@ export default async function AdminPaymentsPage() {
           <strong>{snapshot.counts.webhookEvents}</strong>
           <small>{snapshot.counts.invalidWebhookSignatures} assinatura(s) inválida(s)</small>
         </div>
+        <div>
+          <span>Parcelamento</span>
+          <strong>até {snapshot.mercadoPagoMaxInstallments}x</strong>
+          <small>Cartão via Checkout Pro</small>
+        </div>
       </div>
 
       <section className="import-panel">

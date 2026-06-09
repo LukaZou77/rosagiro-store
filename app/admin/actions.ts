@@ -6,6 +6,7 @@ import { clearAdminSession, requireAdmin, setAdminSession, verifyPassword } from
 import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
 import { markOrderPaid, OrderError } from "@/lib/orders";
+import { isMercadoPagoInstallments } from "@/lib/payments";
 import { importProductsFromCsv, ProductImportError } from "@/lib/product-import";
 import { isAllowedProductImage, normalizeProductGallery, parseCents, parsePipeList, slugify } from "@/lib/product-import-shared";
 import {
@@ -508,6 +509,7 @@ export async function saveStoreProfileAction(formData: FormData) {
   const pixKeyType = includesOption(pixKeyTypeOptions, field(formData, "pixKeyType")) ? field(formData, "pixKeyType") : "RANDOM";
   const pixKey = field(formData, "pixKey");
   const pixBankName = field(formData, "pixBankName");
+  const mercadoPagoMaxInstallments = Number(field(formData, "mercadoPagoMaxInstallments") || 6);
   const pixInstructions =
     field(formData, "pixInstructions") ||
     "Finalize o pedido, faça o Pix e envie o comprovante pelo WhatsApp para confirmação do atendimento.";
@@ -523,6 +525,10 @@ export async function saveStoreProfileAction(formData: FormData) {
   if (pixPaymentEnabled && !pixRecipientName) redirectError("/admin/loja", "Informe o nome do recebedor Pix.");
   if (pixPaymentEnabled && !validatePixKey(pixKeyType, pixKey)) {
     redirectError("/admin/loja", "Chave Pix inválida para o tipo selecionado.");
+  }
+
+  if (!isMercadoPagoInstallments(mercadoPagoMaxInstallments)) {
+    redirectError("/admin/loja", "Selecione parcelamento Mercado Pago de 3x, 6x, 9x ou 12x.");
   }
 
   await prisma.storeProfile.upsert({
@@ -555,6 +561,7 @@ export async function saveStoreProfileAction(formData: FormData) {
       pixKeyType,
       pixKey,
       pixBankName,
+      mercadoPagoMaxInstallments,
       pixInstructions,
       exchangeNote,
       trustBadges,
@@ -589,6 +596,7 @@ export async function saveStoreProfileAction(formData: FormData) {
       pixKeyType,
       pixKey,
       pixBankName,
+      mercadoPagoMaxInstallments,
       pixInstructions,
       exchangeNote,
       trustBadges,

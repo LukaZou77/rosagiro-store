@@ -4,6 +4,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { OrderError, markOrderPaid } from "@/lib/orders";
 import type { PaymentMethodValue } from "@/lib/payments";
+import { configuredMercadoPagoInstallments, getStoreProfile } from "@/lib/store-profile";
 import type { Prisma } from "@/src/generated/prisma/client";
 
 const MERCADO_PAGO_API_BASE = "https://api.mercadopago.com";
@@ -149,6 +150,7 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
   const payerName = splitName(order.customerName);
   const payerPhone = splitPhone(order.customerPhone);
   const baseOrderUrl = `${config.publicUrl}/pedido/${encodeURIComponent(order.orderNumber)}`;
+  const maxInstallments = configuredMercadoPagoInstallments(await getStoreProfile());
   const preferenceBody = {
     items: [
       {
@@ -177,6 +179,9 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
         street_number: order.number
       }
     },
+    payment_methods: {
+      installments: maxInstallments
+    },
     back_urls: {
       success: `${baseOrderUrl}?mp=success`,
       pending: `${baseOrderUrl}?mp=pending`,
@@ -188,7 +193,8 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
     statement_descriptor: "ROSAGIRO",
     metadata: {
       order_number: order.orderNumber,
-      payment_method_requested: order.payment.method
+      payment_method_requested: order.payment.method,
+      max_installments: maxInstallments
     }
   };
 

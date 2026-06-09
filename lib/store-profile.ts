@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { defaultMercadoPagoInstallments, normalizeMercadoPagoInstallments } from "@/lib/payments";
 
 export const STORE_PROFILE_ID = "main";
 
@@ -35,6 +36,7 @@ export type StoreProfileView = {
   pixKey: string;
   pixBankName: string;
   pixInstructions: string;
+  mercadoPagoMaxInstallments: number;
   exchangeNote: string;
   trustBadges: string[];
   launchNote: string;
@@ -88,7 +90,7 @@ export const defaultStoreProfile = {
   facebookUrl: "",
   tiktokUrl: "",
   pickupNote: "Retirada local mediante confirmação pelo atendimento.",
-  shippingNote: "Anjun D2D Pickup, transportadora e excursão serão confirmadas antes do envio.",
+  shippingNote: "Enviamos para todo o Brasil com cotação por CEP. Algumas regiões podem exigir confirmação de cobertura, prazo, seguro ou taxa adicional pelo WhatsApp.",
   paymentNote: "Pix, cartão e checkout com atendimento estão disponíveis conforme a modalidade escolhida.",
   pixPaymentEnabled: false,
   pixAccountType: "TEMPORARY_PERSONAL",
@@ -97,9 +99,10 @@ export const defaultStoreProfile = {
   pixKeyType: "RANDOM",
   pixKey: "",
   pixBankName: "",
+  mercadoPagoMaxInstallments: defaultMercadoPagoInstallments,
   pixInstructions: "Finalize o pedido, faça o Pix e envie o comprovante pelo WhatsApp para confirmação do atendimento.",
   exchangeNote: "Trocas e devoluções seguem política própria antes da publicação oficial.",
-  trustBadges: ["Atendimento por WhatsApp", "Pedido mínimo sinalizado", "Políticas visíveis"],
+  trustBadges: ["Atendimento por WhatsApp", "Entrega para todo o Brasil", "Pedido mínimo sinalizado", "Políticas visíveis"],
   launchNote: "Confira os dados da loja, canais de atendimento e políticas antes de finalizar sua compra."
 } satisfies StoreProfileView;
 
@@ -119,6 +122,13 @@ export const getStoreProfile = cache(async (): Promise<StoreProfileView> => {
         : defaultStoreProfile.trustBadges
   };
 });
+
+export function configuredMercadoPagoInstallments(profile?: Pick<StoreProfileView, "mercadoPagoMaxInstallments"> | null) {
+  return normalizeMercadoPagoInstallments(
+    profile?.mercadoPagoMaxInstallments ?? process.env.MERCADO_PAGO_MAX_INSTALLMENTS,
+    defaultMercadoPagoInstallments
+  );
+}
 
 export function storeProfileAddress(profile: StoreProfileView) {
   return [profile.street, profile.number, profile.complement, profile.district, `${profile.city} - ${profile.state}`, `CEP ${profile.cep}`]
@@ -165,6 +175,7 @@ export function storeSocialLinks(profile: StoreProfileView) {
 export function storeTrustSignals(profile: StoreProfileView, limit = 4) {
   const signals = [
     ...profile.trustBadges,
+    "Entrega para todo o Brasil",
     storeCnpjLabel(profile),
     profile.businessHours,
     "Políticas de troca e entrega visíveis"

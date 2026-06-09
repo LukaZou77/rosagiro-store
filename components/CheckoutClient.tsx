@@ -13,7 +13,7 @@ import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
 import { money } from "@/lib/money";
-import { paymentMethods, type PaymentMethodValue } from "@/lib/payments";
+import { paymentMethodsForCheckout, type PaymentMethodValue } from "@/lib/payments";
 import { siteConfig } from "@/lib/site-config";
 import { buildCartWhatsAppHref, buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
@@ -136,7 +136,15 @@ function stepIndex(step: CheckoutStep) {
   return checkoutStepOrder.indexOf(step);
 }
 
-export function CheckoutClient({ products, trustSignals }: { products: Product[]; trustSignals: string[] }) {
+export function CheckoutClient({
+  products,
+  trustSignals,
+  mercadoPagoMaxInstallments
+}: {
+  products: Product[];
+  trustSignals: string[];
+  mercadoPagoMaxInstallments: number;
+}) {
   const whatsappPhone = useWhatsAppPhone();
   const router = useRouter();
   const cart = useCart();
@@ -191,6 +199,10 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     () => getCartCompletionRecommendations(products, cart, { limit: 4 }),
     [cart, products]
   );
+  const checkoutPaymentMethods = useMemo(
+    () => paymentMethodsForCheckout(mercadoPagoMaxInstallments),
+    [mercadoPagoMaxInstallments]
+  );
   const selectedShipping = shippingQuote?.options.find((option) => option.method === shippingMethod) || null;
   const shipping = selectedShipping?.priceCents || 0;
   const total = subtotal - discount + shipping;
@@ -238,7 +250,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
     address: addressComplete,
     payment: paymentComplete
   };
-  const paymentLabel = paymentMethods.find((method) => method.value === paymentMethod)?.label || "Pagamento";
+  const paymentLabel = checkoutPaymentMethods.find((method) => method.value === paymentMethod)?.label || "Pagamento";
   const stepSummaries: Record<CheckoutStep, string> = {
     contact: contactComplete
       ? `${contactValue.name.trim()} · ${contactValue.phone.trim()}`
@@ -1114,7 +1126,7 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
             <small>{stepSummaries.payment}</small>
           </legend>
           <div className="checkout-step-body">
-            {paymentMethods.map((method) => (
+            {checkoutPaymentMethods.map((method) => (
               <label className="radio-card" key={method.value}>
                 <input
                   type="radio"
@@ -1185,7 +1197,13 @@ export function CheckoutClient({ products, trustSignals }: { products: Product[]
             <span>Frete base</span>
             <strong>{shipping === 0 ? "R$ 0,00" : money(shipping)}</strong>
           </div>
-          {selectedShipping ? <p>{selectedShipping.note}</p> : <p>Frete Anjun será calculado após informar o CEP.</p>}
+          {selectedShipping ? (
+            <p>
+              {selectedShipping.note} {siteConfig.wholesale.nationalDeliveryNote}
+            </p>
+          ) : (
+            <p>{siteConfig.wholesale.nationalDeliveryText} Informe o CEP para calcular o frete.</p>
+          )}
           <div className="summary-total">
             <span>Total</span>
             <strong>{money(total)}</strong>

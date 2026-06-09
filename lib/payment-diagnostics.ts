@@ -8,6 +8,7 @@ import {
   type PaymentDiagnosticStatus
 } from "@/lib/payment-config-diagnostics";
 import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
+import { configuredMercadoPagoInstallments, getStoreProfile } from "@/lib/store-profile";
 
 export { buildPaymentConfigDiagnostics };
 export type { PaymentDiagnosticCheck, PaymentDiagnosticSeverity, PaymentDiagnosticStatus };
@@ -51,6 +52,7 @@ export type PaymentDiagnosticSnapshot = {
   statusLabel: string;
   fallbackMessage: string;
   modeLabel: string;
+  mercadoPagoMaxInstallments: number;
   webhookEndpointPath: string;
   configChecks: PaymentDiagnosticCheck[];
   recentPayments: RecentPaymentDiagnostic[];
@@ -66,7 +68,8 @@ export type PaymentDiagnosticSnapshot = {
 
 export async function getPaymentDiagnosticSnapshot(): Promise<PaymentDiagnosticSnapshot> {
   const config = buildPaymentConfigDiagnostics();
-  const [recentPayments, recentWebhookEvents, counts] = await Promise.all([
+  const [profile, recentPayments, recentWebhookEvents, counts] = await Promise.all([
+    getStoreProfile(),
     prisma.payment.findMany({
       include: { order: true },
       orderBy: { updatedAt: "desc" },
@@ -87,6 +90,7 @@ export async function getPaymentDiagnosticSnapshot(): Promise<PaymentDiagnosticS
 
   return {
     ...config,
+    mercadoPagoMaxInstallments: configuredMercadoPagoInstallments(profile),
     recentPayments: recentPayments.map((payment) => ({
       id: payment.id,
       orderNumber: payment.order.orderNumber,

@@ -1,13 +1,17 @@
-export const paymentMethods = [
+export const mercadoPagoInstallmentOptions = [3, 6, 9, 12] as const;
+export type MercadoPagoInstallments = (typeof mercadoPagoInstallmentOptions)[number];
+export const defaultMercadoPagoInstallments: MercadoPagoInstallments = 6;
+
+const basePaymentMethods = [
   {
     value: "PIX",
     label: "Pix",
-    description: "Crie o pedido e use os dados Pix exibidos para enviar o comprovante pelo WhatsApp."
+    description: "Pagamento seguro pelo Mercado Pago."
   },
   {
     value: "CREDIT_CARD",
     label: "Cartão de crédito",
-    description: "Pagamento por checkout seguro; a RosaGiro não armazena dados do cartão."
+    description: "Pagamento seguro pelo Mercado Pago; a RosaGiro não armazena dados do cartão."
   },
   {
     value: "SIMULATED",
@@ -16,14 +20,44 @@ export const paymentMethods = [
   }
 ] as const;
 
-export type PaymentMethodValue = (typeof paymentMethods)[number]["value"];
+export type PaymentMethodValue = (typeof basePaymentMethods)[number]["value"];
+
+export function isMercadoPagoInstallments(value: unknown): value is MercadoPagoInstallments {
+  const parsed = Number(value);
+  return mercadoPagoInstallmentOptions.includes(parsed as MercadoPagoInstallments);
+}
+
+export function normalizeMercadoPagoInstallments(value: unknown, fallback: MercadoPagoInstallments = defaultMercadoPagoInstallments) {
+  const parsed = Number(value);
+  return isMercadoPagoInstallments(parsed) ? parsed : fallback;
+}
+
+export function creditCardInstallmentLabel(maxInstallments: unknown) {
+  return `Cartão de crédito em até ${normalizeMercadoPagoInstallments(maxInstallments)}x`;
+}
+
+export function paymentMethodsForCheckout(maxInstallments: unknown = defaultMercadoPagoInstallments) {
+  const installmentLabel = creditCardInstallmentLabel(maxInstallments);
+  return basePaymentMethods.map((method) =>
+    method.value === "CREDIT_CARD"
+      ? {
+          ...method,
+          label: installmentLabel
+        }
+      : method
+  );
+}
+
+export const paymentMethods = paymentMethodsForCheckout();
 
 export function isPaymentMethod(value: string): value is PaymentMethodValue {
-  return paymentMethods.some((method) => method.value === value);
+  return basePaymentMethods.some((method) => method.value === value);
 }
 
 export function paymentMethodLabel(value?: string | null) {
-  return paymentMethods.find((method) => method.value === value)?.label || "Confirmar com atendimento";
+  if (value === "PIX") return "Pix";
+  if (value === "CREDIT_CARD") return "Cartão de crédito";
+  return "Confirmar com atendimento";
 }
 
 export function paymentProviderLabel(value?: string | null) {

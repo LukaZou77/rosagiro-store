@@ -46,12 +46,12 @@ export function productDetailServiceCards(): ProductDetailServiceCard[] {
   return [
     {
       label: "Frete por CEP",
-      value: "Anjun D2D Pickup no checkout; transportadora e excursão sob consulta.",
+      value: "Cotação por CEP para todo o Brasil; cobertura e taxas podem ser confirmadas pelo WhatsApp.",
       tone: "ready"
     },
     {
       label: "Retirada / excursão",
-      value: "Combine retirada, transportadora ou excursão conforme sua cidade.",
+      value: "Combine retirada, transportadora ou excursão conforme sua cidade/UF.",
       tone: "ready"
     },
     {

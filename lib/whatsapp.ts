@@ -61,8 +61,8 @@ export function buildCatalogWhatsAppHref(categoryLabel: string, productCount: nu
       `Estou olhando o catálogo: ${categoryLabel}.`,
       `Produtos encontrados: ${productCount}.`,
       `Pedido mínimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
-      "Cidade/UF para entrega ou retirada: ",
-      "Pode me ajudar com estoque, retirada, transportadora ou excursão?"
+      "Cidade/UF para cotação de entrega nacional ou retirada: ",
+      "Pode me ajudar com estoque, frete para todo o Brasil, retirada, transportadora ou excursão?"
     ].join("\n"),
     phone
   );
@@ -84,7 +84,7 @@ export function buildProductWhatsAppHref(product: ProductContact, phone?: string
       ...wholesaleLines,
       `Link: ${siteUrl(`/produto/${product.slug}`)}`,
       `Pedido mínimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
-      "Cidade/UF para entrega ou retirada: ",
+      "Cidade/UF para cotação de entrega nacional ou retirada: ",
       "Compra para revenda/reposição? ",
       siteConfig.whatsapp.messages.productQuestion
     ]
@@ -109,7 +109,7 @@ export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: n
       `Subtotal do carrinho: ${money(subtotalCents)}`,
       `Pedido mínimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
       missingCents > 0 ? `Ainda faltam: ${money(missingCents)}` : "Lista acima do mínimo sugerido.",
-      "Cidade/UF para entrega ou retirada: ",
+      "Cidade/UF para cotação de entrega nacional ou retirada: ",
       "Compra para revenda/reposição? ",
       siteConfig.whatsapp.messages.cartQuestion
     ].join("\n"),
