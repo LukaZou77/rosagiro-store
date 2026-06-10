@@ -29,7 +29,8 @@ Required:
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `NEXT_PUBLIC_SITE_URL`
-- `PRODUCT_IMAGE_STORAGE` (`local` in this first upload version)
+- `PRODUCT_IMAGE_STORAGE` (`local` for local development, `vercel_blob` for Vercel production uploads)
+- `BLOB_READ_WRITE_TOKEN` (required when `PRODUCT_IMAGE_STORAGE=vercel_blob`)
 
 Payment:
 
@@ -51,7 +52,7 @@ Optional CSV fields:
 
 `compareAtPrice,gallery,benefits,ingredients,badges,skinType,finish,volume,weightGrams,suggestedQuantity,kitRecommendation,wholesalePackage,validityNote,purchaseNote,rating,reviewCount`
 
-Use `gallery` with up to 6 image paths separated by `|`. Use the wholesale fields to guide revenda/reposition purchases; they do not create automatic discounts or change checkout totals. Local admin uploads are saved under `/uploads/products/...`; production should move product media to persistent object storage before Vercel live sales.
+Use `gallery` with up to 6 image paths separated by `|`. Use the wholesale fields to guide revenda/reposition purchases; they do not create automatic discounts or change checkout totals. Local admin uploads are saved under `/uploads/products/...`; production uploads should use Vercel Blob with `PRODUCT_IMAGE_STORAGE=vercel_blob`.
 
 Use `docs/product-import-template.csv` as a starting template. The importer previews and validates rows before writing to the database, then creates or updates products by `slug`.
 

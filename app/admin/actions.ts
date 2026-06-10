@@ -12,7 +12,7 @@ import { isAllowedProductImage, normalizeProductGallery, parseCents, parsePipeLi
 import {
   assertGalleryCapacity,
   cleanGalleryInput,
-  deleteLocalProductImages,
+  deleteProductImages,
   extractProductUploads,
   saveProductImageUploads
 } from "@/lib/product-images";
@@ -303,11 +303,11 @@ export async function updateProductDetailAction(formData: FormData) {
       })
     ]);
   } catch {
-    await deleteLocalProductImages(product.slug, prepared.uploadedImages);
+    await deleteProductImages(product.slug, prepared.uploadedImages);
     redirectError(detailPath, "Não foi possível salvar o produto. Tente novamente.");
   }
 
-  await deleteLocalProductImages(product.slug, prepared.removedImages.filter((galleryImage) => !prepared.gallery.includes(galleryImage)));
+  await deleteProductImages(product.slug, prepared.removedImages.filter((galleryImage) => !prepared.gallery.includes(galleryImage)));
   revalidateCatalog(product.slug);
   redirect(`${detailPath}?saved=1`);
 }
@@ -348,7 +348,7 @@ export async function createProductAction(formData: FormData) {
       return createdProduct;
     });
   } catch {
-    await deleteLocalProductImages(slug, prepared.uploadedImages);
+    await deleteProductImages(slug, prepared.uploadedImages);
     redirectError(detailPath, "Não foi possível criar o produto. Verifique os dados e tente novamente.");
   }
 
