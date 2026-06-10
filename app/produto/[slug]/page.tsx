@@ -5,6 +5,7 @@ import { AddToCartButton } from "@/components/AddToCartButton";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
+import { ProductSkuSelector } from "@/components/ProductSkuSelector";
 import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { StructuredData } from "@/components/StructuredData";
@@ -18,7 +19,7 @@ import {
   productDetailInfoItems,
   productDetailServiceCards
 } from "@/lib/product-detail-standard";
-import { productDiscountPercent, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
+import { productDiscountPercent, productHasActiveSkus, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
 import { productWholesaleLines } from "@/lib/product-wholesale";
 import { breadcrumbJsonLd, noIndexMetadata, productJsonLd, productMetaDescription, storefrontMetadata } from "@/lib/seo";
@@ -60,6 +61,8 @@ export default async function ProductPage({ params }: PageProps) {
   const available = quantity > 0;
   const stockLabel = productStockLabel(product);
   const stockTone = productStockTone(product);
+  const activeSkus = product.skus.filter((sku) => sku.active).sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+  const hasSkuChoices = productHasActiveSkus(product);
   const discount = productDiscountPercent(product);
   const whatsappHref = buildProductWhatsAppHref(product, storeProfile.whatsapp);
   const trustSignals = storeTrustSignals(storeProfile);
@@ -128,8 +131,9 @@ export default async function ProductPage({ params }: PageProps) {
               </div>
             </div>
             <p>{discount > 0 ? `${discount}% OFF nesta oferta. ` : ""}{siteConfig.productConversion.detailPanelNote}</p>
+            {hasSkuChoices ? <ProductSkuSelector productSlug={product.slug} skus={activeSkus} /> : null}
             <div className="purchase-panel-actions">
-              <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />
+              {hasSkuChoices ? null : <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />}
               <WhatsAppLink href={whatsappHref} className="button whatsapp">
                 {siteConfig.whatsapp.productCta}
               </WhatsAppLink>
@@ -146,7 +150,13 @@ export default async function ProductPage({ params }: PageProps) {
           <span>{stockLabel}</span>
           <strong>{money(product.priceCents)}</strong>
         </div>
-        <AddToCartButton slug={product.slug} label={siteConfig.mobilePurchase.productCta} disabled={!available} />
+        {hasSkuChoices ? (
+          <a className="button primary" href="#sku-selector-title">
+            Escolher
+          </a>
+        ) : (
+          <AddToCartButton slug={product.slug} label={siteConfig.mobilePurchase.productCta} disabled={!available} />
+        )}
         <WhatsAppLink href={whatsappHref} className="mobile-product-whatsapp">
           {siteConfig.mobilePurchase.productWhatsAppCta}
         </WhatsAppLink>

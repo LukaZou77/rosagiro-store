@@ -12,6 +12,7 @@ import type { Prisma } from "@/src/generated/prisma/client";
 
 export type CartInput = {
   slug: string;
+  skuId?: string;
   quantity: number;
 };
 
@@ -54,14 +55,20 @@ function cleanText(value: unknown) {
 
 export function parseCheckoutPayload(payload: unknown): CheckoutInput {
   const data = payload as Partial<CheckoutInput>;
-  const items = Array.isArray(data.items)
-    ? data.items
-        .map((item) => ({
-          slug: cleanText(item.slug),
-          quantity: Math.max(1, Math.min(20, Number(item.quantity) || 0))
-        }))
-        .filter((item) => item.slug && item.quantity > 0)
-    : [];
+  const itemsByKey = new Map<string, CartInput>();
+  if (Array.isArray(data.items)) {
+    for (const item of data.items) {
+      const slug = cleanText(item.slug);
+      const skuId = cleanText(item.skuId) || undefined;
+      const quantity = Math.max(1, Math.min(20, Number(item.quantity) || 0));
+      if (!slug || quantity <= 0) continue;
+      const key = `${slug}::${skuId || ""}`;
+      const existing = itemsByKey.get(key);
+      if (existing) existing.quantity = Math.min(20, existing.quantity + quantity);
+      else itemsByKey.set(key, { slug, skuId, quantity });
+    }
+  }
+  const items = Array.from(itemsByKey.values());
 
   const phone = cleanText(data.customer?.phone);
   const normalizedPhone = normalizeBrazilWhatsapp(phone);
@@ -120,18 +127,26 @@ export async function createOrder(input: CheckoutInput) {
   const slugs = input.items.map((item) => item.slug);
   const products = await prisma.product.findMany({
     where: { slug: { in: slugs }, active: true, deletedAt: null },
-    include: { brand: true, inventory: true }
+    include: { brand: true, inventory: true, skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } }
   });
   const productBySlug = new Map(products.map((product) => [product.slug, product]));
 
   const lines = input.items.map((item) => {
     const product = productBySlug.get(item.slug);
     if (!product) throw new OrderError("Um produto do carrinho não está mais disponível.");
-    if ((product.inventory?.quantity || 0) < item.quantity) {
+    const activeSkus = product.skus.filter((sku) => sku.active);
+    const selectedSku = item.skuId ? activeSkus.find((sku) => sku.id === item.skuId) : null;
+    const requiresSku = activeSkus.length > 0;
+    if (requiresSku && !selectedSku) {
+      throw new OrderError(`Escolha uma variação disponível para ${product.name}.`);
+    }
+    const availableQuantity = requiresSku ? selectedSku?.quantity ?? 0 : product.inventory?.quantity || 0;
+    if (availableQuantity < item.quantity) {
       throw new OrderError(`${product.name} não tem estoque suficiente.`);
     }
     return {
       product,
+      sku: selectedSku || null,
       quantity: item.quantity,
       priceCents: product.priceCents,
       weightGrams: product.weightGrams
@@ -203,10 +218,13 @@ export async function createOrder(input: CheckoutInput) {
       items: {
         create: lines.map((line) => ({
           productId: line.product.id,
+          productSkuId: line.sku?.id || null,
           productSlug: line.product.slug,
           productName: line.product.name,
           productBrand: line.product.brand.name,
           productImage: line.product.image,
+          productSkuName: line.sku?.name || null,
+          productSkuCode: line.sku?.code || null,
           unitPriceCents: line.priceCents,
           quantity: line.quantity,
           lineTotalCents: line.priceCents * line.quantity
@@ -284,6 +302,35 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
 
     for (const item of order.items) {
       if (!item.productId) throw new OrderError(`${item.productName} não está mais disponível.`);
+      if (item.productSkuName && !item.productSkuId) {
+        throw new OrderError(`${item.productName} não tem variação disponível.`);
+      }
+      if (item.productSkuId) {
+        const updatedSku = await tx.productSku.updateMany({
+          where: {
+            id: item.productSkuId,
+            productId: item.productId,
+            active: true,
+            quantity: { gte: item.quantity }
+          },
+          data: {
+            quantity: { decrement: item.quantity }
+          }
+        });
+        if (updatedSku.count !== 1) throw new OrderError(`${item.productName} n茫o tem estoque suficiente.`);
+
+        const aggregate = await tx.productSku.aggregate({
+          where: { productId: item.productId, active: true },
+          _sum: { quantity: true }
+        });
+        await tx.inventory.upsert({
+          where: { productId: item.productId },
+          update: { quantity: aggregate._sum.quantity || 0 },
+          create: { productId: item.productId, quantity: aggregate._sum.quantity || 0 }
+        });
+        continue;
+      }
+
       const updated = await tx.inventory.updateMany({
         where: {
           productId: item.productId,

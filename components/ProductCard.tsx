@@ -7,6 +7,7 @@ import { money } from "@/lib/money";
 import {
   productDiscountPercent,
   productHeroBadge,
+  productHasActiveSkus,
   productPurchaseSignals,
   productQuantity,
   productShortStockLabel,
@@ -19,6 +20,7 @@ import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 export function ProductCard({ product, whatsappPhone }: { product: CatalogProduct; whatsappPhone?: string | null }) {
   const quantity = productQuantity(product);
   const available = quantity > 0;
+  const hasSkuChoices = productHasActiveSkus(product);
   const discount = productDiscountPercent(product);
   const heroBadge = productHeroBadge(product);
   const stockTone = productStockTone(product);
@@ -66,7 +68,13 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
             </div>
           </div>
           <div className="product-card-actions">
-            <AddToCartButton slug={product.slug} label="Comprar" disabled={!available} />
+            {hasSkuChoices ? (
+              <Link className={available ? "button primary" : "button primary disabled"} href={`/produto/${product.slug}`}>
+                Escolher variação
+              </Link>
+            ) : (
+              <AddToCartButton slug={product.slug} label="Comprar" disabled={!available} />
+            )}
             <WhatsAppLink href={whatsappHref} className="whatsapp-inline" ariaLabel={`Consultar ${product.name} no WhatsApp`}>
               {siteConfig.whatsapp.productSecondaryCta}
             </WhatsAppLink>

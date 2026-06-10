@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { useCart, writeCart } from "@/components/CartCount";
+import { cartLineKey, sameCartLine, useCart, writeCart } from "@/components/CartCount";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { CustomerCheckoutButton } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
@@ -28,6 +28,15 @@ type Product = {
   brand: { name: string };
   category: { slug: string; label?: string };
   inventory: { quantity: number } | null;
+  skus?: Array<{ id: string; name: string; code: string; quantity: number; active: boolean }>;
+};
+
+type CartDisplayItem = {
+  slug: string;
+  skuId?: string;
+  quantity: number;
+  product: Product;
+  sku: NonNullable<Product["skus"]>[number] | null;
 };
 
 export function CartClient({ products, trustSignals }: { products: Product[]; trustSignals: string[] }) {
@@ -38,8 +47,12 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
   const items = useMemo(
     () =>
       cart
-        .map((item) => ({ ...item, product: productMap.get(item.slug) }))
-        .filter((item): item is { slug: string; quantity: number; product: Product } => Boolean(item.product)),
+        .map((item) => {
+          const product = productMap.get(item.slug);
+          const sku = item.skuId ? product?.skus?.find((candidate) => candidate.id === item.skuId) || null : null;
+          return { ...item, product, sku };
+        })
+        .filter((item): item is CartDisplayItem => Boolean(item.product)),
     [cart, productMap]
   );
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0), [items]);
@@ -52,7 +65,7 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
   );
   const minimumReached = subtotal >= siteConfig.wholesale.minimumOrderCents;
 
-  function update(next: Array<{ slug: string; quantity: number }>) {
+  function update(next: Array<{ slug: string; skuId?: string; quantity: number }>) {
     const clean = next.filter((item) => item.quantity > 0);
     writeCart(clean);
   }
@@ -65,11 +78,12 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
         <MinimumOrderNotice subtotalCents={subtotal} />
         {items.length ? (
           items.map((item) => (
-            <article className="cart-row" key={item.slug}>
+            <article className="cart-row" key={cartLineKey(item)}>
               <img src={item.product.image} alt={item.product.name} />
               <div>
                 <span>{item.product.brand.name}</span>
                 <strong>{item.product.name}</strong>
+                {item.sku ? <small>{item.sku.name} #{item.sku.code}</small> : null}
                 <small>{money(item.product.priceCents)}</small>
               </div>
               <div className="qty-control">
@@ -77,7 +91,7 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
                   type="button"
                   aria-label="Diminuir quantidade"
                   onClick={() =>
-                    update(cart.map((line) => (line.slug === item.slug ? { ...line, quantity: line.quantity - 1 } : line)))
+                    update(cart.map((line) => (sameCartLine(line, item.slug, item.skuId) ? { ...line, quantity: line.quantity - 1 } : line)))
                   }
                 >
                   -
@@ -87,14 +101,14 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
                   type="button"
                   aria-label="Aumentar quantidade"
                   onClick={() =>
-                    update(cart.map((line) => (line.slug === item.slug ? { ...line, quantity: line.quantity + 1 } : line)))
+                    update(cart.map((line) => (sameCartLine(line, item.slug, item.skuId) ? { ...line, quantity: line.quantity + 1 } : line)))
                   }
-                  disabled={(item.product.inventory?.quantity || 0) <= item.quantity}
+                  disabled={((item.sku ? item.sku.quantity : item.product.inventory?.quantity) || 0) <= item.quantity}
                 >
                   +
                 </button>
               </div>
-              <button type="button" className="remove-button" onClick={() => update(cart.filter((line) => line.slug !== item.slug))}>
+              <button type="button" className="remove-button" onClick={() => update(cart.filter((line) => !sameCartLine(line, item.slug, item.skuId)))}>
                 Remover
               </button>
             </article>

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { notifyQuickPurchaseOpen, readCart, writeCart } from "@/components/CartCount";
+import { notifyQuickPurchaseOpen, readCart, sameCartLine, writeCart } from "@/components/CartCount";
 import { useCustomerSession } from "@/components/CustomerSession";
 
 export function AddToCartButton({
   slug,
+  skuId,
   label = "Adicionar",
   confirmationLabel = "Adicionado",
   unavailableLabel = "Esgotado",
@@ -13,6 +14,7 @@ export function AddToCartButton({
   disabled = false
 }: {
   slug: string;
+  skuId?: string;
   label?: string;
   confirmationLabel?: string;
   unavailableLabel?: string;
@@ -31,9 +33,9 @@ export function AddToCartButton({
 
   function addItem() {
     const cart = readCart();
-    const existing = cart.find((item) => item.slug === slug);
+    const existing = cart.find((item) => sameCartLine(item, slug, skuId));
     if (existing) existing.quantity += 1;
-    else cart.push({ slug, quantity: 1 });
+    else cart.push({ slug, skuId, quantity: 1 });
     writeCart(cart);
     notifyQuickPurchaseOpen();
     setAdded(true);

@@ -13,10 +13,12 @@ export type CartCompletionProduct = {
   brand: { name: string };
   category: { slug: string; label?: string };
   inventory: { quantity: number } | null;
+  skus?: Array<{ quantity: number; active: boolean }>;
 };
 
 export type CartCompletionLine = {
   slug: string;
+  skuId?: string;
   quantity: number;
 };
 
@@ -28,6 +30,7 @@ export type CartCompletionRecommendation = {
   priceCents: number;
   compareAtPriceCents: number | null;
   stockQuantity: number;
+  hasSkuChoices: boolean;
   reason: string;
 };
 
@@ -43,7 +46,10 @@ function discountPercent(product: Pick<CartCompletionProduct, "compareAtPriceCen
   return Math.round((1 - product.priceCents / product.compareAtPriceCents) * 100);
 }
 
-function productStock(product: Pick<CartCompletionProduct, "inventory">) {
+function productStock(product: Pick<CartCompletionProduct, "inventory"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
+  if ("skus" in product && product.skus?.some((sku) => sku.active)) {
+    return product.skus.reduce((total, sku) => (sku.active ? total + Math.max(0, sku.quantity) : total), 0);
+  }
   return product.inventory?.quantity || 0;
 }
 
@@ -116,6 +122,7 @@ export function getCartCompletionRecommendations(
       priceCents: product.priceCents,
       compareAtPriceCents: product.compareAtPriceCents,
       stockQuantity: stock,
+      hasSkuChoices: Boolean(product.skus?.some((sku) => sku.active)),
       reason: recommendationReason(product, remainingCents, preferredCategories)
     }));
 }

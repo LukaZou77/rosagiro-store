@@ -92,7 +92,10 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
         <div className="order-items">
           {order.items.map((item) => (
             <div key={item.id}>
-              <span>{item.quantity}x {item.productName}</span>
+              <span>
+                {item.quantity}x {item.productName}
+                {item.productSkuName ? ` - ${item.productSkuName}` : ""}
+              </span>
               <strong>{money(item.lineTotalCents)}</strong>
             </div>
           ))}

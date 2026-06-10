@@ -39,6 +39,7 @@ export type ProductImportExistingProduct = {
   name: string;
   priceCents: number;
   stock: number;
+  hasActiveSkus?: boolean;
   active: boolean;
   deletedAt?: Date | string | null;
   brand: string;

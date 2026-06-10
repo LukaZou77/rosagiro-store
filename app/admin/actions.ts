@@ -19,6 +19,7 @@ import {
 import { formatCep } from "@/lib/cep";
 import { pixAccountTypeOptions, pixKeyTypeOptions, STORE_PROFILE_ID } from "@/lib/store-profile";
 import { SiteInfoPageValidationError, validateSiteInfoPageInput } from "@/lib/site-info-pages";
+import type { Prisma } from "@/src/generated/prisma/client";
 
 const statuses = ["PENDING_PAYMENT", "PAID", "FULFILLING", "SHIPPED", "CANCELED"] as const;
 const launchReadinessStatuses = ["PENDING", "IN_PROGRESS", "DONE", "BLOCKED"] as const;
@@ -121,6 +122,90 @@ type ProductFormPreparationOptions = {
   defaultRating: number;
 };
 
+type ProductSkuInput = {
+  id?: string;
+  name: string;
+  code: string;
+  quantity: number;
+  active: boolean;
+  sortOrder: number;
+};
+
+function parseProductSkuInputs(formData: FormData, detailPath: string) {
+  const rowKeys = Array.from(new Set(formData.getAll("skuRowKey").map((value) => String(value || "").trim()).filter(Boolean)));
+  const deletedIds = Array.from(new Set(formData.getAll("skuDeleteId").map((value) => String(value || "").trim()).filter(Boolean)));
+  const rows: ProductSkuInput[] = [];
+  const codeKeys = new Set<string>();
+
+  for (const [index, rowKey] of rowKeys.entries()) {
+    const id = field(formData, `skuId:${rowKey}`);
+    const name = field(formData, `skuName:${rowKey}`);
+    const code = field(formData, `skuCode:${rowKey}`);
+    const quantityRaw = field(formData, `skuQuantity:${rowKey}`);
+    const sortRaw = field(formData, `skuSortOrder:${rowKey}`);
+    const quantityValue = Number(quantityRaw.replace(",", "."));
+    const hasAnyValue = Boolean(id || name || code || (Number.isFinite(quantityValue) && quantityValue > 0));
+
+    if (!hasAnyValue) continue;
+    if (!name || !code) redirectError(detailPath, "Preencha nome e código de todas as variações SKU.");
+
+    const quantity = Math.max(0, Math.floor(quantityValue || 0));
+    const sortOrder = Number.isFinite(Number(sortRaw)) ? Math.max(0, Math.floor(Number(sortRaw))) : index * 10;
+    const codeKey = code.toLowerCase();
+    if (codeKeys.has(codeKey)) redirectError(detailPath, "Cada SKU precisa ter um código único dentro do produto.");
+    codeKeys.add(codeKey);
+
+    rows.push({
+      id: id || undefined,
+      name: name.slice(0, 120),
+      code: code.slice(0, 80),
+      quantity,
+      active: formData.get(`skuActive:${rowKey}`) === "on",
+      sortOrder
+    });
+  }
+
+  return { rows, deletedIds };
+}
+
+async function syncProductSkus(
+  tx: Prisma.TransactionClient,
+  productId: string,
+  skus: ProductSkuInput[],
+  deletedIds: string[]
+) {
+  if (deletedIds.length) {
+    await tx.productSku.deleteMany({ where: { productId, id: { in: deletedIds } } });
+  }
+
+  for (const sku of skus) {
+    const data = {
+      name: sku.name,
+      code: sku.code,
+      quantity: sku.quantity,
+      active: sku.active,
+      sortOrder: sku.sortOrder
+    };
+    if (sku.id) {
+      await tx.productSku.updateMany({ where: { id: sku.id, productId }, data });
+    } else {
+      await tx.productSku.create({ data: { productId, ...data } });
+    }
+  }
+}
+
+async function activeSkuStock(tx: Prisma.TransactionClient, productId: string) {
+  const aggregate = await tx.productSku.aggregate({
+    where: { productId, active: true },
+    _sum: { quantity: true },
+    _count: { _all: true }
+  });
+  return {
+    hasActiveSkus: aggregate._count._all > 0,
+    quantity: aggregate._sum.quantity || 0
+  };
+}
+
 async function prepareProductFormPayload(formData: FormData, options: ProductFormPreparationOptions) {
   const name = field(formData, "name");
   const brandId = field(formData, "brandId");
@@ -137,6 +222,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const reviewCount = positiveInt(formData, "reviewCount");
   const featuredRank = positiveInt(formData, "featuredRank", 1000);
   const active = formData.get("active") === "on";
+  const skuInput = parseProductSkuInputs(formData, options.detailPath);
 
   if (!name || !brandId || !categoryId || !subcategory || !descriptionPt || priceCents <= 0) {
     redirectError(options.detailPath, "Preencha os campos obrigatórios do produto.");
@@ -219,6 +305,8 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
       featuredRank
     },
     quantity,
+    skus: skuInput.rows,
+    deletedSkuIds: skuInput.deletedIds,
     gallery,
     uploadedImages,
     removedImages: [...removedImages]
@@ -303,17 +391,22 @@ export async function updateProductDetailAction(formData: FormData) {
   });
 
   try {
-    await prisma.$transaction([
-      prisma.product.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.product.update({
         where: { id: productId },
         data: prepared.data
-      }),
-      prisma.inventory.upsert({
+      });
+
+      await syncProductSkus(tx, productId, prepared.skus, prepared.deletedSkuIds);
+      const skuStock = await activeSkuStock(tx, productId);
+      const inventoryQuantity = prepared.skus.length ? skuStock.quantity : prepared.quantity;
+
+      await tx.inventory.upsert({
         where: { productId },
-        update: { quantity: prepared.quantity },
-        create: { productId, quantity: prepared.quantity }
-      })
-    ]);
+        update: { quantity: inventoryQuantity },
+        create: { productId, quantity: inventoryQuantity }
+      });
+    });
   } catch {
     await deleteProductImages(product.slug, prepared.uploadedImages);
     redirectError(detailPath, "Não foi possível salvar o produto. Tente novamente.");
@@ -356,8 +449,12 @@ export async function createProductAction(formData: FormData) {
         select: { id: true, slug: true }
       });
 
+      await syncProductSkus(tx, createdProduct.id, prepared.skus, []);
+      const skuStock = await activeSkuStock(tx, createdProduct.id);
+      const inventoryQuantity = prepared.skus.length ? skuStock.quantity : prepared.quantity;
+
       await tx.inventory.create({
-        data: { productId: createdProduct.id, quantity: prepared.quantity }
+        data: { productId: createdProduct.id, quantity: inventoryQuantity }
       });
 
       return createdProduct;

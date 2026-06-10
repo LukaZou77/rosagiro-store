@@ -78,16 +78,22 @@ export function CartCompletionRecommendations({
                   {hasDiscount ? <em>De {money(recommendation.compareAtPriceCents || 0)}</em> : null}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (requireCustomerSession({ intent: "add_to_cart", onSuccess: () => addRecommendation(recommendation) })) {
-                    addRecommendation(recommendation);
-                  }
-                }}
-              >
-                {isAdded ? siteConfig.productConversion.completionAddedCta : siteConfig.productConversion.completionAddCta}
-              </button>
+              {recommendation.hasSkuChoices ? (
+                <Link className="completion-link-button" href={`/produto/${recommendation.slug}`}>
+                  Escolher variação
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (requireCustomerSession({ intent: "add_to_cart", onSuccess: () => addRecommendation(recommendation) })) {
+                      addRecommendation(recommendation);
+                    }
+                  }}
+                >
+                  {isAdded ? siteConfig.productConversion.completionAddedCta : siteConfig.productConversion.completionAddCta}
+                </button>
+              )}
             </article>
           );
         })}

@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Prisma } from "@/src/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { customerDisplayText } from "@/lib/display-text";
 
@@ -32,13 +33,15 @@ export type CatalogProduct = {
   brand: { slug: string; name: string; logo: string; origin: string; descriptionPt: string; featured: boolean };
   category: { slug: string; label: string; note: string };
   inventory: { quantity: number } | null;
+  skus: Array<{ id: string; name: string; code: string; quantity: number; active: boolean; sortOrder: number }>;
 };
 
 const productInclude = {
   brand: true,
   category: true,
-  inventory: true
-} as const;
+  inventory: true,
+  skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }
+} satisfies Prisma.ProductInclude;
 
 function withProductDisplayText(product: CatalogProduct): CatalogProduct {
   return {
@@ -119,7 +122,7 @@ export async function getProducts(options: {
               : { featuredRank: "asc" }
   });
 
-  const catalogProducts = (products as CatalogProduct[]).map(withProductDisplayText);
+  const catalogProducts = products.map(withProductDisplayText);
   return dealFilter === "real-deal"
     ? catalogProducts.filter((product) => discountPercent(product) > 0)
     : catalogProducts;
@@ -165,7 +168,7 @@ export async function getProduct(slug: string) {
     include: productInclude
   });
 
-  return product ? withProductDisplayText(product as CatalogProduct) : null;
+  return product ? withProductDisplayText(product) : null;
 }
 
 export async function getRelatedProducts(categorySlug: string, currentSlug: string) {
@@ -181,5 +184,5 @@ export async function getRelatedProducts(categorySlug: string, currentSlug: stri
     orderBy: { featuredRank: "asc" }
   });
 
-  return (products as CatalogProduct[]).map(withProductDisplayText);
+  return products.map(withProductDisplayText);
 }

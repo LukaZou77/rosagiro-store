@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { readCart, subscribeQuickPurchaseOpen, useCart, writeCart } from "@/components/CartCount";
+import { cartLineKey, readCart, sameCartLine, subscribeQuickPurchaseOpen, useCart, writeCart } from "@/components/CartCount";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { CustomerCheckoutButton } from "@/components/CustomerSession";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
@@ -15,6 +15,9 @@ import { buildCartWhatsAppHref } from "@/lib/whatsapp";
 
 type SummaryLine = {
   slug: string;
+  skuId: string | null;
+  skuName: string | null;
+  skuCode: string | null;
   name: string;
   brandName: string;
   image: string;
@@ -44,15 +47,15 @@ function cartQuantity(cart: Array<{ quantity: number }>) {
   return cart.reduce((sum, item) => sum + item.quantity, 0);
 }
 
-function syncQuantity(slug: string, quantity: number) {
+function syncQuantity(slug: string, skuId: string | null | undefined, quantity: number) {
   const next = readCart()
-    .map((item) => (item.slug === slug ? { ...item, quantity } : item))
+    .map((item) => (sameCartLine(item, slug, skuId) ? { ...item, quantity } : item))
     .filter((item) => item.quantity > 0);
   writeCart(next);
 }
 
-function removeLine(slug: string) {
-  writeCart(readCart().filter((item) => item.slug !== slug));
+function removeLine(slug: string, skuId?: string | null) {
+  writeCart(readCart().filter((item) => !sameCartLine(item, slug, skuId)));
 }
 
 function lineSummaryLabel(line: Pick<SummaryLine, "available" | "warning" | "priceCents">) {
@@ -126,7 +129,7 @@ export function QuickPurchaseDrawer() {
         .map((line) => ({
           quantity: line.quantity,
           product: {
-            name: line.name,
+            name: line.skuName ? `${line.name} - ${line.skuName}` : line.name,
             priceCents: line.priceCents,
             brand: { name: line.brandName }
           }
@@ -203,24 +206,25 @@ export function QuickPurchaseDrawer() {
                 </section>
 
                 <div className="quick-lines">
-                  {summary.lines.map((line) => (
-                    <article className={line.available ? "quick-line" : "quick-line muted"} key={line.slug}>
-                      {line.image ? <img src={line.image} alt={line.name} /> : <div className="quick-line-placeholder" aria-hidden="true" />}
-                      <div className="quick-line-info">
-                        <span>{line.brandName || "Produto"}</span>
-                        <strong>{line.name}</strong>
-                        <small>{lineSummaryLabel(line)}</small>
+                    {summary.lines.map((line) => (
+                      <article className={line.available ? "quick-line" : "quick-line muted"} key={cartLineKey({ slug: line.slug, skuId: line.skuId || undefined })}>
+                        {line.image ? <img src={line.image} alt={line.name} /> : <div className="quick-line-placeholder" aria-hidden="true" />}
+                        <div className="quick-line-info">
+                          <span>{line.brandName || "Produto"}</span>
+                          <strong>{line.name}</strong>
+                          {line.skuName ? <small>{line.skuName} #{line.skuCode}</small> : null}
+                          <small>{lineSummaryLabel(line)}</small>
                         {line.warning ? <em>{line.warning}</em> : null}
                       </div>
                       <div className="quick-line-actions">
                         <div className="qty-control compact">
-                          <button type="button" onClick={() => syncQuantity(line.slug, line.requestedQuantity - 1)} aria-label={`Diminuir ${line.name}`}>
+                            <button type="button" onClick={() => syncQuantity(line.slug, line.skuId, line.requestedQuantity - 1)} aria-label={`Diminuir ${line.name}`}>
                             -
                           </button>
                           <span>{line.requestedQuantity}</span>
                           <button
                             type="button"
-                            onClick={() => syncQuantity(line.slug, line.requestedQuantity + 1)}
+                              onClick={() => syncQuantity(line.slug, line.skuId, line.requestedQuantity + 1)}
                             disabled={!line.available || line.requestedQuantity >= line.stockQuantity}
                             aria-label={`Aumentar ${line.name}`}
                           >
@@ -228,7 +232,7 @@ export function QuickPurchaseDrawer() {
                           </button>
                         </div>
                         <strong>{money(line.lineTotalCents)}</strong>
-                        <button className="remove-button compact" type="button" onClick={() => removeLine(line.slug)}>
+                          <button className="remove-button compact" type="button" onClick={() => removeLine(line.slug, line.skuId)}>
                           Remover
                         </button>
                       </div>

@@ -1,8 +1,9 @@
 import type { Prisma } from "@/src/generated/prisma/client";
+import { AdminSkuManager } from "@/components/AdminSkuManager";
 import { PRODUCT_GALLERY_LIMIT, formatImportMoney, normalizeProductGallery, pipeListValue } from "@/lib/product-import-shared";
 
 type AdminProductFormProduct = Prisma.ProductGetPayload<{
-  include: { brand: true; category: true; inventory: true };
+  include: { brand: true; category: true; inventory: true; skus: true };
 }>;
 
 type ProductFormAction = (formData: FormData) => void | Promise<void>;
@@ -29,6 +30,9 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
   const emptySlots = Math.max(0, PRODUCT_GALLERY_LIMIT - gallery.length);
   const currentImage = product?.image || "";
   const submitLabel = isEdit ? "Salvar ficha completa" : "Criar produto";
+  const skuStock = product?.skus?.length
+    ? product.skus.filter((sku) => sku.active).reduce((total, sku) => total + Math.max(0, sku.quantity), 0)
+    : null;
 
   return (
     <form action={action} className="admin-detail-grid product-editor">
@@ -164,7 +168,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           </label>
           <label>
             Estoque
-            <input name="quantity" type="number" min="0" defaultValue={numberValue(product?.inventory?.quantity, 0)} />
+            <input name="quantity" type="number" min="0" defaultValue={numberValue(skuStock ?? product?.inventory?.quantity, 0)} />
           </label>
           <label>
             Peso unitario (g)
@@ -175,6 +179,20 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             Produto ativo
           </label>
         </div>
+        <p className="table-note">
+          Se cadastrar SKU ativo, o estoque geral será recalculado pela soma das variações ativas.
+        </p>
+
+        <AdminSkuManager
+          skus={(product?.skus || []).map((sku) => ({
+            id: sku.id,
+            name: sku.name,
+            code: sku.code,
+            quantity: sku.quantity,
+            active: sku.active,
+            sortOrder: sku.sortOrder
+          }))}
+        />
 
         <div className="admin-form-block">
           <div className="product-gallery-heading">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useCart, writeCart } from "@/components/CartCount";
+import { cartLineKey, useCart, writeCart } from "@/components/CartCount";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { useCustomerSession } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
@@ -31,6 +31,15 @@ type Product = {
   brand: { name: string };
   category: { slug: string; label?: string };
   inventory: { quantity: number } | null;
+  skus?: Array<{ id: string; name: string; code: string; quantity: number; active: boolean }>;
+};
+
+type CheckoutDisplayItem = {
+  slug: string;
+  skuId?: string;
+  quantity: number;
+  product: Product;
+  sku: NonNullable<Product["skus"]>[number] | null;
 };
 
 const states = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
@@ -187,8 +196,12 @@ export function CheckoutClient({
   const items = useMemo(
     () =>
       cart
-        .map((item) => ({ ...item, product: productMap.get(item.slug) }))
-        .filter((item): item is { slug: string; quantity: number; product: Product } => Boolean(item.product)),
+        .map((item) => {
+          const product = productMap.get(item.slug);
+          const sku = item.skuId ? product?.skus?.find((candidate) => candidate.id === item.skuId) || null : null;
+          return { ...item, product, sku };
+        })
+        .filter((item): item is CheckoutDisplayItem => Boolean(item.product)),
     [cart, productMap]
   );
   const quoteItems = useMemo(() => items.map((item) => ({ slug: item.slug, quantity: item.quantity })), [items]);
@@ -210,10 +223,10 @@ export function CheckoutClient({
   const checkoutWhatsAppItems = useMemo(
     () =>
       items.map((item) => ({
-        quantity: item.quantity,
-        product: {
-          name: item.product.name,
-          priceCents: item.product.priceCents,
+          quantity: item.quantity,
+          product: {
+            name: item.sku ? `${item.product.name} - ${item.sku.name}` : item.product.name,
+            priceCents: item.product.priceCents,
           brand: item.product.brand
         }
       })),
@@ -1177,11 +1190,12 @@ export function CheckoutClient({
         </WhatsAppLink>
         <div className="summary-block">
           <h2>Resumo</h2>
-          {items.map((item) => (
-            <div key={item.slug}>
-              <span>
-                {item.quantity}x {item.product.name}
-              </span>
+            {items.map((item) => (
+              <div key={cartLineKey(item)}>
+                <span>
+                  {item.quantity}x {item.product.name}
+                  {item.sku ? ` - ${item.sku.name}` : ""}
+                </span>
               <strong>{money(item.product.priceCents * item.quantity)}</strong>
             </div>
           ))}

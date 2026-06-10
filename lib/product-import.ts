@@ -23,7 +23,7 @@ type ImportCounters = {
 export async function getProductImportExistingProducts(slugs?: string[]): Promise<ProductImportExistingProduct[]> {
   const products = await prisma.product.findMany({
     where: slugs?.length ? { slug: { in: slugs } } : undefined,
-    include: { brand: true, category: true, inventory: true }
+    include: { brand: true, category: true, inventory: true, skus: { select: { active: true } } }
   });
 
   return products.map((product) => ({
@@ -31,6 +31,7 @@ export async function getProductImportExistingProducts(slugs?: string[]): Promis
     name: product.name,
     priceCents: product.priceCents,
     stock: product.inventory?.quantity || 0,
+    hasActiveSkus: product.skus.some((sku) => sku.active),
     active: product.active,
     deletedAt: product.deletedAt,
     brand: product.brand.name,
@@ -116,7 +117,7 @@ async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, in
 
   const existingProduct = await tx.product.findUnique({
     where: { slug: row.slug },
-    select: { id: true, deletedAt: true }
+    select: { id: true, deletedAt: true, skus: { select: { active: true, quantity: true } } }
   });
   if (existingProduct?.deletedAt) {
     throw new ProductImportError(`O produto ${row.slug} está na lixeira. Restaure antes de importar.`);
@@ -133,10 +134,14 @@ async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, in
     }
   });
 
+  const activeSkuStock = existingProduct?.skus.some((sku) => sku.active)
+    ? existingProduct.skus.reduce((total, sku) => (sku.active ? total + Math.max(0, sku.quantity) : total), 0)
+    : null;
+
   await tx.inventory.upsert({
     where: { productId: product.id },
-    update: { quantity: row.stock },
-    create: { productId: product.id, quantity: row.stock }
+    update: { quantity: activeSkuStock ?? row.stock },
+    create: { productId: product.id, quantity: activeSkuStock ?? row.stock }
   });
 
   return existingProduct ? "updated" : "created";

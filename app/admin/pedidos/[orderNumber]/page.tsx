@@ -173,6 +173,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
             <div>
               <span>{item.productBrand}</span>
               <strong>{item.productName}</strong>
+              {item.productSkuName ? <small>{item.productSkuName} #{item.productSkuCode}</small> : null}
               <small>
                 {item.quantity} x {money(item.unitPriceCents)}
               </small>

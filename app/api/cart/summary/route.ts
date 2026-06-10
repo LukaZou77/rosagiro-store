@@ -6,18 +6,26 @@ import { siteConfig } from "@/lib/site-config";
 
 type CartSummaryItem = {
   slug?: unknown;
+  skuId?: unknown;
   quantity?: unknown;
 };
 
 function parseItems(input: unknown) {
   if (!Array.isArray(input)) return [];
 
-  return input
-    .map((item: CartSummaryItem) => ({
-      slug: String(item?.slug || "").trim(),
-      quantity: Math.max(0, Math.min(999, Math.floor(Number(item?.quantity) || 0)))
-    }))
-    .filter((item) => item.slug && item.quantity > 0);
+  const byKey = new Map<string, { slug: string; skuId?: string; quantity: number }>();
+  for (const item of input as CartSummaryItem[]) {
+    const slug = String(item?.slug || "").trim();
+    const skuId = String(item?.skuId || "").trim() || undefined;
+    const quantity = Math.max(0, Math.min(999, Math.floor(Number(item?.quantity) || 0)));
+    if (!slug || quantity <= 0) continue;
+    const key = `${slug}::${skuId || ""}`;
+    const existing = byKey.get(key);
+    if (existing) existing.quantity += quantity;
+    else byKey.set(key, { slug, skuId, quantity });
+  }
+
+  return Array.from(byKey.values());
 }
 
 export async function POST(request: Request) {
@@ -28,13 +36,13 @@ export async function POST(request: Request) {
     const products = uniqueSlugs.length
       ? await prisma.product.findMany({
           where: { slug: { in: uniqueSlugs }, deletedAt: null },
-          include: { brand: true, inventory: true }
+          include: { brand: true, inventory: true, skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } }
         })
       : [];
     const recommendationProducts = requestedItems.length
       ? await prisma.product.findMany({
           where: { active: true, deletedAt: null },
-          include: { brand: true, category: true, inventory: true },
+          include: { brand: true, category: true, inventory: true, skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } },
           orderBy: { featuredRank: "asc" }
         })
       : [];
@@ -42,23 +50,31 @@ export async function POST(request: Request) {
 
     const lines = requestedItems.map((item) => {
       const product = productMap.get(item.slug);
-      const stockQuantity = product?.inventory?.quantity ?? 0;
+      const activeSkus = product?.skus.filter((sku) => sku.active) || [];
+      const selectedSku = item.skuId ? activeSkus.find((sku) => sku.id === item.skuId) : null;
+      const requiresSku = activeSkus.length > 0;
+      const stockQuantity = requiresSku ? selectedSku?.quantity ?? 0 : product?.inventory?.quantity ?? 0;
       const active = Boolean(product?.active);
-      const available = active && stockQuantity > 0;
+      const available = active && (!requiresSku || Boolean(selectedSku)) && stockQuantity > 0;
       const acceptedQuantity = product ? Math.min(item.quantity, Math.max(stockQuantity, 0)) : 0;
       const lineTotalCents = product ? product.priceCents * acceptedQuantity : 0;
       const warning = !product
         ? "Produto não encontrado."
         : !active
           ? "Produto indisponível."
-          : stockQuantity <= 0
-            ? "Produto sem estoque."
-            : item.quantity > stockQuantity
-              ? "Quantidade ajustada ao estoque disponível."
-              : "";
+          : requiresSku && !selectedSku
+            ? "Escolha uma variação disponível."
+            : stockQuantity <= 0
+              ? "Produto sem estoque."
+              : item.quantity > stockQuantity
+                ? "Quantidade ajustada ao estoque disponível."
+                : "";
 
       return {
         slug: item.slug,
+        skuId: selectedSku?.id || item.skuId || null,
+        skuName: selectedSku?.name || null,
+        skuCode: selectedSku?.code || null,
         name: product?.name || item.slug,
         brandName: product?.brand.name || "",
         image: product?.image || "",

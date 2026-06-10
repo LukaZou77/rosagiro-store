@@ -26,7 +26,7 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
   ]);
   const product = await prisma.product.findUnique({
     where: { slug },
-    include: { brand: true, category: true, inventory: true }
+    include: { brand: true, category: true, inventory: true, skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } }
   });
   if (!product) notFound();
 
