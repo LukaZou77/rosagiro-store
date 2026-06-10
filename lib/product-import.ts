@@ -32,6 +32,7 @@ export async function getProductImportExistingProducts(slugs?: string[]): Promis
     priceCents: product.priceCents,
     stock: product.inventory?.quantity || 0,
     active: product.active,
+    deletedAt: product.deletedAt,
     brand: product.brand.name,
     category: product.category.label,
     weightGrams: product.weightGrams
@@ -115,8 +116,11 @@ async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, in
 
   const existingProduct = await tx.product.findUnique({
     where: { slug: row.slug },
-    select: { id: true }
+    select: { id: true, deletedAt: true }
   });
+  if (existingProduct?.deletedAt) {
+    throw new ProductImportError(`O produto ${row.slug} está na lixeira. Restaure antes de importar.`);
+  }
 
   const data = productData(row, brand.id, category.id);
   const product = await tx.product.upsert({

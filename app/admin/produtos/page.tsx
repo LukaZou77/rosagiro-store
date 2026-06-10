@@ -1,5 +1,7 @@
 import type { Prisma } from "@/src/generated/prisma/client";
 import Link from "next/link";
+import { moveProductsToTrashAction } from "@/app/admin/actions";
+import { AdminProductBulkList, type AdminProductListRow } from "@/components/AdminProductBulkList";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -26,8 +28,11 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   const category = single(params.category) || "all";
   const status = single(params.status) || "all";
   const stock = single(params.stock) || "all";
+  const trashed = single(params.trashed);
+  const error = single(params.error);
 
   const where: Prisma.ProductWhereInput = {
+    deletedAt: null,
     brandId: brand !== "all" ? brand : undefined,
     categoryId: category !== "all" ? category : undefined,
     active: status === "active" ? true : status === "inactive" ? false : undefined,
@@ -50,11 +55,14 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       : undefined
   };
 
-  const products = await prisma.product.findMany({
-    where,
-    include: { brand: true, category: true, inventory: true },
-    orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }]
-  });
+  const [products, trashCount] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: { brand: true, category: true, inventory: true },
+      orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }]
+    }),
+    prisma.product.count({ where: { deletedAt: { not: null } } })
+  ]);
 
   const activeCount = products.filter((product) => product.active).length;
   const lowStockCount = products.filter((product) => {
@@ -65,6 +73,27 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   const qualityItems = products.map(evaluateProductQuality);
   const qualityActionCount = qualityItems.filter((item) => item.status === "ACTION_REQUIRED").length;
   const qualityBySlug = new Map(qualityItems.map((item) => [item.slug, item]));
+  const productRows: AdminProductListRow[] = products.map((product) => {
+    const quantity = product.inventory?.quantity || 0;
+    const quality = qualityBySlug.get(product.slug);
+    return {
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      image: product.image,
+      active: product.active,
+      inStock: quantity > 0,
+      brandName: product.brand.name,
+      categoryLabel: product.category.label,
+      subcategory: product.subcategory,
+      price: money(product.priceCents),
+      compareAtPrice: product.compareAtPriceCents ? money(product.compareAtPriceCents) : null,
+      featuredRank: product.featuredRank,
+      weightGrams: product.weightGrams,
+      qualityStatusLabel: quality?.statusLabel || null,
+      qualityStatusClass: quality ? `quality-${quality.status.toLowerCase().replace("_", "-")}` : null
+    };
+  });
 
   return (
     <AdminShell adminName={admin.name}>
@@ -79,6 +108,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           <Link className="button secondary" href="/admin/produtos/qualidade">
             Ver qualidade
           </Link>
+          <Link className="button secondary" href="/admin/produtos/lixeira">
+            Lixeira {trashCount ? `(${trashCount})` : ""}
+          </Link>
           <Link className="button secondary" href="/admin/importar-produtos">
             Importar / modelos
           </Link>
@@ -87,6 +119,17 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           </Link>
         </div>
       </div>
+
+      {trashed ? (
+        <div className="admin-notice success" role="status">
+          {trashed} produto(s) movido(s) para a lixeira.
+        </div>
+      ) : null}
+      {error ? (
+        <div className="admin-notice error" role="alert">
+          {error}
+        </div>
+      ) : null}
 
       <div className="metric-grid compact">
         <div>
@@ -163,50 +206,8 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         </Link>
       </form>
 
+      {productRows.length ? <AdminProductBulkList products={productRows} action={moveProductsToTrashAction} /> : null}
       <div className="admin-list">
-        {products.map((product) => {
-          const quantity = product.inventory?.quantity || 0;
-          const quality = qualityBySlug.get(product.slug);
-          return (
-            <article className="admin-product-row catalog-row" key={product.id}>
-              <img src={product.image} alt={product.name} />
-              <div className="admin-product-summary">
-                <div>
-                  <span className="status-chip">{product.slug}</span>
-                  <span className={product.active ? "status-chip success" : "status-chip warning"}>
-                    {product.active ? "Ativo" : "Inativo"}
-                  </span>
-                  <span className={quantity > 0 ? "status-chip success" : "status-chip warning"}>
-                    {quantity > 0 ? "Em estoque" : "Esgotado"}
-                  </span>
-                  {quality ? (
-                    <span className={`status-chip quality-${quality.status.toLowerCase().replace("_", "-")}`}>
-                      {quality.statusLabel}
-                    </span>
-                  ) : null}
-                </div>
-                <h2>{product.name}</h2>
-                <p>
-                  {product.brand.name} / {product.category.label} / {product.subcategory}
-                </p>
-                <div className="admin-row-meta">
-                  <strong>{money(product.priceCents)}</strong>
-                  {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : null}
-                  <small>Rank {product.featuredRank}</small>
-                  <small>{product.weightGrams} g</small>
-                </div>
-              </div>
-              <div className="admin-row-actions">
-                <Link className="button secondary" href={`/produto/${product.slug}`}>
-                  Ver loja
-                </Link>
-                <Link className="button primary" href={`/admin/produtos/${product.slug}`}>
-                  Editar ficha
-                </Link>
-              </div>
-            </article>
-          );
-        })}
         {!products.length ? (
           <div className="empty-state">
             <strong>Nenhum produto encontrado</strong>

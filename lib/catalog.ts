@@ -84,6 +84,7 @@ export async function getProducts(options: {
   const { categorySlug, brandName, query, sort = "featured", stockFilter = "all", dealFilter = "all", activeOnly = true } = options;
   const products = await prisma.product.findMany({
     where: {
+      deletedAt: null,
       active: activeOnly ? true : undefined,
       category: categorySlug && categorySlug !== "all" ? { slug: categorySlug } : undefined,
       brand: brandName && brandName !== "all" ? { name: brandName } : undefined,
@@ -159,8 +160,8 @@ export async function getPromotionCollections() {
 }
 
 export async function getProduct(slug: string) {
-  const product = await prisma.product.findUnique({
-    where: { slug },
+  const product = await prisma.product.findFirst({
+    where: { slug, active: true, deletedAt: null },
     include: productInclude
   });
 
@@ -171,6 +172,7 @@ export async function getRelatedProducts(categorySlug: string, currentSlug: stri
   const products = await prisma.product.findMany({
     where: {
       active: true,
+      deletedAt: null,
       category: { slug: categorySlug },
       slug: { not: currentSlug }
     },

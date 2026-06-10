@@ -53,6 +53,17 @@ function redirectError(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
 }
 
+function selectedProductIds(formData: FormData) {
+  return Array.from(
+    new Set(
+      formData
+        .getAll("productIds")
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+    )
+  );
+}
+
 function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
 }
@@ -95,6 +106,7 @@ function revalidateCatalog(productSlug?: string) {
   revalidatePath("/llms.txt");
   revalidatePath("/admin");
   revalidatePath("/admin/produtos");
+  revalidatePath("/admin/produtos/lixeira");
   revalidatePath("/admin/produtos/qualidade");
   revalidatePath("/admin/importar-produtos");
   revalidatePath("/admin/prontidao");
@@ -321,7 +333,10 @@ export async function createProductAction(formData: FormData) {
   const detailPath = "/admin/produtos/novo";
 
   if (!name || !slug) redirectError(detailPath, "Informe o nome do produto para gerar o slug.");
-  const existingProduct = await prisma.product.findUnique({ where: { slug }, select: { id: true } });
+  const existingProduct = await prisma.product.findUnique({ where: { slug }, select: { id: true, deletedAt: true } });
+  if (existingProduct?.deletedAt) {
+    redirectError(detailPath, "Este slug está na lixeira. Restaure o produto antes de usar o mesmo identificador.");
+  }
   if (existingProduct) redirectError(detailPath, "Este slug já existe. Use outro identificador para o produto.");
 
   const prepared = await prepareProductFormPayload(formData, {
@@ -354,6 +369,87 @@ export async function createProductAction(formData: FormData) {
 
   revalidateCatalog(product.slug);
   redirect(`/admin/produtos/${product.slug}?saved=1`);
+}
+
+export async function moveProductsToTrashAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const ids = selectedProductIds(formData);
+  if (!ids.length) redirectError("/admin/produtos", "Selecione pelo menos um produto para mover para a lixeira.");
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: ids }, deletedAt: null },
+    select: { id: true, slug: true }
+  });
+  if (!products.length) redirectError("/admin/produtos", "Nenhum produto disponível para mover para a lixeira.");
+
+  const deleteNote = field(formData, "deleteNote").slice(0, 240);
+  await prisma.product.updateMany({
+    where: { id: { in: products.map((product) => product.id) }, deletedAt: null },
+    data: {
+      active: false,
+      deletedAt: new Date(),
+      deletedByAdminEmail: admin.email,
+      deleteNote: deleteNote || null
+    }
+  });
+
+  revalidateCatalog();
+  for (const product of products) revalidateCatalog(product.slug);
+  redirect(`/admin/produtos?trashed=${products.length}`);
+}
+
+export async function restoreProductsFromTrashAction(formData: FormData) {
+  await requireAdmin();
+  const ids = selectedProductIds(formData);
+  if (!ids.length) redirectError("/admin/produtos/lixeira", "Selecione pelo menos um produto para restaurar.");
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: ids }, deletedAt: { not: null } },
+    select: { id: true, slug: true }
+  });
+  if (!products.length) redirectError("/admin/produtos/lixeira", "Nenhum produto encontrado na lixeira para restaurar.");
+
+  await prisma.product.updateMany({
+    where: { id: { in: products.map((product) => product.id) }, deletedAt: { not: null } },
+    data: {
+      active: true,
+      deletedAt: null,
+      deletedByAdminEmail: null,
+      deleteNote: null
+    }
+  });
+
+  revalidateCatalog();
+  for (const product of products) revalidateCatalog(product.slug);
+  redirect(`/admin/produtos/lixeira?restored=${products.length}`);
+}
+
+export async function permanentlyDeleteProductsAction(formData: FormData) {
+  await requireAdmin();
+  const ids = selectedProductIds(formData);
+  if (!ids.length) redirectError("/admin/produtos/lixeira", "Selecione pelo menos um produto para excluir definitivamente.");
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: ids }, deletedAt: { not: null } },
+    select: { id: true, slug: true, image: true, gallery: true }
+  });
+  if (!products.length) redirectError("/admin/produtos/lixeira", "Nenhum produto da lixeira foi encontrado para exclusão definitiva.");
+
+  await prisma.product.deleteMany({
+    where: { id: { in: products.map((product) => product.id) }, deletedAt: { not: null } }
+  });
+
+  await Promise.all(
+    products.map((product) =>
+      deleteProductImages(product.slug, [product.image, ...product.gallery]).catch((error) => {
+        console.error(`Não foi possível limpar imagens do produto ${product.slug}.`, error);
+      })
+    )
+  );
+
+  revalidateCatalog();
+  for (const product of products) revalidateCatalog(product.slug);
+  redirect(`/admin/produtos/lixeira?deleted=${products.length}`);
 }
 
 export async function saveBrandAction(formData: FormData) {

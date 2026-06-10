@@ -27,13 +27,13 @@ export async function POST(request: Request) {
     const uniqueSlugs = [...new Set(requestedItems.map((item) => item.slug))];
     const products = uniqueSlugs.length
       ? await prisma.product.findMany({
-          where: { slug: { in: uniqueSlugs } },
+          where: { slug: { in: uniqueSlugs }, deletedAt: null },
           include: { brand: true, inventory: true }
         })
       : [];
     const recommendationProducts = requestedItems.length
       ? await prisma.product.findMany({
-          where: { active: true },
+          where: { active: true, deletedAt: null },
           include: { brand: true, category: true, inventory: true },
           orderBy: { featuredRank: "asc" }
         })

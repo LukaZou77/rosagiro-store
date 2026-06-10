@@ -424,13 +424,22 @@ export async function getShippingQuoteForCart(items: ShippingQuoteCartItem[], ce
 
   const digits = cepDigits(cep);
   const products = await prisma.product.findMany({
-    where: { slug: { in: normalizedItems.map((item) => item.slug) }, active: true },
+    where: { slug: { in: normalizedItems.map((item) => item.slug) }, active: true, deletedAt: null },
     select: { slug: true, weightGrams: true }
   });
   const productBySlug = new Map(products.map((product) => [product.slug, product]));
+  if (!productBySlug.size) {
+    return {
+      status: "EMPTY_CART",
+      message: "Adicione produtos disponíveis ao carrinho para calcular o frete.",
+      options: [],
+      productWeightGrams: 0,
+      billableWeightGrams: shippingConfig.minBillableWeightGrams
+    };
+  }
   const productTotalWeightGrams = normalizedItems.reduce((total, item) => {
     const product = productBySlug.get(item.slug);
-    return total + productWeightGrams(product?.weightGrams) * item.quantity;
+    return product ? total + productWeightGrams(product.weightGrams) * item.quantity : total;
   }, 0);
   const billable = billableWeightGrams(productTotalWeightGrams);
   const pickup = localPickupOption(productTotalWeightGrams, billable);

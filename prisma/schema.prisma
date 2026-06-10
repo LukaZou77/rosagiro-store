@@ -125,6 +125,9 @@ model Product {
   stockStatus         String
   badges              String[]
   active              Boolean     @default(true)
+  deletedAt           DateTime?
+  deletedByAdminEmail String?
+  deleteNote          String?
   featuredRank        Int         @default(0)
   brand               Brand       @relation(fields: [brandId], references: [id])
   category            Category    @relation(fields: [categoryId], references: [id])
@@ -135,6 +138,8 @@ model Product {
 
   @@index([categoryId, active])
   @@index([brandId, active])
+  @@index([deletedAt])
+  @@index([active, deletedAt])
 }
 
 model Inventory {

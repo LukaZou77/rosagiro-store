@@ -10,6 +10,7 @@ import {
 
 export async function currentProductsCsv() {
   const products = await prisma.product.findMany({
+    where: { deletedAt: null },
     include: { brand: true, category: true, inventory: true },
     orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }]
   });

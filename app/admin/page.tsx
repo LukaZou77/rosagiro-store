@@ -9,7 +9,7 @@ import { getPaymentDiagnosticSnapshot } from "@/lib/payment-diagnostics";
 export default async function AdminPage() {
   const admin = await requireAdmin();
   const [productCount, pendingOrders, paidOrders, revenue, launchSnapshot, paymentSnapshot] = await Promise.all([
-    prisma.product.count(),
+    prisma.product.count({ where: { deletedAt: null } }),
     prisma.order.count({ where: { status: "PENDING_PAYMENT" } }),
     prisma.order.count({ where: { status: "PAID" } }),
     prisma.order.aggregate({ where: { status: "PAID" }, _sum: { totalCents: true } }),

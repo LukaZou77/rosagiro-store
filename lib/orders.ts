@@ -119,7 +119,7 @@ function makeOrderNumber() {
 export async function createOrder(input: CheckoutInput) {
   const slugs = input.items.map((item) => item.slug);
   const products = await prisma.product.findMany({
-    where: { slug: { in: slugs }, active: true },
+    where: { slug: { in: slugs }, active: true, deletedAt: null },
     include: { brand: true, inventory: true }
   });
   const productBySlug = new Map(products.map((product) => [product.slug, product]));

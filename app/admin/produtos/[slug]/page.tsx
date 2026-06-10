@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { updateProductDetailAction } from "@/app/admin/actions";
+import { restoreProductsFromTrashAction, updateProductDetailAction } from "@/app/admin/actions";
 import { AdminProductForm } from "@/components/AdminProductForm";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
@@ -32,6 +32,48 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
 
   const error = single(query.error);
   const saved = single(query.saved);
+
+  if (product.deletedAt) {
+    return (
+      <AdminShell adminName={admin.name}>
+        <div className="admin-heading">
+          <p className="eyebrow">Produto na lixeira</p>
+          <h1>{product.name}</h1>
+          <p>Este produto está fora da loja. Restaure para publicar e editar novamente.</p>
+          <div className="admin-actions">
+            <Link className="button secondary" href="/admin/produtos/lixeira">
+              Voltar para lixeira
+            </Link>
+            <form action={restoreProductsFromTrashAction}>
+              <input type="hidden" name="productIds" value={product.id} />
+              <button className="button primary" type="submit">
+                Restaurar e publicar
+              </button>
+            </form>
+          </div>
+        </div>
+        {error ? (
+          <div className="admin-notice error" role="alert">
+            {error}
+          </div>
+        ) : null}
+        <section className="import-panel">
+          <div className="readiness-group-heading">
+            <div>
+              <span>{product.slug}</span>
+              <h2>Ficha preservada</h2>
+            </div>
+            <strong>Lixeira</strong>
+          </div>
+          <p className="table-note">
+            A ficha, galeria e estoque continuam salvos para restauração. A exclusão definitiva fica disponível na
+            lixeira de produtos.
+          </p>
+        </section>
+      </AdminShell>
+    );
+  }
+
   const quality = evaluateProductQuality(product);
 
   return (

@@ -40,6 +40,7 @@ export type ProductImportExistingProduct = {
   priceCents: number;
   stock: number;
   active: boolean;
+  deletedAt?: Date | string | null;
   brand: string;
   category: string;
   weightGrams: number;
@@ -420,6 +421,7 @@ export function parseProductCsv(
       }
     }
     if (!descriptionPt) errors.push("descriptionPt obrigatório");
+    if (existing?.deletedAt) errors.push("slug está na lixeira; restaure o produto antes de importar");
 
     const operation: ProductImportRow["operation"] = existing ? "update" : "create";
 

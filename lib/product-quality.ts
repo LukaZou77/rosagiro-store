@@ -366,6 +366,7 @@ function countIssues(items: ProductQualityResult[]) {
 
 export async function getProductQualityItems() {
   const products = await prisma.product.findMany({
+    where: { deletedAt: null },
     include: { brand: true, category: true, inventory: true },
     orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }]
   });
@@ -375,6 +376,7 @@ export async function getProductQualityItems() {
 
 export async function getProductQualitySummary(): Promise<ProductQualitySummary> {
   const products = await prisma.product.findMany({
+    where: { deletedAt: null },
     include: { brand: true, category: true, inventory: true },
     orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }]
   });
