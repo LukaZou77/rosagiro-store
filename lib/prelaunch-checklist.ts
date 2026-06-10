@@ -56,8 +56,8 @@ export const prelaunchSteps: PrelaunchStep[] = [
   },
   {
     index: 7,
-    title: "Validar Mercado Pago sandbox",
-    summary: "Configurar token sandbox, webhook secret e URL HTTPS pública antes de trocar para pagamento real.",
+    title: "Validar Mercado Pago sandbox e live",
+    summary: "Configurar sandbox para testes; depois trocar para live com token, webhook secret e URL HTTPS pública.",
     actionHref: "/admin/pagamentos",
     actionLabel: "Ver pagamentos"
   },
@@ -106,7 +106,7 @@ export const prelaunchGoNoGoGates: PrelaunchGate[] = [
   },
   {
     label: "Pagamento validado",
-    detail: "Mercado Pago sandbox, webhook e estoque passaram; simulado não aparece como pagamento oficial."
+    detail: "Mercado Pago sandbox e live passaram; webhook e estoque funcionam, e simulado não aparece como pagamento oficial."
   },
   {
     label: "Operação protegida",

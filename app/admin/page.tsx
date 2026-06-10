@@ -38,7 +38,7 @@ export default async function AdminPage() {
           <strong>{paidOrders}</strong>
         </Link>
         <div>
-          <span>Receita simulada</span>
+          <span>Receita registrada</span>
           <strong>{money(revenue._sum.totalCents || 0)}</strong>
         </div>
       </div>
@@ -47,7 +47,7 @@ export default async function AdminPage() {
         <div className="readiness-group-heading">
           <div>
             <span>Pagamentos</span>
-            <h2>Mercado Pago sandbox</h2>
+            <h2>Mercado Pago</h2>
           </div>
           <strong>{paymentSnapshot.statusLabel}</strong>
         </div>

@@ -81,6 +81,9 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
     hasPublicUrl(env.NEXT_PUBLIC_SITE_URL) && Boolean(env.SESSION_SECRET?.trim()) && Boolean(env.DATABASE_URL?.trim());
   const hasGoogleMaps = Boolean(env.GOOGLE_MAPS_API_KEY?.trim());
   const hasSeoPublicBase = hasPublicUrl(env.NEXT_PUBLIC_SITE_URL);
+  const paymentMode = env.PAYMENT_MODE?.trim() || "simulated";
+  const livePaymentReady = paymentDiagnostics.status === "READY" && paymentMode === "mercado_pago_live";
+  const sandboxPaymentReady = paymentDiagnostics.status === "READY" && paymentMode === "mercado_pago_sandbox";
 
   const signals = [
     signal({
@@ -134,14 +137,16 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
       actionHref: "/admin/produtos/qualidade"
     }),
     signal({
-      key: "payment-sandbox",
+      key: "payment-live",
       group: "Pagamento",
-      label: "Mercado Pago sandbox",
-      status: paymentDiagnostics.status === "READY" ? "READY" : "ACTION_REQUIRED",
+      label: "Mercado Pago live",
+      status: livePaymentReady ? "READY" : sandboxPaymentReady ? "WARNING" : "ACTION_REQUIRED",
       severity: "high",
       message:
-        paymentDiagnostics.status === "READY"
-          ? "Sandbox, token, webhook secret e URL pública parecem configurados."
+        livePaymentReady
+          ? "Live, token, webhook secret e URL pública parecem configurados para pagamento real."
+          : sandboxPaymentReady
+            ? "Sandbox está pronto; troque para live e valide pagamento real antes de vender."
           : paymentDiagnostics.fallbackMessage,
       actionHref: "/admin/pagamentos"
     }),

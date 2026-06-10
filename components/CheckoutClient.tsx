@@ -148,11 +148,13 @@ function stepIndex(step: CheckoutStep) {
 export function CheckoutClient({
   products,
   trustSignals,
-  mercadoPagoMaxInstallments
+  mercadoPagoMaxInstallments,
+  includeSimulatedPayment
 }: {
   products: Product[];
   trustSignals: string[];
   mercadoPagoMaxInstallments: number;
+  includeSimulatedPayment: boolean;
 }) {
   const whatsappPhone = useWhatsAppPhone();
   const router = useRouter();
@@ -213,8 +215,8 @@ export function CheckoutClient({
     [cart, products]
   );
   const checkoutPaymentMethods = useMemo(
-    () => paymentMethodsForCheckout(mercadoPagoMaxInstallments),
-    [mercadoPagoMaxInstallments]
+    () => paymentMethodsForCheckout(mercadoPagoMaxInstallments, { includeSimulated: includeSimulatedPayment }),
+    [includeSimulatedPayment, mercadoPagoMaxInstallments]
   );
   const selectedShipping = shippingQuote?.options.find((option) => option.method === shippingMethod) || null;
   const shipping = selectedShipping?.priceCents || 0;

@@ -26,10 +26,10 @@ export default async function AdminPaymentsPage() {
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
         <p className="eyebrow">Pagamentos</p>
-        <h1>Diagnóstico Mercado Pago sandbox</h1>
+        <h1>Diagnóstico Mercado Pago</h1>
         <p>
-          Verifique por que Pix/cartão abrem Checkout Pro sandbox ou caem no pagamento simulado. Esta página é somente
-          leitura e não mostra token, secret, database URL nem payload completo.
+          Verifique se Pix/cartão estão em modo simulado, sandbox ou live. Esta página é somente leitura e não mostra
+          token, secret, database URL nem payload completo.
         </p>
         <div className="admin-actions">
           <Link className="button secondary" href="/admin/pedidos">
@@ -44,7 +44,7 @@ export default async function AdminPaymentsPage() {
       <section className={`import-panel payment-diagnostic-hero ${statusClass(snapshot.status)}`}>
         <div className="readiness-group-heading">
           <div>
-            <span>Checkout Pro sandbox</span>
+            <span>Checkout Pro</span>
             <h2>{snapshot.statusLabel}</h2>
           </div>
           <strong>{snapshot.modeLabel}</strong>
@@ -102,7 +102,7 @@ export default async function AdminPaymentsPage() {
         <div className="readiness-group-heading">
           <div>
             <span>Configuração</span>
-            <h2>Checks de sandbox</h2>
+            <h2>Checks do Mercado Pago</h2>
           </div>
           <strong>{snapshot.configChecks.filter((item) => item.status === "READY").length}/{snapshot.configChecks.length}</strong>
         </div>
@@ -116,8 +116,8 @@ export default async function AdminPaymentsPage() {
           ))}
         </div>
         <p className="table-note">
-          Webhook esperado: <strong>{snapshot.webhookEndpointPath}</strong>. Configure uma URL HTTPS pública antes de testar
-          callbacks do Mercado Pago.
+          Webhook esperado: <strong>{snapshot.webhookEndpointPath}</strong>. Em live, configure esta rota com HTTPS público
+          antes de receber pagamentos reais.
         </p>
       </section>
 

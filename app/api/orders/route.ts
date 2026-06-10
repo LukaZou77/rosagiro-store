@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { MercadoPagoError, startOrderPayment } from "@/lib/mercado-pago";
+import { assertPaymentCanStart, MercadoPagoError, startOrderPayment } from "@/lib/mercado-pago";
 import { createOrder, OrderError, parseCheckoutPayload } from "@/lib/orders";
 
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
     const input = parseCheckoutPayload(payload);
+    assertPaymentCanStart(input.paymentMethod);
     const order = await createOrder(input);
     const payment = await startOrderPayment(order.orderNumber);
     return NextResponse.json({

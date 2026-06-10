@@ -3,7 +3,7 @@ import "server-only";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { OrderError, markOrderPaid } from "@/lib/orders";
-import type { PaymentMethodValue } from "@/lib/payments";
+import { isMercadoPagoMode, isPaymentModeValue, normalizePaymentMode, type PaymentMethodValue, type PaymentMode } from "@/lib/payments";
 import { configuredMercadoPagoInstallments, getStoreProfile } from "@/lib/store-profile";
 import type { Prisma } from "@/src/generated/prisma/client";
 
@@ -100,21 +100,39 @@ export function shouldUseMercadoPago(method: PaymentMethodValue | string | null 
   return method === "PIX" || method === "CREDIT_CARD";
 }
 
-export function mercadoPagoSandboxReady() {
+function currentPaymentMode() {
+  return normalizePaymentMode(process.env.PAYMENT_MODE);
+}
+
+function paymentModeIsInvalid() {
+  const raw = cleanText(process.env.PAYMENT_MODE);
+  return Boolean(raw) && !isPaymentModeValue(raw);
+}
+
+function unavailablePaymentMessage() {
+  return "Pagamento temporariamente indisponível. Fale com o atendimento para finalizar seu pedido.";
+}
+
+export function mercadoPagoReady() {
+  if (paymentModeIsInvalid()) return false;
+  const mode = currentPaymentMode();
   return (
-    process.env.PAYMENT_MODE === "mercado_pago_sandbox" &&
+    isMercadoPagoMode(mode) &&
     Boolean(cleanText(process.env.MERCADO_PAGO_ACCESS_TOKEN)) &&
-    Boolean(siteUrl())
+    Boolean(siteUrl()) &&
+    (mode !== "mercado_pago_live" || Boolean(cleanText(process.env.MERCADO_PAGO_WEBHOOK_SECRET)))
   );
 }
 
-function sandboxConfig() {
+function mercadoPagoConfig(): { accessToken: string; publicUrl: string; mode: Exclude<PaymentMode, "simulated"> } {
+  const mode = currentPaymentMode();
   const accessToken = cleanText(process.env.MERCADO_PAGO_ACCESS_TOKEN);
   const publicUrl = siteUrl();
-  if (!accessToken || !publicUrl) {
-    throw new MercadoPagoError("Mercado Pago sandbox não está configurado.");
+  const webhookSecret = cleanText(process.env.MERCADO_PAGO_WEBHOOK_SECRET);
+  if (paymentModeIsInvalid() || !isMercadoPagoMode(mode) || !accessToken || !publicUrl || (mode === "mercado_pago_live" && !webhookSecret)) {
+    throw new MercadoPagoError(unavailablePaymentMessage(), 503);
   }
-  return { accessToken, publicUrl };
+  return { accessToken, publicUrl, mode: mode as Exclude<PaymentMode, "simulated"> };
 }
 
 function simulatedPaymentResult(orderNumber: string): PaymentStartResult {
@@ -126,17 +144,41 @@ function simulatedPaymentResult(orderNumber: string): PaymentStartResult {
   };
 }
 
+export function assertPaymentCanStart(method: PaymentMethodValue | string | null | undefined) {
+  const mode = currentPaymentMode();
+  if (!shouldUseMercadoPago(method)) return;
+  if (paymentModeIsInvalid()) {
+    throw new MercadoPagoError(unavailablePaymentMessage(), 503);
+  }
+  if (mode === "simulated") return;
+  if (!mercadoPagoReady()) {
+    throw new MercadoPagoError(unavailablePaymentMessage(), 503);
+  }
+}
+
 export async function startOrderPayment(orderNumber: string): Promise<PaymentStartResult> {
+  const mode = currentPaymentMode();
   const order = await prisma.order.findUnique({
     where: { orderNumber },
     include: { payment: true }
   });
   if (!order || !order.payment) throw new MercadoPagoError("Pedido não encontrado.", 404);
-  if (!shouldUseMercadoPago(order.payment.method) || !mercadoPagoSandboxReady()) {
+  if (!shouldUseMercadoPago(order.payment.method)) {
     return simulatedPaymentResult(order.orderNumber);
   }
 
-  const existingRedirect = order.payment.providerSandboxInitPoint || order.payment.providerInitPoint;
+  if (mode === "simulated") {
+    return simulatedPaymentResult(order.orderNumber);
+  }
+
+  if (!mercadoPagoReady()) {
+    throw new MercadoPagoError(unavailablePaymentMessage(), 503);
+  }
+
+  const existingRedirect =
+    mode === "mercado_pago_sandbox"
+      ? order.payment.providerSandboxInitPoint || order.payment.providerInitPoint
+      : order.payment.providerInitPoint;
   if (order.payment.providerPreferenceId && existingRedirect) {
     return {
       orderNumber: order.orderNumber,
@@ -146,7 +188,7 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
     };
   }
 
-  const config = sandboxConfig();
+  const config = mercadoPagoConfig();
   const payerName = splitName(order.customerName);
   const payerPhone = splitPhone(order.customerPhone);
   const baseOrderUrl = `${config.publicUrl}/pedido/${encodeURIComponent(order.orderNumber)}`;
@@ -222,7 +264,10 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
     throw new MercadoPagoError(message);
   }
 
-  const redirectTo = cleanText(payload.sandbox_init_point) || cleanText(payload.init_point);
+  const redirectTo =
+    config.mode === "mercado_pago_sandbox"
+      ? cleanText(payload.sandbox_init_point) || cleanText(payload.init_point)
+      : cleanText(payload.init_point);
   const preferenceId = cleanText(payload.id);
   if (!preferenceId || !redirectTo) {
     const message = "Mercado Pago não retornou uma URL de checkout.";
@@ -318,7 +363,7 @@ function verifyWebhookSignature(request: Request, url: URL, payload: MercadoPago
 }
 
 async function fetchPaymentDetails(paymentId: string) {
-  const config = sandboxConfig();
+  const config = mercadoPagoConfig();
   const response = await fetch(`${MERCADO_PAGO_API_BASE}/v1/payments/${encodeURIComponent(paymentId)}`, {
     headers: {
       Authorization: `Bearer ${config.accessToken}`

@@ -2,6 +2,9 @@ export const mercadoPagoInstallmentOptions = [3, 6, 9, 12] as const;
 export type MercadoPagoInstallments = (typeof mercadoPagoInstallmentOptions)[number];
 export const defaultMercadoPagoInstallments: MercadoPagoInstallments = 6;
 
+export const paymentModeValues = ["simulated", "mercado_pago_sandbox", "mercado_pago_live"] as const;
+export type PaymentMode = (typeof paymentModeValues)[number];
+
 const basePaymentMethods = [
   {
     value: "PIX",
@@ -22,6 +25,27 @@ const basePaymentMethods = [
 
 export type PaymentMethodValue = (typeof basePaymentMethods)[number]["value"];
 
+export function normalizePaymentMode(value: unknown): PaymentMode {
+  const cleaned = String(value || "").trim();
+  return paymentModeValues.includes(cleaned as PaymentMode) ? (cleaned as PaymentMode) : "simulated";
+}
+
+export function isPaymentModeValue(value: unknown): value is PaymentMode {
+  const cleaned = String(value || "").trim();
+  return paymentModeValues.includes(cleaned as PaymentMode);
+}
+
+export function isMercadoPagoMode(value: unknown) {
+  const mode = normalizePaymentMode(value);
+  return mode === "mercado_pago_sandbox" || mode === "mercado_pago_live";
+}
+
+export function paymentModeAllowsSimulated(value: unknown) {
+  const cleaned = String(value || "").trim();
+  if (!cleaned) return true;
+  return cleaned === "simulated" || cleaned === "mercado_pago_sandbox";
+}
+
 export function isMercadoPagoInstallments(value: unknown): value is MercadoPagoInstallments {
   const parsed = Number(value);
   return mercadoPagoInstallmentOptions.includes(parsed as MercadoPagoInstallments);
@@ -36,16 +60,21 @@ export function creditCardInstallmentLabel(maxInstallments: unknown) {
   return `Cartão de crédito em até ${normalizeMercadoPagoInstallments(maxInstallments)}x`;
 }
 
-export function paymentMethodsForCheckout(maxInstallments: unknown = defaultMercadoPagoInstallments) {
+export function paymentMethodsForCheckout(
+  maxInstallments: unknown = defaultMercadoPagoInstallments,
+  options: { includeSimulated?: boolean } = {}
+) {
   const installmentLabel = creditCardInstallmentLabel(maxInstallments);
-  return basePaymentMethods.map((method) =>
-    method.value === "CREDIT_CARD"
-      ? {
-          ...method,
-          label: installmentLabel
-        }
-      : method
-  );
+  return basePaymentMethods
+    .filter((method) => options.includeSimulated !== false || method.value !== "SIMULATED")
+    .map((method) =>
+      method.value === "CREDIT_CARD"
+        ? {
+            ...method,
+            label: installmentLabel
+          }
+        : method
+    );
 }
 
 export const paymentMethods = paymentMethodsForCheckout();

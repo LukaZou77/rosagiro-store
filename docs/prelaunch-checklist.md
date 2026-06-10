@@ -10,7 +10,7 @@
 4. 商品真实化第一轮：在 `/admin/produtos/qualidade` 修 `ACTION_REQUIRED` 商品，确保 active 商品有真实图片、库存、价格、重量、描述、功效、成分、规格、validade/lote 和批发采购资料。
 5. 图片存储上线准备：把真实商品图从本地 `public/uploads/products` 迁移到 S3、R2、Vercel Blob 或其他持久对象存储。
 6. 物流规则确认：在 `/admin/frete` 确认安骏 D2D Pickup 表、来源、CEP 覆盖、重量段，并人工确认保险、税费、风险区、Retirada、Transportadora 和 Excursão。
-7. 支付从模拟走向沙盒，再走向 live：在 `/admin/pagamentos` 配置 Mercado Pago sandbox，确认 webhook、回跳、订单变 `PAID` 和库存只扣一次；live 前隐藏正式顾客的模拟支付。
+7. 支付从模拟走向沙盒，再走向 live：在 `/admin/pagamentos` 先配置 Mercado Pago sandbox，确认 webhook、回跳、订单变 `PAID` 和库存只扣一次；再配置 live token/webhook secret 做小额真实验收，并隐藏正式顾客的模拟支付。
 8. 生产环境部署：准备 Vercel、正式域名、生产 PostgreSQL、备份、环境变量和 `npx prisma migrate deploy`。
 9. SEO / GEO / 商业入口检查：检查 metadata、canonical、OG、JSON-LD、robots、sitemap、`llms.txt`，上线预览域名跑 SEO audit，正式域名接 Google Search Console。
 10. 全流程黑盒验收：手机 390/430px 和桌面 1366/1920px 跑完整顾客路径和后台路径。
@@ -22,7 +22,7 @@
 - Active 商品没有演示 SVG，关键商品至少 3 张真实图。
 - 商品价格、库存、重量、validade/lote 已人工确认。
 - 图片已经迁移到持久对象存储。
-- Mercado Pago sandbox webhook 全流程通过，live 配置已复核。
+- Mercado Pago sandbox webhook 全流程通过，live 小额真实支付和 webhook 已复核。
 - 正式顾客 checkout 不显示模拟支付。
 - 生产数据库有备份和回滚方案。
 - 手机端完整下单流程顺畅，没有遮挡、溢出或重复主按钮。

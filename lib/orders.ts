@@ -5,7 +5,7 @@ import { normalizeBrazilWhatsapp, upsertCustomerFromContact } from "@/lib/custom
 import { prisma } from "@/lib/db";
 import { validateCheckoutAddress } from "@/lib/google-address";
 import { discountCents, subtotalCents, totalCents } from "@/lib/money";
-import { isPaymentMethod, type PaymentMethodValue } from "@/lib/payments";
+import { isPaymentMethod, paymentModeAllowsSimulated, type PaymentMethodValue } from "@/lib/payments";
 import { resolveOrderShipping } from "@/lib/shipping";
 import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
 import type { Prisma } from "@/src/generated/prisma/client";
@@ -98,7 +98,10 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
       ? rawShippingMethod
       : "RETIRADA_LOCAL";
   const rawPaymentMethod = cleanText((data as Partial<CheckoutInput>).paymentMethod).toUpperCase();
-  const paymentMethod = isPaymentMethod(rawPaymentMethod) ? rawPaymentMethod : "SIMULATED";
+  if (!isPaymentMethod(rawPaymentMethod)) {
+    throw new OrderError("Escolha uma forma de pagamento válida.");
+  }
+  const paymentMethod = rawPaymentMethod;
 
   if (!items.length) throw new OrderError("Seu carrinho está vazio.");
   if (!customer.name || !customer.email || !customer.phone || !customer.cpf) {
@@ -112,6 +115,9 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
   if (digits(address.cep).length !== 8) throw new OrderError("CEP deve ter 8 dígitos.");
   if (!address.state || !address.city || !address.district || !address.street || !address.number) {
     throw new OrderError("Preencha todos os dados de endereço.");
+  }
+  if (paymentMethod === "SIMULATED" && !paymentModeAllowsSimulated(process.env.PAYMENT_MODE)) {
+    throw new OrderError("Pagamento temporariamente indisponível. Escolha Pix ou cartão pelo Mercado Pago.", 503);
   }
 
   return { items, customer, address, shippingMethod, paymentMethod };
