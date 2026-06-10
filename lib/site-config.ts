@@ -37,7 +37,7 @@ export const siteConfig = {
     minimumOrderCents: 30000,
     minimumOrderTitle: "Pedido mínimo",
     minimumOrderText: "Pedido mínimo R$ 300,00 para compras no atacado. Se precisar completar a lista, fale com o atendimento.",
-    headerStrip: "PEDIDO MÍNIMO R$ 300,00 - ENTREGA PARA TODO O BRASIL - PIX, CEP E WHATSAPP",
+    headerStrip: "PEDIDO MÍNIMO R$ 300,00 - ENTREGA PARA TODO O BRASIL - PIX E WHATSAPP",
     storeTrust: "Dados comerciais, atendimento e políticas reunidos para uma compra mais segura.",
     nationalDeliveryLabel: "Entrega para todo o Brasil",
     nationalDeliveryText: "Enviamos para todo o Brasil com cotação por CEP.",
