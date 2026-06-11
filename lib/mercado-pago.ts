@@ -37,6 +37,7 @@ type MercadoPagoWebhookPayload = {
   id?: string | number;
   type?: string;
   action?: string;
+  live_mode?: boolean;
   data?: {
     id?: string | number;
   };
@@ -362,6 +363,21 @@ function verifyWebhookSignature(request: Request, url: URL, payload: MercadoPago
   };
 }
 
+function isMercadoPagoSimulatorNotification(input: {
+  payload: MercadoPagoWebhookPayload;
+  dataId: string;
+  eventType: string;
+  action: string;
+}) {
+  return (
+    input.payload.live_mode === false &&
+    cleanText(input.payload.id) === "123456" &&
+    input.dataId === "123456" &&
+    input.eventType === "payment" &&
+    input.action === "payment.updated"
+  );
+}
+
 async function fetchPaymentDetails(paymentId: string) {
   const config = mercadoPagoConfig();
   const response = await fetch(`${MERCADO_PAGO_API_BASE}/v1/payments/${encodeURIComponent(paymentId)}`, {
@@ -529,6 +545,14 @@ export async function processMercadoPagoWebhook(request: Request, payload: Merca
       data: { processedAt: new Date() }
     });
     return { httpStatus: 202, body: { ok: false, status: "PAYMENT_ID_MISSING" } };
+  }
+
+  if (isMercadoPagoSimulatorNotification({ payload, dataId, eventType, action })) {
+    await prisma.paymentWebhookEvent.update({
+      where: { id: event.id },
+      data: { processedAt: new Date() }
+    });
+    return { httpStatus: 200, body: { ok: true, status: "SIMULATOR_RECEIVED", dataId } };
   }
 
   const paymentDetails = await fetchPaymentDetails(dataId);
