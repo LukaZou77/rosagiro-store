@@ -1,16 +1,9 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
+import { formatAdminDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
-
-function dateLabel(value?: Date | null) {
-  if (!value) return "Sem registro";
-  return value.toLocaleString("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short"
-  });
-}
 
 export default async function AdminCustomersPage() {
   const admin = await requireAdmin();
@@ -75,12 +68,12 @@ export default async function AdminCustomersPage() {
               <div>
                 <strong>{customer.name}</strong>
                 <span>{customer.whatsapp}</span>
-                <small>Primeiro acesso: {dateLabel(customer.firstSeenAt)}</small>
+                <small>Primeiro acesso: {formatAdminDateTime(customer.firstSeenAt)}</small>
               </div>
               <div>
                 <span>{customer.loginCount} entradas</span>
-                <small>Última entrada: {dateLabel(customer.lastLoginAt)}</small>
-                <small>Última atividade: {dateLabel(customer.lastSeenAt)}</small>
+                <small>Última entrada: {formatAdminDateTime(customer.lastLoginAt)}</small>
+                <small>Última atividade: {formatAdminDateTime(customer.lastSeenAt)}</small>
               </div>
               <div>
                 <span>{customer._count.orders} pedidos</span>
@@ -90,7 +83,7 @@ export default async function AdminCustomersPage() {
                       <strong>{lastOrder.orderNumber}</strong>
                     </Link>
                     <small>
-                      {money(lastOrder.totalCents)} / {lastOrder.status} / {dateLabel(lastOrder.createdAt)}
+                      {money(lastOrder.totalCents)} / {lastOrder.status} / {formatAdminDateTime(lastOrder.createdAt)}
                     </small>
                   </>
                 ) : (

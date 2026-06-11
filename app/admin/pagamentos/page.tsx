@@ -1,16 +1,12 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
+import { formatAdminDateTime } from "@/lib/date-format";
 import { money } from "@/lib/money";
 import { getPaymentDiagnosticSnapshot, type PaymentDiagnosticStatus } from "@/lib/payment-diagnostics";
 
 function statusClass(status: PaymentDiagnosticStatus) {
   return status.toLowerCase().replace("_", "-");
-}
-
-function formatDate(value: Date | null) {
-  if (!value) return "Sem registro";
-  return value.toLocaleString("pt-BR");
 }
 
 function shortValue(value: string | null) {
@@ -169,7 +165,7 @@ export default async function AdminPaymentsPage() {
                     <small>Ref: {shortValue(payment.providerExternalReference)}</small>
                   </td>
                   <td>
-                    <small>{formatDate(payment.lastWebhookAt)}</small>
+                    <small>{formatAdminDateTime(payment.lastWebhookAt)}</small>
                     {payment.syncError ? <small>{payment.syncError}</small> : <small>Sem erro de sincronização</small>}
                   </td>
                 </tr>
@@ -222,8 +218,8 @@ export default async function AdminPaymentsPage() {
                     </span>
                   </td>
                   <td>
-                    <small>Criado: {formatDate(event.createdAt)}</small>
-                    <small>Processado: {formatDate(event.processedAt)}</small>
+                    <small>Criado: {formatAdminDateTime(event.createdAt)}</small>
+                    <small>Processado: {formatAdminDateTime(event.processedAt)}</small>
                   </td>
                 </tr>
               ))}

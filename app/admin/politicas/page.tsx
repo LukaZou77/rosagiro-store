@@ -2,6 +2,7 @@ import Link from "next/link";
 import { saveSiteInfoPageAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
+import { formatAdminDateTime } from "@/lib/date-format";
 import {
   getAllSiteInfoPages,
   siteInfoPageLabel,
@@ -16,14 +17,6 @@ type PageProps = {
 
 function single(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function dateLabel(value?: Date | null) {
-  if (!value) return "Conteúdo padrão";
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short"
-  }).format(value);
 }
 
 function pageAnchor(pageKey: SiteInfoPageKey) {
@@ -45,7 +38,7 @@ function PolicyEditor({ page }: { page: SiteInfoPageEditable }) {
           Ver página
         </Link>
       </div>
-      <p className="table-note">Última atualização: {dateLabel(page.updatedAt)}. Use texto simples, sem HTML.</p>
+      <p className="table-note">Última atualização: {formatAdminDateTime(page.updatedAt, "Conteúdo padrão")}. Use texto simples, sem HTML.</p>
 
       <div className="form-grid">
         <label>

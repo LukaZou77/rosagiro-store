@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { confirmManualPixPaymentAction, updateOrderStatusAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
+import { formatAdminDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
 import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
@@ -148,7 +149,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
               {order.payment.providerStatusDetail ? <small>Detalhe: {order.payment.providerStatusDetail}</small> : null}
               {order.payment.providerPreferenceId ? <small>Preference ID: {order.payment.providerPreferenceId}</small> : null}
               {order.payment.providerPaymentId ? <small>Payment ID: {order.payment.providerPaymentId}</small> : null}
-              {order.payment.lastWebhookAt ? <small>Webhook: {order.payment.lastWebhookAt.toLocaleString("pt-BR")}</small> : null}
+              {order.payment.lastWebhookAt ? <small>Webhook: {formatAdminDateTime(order.payment.lastWebhookAt)}</small> : null}
               {order.payment.syncError ? <small>{order.payment.syncError}</small> : null}
             </div>
           ) : null}

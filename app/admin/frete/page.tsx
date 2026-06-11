@@ -1,6 +1,7 @@
 import { AdminFreightImportClient } from "@/components/AdminFreightImportClient";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
+import { formatAdminDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
 import { shippingConfig } from "@/lib/shipping";
@@ -61,7 +62,7 @@ export default async function AdminFreightPage() {
       {latestBatch ? (
         <div className="admin-notice success" role="status">
           Última importação: {latestBatch.sourceName} / {latestBatch.sourceSheet} /{" "}
-          {latestBatch.createdAt.toLocaleString("pt-BR")}. Origem de checkout: {shippingConfig.originDisplay}.
+          {formatAdminDateTime(latestBatch.createdAt)}. Origem de checkout: {shippingConfig.originDisplay}.
         </div>
       ) : (
         <div className="admin-notice error" role="alert">

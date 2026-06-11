@@ -3,6 +3,7 @@ import { permanentlyDeleteProductsAction, restoreProductsFromTrashAction } from 
 import { AdminProductTrashList, type AdminTrashProductRow } from "@/components/AdminProductTrashList";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
+import { formatAdminDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
 
@@ -12,15 +13,6 @@ type PageProps = {
 
 function single(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function formatDate(value: Date | null) {
-  if (!value) return "data não registrada";
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-    timeZone: "America/Sao_Paulo"
-  }).format(value);
 }
 
 export default async function AdminProductTrashPage({ searchParams }: PageProps) {
@@ -44,7 +36,7 @@ export default async function AdminProductTrashPage({ searchParams }: PageProps)
     brandName: product.brand.name,
     categoryLabel: product.category.label,
     price: money(product.priceCents),
-    deletedAt: formatDate(product.deletedAt),
+    deletedAt: formatAdminDateTime(product.deletedAt, "data não registrada"),
     deletedBy: product.deletedByAdminEmail || "admin não registrado",
     deleteNote: product.deleteNote || ""
   }));
