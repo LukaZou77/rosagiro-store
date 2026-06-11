@@ -3,6 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import type { Prisma } from "../src/generated/prisma/client";
 import { infoPages } from "../lib/site-config";
+import { INTERNAL_AVAILABLE_STOCK_QUANTITY } from "../lib/product-stock";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -669,22 +670,10 @@ function cents(value: number | null) {
   return Math.round(value * 100);
 }
 
-function wholesaleSeedDetails(product: (typeof products)[number]) {
-  const suggestedByCategory: Record<string, number> = {
-    skincare: 3,
-    makeup: 6,
-    fragrance: 2,
-    body: 3,
-    hair: 4,
-    tools: 6
-  };
-
+function wholesaleSeedDetails() {
   return {
-    suggestedQuantity: suggestedByCategory[product.category] || 3,
-    kitRecommendation:
-      product.category === "tools"
-        ? "Combine com produtos de maquiagem para montar kit de revenda."
-        : `Combine com itens de ${product.subcategory.toLowerCase()} para montar reposicao.`,
+    suggestedQuantity: null,
+    kitRecommendation: null,
     wholesalePackage: "Venda por unidade; caixa fechada e volume maior sob consulta.",
     validityNote: "Validade/lote sob conferência no atendimento antes do envio.",
     purchaseNote: "Para compra em volume, confirme estoque, cidade/UF e melhor forma de entrega pelo WhatsApp."
@@ -808,7 +797,7 @@ async function main() {
     const brand = brandRecords.get(product.brand);
     const category = categoryRecords.get(product.category);
     if (!brand || !category) throw new Error(`Missing relation for ${product.slug}`);
-    const wholesaleDetails = wholesaleSeedDetails(product);
+    const wholesaleDetails = wholesaleSeedDetails();
 
     const record = await prisma.product.upsert({
       where: { slug: product.slug },
@@ -865,8 +854,8 @@ async function main() {
 
     await prisma.inventory.upsert({
       where: { productId: record.id },
-      update: { quantity: 48 },
-      create: { productId: record.id, quantity: 48 }
+      update: { quantity: INTERNAL_AVAILABLE_STOCK_QUANTITY },
+      create: { productId: record.id, quantity: INTERNAL_AVAILABLE_STOCK_QUANTITY }
     });
   }
 

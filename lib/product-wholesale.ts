@@ -20,18 +20,6 @@ function clean(value: string | null | undefined) {
 export function productWholesaleLines(product: WholesaleProductDetails): ProductWholesaleLine[] {
   return [
     {
-      key: "suggestedQuantity",
-      label: "Quantidade sugerida",
-      value: product.suggestedQuantity ? `${product.suggestedQuantity} un.` : "Sob consulta",
-      fallback: !product.suggestedQuantity
-    },
-    {
-      key: "kitRecommendation",
-      label: "Kit recomendado",
-      value: clean(product.kitRecommendation) || "Combine com itens da mesma rotina",
-      fallback: !clean(product.kitRecommendation)
-    },
-    {
       key: "wholesalePackage",
       label: "Caixa fechada / atacado",
       value: clean(product.wholesalePackage) || "Condicao sob consulta",

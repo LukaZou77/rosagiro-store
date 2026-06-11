@@ -9,7 +9,7 @@ export function AddToCartButton({
   skuId,
   label = "Adicionar",
   confirmationLabel = "Adicionado",
-  unavailableLabel = "Esgotado",
+  unavailableLabel = "Sem estoque",
   wide = false,
   disabled = false
 }: {

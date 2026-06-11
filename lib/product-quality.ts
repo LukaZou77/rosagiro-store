@@ -222,30 +222,6 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
     );
   }
 
-  if (!product.suggestedQuantity || product.suggestedQuantity <= 0) {
-    issues.push(
-      issue({
-        key: "missing-suggested-quantity",
-        group: "wholesale",
-        severity: "medium",
-        label: "Quantidade sugerida ausente",
-        message: "Informe uma quantidade sugerida para orientar compra de reposição ou revenda."
-      })
-    );
-  }
-
-  if (wholesaleTextLooksDraft(product.kitRecommendation)) {
-    issues.push(
-      issue({
-        key: "missing-kit-recommendation",
-        group: "wholesale",
-        severity: "medium",
-        label: "Kit recomendado a revisar",
-        message: "Inclua combinação real para kit, rotina ou reposição sem prometer desconto automático."
-      })
-    );
-  }
-
   if (wholesaleTextLooksDraft(product.wholesalePackage)) {
     issues.push(
       issue({

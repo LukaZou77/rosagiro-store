@@ -1,3 +1,5 @@
+import { stockQuantityFromImport } from "@/lib/product-stock";
+
 export const productImportRequiredFields = [
   "slug",
   "name",
@@ -122,7 +124,7 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   category: "skincare",
   subcategory: "Serum",
   price: "89,90",
-  stock: 24,
+  stock: 1,
   active: true,
   image: "/assets/products/aura-serum.svg",
   gallery: "/assets/products/aura-serum.svg",
@@ -135,8 +137,8 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   finish: "Glow",
   volume: "30 ml",
   weightGrams: 150,
-  suggestedQuantity: 6,
-  kitRecommendation: "Combine com limpeza facial e protetor solar para montar kit de rotina.",
+  suggestedQuantity: "",
+  kitRecommendation: "",
   wholesalePackage: "Venda por unidade; caixa fechada e volume maior sob consulta.",
   validityNote: "Validade e lote devem ser confirmados no recebimento do estoque real.",
   purchaseNote: "Para revenda, confirme estoque e condição de atacado pelo WhatsApp.",
@@ -152,7 +154,7 @@ export const productImportHelpRows = [
   ["category", "Sim", "Categoria ou slug da categoria. Ex: skincare, maquiagem, perfumes."],
   ["subcategory", "Sim", "Grupo de prateleira. Ex: Serum, Base, Batom, Pincel."],
   ["price", "Sim", "Preço em BRL. Aceita 89,90 ou 89.90."],
-  ["stock", "Sim", "Quantidade inteira em estoque."],
+  ["stock", "Sim", "Compatibilidade CSV: use 1 para Em estoque e 0 para Sem estoque. A loja não exibe quantidade real."],
   ["active", "Sim", "true/false, sim/não, 1/0, ativo/inativo."],
   ["image", "Sim", "Use /assets/..., /uploads/products/..., /placeholder... ou URL http(s)."],
   ["descriptionPt", "Sim", "Descrição em português para a vitrine."],
@@ -161,8 +163,8 @@ export const productImportHelpRows = [
   ["benefits, ingredients, badges", "Não", "Separe vários itens com |."],
   ["skinType, finish, volume", "Não", "Texto livre para filtros e detalhe do produto."],
   ["weightGrams", "Não", "Peso unitário em gramas para cotação de frete. Padrão 150."],
-  ["suggestedQuantity", "Não", "Quantidade sugerida para compra de reposição ou revenda."],
-  ["kitRecommendation", "Não", "Texto curto de kit ou combinação recomendada para atacado."],
+  ["suggestedQuantity", "Não", "Campo legado mantido para CSV antigo; não é mais necessário preencher."],
+  ["kitRecommendation", "Não", "Campo legado mantido para CSV antigo; prefira usar purchaseNote para orientar compra em volume."],
   ["wholesalePackage", "Não", "Caixa fechada, pacote, grade ou condição de atacado a confirmar."],
   ["validityNote", "Não", "Informação de validade/lote ou aviso de conferência operacional."],
   ["purchaseNote", "Não", "Observação comercial para orientar compra em volume."],
@@ -388,11 +390,14 @@ export function parseProductCsv(
     const weight = parseWeightGrams(raw.weightGrams || "");
     const suggestedQuantity = parseOptionalPositiveInt(raw.suggestedQuantity || "");
     const stock = parseStock(raw.stock || "");
+    const normalizedStock = stockQuantityFromImport(Math.max(0, stock));
     const active = parseBoolean(raw.active || "");
     const image = raw.image?.trim() || "";
     const gallery = parsePipeList(raw.gallery || "");
     const descriptionPt = raw.descriptionPt?.trim() || "";
     const existing = existingBySlug.get(slug);
+    const stockDelta =
+      existing && (normalizedStock > 0) !== (existing.stock > 0) ? (normalizedStock > 0 ? 1 : -1) : existing ? 0 : null;
 
     if (slug) slugCounts.set(slug, (slugCounts.get(slug) || 0) + 1);
     if (!slug) errors.push("slug obrigatório");
@@ -437,7 +442,7 @@ export function parseProductCsv(
       subcategory,
       priceCents,
       compareAtPriceCents,
-      stock: Math.max(0, stock),
+      stock: normalizedStock,
       active: active ?? true,
       image,
       gallery: normalizeProductGallery(image, gallery),
@@ -457,7 +462,7 @@ export function parseProductCsv(
       rating: parseRating(raw.rating || ""),
       reviewCount: parseReviewCount(raw.reviewCount || ""),
       operation,
-      stockDelta: existing ? Math.max(0, stock) - existing.stock : null,
+      stockDelta,
       priceDeltaCents: existing ? priceCents - existing.priceCents : null,
       duplicateSlug: false,
       errors

@@ -59,7 +59,7 @@ function recommendationReason(product: CartCompletionProduct, remainingCents: nu
   if (discount > 0) return "Desconto real para completar";
   if (preferredCategories.has(product.category.slug)) return "Combina com sua lista";
   if (/mais vendido|favorito|oferta|novo/i.test(product.badges.join(" "))) return "Boa saida para reposicao";
-  return "Pronta entrega para adicionar";
+  return "Em estoque para adicionar";
 }
 
 export function getCartCompletionRecommendations(

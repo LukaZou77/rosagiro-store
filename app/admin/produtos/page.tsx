@@ -39,11 +39,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
     inventory:
       stock === "in"
         ? { quantity: { gt: 0 } }
-        : stock === "low"
-          ? { quantity: { gt: 0, lte: 5 } }
-          : stock === "out"
-            ? { quantity: 0 }
-            : undefined,
+        : stock === "out"
+          ? { quantity: 0 }
+          : undefined,
     OR: q
       ? [
           { slug: { contains: q, mode: "insensitive" } },
@@ -65,10 +63,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   ]);
 
   const activeCount = products.filter((product) => product.active).length;
-  const lowStockCount = products.filter((product) => {
-    const quantity = product.inventory?.quantity || 0;
-    return quantity > 0 && quantity <= 5;
-  }).length;
+  const inStockCount = products.filter((product) => (product.inventory?.quantity || 0) > 0).length;
   const outOfStockCount = products.filter((product) => (product.inventory?.quantity || 0) === 0).length;
   const qualityItems = products.map(evaluateProductQuality);
   const qualityActionCount = qualityItems.filter((item) => item.status === "ACTION_REQUIRED").length;
@@ -141,11 +136,11 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           <strong>{activeCount}</strong>
         </div>
         <div>
-          <span>Estoque baixo</span>
-          <strong>{lowStockCount}</strong>
+          <span>Em estoque</span>
+          <strong>{inStockCount}</strong>
         </div>
         <div>
-          <span>Esgotados</span>
+          <span>Sem estoque</span>
           <strong>{outOfStockCount}</strong>
         </div>
         <Link href="/admin/produtos/qualidade">
@@ -190,12 +185,11 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           </select>
         </label>
         <label>
-          Estoque
+          Disponibilidade
           <select name="stock" defaultValue={stock}>
             <option value="all">Todos</option>
             <option value="in">Em estoque</option>
-            <option value="low">Baixo</option>
-            <option value="out">Esgotado</option>
+            <option value="out">Sem estoque</option>
           </select>
         </label>
         <button className="button primary" type="submit">

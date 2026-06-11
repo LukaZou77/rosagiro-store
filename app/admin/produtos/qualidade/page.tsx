@@ -109,11 +109,11 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
           frete Anjun por CEP.
         </p>
         <p className="table-note">
-          {summary.wholesaleIssueCount} produto(s) precisam revisar quantidade sugerida, kit, caixa/atacado ou
-          validade/lote antes de vender como atacado real.
+          {summary.wholesaleIssueCount} produto(s) precisam revisar caixa/atacado, validade/lote ou observacao de
+          compra antes de vender como atacado real.
         </p>
         <p className="table-note">
-          A página pública do produto agora destaca ficha comercial, fotos, validade/lote, quantidade sugerida e
+          A página pública do produto agora destaca ficha comercial, fotos, validade/lote, condição de atacado e
           atendimento. Quanto mais campos reais estiverem completos, menos o cliente precisa perguntar antes de comprar.
         </p>
       </section>

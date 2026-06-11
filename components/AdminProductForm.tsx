@@ -1,6 +1,7 @@
 import type { Prisma } from "@/src/generated/prisma/client";
 import { AdminSkuManager } from "@/components/AdminSkuManager";
 import { PRODUCT_GALLERY_LIMIT, formatImportMoney, normalizeProductGallery, pipeListValue } from "@/lib/product-import-shared";
+import { INTERNAL_AVAILABLE_STOCK_QUANTITY, stockAvailabilityValue } from "@/lib/product-stock";
 
 type AdminProductFormProduct = Prisma.ProductGetPayload<{
   include: { brand: true; category: true; inventory: true; skus: true };
@@ -167,8 +168,14 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             <input name="compareAtPrice" defaultValue={formatImportMoney(product?.compareAtPriceCents)} />
           </label>
           <label>
-            Estoque
-            <input name="quantity" type="number" min="0" defaultValue={numberValue(skuStock ?? product?.inventory?.quantity, 0)} />
+            Disponibilidade
+            <select
+              name="quantity"
+              defaultValue={stockAvailabilityValue(skuStock ?? product?.inventory?.quantity) === "in" ? String(INTERNAL_AVAILABLE_STOCK_QUANTITY) : "0"}
+            >
+              <option value={INTERNAL_AVAILABLE_STOCK_QUANTITY}>Em estoque</option>
+              <option value="0">Sem estoque</option>
+            </select>
           </label>
           <label>
             Peso unitario (g)
@@ -180,7 +187,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           </label>
         </div>
         <p className="table-note">
-          Se cadastrar SKU ativo, o estoque geral será recalculado pela soma das variações ativas.
+          O cliente verá apenas Em estoque ou Sem estoque. Se cadastrar SKU ativo, a disponibilidade geral será recalculada pelas variações ativas.
         </p>
 
         <AdminSkuManager
@@ -203,16 +210,6 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           </div>
           <div className="form-grid">
             <label>
-              Quantidade sugerida
-              <input
-                name="suggestedQuantity"
-                type="number"
-                min="1"
-                defaultValue={numberValue(product?.suggestedQuantity)}
-                placeholder="Ex: 6"
-              />
-            </label>
-            <label>
               Caixa fechada / atacado
               <input
                 name="wholesalePackage"
@@ -226,14 +223,6 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
                 name="validityNote"
                 defaultValue={textValue(product?.validityNote)}
                 placeholder="Ex: Validade minima 12 meses"
-              />
-            </label>
-            <label>
-              Kit recomendado
-              <textarea
-                name="kitRecommendation"
-                defaultValue={textValue(product?.kitRecommendation)}
-                placeholder="Ex: Combine com sabonete facial e protetor solar"
               />
             </label>
             <label>

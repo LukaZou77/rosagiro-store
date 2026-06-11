@@ -80,7 +80,6 @@ export function buildProductWhatsAppHref(product: ProductContact, phone?: string
       `Preço: ${money(product.priceCents)}`,
       product.volume ? `Volume: ${product.volume}` : "",
       stockAvailabilityLabel(quantity),
-      product.stockStatus ? `Status: ${product.stockStatus}` : "",
       ...wholesaleLines,
       `Link: ${siteUrl(`/produto/${product.slug}`)}`,
       `Pedido mínimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,

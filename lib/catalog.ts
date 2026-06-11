@@ -94,11 +94,9 @@ export async function getProducts(options: {
       inventory:
         stockFilter === "ready"
           ? { quantity: { gt: 0 } }
-          : stockFilter === "low"
-            ? { quantity: { gt: 0, lte: 6 } }
-            : stockFilter === "out"
-              ? { quantity: 0 }
-              : undefined,
+          : stockFilter === "out"
+            ? { quantity: 0 }
+            : undefined,
       compareAtPriceCents: dealFilter === "real-deal" ? { not: null } : undefined,
       OR: query
         ? [

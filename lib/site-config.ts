@@ -52,7 +52,7 @@ export const siteConfig = {
   hero: {
     eyebrow: "Atacado de cosméticos em São Paulo",
     title: "Ofertas para revenda, kits e reposição com compra rápida.",
-    body: "Skincare, maquiagem, perfumes, cabelo e acessórios com sinal de estoque, pedido mínimo, cotação por CEP para todo o Brasil e atendimento no WhatsApp.",
+    body: "Skincare, maquiagem, perfumes, cabelo e acessórios com disponibilidade sinalizada, pedido mínimo, cotação por CEP para todo o Brasil e atendimento no WhatsApp.",
     primaryCta: "Comprar pelo catálogo",
     secondaryCta: "Comprar destaque"
   },
@@ -61,7 +61,7 @@ export const siteConfig = {
     categoriesTitle: "Entre rápido na prateleira certa",
     brandsEyebrow: "Multimarcas",
     brandsTitle: "Marcas para combinar em kits, vitrines e reposições.",
-    featuredEyebrow: "Pronta entrega",
+    featuredEyebrow: "Em estoque",
     featuredTitle: "Produtos com boa saída para testar pedidos"
   },
   homePromotions: {
@@ -87,7 +87,7 @@ export const siteConfig = {
     quickActions: [
       {
         label: "Ofertas",
-        description: "Desconto real, pronta entrega e giro rápido para revenda.",
+        description: "Desconto real, disponibilidade e oportunidades para revenda.",
         href: "/promocoes"
       },
       {
@@ -109,7 +109,7 @@ export const siteConfig = {
     wholesaleBand: {
       eyebrow: "Compra com volume",
       title: "Compra mínima clara, WhatsApp rápido e entrega para todo o Brasil.",
-      body: "A vitrine orienta pedido mínimo, estoque, pronta entrega, Pix, cotação por CEP para todo o Brasil e consulta por WhatsApp para quem compra para revenda ou reposição.",
+      body: "A vitrine orienta pedido mínimo, disponibilidade, Pix, cotação por CEP para todo o Brasil e consulta por WhatsApp para quem compra para revenda ou reposição.",
       primaryCta: "Ver todos os produtos",
       secondaryCta: "Falar no WhatsApp"
     },
@@ -118,7 +118,7 @@ export const siteConfig = {
   promotionsPage: {
     eyebrow: "Promoções",
     title: "Ofertas para montar pedido de atacado com agilidade.",
-    body: "Uma vitrine direta para encontrar desconto real, itens de menor preço, campeões de giro e produtos com estoque para reposição.",
+    body: "Uma vitrine direta para encontrar desconto real, itens de menor preço, campeões de venda e produtos em estoque para reposição.",
     primaryCta: "Comprar ofertas",
     secondaryCta: "Falar no WhatsApp",
     heroBadge: "Promoção multimarcas",
@@ -126,11 +126,11 @@ export const siteConfig = {
     dealShelfBody: "Produtos com preço anterior cadastrado e oportunidade real para repor estoque.",
     emptyDealTitle: "Nenhuma oferta ativa no momento.",
     emptyDealBody: "Novas promoções entram aqui quando houver preço promocional confirmado.",
-    emptyStockTitle: "Nenhum produto em pronta entrega.",
+    emptyStockTitle: "Nenhum produto em estoque.",
     emptyStockBody: "Assim que o estoque for atualizado, os itens de reposição voltam para esta prateleira.",
     lowPriceTitle: "Menor preço para completar pedido",
     hotShelfTitle: "Mais procurados para revenda",
-    stockShelfTitle: "Pronta entrega e reposição",
+    stockShelfTitle: "Em estoque para reposição",
     shelfNote: "Os destaques usam campos atuais do produto: desconto real, tags, estoque, avaliação, marca e categoria.",
     signals: [
       "Pedido mínimo R$ 300",
@@ -146,7 +146,7 @@ export const siteConfig = {
       },
       {
         label: "Compra rápida",
-        text: "Atalhos por menor preço, giro e estoque para montar carrinho."
+        text: "Atalhos por menor preço, disponibilidade e oportunidade para montar carrinho."
       },
       {
         label: "Atacado local",
@@ -158,17 +158,17 @@ export const siteConfig = {
     priceLabel: "Preço para pedido",
     discountLabel: "Desconto real",
     minimumLabel: "Mínimo atacado",
-    stockLabel: "Estoque",
+    stockLabel: "Disponibilidade",
     freightLabel: "Frete por CEP",
     freightText: "Cotação por CEP para todo o Brasil",
     cardMinimumHint: "R$ 300 mínimo",
     detailPanelTitle: "Compra no atacado",
     detailPanelNote: "Confira estoque, pedido mínimo e frete por CEP antes de finalizar. Entregamos para todo o Brasil com confirmação de cobertura quando necessário.",
     reviewFallback: "Produto em curadoria",
-    bundlePrompt: "Quer montar kit para revenda? Envie este item pelo WhatsApp e informe sua cidade/UF.",
+    bundlePrompt: "Quer comprar em volume? Envie este item pelo WhatsApp e informe sua cidade/UF.",
     wholesaleInfoEyebrow: "Compra para revenda",
     wholesaleInfoTitle: "Detalhes para atacado",
-    wholesaleInfoNote: "Use estas informações para montar reposição, kit ou caixa. Se for comprar volume maior, confirme validade/lote e cotação de entrega nacional pelo WhatsApp.",
+    wholesaleInfoNote: "Use estas informações para conferir caixa, lote e condição de atacado. Se for comprar volume maior, confirme validade/lote e cotação de entrega nacional pelo WhatsApp.",
     unavailableCta: "Consultar disponibilidade",
     completionEyebrow: "Completar pedido",
     completionTitle: "Combine para fechar pedido mínimo",

@@ -14,7 +14,7 @@ import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 export const metadata: Metadata = storefrontMetadata({
   title: "Promoções",
-  description: "Ofertas, descontos reais e produtos de pronta entrega para compras de beleza no atacado.",
+  description: "Ofertas, descontos reais e produtos em estoque para compras de beleza no atacado.",
   path: "/promocoes"
 });
 
@@ -25,7 +25,7 @@ export default async function PromotionsPage() {
   const whatsappHref = buildGeneralWhatsAppHref("promocoes", storeProfile.whatsapp);
   const heroProduct = dealProducts[0] || hotProducts[0] || lowPriceProducts[0] || products[0];
   const strongestDiscount = dealProducts.reduce((max, product) => Math.max(max, discountPercent(product)), 0);
-  const readyStock = products.filter((product) => (product.inventory?.quantity || 0) > 0).length;
+  const readyStock = products.filter((product) => productQuantity(product) > 0).length;
   const heroDiscount = heroProduct ? discountPercent(heroProduct) : 0;
   const heroAvailable = heroProduct ? productQuantity(heroProduct) > 0 : false;
 
@@ -81,7 +81,7 @@ export default async function PromotionsPage() {
           </div>
           <div>
             <dt>{readyStock}</dt>
-            <dd>itens em pronta entrega</dd>
+            <dd>produtos em estoque</dd>
           </div>
         </dl>
       </section>
@@ -145,7 +145,7 @@ export default async function PromotionsPage() {
         <div>
           <div className="section-heading">
             <div>
-              <p className="eyebrow">Giro rápido</p>
+              <p className="eyebrow">Mais procurados</p>
               <h2>{promo.hotShelfTitle}</h2>
             </div>
           </div>
@@ -163,7 +163,7 @@ export default async function PromotionsPage() {
               ))
             ) : (
               <div className="empty-state">
-                <p>Nenhum item de giro rápido cadastrado ainda.</p>
+                <p>Nenhum item procurado cadastrado ainda.</p>
               </div>
             )}
           </div>
@@ -173,7 +173,7 @@ export default async function PromotionsPage() {
       <section className="section shelf-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Estoque</p>
+            <p className="eyebrow">Disponibilidade</p>
             <h2>{promo.stockShelfTitle}</h2>
           </div>
           <p>{promo.shelfNote}</p>

@@ -26,9 +26,8 @@ const sortLabels: Record<string, string> = {
 
 const stockLabels: Record<string, string> = {
   all: "Todos",
-  ready: "Pronta entrega",
-  low: "Giro rápido",
-  out: "Esgotados"
+  ready: "Em estoque",
+  out: "Sem estoque"
 };
 
 const dealLabels: Record<string, string> = {
@@ -117,12 +116,11 @@ function FilterFields({
         </select>
       </label>
       <label>
-        Estoque
+        Disponibilidade
         <select name="stock" defaultValue={stockFilter}>
           <option value="all">Todos</option>
-          <option value="ready">Pronta entrega</option>
-          <option value="low">Giro rápido</option>
-          <option value="out">Esgotados</option>
+          <option value="ready">Em estoque</option>
+          <option value="out">Sem estoque</option>
         </select>
       </label>
       <label>
@@ -178,10 +176,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   ].filter((item): item is { key: string; label: string; href: string } => Boolean(item));
   const readyCount = products.filter((product) => productQuantity(product) > 0).length;
   const dealCount = products.filter((product) => productDiscountPercent(product) > 0).length;
-  const lowStockCount = products.filter((product) => {
-    const quantity = productQuantity(product);
-    return quantity > 0 && quantity <= 6;
-  }).length;
+  const outOfStockCount = products.filter((product) => productQuantity(product) <= 0).length;
 
   return (
     <StoreShell categories={categories}>
@@ -206,15 +201,15 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         <div className="catalog-kpis" aria-label="Resumo de compra da categoria">
           <span>
             <strong>{readyCount}</strong>
-            Pronta entrega
+            Em estoque
           </span>
           <span>
             <strong>{dealCount}</strong>
             Desconto real
           </span>
           <span>
-            <strong>{lowStockCount}</strong>
-            Giro rápido
+            <strong>{outOfStockCount}</strong>
+            Sem estoque
           </span>
           <span>
             <strong>{siteConfig.productConversion.cardMinimumHint}</strong>
@@ -291,7 +286,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
                 </Link>
               </div>
             ) : (
-              <span className="catalog-result-hint">Use filtros para achar pronta entrega, oferta real ou marca específica.</span>
+              <span className="catalog-result-hint">Use filtros para achar produtos em estoque, oferta real ou marca específica.</span>
             )}
           </div>
           <div className="category-pills">

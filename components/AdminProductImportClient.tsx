@@ -33,6 +33,15 @@ export function AdminProductImportClient({
     return `${prefix}${formatter(value)}`;
   }
 
+  function availability(value: number) {
+    return value > 0 ? "Em estoque" : "Sem estoque";
+  }
+
+  function availabilityDelta(value: number | null) {
+    if (value === null || value === 0) return "sem mudança";
+    return value > 0 ? "mudará para Em estoque" : "mudará para Sem estoque";
+  }
+
   return (
     <div className="import-workspace">
       <div className="import-panel">
@@ -109,7 +118,7 @@ export function AdminProductImportClient({
                   <th>Produto</th>
                   <th>Marca / categoria</th>
                   <th>Preco</th>
-                  <th>Estoque</th>
+                  <th>Disponibilidade</th>
                   <th>Imagem</th>
                   <th>Status</th>
                 </tr>
@@ -136,8 +145,8 @@ export function AdminProductImportClient({
                       <small>{delta(row.priceDeltaCents, money)}</small>
                     </td>
                     <td>
-                      {row.stock}
-                      <small>{delta(row.stockDelta, (value) => `${value} un.`)}</small>
+                      {availability(row.stock)}
+                      <small>{availabilityDelta(row.stockDelta)}</small>
                     </td>
                     <td>
                       {row.image ? <img className="preview-thumb" src={row.image} alt="" loading="lazy" /> : "-"}

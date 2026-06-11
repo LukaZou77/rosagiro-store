@@ -73,7 +73,7 @@ function productData(row: ProductImportRow, brandId: string, categoryId: string)
     purchaseNote: row.purchaseNote,
     rating: row.rating,
     reviewCount: row.reviewCount,
-    stockStatus: row.stock > 0 ? "Em estoque" : "Esgotado",
+    stockStatus: row.stock > 0 ? "Em estoque" : "Sem estoque",
     badges: row.badges,
     active: row.active
   };

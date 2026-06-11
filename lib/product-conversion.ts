@@ -41,8 +41,8 @@ export function productShortStockLabel(product: StockSource) {
 export function productHeroBadge(product: Pick<CatalogProduct, "badges" | "compareAtPriceCents" | "priceCents" | "inventory" | "stockStatus"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
   const discount = productDiscountPercent(product);
   if (discount > 0) return `${discount}% OFF`;
-  if (productStockTone(product) === "ready") return "Pronta entrega";
-  return product.badges[0] || product.stockStatus;
+  if (productStockTone(product) === "ready") return "Em estoque";
+  return product.badges[0] || "Sem estoque";
 }
 
 export function productPurchaseSignals(product: Pick<CatalogProduct, "volume" | "badges" | "inventory" | "compareAtPriceCents" | "priceCents"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
@@ -52,7 +52,7 @@ export function productPurchaseSignals(product: Pick<CatalogProduct, "volume" | 
 
   if (product.volume) signals.push(product.volume);
   if (discount > 0) signals.push("Desconto real");
-  if (quantity > 0) signals.push("Pronta entrega");
+  if (quantity > 0) signals.push("Em estoque");
   if (product.badges[0] && !signals.includes(product.badges[0])) signals.push(product.badges[0]);
 
   return signals.slice(0, 3);

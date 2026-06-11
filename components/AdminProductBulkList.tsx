@@ -85,7 +85,7 @@ export function AdminProductBulkList({
                   {product.active ? "Ativo" : "Inativo"}
                 </span>
                 <span className={product.inStock ? "status-chip success" : "status-chip warning"}>
-                  {product.inStock ? "Em estoque" : "Esgotado"}
+                  {product.inStock ? "Em estoque" : "Sem estoque"}
                 </span>
                 {product.qualityStatusLabel && product.qualityStatusClass ? (
                   <span className={`status-chip ${product.qualityStatusClass}`}>{product.qualityStatusLabel}</span>

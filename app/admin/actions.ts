@@ -16,6 +16,7 @@ import {
   extractProductUploads,
   saveProductImageUploads
 } from "@/lib/product-images";
+import { stockQuantityFromAvailability } from "@/lib/product-stock";
 import { formatCep } from "@/lib/cep";
 import { pixAccountTypeOptions, pixKeyTypeOptions, STORE_PROFILE_ID } from "@/lib/store-profile";
 import { SiteInfoPageValidationError, validateSiteInfoPageInput } from "@/lib/site-info-pages";
@@ -31,13 +32,6 @@ function field(formData: FormData, name: string) {
 function positiveInt(formData: FormData, name: string, fallback = 0) {
   const value = Number(formData.get(name));
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : fallback;
-}
-
-function optionalPositiveInt(formData: FormData, name: string) {
-  const raw = field(formData, name);
-  if (!raw) return null;
-  const value = Number(raw.replace(",", "."));
-  return Number.isFinite(value) && value > 0 ? Math.floor(value) : null;
 }
 
 function nullableField(formData: FormData, name: string) {
@@ -119,6 +113,8 @@ type ProductFormPreparationOptions = {
   productSlug: string;
   existingImage?: string;
   existingGallery?: string[];
+  existingSuggestedQuantity?: number | null;
+  existingKitRecommendation?: string | null;
   defaultRating: number;
 };
 
@@ -144,12 +140,13 @@ function parseProductSkuInputs(formData: FormData, detailPath: string) {
     const quantityRaw = field(formData, `skuQuantity:${rowKey}`);
     const sortRaw = field(formData, `skuSortOrder:${rowKey}`);
     const quantityValue = Number(quantityRaw.replace(",", "."));
-    const hasAnyValue = Boolean(id || name || code || (Number.isFinite(quantityValue) && quantityValue > 0));
+    const availabilityQuantity = quantityRaw === "in" || quantityRaw === "out" ? stockQuantityFromAvailability(quantityRaw) : null;
+    const hasAnyValue = Boolean(id || name || code || availabilityQuantity || (Number.isFinite(quantityValue) && quantityValue > 0));
 
     if (!hasAnyValue) continue;
     if (!name || !code) redirectError(detailPath, "Preencha nome e código de todas as variações SKU.");
 
-    const quantity = Math.max(0, Math.floor(quantityValue || 0));
+    const quantity = availabilityQuantity ?? Math.max(0, Math.floor(quantityValue || 0));
     const sortOrder = Number.isFinite(Number(sortRaw)) ? Math.max(0, Math.floor(Number(sortRaw))) : index * 10;
     const codeKey = code.toLowerCase();
     if (codeKeys.has(codeKey)) redirectError(detailPath, "Cada SKU precisa ter um código único dentro do produto.");
@@ -218,7 +215,6 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const compareAtPriceCents = parseCents(field(formData, "compareAtPrice"));
   const quantity = positiveInt(formData, "quantity");
   const weightGrams = Math.max(1, positiveInt(formData, "weightGrams", 150));
-  const suggestedQuantity = optionalPositiveInt(formData, "suggestedQuantity");
   const reviewCount = positiveInt(formData, "reviewCount");
   const featuredRank = positiveInt(formData, "featuredRank", 1000);
   const active = formData.get("active") === "on";
@@ -229,9 +225,6 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   }
   if (compareAtPriceCents > 0 && compareAtPriceCents <= priceCents) {
     redirectError(options.detailPath, "O preço comparativo deve ser maior que o preço atual.");
-  }
-  if (field(formData, "suggestedQuantity") && suggestedQuantity === null) {
-    redirectError(options.detailPath, "Quantidade sugerida deve ser um número maior que zero.");
   }
   if (image && !isAllowedProductImage(image)) {
     redirectError(options.detailPath, "A imagem deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
@@ -293,14 +286,14 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
       finish: field(formData, "finish") || "A ajustar",
       volume: field(formData, "volume") || "A ajustar",
       weightGrams,
-      suggestedQuantity,
-      kitRecommendation: nullableField(formData, "kitRecommendation"),
+      suggestedQuantity: options.existingSuggestedQuantity ?? null,
+      kitRecommendation: options.existingKitRecommendation ?? null,
       wholesalePackage: nullableField(formData, "wholesalePackage"),
       validityNote: nullableField(formData, "validityNote"),
       purchaseNote: nullableField(formData, "purchaseNote"),
       rating: ratingValueWithFallback(formData, options.defaultRating),
       reviewCount,
-      stockStatus: quantity > 0 ? "Em estoque" : "Esgotado",
+      stockStatus: quantity > 0 ? "Em estoque" : "Sem estoque",
       active,
       featuredRank
     },
@@ -357,7 +350,7 @@ export async function updateProductAction(formData: FormData) {
         priceCents,
         compareAtPriceCents: compareAtPriceCents > 0 ? compareAtPriceCents : null,
         active,
-        stockStatus: quantity > 0 ? "Em estoque" : "Esgotado"
+        stockStatus: quantity > 0 ? "Em estoque" : "Sem estoque"
       }
     }),
     prisma.inventory.upsert({
@@ -377,7 +370,10 @@ export async function updateProductDetailAction(formData: FormData) {
 
   const productId = field(formData, "productId");
   const product = productId
-    ? await prisma.product.findUnique({ where: { id: productId }, select: { slug: true, image: true, gallery: true } })
+    ? await prisma.product.findUnique({
+        where: { id: productId },
+        select: { slug: true, image: true, gallery: true, suggestedQuantity: true, kitRecommendation: true }
+      })
     : null;
   if (!product) redirectError("/admin/produtos", "Produto não encontrado.");
 
@@ -387,6 +383,8 @@ export async function updateProductDetailAction(formData: FormData) {
     productSlug: product.slug,
     existingImage: product.image,
     existingGallery: product.gallery,
+    existingSuggestedQuantity: product.suggestedQuantity,
+    existingKitRecommendation: product.kitRecommendation,
     defaultRating: 4.8
   });
 

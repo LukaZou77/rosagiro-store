@@ -46,7 +46,7 @@ export default async function AdminProductImportPage({ searchParams }: PageProps
 
       {hasResult ? (
         <div className="admin-notice success" role="status">
-          Importação concluída: {created || 0} criados, {updated || 0} atualizados, {stock || 0} estoques sincronizados.
+          Importação concluída: {created || 0} criados, {updated || 0} atualizados, {stock || 0} disponibilidades sincronizadas.
         </div>
       ) : null}
       {error ? (

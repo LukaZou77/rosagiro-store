@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { INTERNAL_AVAILABLE_STOCK_QUANTITY, stockAvailabilityValue } from "@/lib/product-stock";
 
 type AdminSkuRow = {
   id?: string;
@@ -55,7 +56,7 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
       <div className="product-gallery-heading">
         <div>
           <strong>SKU / variações</strong>
-          <small>Use para cor, tom, modelo ou tamanho. O estoque do produto será a soma das variações ativas.</small>
+          <small>Use para cor, tom, modelo ou tamanho. A disponibilidade do produto segue as variações ativas.</small>
         </div>
         <span>{visibleRows.length}</span>
       </div>
@@ -91,14 +92,15 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
                 />
               </label>
               <label>
-                Estoque
-                <input
-                  min="0"
+                Disponibilidade
+                <select
                   name={`skuQuantity:${row.key}`}
-                  onChange={(event) => updateRow(row.key, { quantity: Math.max(0, Math.floor(Number(event.target.value) || 0)) })}
-                  type="number"
-                  value={row.quantity}
-                />
+                  onChange={(event) => updateRow(row.key, { quantity: event.target.value === "in" ? INTERNAL_AVAILABLE_STOCK_QUANTITY : 0 })}
+                  value={stockAvailabilityValue(row.quantity)}
+                >
+                  <option value="in">Em estoque</option>
+                  <option value="out">Sem estoque</option>
+                </select>
               </label>
               <label>
                 Ordem
@@ -128,7 +130,7 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
         ) : (
           <div className="empty-state compact">
             <strong>Sem variações cadastradas</strong>
-            <p>Produtos sem SKU continuam usando o estoque geral. Adicione variações quando houver cor, tom ou modelo.</p>
+            <p>Produtos sem SKU continuam usando a disponibilidade geral. Adicione variações quando houver cor, tom ou modelo.</p>
           </div>
         )}
       </div>
@@ -137,7 +139,7 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
         Adicionar SKU
       </button>
       <p className="table-note">
-        Se houver SKU ativo, o cliente escolherá as variações na página do produto. Preço, peso e imagens continuam iguais ao produto principal.
+        Se houver SKU ativo, o cliente escolherá as variações na página do produto. A loja mostra apenas Em estoque ou Sem estoque; preço, peso e imagens continuam iguais ao produto principal.
       </p>
     </div>
   );

@@ -41,7 +41,7 @@ export async function GET() {
     ...(contactLines.length ? contactLines : ["- Atendimento comercial disponível pelos canais publicados no site."]),
     "",
     "## Observações para agentes e buscadores",
-    "- O catálogo é focado em cosméticos no atacado em São Paulo, revenda, reposição, pronta entrega e compra mínima no atacado.",
+    "- O catálogo é focado em cosméticos no atacado em São Paulo, revenda, reposição, disponibilidade sinalizada e compra mínima no atacado.",
     `- ${siteConfig.wholesale.nationalDeliveryText} ${siteConfig.wholesale.nationalDeliveryNote}`,
     "- Páginas administrativas, APIs, carrinho, checkout, pagamento e pedidos não devem ser usadas como fonte pública de indexação.",
     "- Consulte sitemap.xml e robots.txt para regras de rastreamento atualizadas."

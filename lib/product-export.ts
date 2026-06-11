@@ -22,7 +22,7 @@ export async function currentProductsCsv() {
     category: product.category.slug,
     subcategory: product.subcategory,
     price: formatImportMoney(product.priceCents),
-    stock: product.inventory?.quantity || 0,
+    stock: (product.inventory?.quantity || 0) > 0 ? 1 : 0,
     active: product.active,
     image: product.image,
     gallery: pipeListValue(product.gallery),

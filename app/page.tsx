@@ -61,8 +61,8 @@ export default async function HomePage() {
         </div>
         <div className="hero-commerce-panel" aria-label="Ofertas em destaque">
           <div className="panel-heading">
-            <p className="eyebrow">Pronta entrega</p>
-            <strong>Ofertas e giro rápido</strong>
+            <p className="eyebrow">Em estoque</p>
+            <strong>Ofertas e campeões de venda</strong>
           </div>
           {heroProduct ? (
             <Link className="hero-product" href={`/produto/${heroProduct.slug}`} aria-label="Produto em destaque">

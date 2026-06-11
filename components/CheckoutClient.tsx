@@ -859,7 +859,7 @@ export function CheckoutClient({
           <h1>Monte sua lista antes de finalizar.</h1>
           <p>
             Seu carrinho está vazio. Escolha produtos do catálogo ou fale no WhatsApp para receber sugestões de kits,
-            pronta entrega e itens para completar o pedido mínimo.
+            produtos em estoque e itens para completar o pedido mínimo.
           </p>
           <MinimumOrderNotice subtotalCents={0} />
           <div className="empty-actions">
