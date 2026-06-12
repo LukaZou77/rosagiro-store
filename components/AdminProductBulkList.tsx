@@ -16,7 +16,7 @@ export type AdminProductListRow = {
   price: string;
   compareAtPrice: string | null;
   featuredRank: number;
-  weightGrams: number;
+  weightGrams: number | null;
   qualityStatusLabel: string | null;
   qualityStatusClass: string | null;
 };
@@ -99,7 +99,7 @@ export function AdminProductBulkList({
                 <strong>{product.price}</strong>
                 {product.compareAtPrice ? <span>{product.compareAtPrice}</span> : null}
                 <small>Rank {product.featuredRank}</small>
-                <small>{product.weightGrams} g</small>
+                {product.weightGrams ? <small>{product.weightGrams} g</small> : null}
               </div>
             </div>
             <div className="admin-row-actions">

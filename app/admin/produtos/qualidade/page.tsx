@@ -55,7 +55,7 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
         <p className="eyebrow">Qualidade de catálogo</p>
         <h1>Produtos prontos para venda real</h1>
         <p>
-          Veja quais fichas ainda usam imagem de protótipo, galeria curta, peso padrão ou conteúdo que precisa ser
+          Veja quais fichas ainda usam imagem de protótipo, galeria curta, peso não informado ou conteúdo que precisa ser
           confirmado antes de publicar a loja.
         </p>
         <div className="admin-actions">
@@ -105,8 +105,8 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
           ou Vercel Blob.
         </p>
         <p className="table-note">
-          {summary.defaultWeightCount} produto(s) ainda usam 150g, que parece peso inicial. Confirme peso real para
-          frete Anjun por CEP.
+          {summary.defaultWeightCount} produto(s) estão sem peso conferido. O frete usa peso técnico interno até a
+          conferência real.
         </p>
         <p className="table-note">
           {summary.wholesaleIssueCount} produto(s) precisam revisar caixa/atacado, validade/lote ou observacao de

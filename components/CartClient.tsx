@@ -11,6 +11,7 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { money } from "@/lib/money";
+import { effectiveSkuPriceCents } from "@/lib/product-pricing";
 import { siteConfig } from "@/lib/site-config";
 import { buildCartWhatsAppHref } from "@/lib/whatsapp";
 
@@ -28,7 +29,7 @@ type Product = {
   brand: { name: string };
   category: { slug: string; label?: string };
   inventory: { quantity: number } | null;
-  skus?: Array<{ id: string; name: string; code: string; quantity: number; active: boolean }>;
+  skus?: Array<{ id: string; name: string; code: string; priceCents: number | null; quantity: number; active: boolean }>;
 };
 
 type CartDisplayItem = {
@@ -55,10 +56,22 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
         .filter((item): item is CartDisplayItem => Boolean(item.product)),
     [cart, productMap]
   );
-  const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0), [items]);
+  const subtotal = useMemo(() => items.reduce((sum, item) => sum + effectiveSkuPriceCents(item.product, item.sku) * item.quantity, 0), [items]);
   const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
   const total = subtotal - discount;
-  const whatsappHref = useMemo(() => buildCartWhatsAppHref(items, subtotal, whatsappPhone), [items, subtotal, whatsappPhone]);
+  const whatsappItems = useMemo(
+    () =>
+      items.map((item) => ({
+        quantity: item.quantity,
+        product: {
+          name: item.sku ? `${item.product.name} - ${item.sku.name}` : item.product.name,
+          priceCents: effectiveSkuPriceCents(item.product, item.sku),
+          brand: item.product.brand
+        }
+      })),
+    [items]
+  );
+  const whatsappHref = useMemo(() => buildCartWhatsAppHref(whatsappItems, subtotal, whatsappPhone), [whatsappItems, subtotal, whatsappPhone]);
   const recommendations = useMemo(
     () => getCartCompletionRecommendations(products, cart, { limit: 4 }),
     [cart, products]
@@ -84,7 +97,7 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
                 <span>{item.product.brand.name}</span>
                 <strong>{item.product.name}</strong>
                 {item.sku ? <small>{item.sku.name} #{item.sku.code}</small> : null}
-                <small>{money(item.product.priceCents)}</small>
+                <small>{money(effectiveSkuPriceCents(item.product, item.sku))}</small>
               </div>
               <div className="qty-control">
                 <button

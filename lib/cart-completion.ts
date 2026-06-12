@@ -1,3 +1,4 @@
+import { lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { siteConfig } from "@/lib/site-config";
 
 export type CartCompletionProduct = {
@@ -13,7 +14,7 @@ export type CartCompletionProduct = {
   brand: { name: string };
   category: { slug: string; label?: string };
   inventory: { quantity: number } | null;
-  skus?: Array<{ quantity: number; active: boolean }>;
+  skus?: Array<{ priceCents?: number | null; quantity: number; active: boolean }>;
 };
 
 export type CartCompletionLine = {
@@ -55,10 +56,11 @@ function productStock(product: Pick<CartCompletionProduct, "inventory"> & { skus
 
 function recommendationReason(product: CartCompletionProduct, remainingCents: number, preferredCategories: Set<string>) {
   const discount = discountPercent(product);
-  if (remainingCents > 0 && product.priceCents <= remainingCents) return "Ajuda a fechar o mínimo";
+  const effectivePrice = lowestEffectivePriceCents(product);
+  if (remainingCents > 0 && effectivePrice <= remainingCents) return "Ajuda a fechar o mínimo";
   if (discount > 0) return "Desconto real para completar";
   if (preferredCategories.has(product.category.slug)) return "Combina com sua lista";
-  if (/mais vendido|favorito|oferta|novo/i.test(product.badges.join(" "))) return "Boa saida para reposicao";
+  if (/mais vendido|favorito|oferta|novo/i.test(product.badges.join(" "))) return "Boa saída para reposição";
   return "Em estoque para adicionar";
 }
 
@@ -73,7 +75,7 @@ export function getCartCompletionRecommendations(
   const productBySlug = new Map(products.map((product) => [product.slug, product]));
   const cartSubtotal = cart.reduce((sum, item) => {
     const product = productBySlug.get(item.slug);
-    return product ? sum + product.priceCents * Math.max(0, Math.floor(item.quantity || 0)) : sum;
+    return product ? sum + lowestEffectivePriceCents(product) * Math.max(0, Math.floor(item.quantity || 0)) : sum;
   }, 0);
   const remainingCents = Math.max(0, minimumOrderCents - cartSubtotal);
   const preferredCategories = new Set<string>();
@@ -95,8 +97,9 @@ export function getCartCompletionRecommendations(
       const stock = productStock(product);
       const sameCategory = preferredCategories.has(product.category.slug);
       const badgeBoost = /mais vendido|favorito|oferta|novo/i.test(product.badges.join(" ")) ? 1 : 0;
-      const fitsGap = remainingCents > 0 && product.priceCents <= remainingCents;
-      const nearGap = remainingCents > 0 ? Math.max(0, 30 - Math.floor(Math.abs(product.priceCents - remainingCents) / 1000)) : 0;
+      const effectivePrice = lowestEffectivePriceCents(product);
+      const fitsGap = remainingCents > 0 && effectivePrice <= remainingCents;
+      const nearGap = remainingCents > 0 ? Math.max(0, 30 - Math.floor(Math.abs(effectivePrice - remainingCents) / 1000)) : 0;
       const score =
         (fitsGap ? 90 : 0) +
         nearGap +
@@ -112,14 +115,14 @@ export function getCartCompletionRecommendations(
         stock
       };
     })
-    .sort((a, b) => b.score - a.score || a.product.priceCents - b.product.priceCents || a.product.name.localeCompare(b.product.name))
+    .sort((a, b) => b.score - a.score || lowestEffectivePriceCents(a.product) - lowestEffectivePriceCents(b.product) || a.product.name.localeCompare(b.product.name))
     .slice(0, limit)
     .map(({ product, stock }) => ({
       slug: product.slug,
       name: product.name,
       brandName: product.brand.name,
       image: product.image,
-      priceCents: product.priceCents,
+      priceCents: lowestEffectivePriceCents(product),
       compareAtPriceCents: product.compareAtPriceCents,
       stockQuantity: stock,
       hasSkuChoices: Boolean(product.skus?.some((sku) => sku.active)),

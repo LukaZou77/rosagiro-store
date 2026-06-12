@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { validateCheckoutAddress } from "@/lib/google-address";
 import { discountCents, subtotalCents, totalCents } from "@/lib/money";
 import { isPaymentMethod, paymentModeAllowsSimulated, type PaymentMethodValue } from "@/lib/payments";
+import { effectiveSkuPriceCents } from "@/lib/product-pricing";
 import { resolveOrderShipping } from "@/lib/shipping";
 import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
 import type { Prisma } from "@/src/generated/prisma/client";
@@ -154,7 +155,7 @@ export async function createOrder(input: CheckoutInput) {
       product,
       sku: selectedSku || null,
       quantity: item.quantity,
-      priceCents: product.priceCents,
+      priceCents: effectiveSkuPriceCents(product, selectedSku),
       weightGrams: product.weightGrams
     };
   });

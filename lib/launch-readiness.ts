@@ -132,7 +132,7 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
       message: catalogHasActionRequired
         ? `${input.productQuality.actionRequiredCount} produto(s) com lacunas críticas; ${input.productQuality.svgDemoCount} ainda usam SVG de protótipo.`
         : catalogHasReview
-          ? `${input.productQuality.reviewCount} produto(s) precisam revisão; ${input.productQuality.defaultWeightCount} usam peso padrão de 150g.`
+          ? `${input.productQuality.reviewCount} produto(s) precisam revisão; ${input.productQuality.defaultWeightCount} estão sem peso conferido.`
           : "Produtos ativos passaram nos checks automáticos de mídia, conteúdo e peso.",
       actionHref: "/admin/produtos/qualidade"
     }),

@@ -179,7 +179,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           </label>
           <label>
             Peso unitario (g)
-            <input name="weightGrams" type="number" min="1" defaultValue={numberValue(product?.weightGrams, 150)} />
+            <input name="weightGrams" type="number" min="1" defaultValue={numberValue(product?.weightGrams)} placeholder="Opcional" />
           </label>
           <label className="checkbox-label">
             <input name="active" type="checkbox" defaultChecked={product?.active ?? true} />
@@ -195,6 +195,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             id: sku.id,
             name: sku.name,
             code: sku.code,
+            priceCents: sku.priceCents,
             quantity: sku.quantity,
             active: sku.active,
             sortOrder: sku.sortOrder

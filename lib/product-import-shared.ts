@@ -46,7 +46,7 @@ export type ProductImportExistingProduct = {
   deletedAt?: Date | string | null;
   brand: string;
   category: string;
-  weightGrams: number;
+  weightGrams: number | null;
 };
 
 export type ProductImportRow = {
@@ -71,7 +71,7 @@ export type ProductImportRow = {
   skinType: string;
   finish: string;
   volume: string;
-  weightGrams: number;
+  weightGrams: number | null;
   suggestedQuantity: number | null;
   kitRecommendation: string | null;
   wholesalePackage: string | null;
@@ -136,7 +136,7 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   skinType: "",
   finish: "",
   volume: "",
-  weightGrams: 150,
+  weightGrams: "",
   suggestedQuantity: "",
   kitRecommendation: "",
   wholesalePackage: "Venda por unidade; caixa fechada e volume maior sob consulta.",
@@ -162,7 +162,7 @@ export const productImportHelpRows = [
   ["gallery", "Não", "Até 6 imagens separadas por |. A imagem principal também entra na galeria."],
   ["benefits, ingredients, badges", "Não", "Separe vários itens com |."],
   ["skinType, finish, volume", "Não", "Texto livre para filtros e detalhe do produto."],
-  ["weightGrams", "Não", "Peso unitário em gramas para cotação de frete. Padrão 150."],
+  ["weightGrams", "Não", "Peso unitário em gramas para cotação de frete. Deixe vazio se ainda não foi conferido."],
   ["suggestedQuantity", "Não", "Campo legado mantido para CSV antigo; não é mais necessário preencher."],
   ["kitRecommendation", "Não", "Campo legado mantido para CSV antigo; prefira usar purchaseNote para orientar compra em volume."],
   ["wholesalePackage", "Não", "Caixa fechada, pacote, grade ou condição de atacado a confirmar."],
@@ -296,9 +296,9 @@ function parseReviewCount(value: string) {
 
 function parseWeightGrams(value: string) {
   const raw = value.trim();
-  if (!raw) return { value: 150, valid: true };
+  if (!raw) return { value: null, valid: true };
   const weight = Number(raw.replace(",", "."));
-  if (!Number.isFinite(weight) || weight <= 0) return { value: 150, valid: false };
+  if (!Number.isFinite(weight) || weight <= 0) return { value: null, valid: false };
   return { value: Math.max(1, Math.floor(weight)), valid: true };
 }
 

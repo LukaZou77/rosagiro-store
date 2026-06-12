@@ -1,4 +1,5 @@
 import { money } from "@/lib/money";
+import { lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { productWholesaleWhatsAppLines, type WholesaleProductDetails } from "@/lib/product-wholesale";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 
@@ -6,6 +7,7 @@ type ProductContact = {
   slug: string;
   name: string;
   priceCents: number;
+  skus?: Array<{ priceCents?: number | null; active?: boolean }>;
   stockStatus?: string;
   volume?: string;
   brand: { name: string };
@@ -77,7 +79,7 @@ export function buildProductWhatsAppHref(product: ProductContact, phone?: string
       `Produto: ${product.name}`,
       `Slug: ${product.slug}`,
       `Marca: ${product.brand.name}`,
-      `Preço: ${money(product.priceCents)}`,
+      `Preço: ${money(lowestEffectivePriceCents(product))}`,
       product.volume ? `Volume: ${product.volume}` : "",
       stockAvailabilityLabel(quantity),
       ...wholesaleLines,

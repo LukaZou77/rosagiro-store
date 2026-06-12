@@ -11,7 +11,7 @@ export type CatalogProduct = {
   subcategory: string;
   priceCents: number;
   compareAtPriceCents: number | null;
-  weightGrams: number;
+  weightGrams: number | null;
   suggestedQuantity: number | null;
   kitRecommendation: string | null;
   wholesalePackage: string | null;
@@ -33,7 +33,7 @@ export type CatalogProduct = {
   brand: { slug: string; name: string; logo: string; origin: string; descriptionPt: string; featured: boolean };
   category: { slug: string; label: string; note: string };
   inventory: { quantity: number } | null;
-  skus: Array<{ id: string; name: string; code: string; quantity: number; active: boolean; sortOrder: number }>;
+  skus: Array<{ id: string; name: string; code: string; priceCents: number | null; quantity: number; active: boolean; sortOrder: number }>;
 };
 
 const productInclude = {

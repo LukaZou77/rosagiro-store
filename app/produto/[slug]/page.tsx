@@ -14,6 +14,7 @@ import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { getCategories, getProduct, getProducts, getRelatedProducts } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
+import { effectiveSkuPriceCents, lowestEffectivePriceCents, hasSkuPriceRange } from "@/lib/product-pricing";
 import { productDetailGalleryState, productDetailServiceCards } from "@/lib/product-detail-standard";
 import { productDiscountPercent, productHasActiveSkus, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
@@ -60,6 +61,8 @@ export default async function ProductPage({ params }: PageProps) {
   const activeSkus = product.skus.filter((sku) => sku.active).sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
   const hasSkuChoices = productHasActiveSkus(product);
   const discount = productDiscountPercent(product);
+  const displayPrice = lowestEffectivePriceCents(product);
+  const showFromPrice = hasSkuPriceRange(product);
   const whatsappHref = buildProductWhatsAppHref(product, storeProfile.whatsapp);
   const trustSignals = storeTrustSignals(storeProfile);
   const gallery = normalizeProductGallery(product.image, product.gallery);
@@ -102,7 +105,7 @@ export default async function ProductPage({ params }: PageProps) {
           <h1>{product.name}</h1>
           <p className="description">{product.descriptionPt}</p>
           <div className="price-line">
-            <strong>{money(product.priceCents)}</strong>
+            <strong>{showFromPrice ? `A partir de ${money(displayPrice)}` : money(displayPrice)}</strong>
             {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : null}
           </div>
           <div className={`purchase-panel ${available ? "" : "is-unavailable"}`}>
@@ -125,7 +128,12 @@ export default async function ProductPage({ params }: PageProps) {
               </div>
             </div>
             <p>{discount > 0 ? `${discount}% OFF nesta oferta. ` : ""}{siteConfig.productConversion.detailPanelNote}</p>
-            {hasSkuChoices ? <ProductSkuSelector productSlug={product.slug} skus={activeSkus} /> : null}
+            {hasSkuChoices ? (
+              <ProductSkuSelector
+                productSlug={product.slug}
+                skus={activeSkus.map((sku) => ({ ...sku, priceCents: effectiveSkuPriceCents(product, sku) }))}
+              />
+            ) : null}
             <div className="purchase-panel-actions">
               {hasSkuChoices ? null : <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />}
               <WhatsAppLink href={whatsappHref} className="button whatsapp">
@@ -142,7 +150,7 @@ export default async function ProductPage({ params }: PageProps) {
       <div className="mobile-product-action-bar" aria-label="Compra rápida do produto">
         <div>
           <span>{stockLabel}</span>
-          <strong>{money(product.priceCents)}</strong>
+          <strong>{showFromPrice ? `A partir de ${money(displayPrice)}` : money(displayPrice)}</strong>
         </div>
         {hasSkuChoices ? (
           <a className="button primary" href="#sku-selector-title">

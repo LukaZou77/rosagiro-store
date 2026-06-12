@@ -4,6 +4,7 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import type { CatalogProduct } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
+import { lowestEffectivePriceCents, hasSkuPriceRange } from "@/lib/product-pricing";
 import {
   productDiscountPercent,
   productHeroBadge,
@@ -28,6 +29,8 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
   const shortStockLabel = productShortStockLabel(product);
   const purchaseSignals = productPurchaseSignals(product);
   const whatsappHref = buildProductWhatsAppHref(product, whatsappPhone);
+  const displayPrice = lowestEffectivePriceCents(product);
+  const showFromPrice = hasSkuPriceRange(product);
 
   return (
     <article className={available ? "product-card" : "product-card is-unavailable"}>
@@ -60,7 +63,7 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
         <div className="product-card-bottom">
           <div className="price-stack">
             <small>{siteConfig.productConversion.priceLabel}</small>
-            <strong>{money(product.priceCents)}</strong>
+            <strong>{showFromPrice ? `A partir de ${money(displayPrice)}` : money(displayPrice)}</strong>
             {product.compareAtPriceCents ? <span>De {money(product.compareAtPriceCents)}</span> : null}
             <div className="price-support-line">
               {discount > 0 ? <em>{siteConfig.productConversion.discountLabel}</em> : <em>{siteConfig.productConversion.cardMinimumHint}</em>}

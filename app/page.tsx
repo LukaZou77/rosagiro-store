@@ -5,6 +5,7 @@ import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getFeaturedBrands, getProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
+import { hasSkuPriceRange, lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
@@ -13,6 +14,11 @@ function discountLabel(product: Awaited<ReturnType<typeof getProducts>>[number])
   if (!product.compareAtPriceCents || product.compareAtPriceCents <= product.priceCents) return product.badges[0] || "Destaque";
   const discount = Math.round((1 - product.priceCents / product.compareAtPriceCents) * 100);
   return `${discount}% OFF`;
+}
+
+function displayPriceLabel(product: Awaited<ReturnType<typeof getProducts>>[number]) {
+  const price = money(lowestEffectivePriceCents(product));
+  return hasSkuPriceRange(product) ? `A partir de ${price}` : price;
 }
 
 export default async function HomePage() {
@@ -70,7 +76,7 @@ export default async function HomePage() {
               <img src={heroProduct.image} alt={heroProduct.name} />
               <span>{heroProduct.brand.name}</span>
               <strong>{heroProduct.name}</strong>
-              <small>{money(heroProduct.priceCents)}</small>
+              <small>{displayPriceLabel(heroProduct)}</small>
             </Link>
           ) : null}
           <div className="deal-list">
@@ -81,7 +87,7 @@ export default async function HomePage() {
                   <strong>{product.name}</strong>
                   <small>{product.brand.name}</small>
                 </span>
-                <b>{money(product.priceCents)}</b>
+                <b>{displayPriceLabel(product)}</b>
               </Link>
             ))}
           </div>

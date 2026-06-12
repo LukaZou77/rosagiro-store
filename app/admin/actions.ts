@@ -123,10 +123,18 @@ type ProductSkuInput = {
   id?: string;
   name: string;
   code: string;
+  priceCents: number | null;
   quantity: number;
   active: boolean;
   sortOrder: number;
 };
+
+function optionalPositiveInt(formData: FormData, key: string) {
+  const raw = field(formData, key);
+  if (!raw) return null;
+  const value = Number(raw.replace(",", "."));
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : null;
+}
 
 function parseProductSkuInputs(formData: FormData, detailPath: string) {
   const rowKeys = Array.from(new Set(formData.getAll("skuRowKey").map((value) => String(value || "").trim()).filter(Boolean)));
@@ -138,11 +146,12 @@ function parseProductSkuInputs(formData: FormData, detailPath: string) {
     const id = field(formData, `skuId:${rowKey}`);
     const name = field(formData, `skuName:${rowKey}`);
     const code = field(formData, `skuCode:${rowKey}`);
+    const priceCents = parseCents(field(formData, `skuPrice:${rowKey}`));
     const quantityRaw = field(formData, `skuQuantity:${rowKey}`);
     const sortRaw = field(formData, `skuSortOrder:${rowKey}`);
     const quantityValue = Number(quantityRaw.replace(",", "."));
     const availabilityQuantity = quantityRaw === "in" || quantityRaw === "out" ? stockQuantityFromAvailability(quantityRaw) : null;
-    const hasAnyValue = Boolean(id || name || code || availabilityQuantity || (Number.isFinite(quantityValue) && quantityValue > 0));
+    const hasAnyValue = Boolean(id || name || code || priceCents > 0 || availabilityQuantity || (Number.isFinite(quantityValue) && quantityValue > 0));
 
     if (!hasAnyValue) continue;
     if (!name || !code) redirectError(detailPath, "Preencha nome e código de todas as variações SKU.");
@@ -157,6 +166,7 @@ function parseProductSkuInputs(formData: FormData, detailPath: string) {
       id: id || undefined,
       name: name.slice(0, 120),
       code: code.slice(0, 80),
+      priceCents: priceCents > 0 ? priceCents : null,
       quantity,
       active: formData.get(`skuActive:${rowKey}`) === "on",
       sortOrder
@@ -180,6 +190,7 @@ async function syncProductSkus(
     const data = {
       name: sku.name,
       code: sku.code,
+      priceCents: sku.priceCents,
       quantity: sku.quantity,
       active: sku.active,
       sortOrder: sku.sortOrder
@@ -215,7 +226,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const priceCents = parseCents(field(formData, "price"));
   const compareAtPriceCents = parseCents(field(formData, "compareAtPrice"));
   const quantity = positiveInt(formData, "quantity");
-  const weightGrams = Math.max(1, positiveInt(formData, "weightGrams", 150));
+  const weightGrams = optionalPositiveInt(formData, "weightGrams");
   const reviewCount = positiveInt(formData, "reviewCount");
   const featuredRank = positiveInt(formData, "featuredRank", 1000);
   const active = formData.get("active") === "on";

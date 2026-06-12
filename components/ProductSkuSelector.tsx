@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { notifyQuickPurchaseOpen, readCart, sameCartLine, writeCart } from "@/components/CartCount";
 import { useCustomerSession } from "@/components/CustomerSession";
+import { money } from "@/lib/money";
 
 type ProductSkuSelectorProps = {
   productSlug: string;
@@ -10,6 +11,7 @@ type ProductSkuSelectorProps = {
     id: string;
     name: string;
     code: string;
+    priceCents: number;
     quantity: number;
   }>;
 };
@@ -69,6 +71,7 @@ export function ProductSkuSelector({ productSlug, skus }: ProductSkuSelectorProp
               <div className="sku-row-info">
                 <strong>{sku.name}</strong>
                 <small>#{sku.code}</small>
+                <small>{money(sku.priceCents)}</small>
               </div>
               <div className="sku-qty-control">
                 <button

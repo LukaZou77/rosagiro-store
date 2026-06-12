@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
+import { lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import type { StoreProfileView } from "@/lib/store-profile";
 import { storeProfileAddress, storeSocialLinks } from "@/lib/store-profile";
@@ -163,7 +164,7 @@ export function productJsonLd(product: CatalogProduct) {
       "@type": "Offer",
       url: siteUrl(`/produto/${product.slug}`),
       priceCurrency: "BRL",
-      price: (product.priceCents / 100).toFixed(2),
+      price: (lowestEffectivePriceCents(product) / 100).toFixed(2),
       availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
       seller: {
@@ -173,7 +174,7 @@ export function productJsonLd(product: CatalogProduct) {
     additionalProperty: [
       { "@type": "PropertyValue", name: "Volume", value: product.volume },
       { "@type": "PropertyValue", name: "Acabamento", value: product.finish },
-      { "@type": "PropertyValue", name: "Peso", value: `${product.weightGrams} g` }
+      ...(product.weightGrams ? [{ "@type": "PropertyValue", name: "Peso", value: `${product.weightGrams} g` }] : [])
     ].filter((item) => Boolean(item.value))
   };
 }
@@ -181,7 +182,7 @@ export function productJsonLd(product: CatalogProduct) {
 export function productMetaDescription(product: CatalogProduct) {
   const stock = (product.inventory?.quantity || 0) > 0 ? "em estoque" : "disponibilidade sob consulta";
   return compactText(
-    `${product.name} da ${product.brand.name}: ${product.descriptionPt} Preço ${money(product.priceCents)}, ${stock}, compra no atacado com pedido mínimo R$ 300,00, cotação por CEP para todo o Brasil e atendimento WhatsApp.`
+    `${product.name} da ${product.brand.name}: ${product.descriptionPt} Preço ${money(lowestEffectivePriceCents(product))}, ${stock}, compra no atacado com pedido mínimo R$ 300,00, cotação por CEP para todo o Brasil e atendimento WhatsApp.`
   );
 }
 

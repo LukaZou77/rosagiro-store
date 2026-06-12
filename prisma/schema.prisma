@@ -106,7 +106,7 @@ model Product {
   subcategory         String
   priceCents          Int
   compareAtPriceCents Int?
-  weightGrams         Int         @default(150)
+  weightGrams         Int?
   suggestedQuantity   Int?
   kitRecommendation   String?
   wholesalePackage    String?
@@ -156,6 +156,7 @@ model ProductSku {
   productId  String
   name       String
   code       String
+  priceCents Int?
   quantity   Int         @default(0)
   active     Boolean     @default(true)
   sortOrder  Int         @default(0)

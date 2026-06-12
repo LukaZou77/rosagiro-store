@@ -14,6 +14,7 @@ import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
 import { money } from "@/lib/money";
 import { paymentMethodsForCheckout, type PaymentMethodValue } from "@/lib/payments";
+import { effectiveSkuPriceCents } from "@/lib/product-pricing";
 import { siteConfig } from "@/lib/site-config";
 import { buildCartWhatsAppHref, buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
@@ -23,7 +24,7 @@ type Product = {
   image: string;
   priceCents: number;
   compareAtPriceCents: number | null;
-  weightGrams: number;
+  weightGrams: number | null;
   badges: string[];
   active: boolean;
   rating?: number;
@@ -31,7 +32,7 @@ type Product = {
   brand: { name: string };
   category: { slug: string; label?: string };
   inventory: { quantity: number } | null;
-  skus?: Array<{ id: string; name: string; code: string; quantity: number; active: boolean }>;
+  skus?: Array<{ id: string; name: string; code: string; priceCents: number | null; quantity: number; active: boolean }>;
 };
 
 type CheckoutDisplayItem = {
@@ -207,7 +208,7 @@ export function CheckoutClient({
     [cart, productMap]
   );
   const quoteItems = useMemo(() => items.map((item) => ({ slug: item.slug, quantity: item.quantity })), [items]);
-  const subtotal = items.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + effectiveSkuPriceCents(item.product, item.sku) * item.quantity, 0);
   const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
   const minimumReached = subtotal >= siteConfig.wholesale.minimumOrderCents;
   const recommendations = useMemo(
@@ -228,7 +229,7 @@ export function CheckoutClient({
           quantity: item.quantity,
           product: {
             name: item.sku ? `${item.product.name} - ${item.sku.name}` : item.product.name,
-            priceCents: item.product.priceCents,
+            priceCents: effectiveSkuPriceCents(item.product, item.sku),
           brand: item.product.brand
         }
       })),
@@ -1198,7 +1199,7 @@ export function CheckoutClient({
                   {item.quantity}x {item.product.name}
                   {item.sku ? ` - ${item.sku.name}` : ""}
                 </span>
-              <strong>{money(item.product.priceCents * item.quantity)}</strong>
+              <strong>{money(effectiveSkuPriceCents(item.product, item.sku) * item.quantity)}</strong>
             </div>
           ))}
           <div>

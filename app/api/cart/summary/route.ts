@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { prisma } from "@/lib/db";
 import { discountCents, subtotalCents, totalCents } from "@/lib/money";
+import { effectiveSkuPriceCents } from "@/lib/product-pricing";
 import { siteConfig } from "@/lib/site-config";
 
 type CartSummaryItem = {
@@ -57,7 +58,8 @@ export async function POST(request: Request) {
       const active = Boolean(product?.active);
       const available = active && (!requiresSku || Boolean(selectedSku)) && stockQuantity > 0;
       const acceptedQuantity = product ? Math.min(item.quantity, Math.max(stockQuantity, 0)) : 0;
-      const lineTotalCents = product ? product.priceCents * acceptedQuantity : 0;
+      const priceCents = product ? effectiveSkuPriceCents(product, selectedSku) : 0;
+      const lineTotalCents = priceCents * acceptedQuantity;
       const warning = !product
         ? "Produto não encontrado."
         : !active
@@ -78,7 +80,7 @@ export async function POST(request: Request) {
         name: product?.name || item.slug,
         brandName: product?.brand.name || "",
         image: product?.image || "",
-        priceCents: product?.priceCents || 0,
+        priceCents,
         requestedQuantity: item.quantity,
         quantity: acceptedQuantity,
         stockQuantity,

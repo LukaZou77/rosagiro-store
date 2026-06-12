@@ -68,7 +68,6 @@ const ADJUST_PATTERN = /a ajustar|exemplo|preparacao|prepara\u00e7\u00e3o|teste|
 const WHOLESALE_DRAFT_PATTERN = /a ajustar|exemplo|preparacao|prepara\u00e7\u00e3o|teste|demo|a confirmar|sob consulta|conferencia|confer\u00eancia/i;
 const MIN_DESCRIPTION_LENGTH = 80;
 const MIN_GALLERY_IMAGES = 3;
-const DEFAULT_WEIGHT_GRAMS = 150;
 
 function textLooksDraft(value: string | null | undefined) {
   return !value?.trim() || ADJUST_PATTERN.test(value);
@@ -242,14 +241,14 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
     );
   }
 
-  if (product.weightGrams === DEFAULT_WEIGHT_GRAMS) {
+  if (!product.weightGrams) {
     issues.push(
       issue({
-        key: "default-weight",
+        key: "missing-weight",
         group: "operation",
-        severity: "medium",
-        label: "Peso padrão",
-        message: "150g parece valor inicial; confirme o peso real para frete Anjun."
+        severity: "low",
+        label: "Peso não informado",
+        message: "Peso vazio é permitido; o frete usa peso técnico interno até a conferência real."
       })
     );
   }

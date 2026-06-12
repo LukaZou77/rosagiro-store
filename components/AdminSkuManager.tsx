@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { INTERNAL_AVAILABLE_STOCK_QUANTITY, stockAvailabilityValue } from "@/lib/product-stock";
+import { formatImportMoney, parseCents } from "@/lib/product-import-shared";
 
 type AdminSkuRow = {
   id?: string;
   name: string;
   code: string;
+  priceCents?: number | null;
   quantity: number;
   active: boolean;
   sortOrder: number;
@@ -44,6 +46,7 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
         key: `new-${Date.now()}-${current.length}`,
         name: "",
         code: "",
+        priceCents: null,
         quantity: 0,
         active: true,
         sortOrder
@@ -89,6 +92,16 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
                   onChange={(event) => updateRow(row.key, { code: event.target.value })}
                   placeholder="Ex: RG-BASE-01"
                   value={row.code}
+                />
+              </label>
+              <label>
+                Preço do SKU
+                <input
+                  defaultValue={formatImportMoney(row.priceCents)}
+                  inputMode="decimal"
+                  name={`skuPrice:${row.key}`}
+                  onChange={(event) => updateRow(row.key, { priceCents: parseCents(event.target.value) || null })}
+                  placeholder="Em branco usa o preço principal"
                 />
               </label>
               <label>
@@ -139,7 +152,8 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
         Adicionar SKU
       </button>
       <p className="table-note">
-        Se houver SKU ativo, o cliente escolherá as variações na página do produto. A loja mostra apenas Em estoque ou Sem estoque; preço, peso e imagens continuam iguais ao produto principal.
+        Se houver SKU ativo, o cliente escolherá as variações na página do produto. Preço em branco usa o preço principal;
+        peso e imagens continuam iguais ao produto principal.
       </p>
     </div>
   );

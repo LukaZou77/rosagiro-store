@@ -6,6 +6,7 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { discountPercent, getCategories, getPromotionCollections } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
+import { hasSkuPriceRange, lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { productQuantity, productStockLabel } from "@/lib/product-conversion";
 import { storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
@@ -17,6 +18,13 @@ export const metadata: Metadata = storefrontMetadata({
   description: "Ofertas, descontos reais e produtos em estoque para compras de beleza no atacado.",
   path: "/promocoes"
 });
+
+type PromotionProduct = Awaited<ReturnType<typeof getPromotionCollections>>["products"][number];
+
+function displayPriceLabel(product: PromotionProduct) {
+  const price = money(lowestEffectivePriceCents(product));
+  return hasSkuPriceRange(product) ? `A partir de ${price}` : price;
+}
 
 export default async function PromotionsPage() {
   const [categories, collections, storeProfile] = await Promise.all([getCategories(), getPromotionCollections(), getStoreProfile()]);
@@ -63,7 +71,7 @@ export default async function PromotionsPage() {
                 {heroAvailable ? "Em estoque" : "Disponibilidade sob consulta"}
               </small>
               <div className="price-line compact">
-                <strong>{money(heroProduct.priceCents)}</strong>
+                <strong>{displayPriceLabel(heroProduct)}</strong>
                 {heroProduct.compareAtPriceCents ? <span>{money(heroProduct.compareAtPriceCents)}</span> : null}
               </div>
             </div>
@@ -132,7 +140,7 @@ export default async function PromotionsPage() {
                     <strong>{product.name}</strong>
                     <small>{product.brand.name} / {productStockLabel(product)}</small>
                   </span>
-                  <b>{money(product.priceCents)}</b>
+                  <b>{displayPriceLabel(product)}</b>
                 </Link>
               ))
             ) : (
