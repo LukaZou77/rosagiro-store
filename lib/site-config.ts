@@ -164,7 +164,6 @@ export const siteConfig = {
     cardMinimumHint: "R$ 300 mínimo",
     detailPanelTitle: "Compra no atacado",
     detailPanelNote: "Confira estoque, pedido mínimo e frete por CEP antes de finalizar. Entregamos para todo o Brasil com confirmação de cobertura quando necessário.",
-    reviewFallback: "Produto em curadoria",
     bundlePrompt: "Quer comprar em volume? Envie este item pelo WhatsApp e informe sua cidade/UF.",
     wholesaleInfoEyebrow: "Compra para revenda",
     wholesaleInfoTitle: "Detalhes para atacado",
@@ -179,8 +178,6 @@ export const siteConfig = {
     completionAddedCta: "Adicionado",
     galleryRichHint: "Use a galeria para ver embalagem, textura, frente, verso e detalhes antes de montar sua lista.",
     galleryLeanHint: "Consulte fotos do lote, validade e embalagem pelo WhatsApp antes de comprar em volume.",
-    fichaTitle: "Ficha do produto",
-    fichaBody: "Informações de marca, categoria, tamanho, textura e peso usadas para escolher o item certo.",
     deliveryTitle: "Entrega e atendimento",
     deliveryBody: "A compra combina checkout com suporte humano para estoque, lote, entrega para todo o Brasil, retirada, transportadora ou excursão."
   },

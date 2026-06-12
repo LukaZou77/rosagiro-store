@@ -130,20 +130,20 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   gallery: "/assets/products/aura-serum.svg",
   descriptionPt: "Descrição curta do produto para a vitrine.",
   compareAtPrice: "109,90",
-  benefits: "Luminosidade|Textura leve",
-  ingredients: "Vitamina C|Ácido hialurônico",
-  badges: "Novo|Favorito",
-  skinType: "Todos os tipos",
-  finish: "Glow",
-  volume: "30 ml",
+  benefits: "",
+  ingredients: "",
+  badges: "",
+  skinType: "",
+  finish: "",
+  volume: "",
   weightGrams: 150,
   suggestedQuantity: "",
   kitRecommendation: "",
   wholesalePackage: "Venda por unidade; caixa fechada e volume maior sob consulta.",
   validityNote: "Validade e lote devem ser confirmados no recebimento do estoque real.",
   purchaseNote: "Para revenda, confirme estoque e condição de atacado pelo WhatsApp.",
-  rating: "4,8",
-  reviewCount: 12
+  rating: "",
+  reviewCount: ""
 };
 
 export const productImportHelpRows = [
@@ -168,8 +168,8 @@ export const productImportHelpRows = [
   ["wholesalePackage", "Não", "Caixa fechada, pacote, grade ou condição de atacado a confirmar."],
   ["validityNote", "Não", "Informação de validade/lote ou aviso de conferência operacional."],
   ["purchaseNote", "Não", "Observação comercial para orientar compra em volume."],
-  ["rating", "Não", "Nota de 0 a 5. Padrão 4,8 quando vazio."],
-  ["reviewCount", "Não", "Quantidade inteira de avaliações."]
+  ["rating", "Não", "Nota de 0 a 5. Deixe vazio quando não houver avaliação real."],
+  ["reviewCount", "Não", "Quantidade inteira de avaliações reais. Deixe vazio quando não houver."]
 ] as const;
 
 function canonicalHeader(value: string) {
@@ -282,13 +282,10 @@ export function pipeListValue(values: string[] | null | undefined) {
 
 export const PRODUCT_GALLERY_LIMIT = 6;
 
-function optionalText(value: string, fallback: string) {
-  return value.trim() || fallback;
-}
-
 function parseRating(value: string) {
+  if (!value.trim()) return 0;
   const rating = Number(value.replace(",", "."));
-  if (!Number.isFinite(rating)) return 4.8;
+  if (!Number.isFinite(rating)) return 0;
   return Math.min(5, Math.max(0, rating));
 }
 
@@ -450,9 +447,9 @@ export function parseProductCsv(
       benefits: parsePipeList(raw.benefits || ""),
       ingredients: parsePipeList(raw.ingredients || ""),
       badges: parsePipeList(raw.badges || ""),
-      skinType: optionalText(raw.skinType || "", "A ajustar"),
-      finish: optionalText(raw.finish || "", "A ajustar"),
-      volume: optionalText(raw.volume || "", "A ajustar"),
+      skinType: (raw.skinType || "").trim(),
+      finish: (raw.finish || "").trim(),
+      volume: (raw.volume || "").trim(),
       weightGrams: weight.value,
       suggestedQuantity: suggestedQuantity.value,
       kitRecommendation: optionalNullableText(raw.kitRecommendation || ""),

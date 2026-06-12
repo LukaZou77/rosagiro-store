@@ -14,11 +14,7 @@ import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { getCategories, getProduct, getProducts, getRelatedProducts } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
-import {
-  productDetailGalleryState,
-  productDetailInfoItems,
-  productDetailServiceCards
-} from "@/lib/product-detail-standard";
+import { productDetailGalleryState, productDetailServiceCards } from "@/lib/product-detail-standard";
 import { productDiscountPercent, productHasActiveSkus, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
 import { productWholesaleLines } from "@/lib/product-wholesale";
@@ -68,7 +64,6 @@ export default async function ProductPage({ params }: PageProps) {
   const trustSignals = storeTrustSignals(storeProfile);
   const gallery = normalizeProductGallery(product.image, product.gallery);
   const galleryState = productDetailGalleryState(gallery);
-  const detailInfoItems = productDetailInfoItems(product);
   const serviceCards = productDetailServiceCards();
   const wholesaleLines = productWholesaleLines(product);
   const completionRecommendations = getCartCompletionRecommendations(products, [{ slug: product.slug, quantity: 1 }], {
@@ -105,7 +100,6 @@ export default async function ProductPage({ params }: PageProps) {
             {product.brand.name} / {product.subcategory}
           </p>
           <h1>{product.name}</h1>
-          <div className="rating">{siteConfig.productConversion.reviewFallback}</div>
           <p className="description">{product.descriptionPt}</p>
           <div className="price-line">
             <strong>{money(product.priceCents)}</strong>
@@ -175,38 +169,6 @@ export default async function ProductPage({ params }: PageProps) {
               <strong>{line.value}</strong>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="section product-realness-sections">
-        <div className="product-realness-card product-ficha-card">
-          <div className="section-heading compact">
-            <p className="eyebrow">Ficha comercial</p>
-            <h2>{siteConfig.productConversion.fichaTitle}</h2>
-            <p>{siteConfig.productConversion.fichaBody}</p>
-          </div>
-          <dl className="product-ficha-list">
-            {detailInfoItems.map((item) => (
-              <div key={item.label}>
-                <dt>{item.label}</dt>
-                <dd>{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-        <div className="product-realness-card">
-          <div className="section-heading compact">
-            <p className="eyebrow">Uso e composicao</p>
-            <h2>Beneficios</h2>
-          </div>
-          <ul>{product.benefits.map((item) => <li key={item}>{item}</li>)}</ul>
-        </div>
-        <div className="product-realness-card">
-          <div className="section-heading compact">
-            <p className="eyebrow">Composicao</p>
-            <h2>Ingredientes-chave</h2>
-          </div>
-          <ul>{product.ingredients.map((item) => <li key={item}>{item}</li>)}</ul>
         </div>
       </section>
 

@@ -270,11 +270,11 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           </label>
           <label>
             Rating
-            <input name="rating" defaultValue={isEdit ? String(product?.rating ?? 0).replace(".", ",") : "0"} />
+            <input name="rating" defaultValue={product?.rating ? String(product.rating).replace(".", ",") : ""} />
           </label>
           <label>
             Avaliações
-            <input name="reviewCount" type="number" min="0" defaultValue={numberValue(product?.reviewCount, 0)} />
+            <input name="reviewCount" type="number" min="0" defaultValue={product?.reviewCount ? product.reviewCount : ""} />
           </label>
         </div>
 

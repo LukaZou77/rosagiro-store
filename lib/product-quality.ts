@@ -78,10 +78,6 @@ function wholesaleTextLooksDraft(value: string | null | undefined) {
   return !value?.trim() || WHOLESALE_DRAFT_PATTERN.test(value);
 }
 
-function listLooksDraft(values: string[] | null | undefined, minItems: number) {
-  return !values || values.length < minItems || values.some((value) => textLooksDraft(value));
-}
-
 function issue(input: ProductQualityIssue): ProductQualityIssue {
   return input;
 }
@@ -158,42 +154,6 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         severity: "medium",
         label: "Descrição incompleta",
         message: "Inclua descrição comercial clara, uso, benefício e contexto de compra no atacado."
-      })
-    );
-  }
-
-  if (listLooksDraft(product.benefits, 2)) {
-    issues.push(
-      issue({
-        key: "missing-benefits",
-        group: "content",
-        severity: "medium",
-        label: "Benefícios a revisar",
-        message: "Preencha pelo menos dois benefícios reais separados para a vitrine."
-      })
-    );
-  }
-
-  if (listLooksDraft(product.ingredients, 1)) {
-    issues.push(
-      issue({
-        key: "missing-ingredients",
-        group: "content",
-        severity: "medium",
-        label: "Ingredientes a revisar",
-        message: "Informe composição, ativo principal ou material para reduzir dúvidas no WhatsApp."
-      })
-    );
-  }
-
-  if (textLooksDraft(product.skinType) || textLooksDraft(product.finish) || textLooksDraft(product.volume)) {
-    issues.push(
-      issue({
-        key: "missing-attributes",
-        group: "content",
-        severity: "medium",
-        label: "Atributos incompletos",
-        message: "Revise tipo de pele/uso, acabamento/textura e volume/tamanho."
       })
     );
   }

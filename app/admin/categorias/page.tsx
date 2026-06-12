@@ -1,4 +1,5 @@
-import { saveCategoryAction } from "@/app/admin/actions";
+import { deleteCategoryAction, saveCategoryAction } from "@/app/admin/actions";
+import { AdminCategoryDeleteButton } from "@/components/AdminCategoryDeleteButton";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -22,6 +23,7 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
   ]);
   const error = single(params.error);
   const saved = single(params.saved);
+  const deleted = single(params.deleted);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -34,6 +36,11 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
       {saved ? (
         <div className="admin-notice success" role="status">
           Categoria salva com sucesso.
+        </div>
+      ) : null}
+      {deleted ? (
+        <div className="admin-notice success" role="status">
+          Categoria excluída com sucesso.
         </div>
       ) : null}
       {error ? (
@@ -82,9 +89,26 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
                 <span>{category.slug}</span>
                 <small>{category._count.products} produtos</small>
               </div>
-              <button className="button secondary" type="submit">
-                Salvar categoria
-              </button>
+              <div className="admin-actions">
+                <button className="button secondary" type="submit">
+                  Salvar categoria
+                </button>
+                {category._count.products === 0 ? (
+                  <AdminCategoryDeleteButton action={deleteCategoryAction} />
+                ) : (
+                  <button
+                    className="button secondary"
+                    type="button"
+                    disabled
+                    title="Mova ou remova os produtos antes de excluir."
+                  >
+                    Categoria com produtos
+                  </button>
+                )}
+              </div>
+              {category._count.products > 0 ? (
+                <p className="form-hint">Esta categoria tem produtos. Mova ou remova os produtos antes de excluir.</p>
+              ) : null}
             </div>
           </form>
         ))}

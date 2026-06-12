@@ -38,9 +38,11 @@ function nullableField(formData: FormData, name: string) {
   return field(formData, name) || null;
 }
 
-function ratingValueWithFallback(formData: FormData, fallback: number) {
-  const value = Number(field(formData, "rating").replace(",", "."));
-  if (!Number.isFinite(value)) return fallback;
+function ratingValue(formData: FormData) {
+  const raw = field(formData, "rating");
+  if (!raw) return 0;
+  const value = Number(raw.replace(",", "."));
+  if (!Number.isFinite(value)) return 0;
   return Math.min(5, Math.max(0, value));
 }
 
@@ -115,7 +117,6 @@ type ProductFormPreparationOptions = {
   existingGallery?: string[];
   existingSuggestedQuantity?: number | null;
   existingKitRecommendation?: string | null;
-  defaultRating: number;
 };
 
 type ProductSkuInput = {
@@ -282,16 +283,16 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
       benefits: parsePipeList(field(formData, "benefits")),
       ingredients: parsePipeList(field(formData, "ingredients")),
       badges: parsePipeList(field(formData, "badges")),
-      skinType: field(formData, "skinType") || "A ajustar",
-      finish: field(formData, "finish") || "A ajustar",
-      volume: field(formData, "volume") || "A ajustar",
+      skinType: field(formData, "skinType"),
+      finish: field(formData, "finish"),
+      volume: field(formData, "volume"),
       weightGrams,
       suggestedQuantity: options.existingSuggestedQuantity ?? null,
       kitRecommendation: options.existingKitRecommendation ?? null,
       wholesalePackage: nullableField(formData, "wholesalePackage"),
       validityNote: nullableField(formData, "validityNote"),
       purchaseNote: nullableField(formData, "purchaseNote"),
-      rating: ratingValueWithFallback(formData, options.defaultRating),
+      rating: ratingValue(formData),
       reviewCount,
       stockStatus: quantity > 0 ? "Em estoque" : "Sem estoque",
       active,
@@ -384,8 +385,7 @@ export async function updateProductDetailAction(formData: FormData) {
     existingImage: product.image,
     existingGallery: product.gallery,
     existingSuggestedQuantity: product.suggestedQuantity,
-    existingKitRecommendation: product.kitRecommendation,
-    defaultRating: 4.8
+    existingKitRecommendation: product.kitRecommendation
   });
 
   try {
@@ -433,7 +433,6 @@ export async function createProductAction(formData: FormData) {
   const prepared = await prepareProductFormPayload(formData, {
     detailPath,
     productSlug: slug,
-    defaultRating: 0
   });
 
   let product: { slug: string };
@@ -611,6 +610,31 @@ export async function saveCategoryAction(formData: FormData) {
   }
 
   redirect(redirectTo);
+}
+
+export async function deleteCategoryAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = field(formData, "categoryId");
+  if (!id) redirectError("/admin/categorias", "Categoria inválida.");
+
+  const category = await prisma.category.findUnique({
+    where: { id },
+    include: { _count: { select: { products: true } } }
+  });
+
+  if (!category) redirectError("/admin/categorias", "Categoria não encontrada.");
+  if (category._count.products > 0) {
+    redirectError(
+      "/admin/categorias",
+      "Esta categoria tem produtos. Mova ou remova os produtos antes de excluir."
+    );
+  }
+
+  await prisma.category.delete({ where: { id } });
+  revalidateCatalog();
+  revalidatePath("/admin/categorias");
+  redirect("/admin/categorias?deleted=1");
 }
 
 export async function updateOrderStatusAction(formData: FormData) {
