@@ -117,10 +117,7 @@ export default async function ProductPage({ params }: PageProps) {
               <div>
                 <span>{siteConfig.productConversion.minimumLabel}</span>
                 <strong>{money(siteConfig.wholesale.minimumOrderCents)}</strong>
-              </div>
-              <div>
-                <span>{siteConfig.productConversion.stockLabel}</span>
-                <strong>{stockLabel}</strong>
+                <small>{siteConfig.productConversion.minimumNote}</small>
               </div>
               <div>
                 <span>{siteConfig.productConversion.freightLabel}</span>
