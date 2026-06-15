@@ -1,6 +1,8 @@
 import type { Prisma } from "@/src/generated/prisma/client";
+import { AdminProductGalleryManager } from "@/components/AdminProductGalleryManager";
+import { AdminProductSubmitButton } from "@/components/AdminProductSubmitButton";
 import { AdminSkuManager } from "@/components/AdminSkuManager";
-import { PRODUCT_GALLERY_LIMIT, formatImportMoney, normalizeProductGallery, pipeListValue } from "@/lib/product-import-shared";
+import { formatImportMoney, normalizeProductGallery, pipeListValue } from "@/lib/product-import-shared";
 import { INTERNAL_AVAILABLE_STOCK_QUANTITY, stockAvailabilityValue } from "@/lib/product-stock";
 
 type AdminProductFormProduct = Prisma.ProductGetPayload<{
@@ -28,7 +30,6 @@ function numberValue(value: number | null | undefined, fallback: number | string
 export function AdminProductForm({ action, brands, categories, mode, product }: AdminProductFormProps) {
   const isEdit = mode === "edit";
   const gallery = product ? normalizeProductGallery(product.image, product.gallery) : [];
-  const emptySlots = Math.max(0, PRODUCT_GALLERY_LIMIT - gallery.length);
   const currentImage = product?.image || "";
   const submitLabel = isEdit ? "Salvar ficha completa" : "Criar produto";
   const skuStock = product?.skus?.length
@@ -78,45 +79,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           /uploads/products/..., /placeholder... ou URL http(s).
         </p>
 
-        <div className="product-gallery-manager">
-          <div className="product-gallery-heading">
-            <div>
-              <strong>Galeria do produto</strong>
-              <small>Até {PRODUCT_GALLERY_LIMIT} imagens. A principal aparece nos cards e no carrinho.</small>
-            </div>
-            <span>{gallery.length}/{PRODUCT_GALLERY_LIMIT}</span>
-          </div>
-          <div className="product-gallery-grid">
-            {gallery.map((imagePath) => (
-              <div className="product-gallery-slot" key={imagePath}>
-                <img src={imagePath} alt="" loading="lazy" />
-                <input type="hidden" name="galleryExisting" value={imagePath} />
-                <label className="radio-label">
-                  <input name="primaryImage" type="radio" value={imagePath} defaultChecked={imagePath === currentImage} />
-                  Principal
-                </label>
-                <label className="checkbox-label compact">
-                  <input name="removeGalleryImage" type="checkbox" value={imagePath} />
-                  Remover
-                </label>
-              </div>
-            ))}
-            {Array.from({ length: emptySlots }).map((_, index) => (
-              <div className="product-gallery-slot empty" key={`empty-${index}`}>
-                <span>Vazio</span>
-              </div>
-            ))}
-          </div>
-          <label className="product-upload-field">
-            Enviar novas imagens
-            <input name="galleryFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple />
-          </label>
-          <label className="checkbox-label compact">
-            <input name="firstUploadAsPrimary" type="checkbox" defaultChecked={!isEdit} />
-            Usar a primeira imagem enviada como principal
-          </label>
-          <p className="table-note">JPG, PNG ou WebP. Máximo 5MB por imagem. SVG continua apenas em /assets já existentes.</p>
-        </div>
+        <AdminProductGalleryManager currentImage={currentImage} gallery={gallery} isEdit={isEdit} />
       </section>
 
       <section className="import-panel">
@@ -279,9 +242,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           </label>
         </div>
 
-        <button className="button primary wide" type="submit">
-          {submitLabel}
-        </button>
+        <AdminProductSubmitButton label={submitLabel} />
       </section>
     </form>
   );

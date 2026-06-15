@@ -273,7 +273,10 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   if (!gallery.length) redirectError(options.detailPath, "Cadastre pelo menos uma imagem do produto.");
 
   const firstUploadAsPrimary = formData.get("firstUploadAsPrimary") === "on";
-  const preferredPrimary = firstUploadAsPrimary && uploadedImages[0] ? uploadedImages[0] : primaryImageInput;
+  const primaryUploadIndexInput = field(formData, "primaryUploadIndex");
+  const primaryUploadIndex = primaryUploadIndexInput ? positiveInt(formData, "primaryUploadIndex") : -1;
+  const preferredUploadedImage = primaryUploadIndex >= 0 ? uploadedImages[primaryUploadIndex] : null;
+  const preferredPrimary = preferredUploadedImage || (firstUploadAsPrimary && uploadedImages[0] ? uploadedImages[0] : primaryImageInput);
   const primaryImage = gallery.includes(preferredPrimary)
     ? preferredPrimary
     : image && gallery.includes(image)
