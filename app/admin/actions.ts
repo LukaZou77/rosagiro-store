@@ -16,7 +16,7 @@ import {
   extractProductUploads,
   saveProductImageUploads
 } from "@/lib/product-images";
-import { stockQuantityFromAvailability } from "@/lib/product-stock";
+import { INTERNAL_AVAILABLE_STOCK_QUANTITY, stockQuantityFromAvailability } from "@/lib/product-stock";
 import { formatCep } from "@/lib/cep";
 import { pixAccountTypeOptions, pixKeyTypeOptions, STORE_PROFILE_ID } from "@/lib/store-profile";
 import { SiteInfoPageValidationError, validateSiteInfoPageInput } from "@/lib/site-info-pages";
@@ -151,12 +151,14 @@ function parseProductSkuInputs(formData: FormData, detailPath: string) {
     const sortRaw = field(formData, `skuSortOrder:${rowKey}`);
     const quantityValue = Number(quantityRaw.replace(",", "."));
     const availabilityQuantity = quantityRaw === "in" || quantityRaw === "out" ? stockQuantityFromAvailability(quantityRaw) : null;
-    const hasAnyValue = Boolean(id || name || code || priceCents > 0 || availabilityQuantity || (Number.isFinite(quantityValue) && quantityValue > 0));
+    const hasAnyValue = Boolean(id || name || code || priceCents > 0 || (Number.isFinite(quantityValue) && quantityValue > 0));
 
     if (!hasAnyValue) continue;
     if (!name || !code) redirectError(detailPath, "Preencha nome e código de todas as variações SKU.");
 
-    const quantity = availabilityQuantity ?? Math.max(0, Math.floor(quantityValue || 0));
+    const quantity =
+      availabilityQuantity ??
+      (quantityRaw ? Math.max(0, Math.floor(quantityValue || 0)) : INTERNAL_AVAILABLE_STOCK_QUANTITY);
     const sortOrder = Number.isFinite(Number(sortRaw)) ? Math.max(0, Math.floor(Number(sortRaw))) : index * 10;
     const codeKey = code.toLowerCase();
     if (codeKeys.has(codeKey)) redirectError(detailPath, "Cada SKU precisa ter um código único dentro do produto.");

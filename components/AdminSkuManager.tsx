@@ -47,7 +47,7 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
         name: "",
         code: "",
         priceCents: null,
-        quantity: 0,
+        quantity: INTERNAL_AVAILABLE_STOCK_QUANTITY,
         active: true,
         sortOrder
       }
