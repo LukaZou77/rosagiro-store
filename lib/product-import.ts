@@ -108,7 +108,7 @@ async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, in
           slug: row.brandSlug,
           name: row.brand,
           logo: brandLogo(row.brand) || "RG",
-          origin: "A ajustar",
+          origin: "",
           descriptionPt: "Descrição da marca a ajustar.",
           featured: false,
           categorySlugs: [category.slug]

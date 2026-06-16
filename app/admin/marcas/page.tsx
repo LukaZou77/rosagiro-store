@@ -1,4 +1,5 @@
-import { saveBrandAction } from "@/app/admin/actions";
+import { deleteBrandAction, saveBrandAction } from "@/app/admin/actions";
+import { AdminBrandDeleteButton } from "@/components/AdminBrandDeleteButton";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -22,6 +23,7 @@ export default async function AdminBrandsPage({ searchParams }: PageProps) {
   ]);
   const error = single(params.error);
   const saved = single(params.saved);
+  const deleted = single(params.deleted);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -34,6 +36,11 @@ export default async function AdminBrandsPage({ searchParams }: PageProps) {
       {saved ? (
         <div className="admin-notice success" role="status">
           Marca salva com sucesso.
+        </div>
+      ) : null}
+      {deleted ? (
+        <div className="admin-notice success" role="status">
+          Marca excluída com sucesso.
         </div>
       ) : null}
       {error ? (
@@ -53,10 +60,6 @@ export default async function AdminBrandsPage({ searchParams }: PageProps) {
             <label>
               Logo curto
               <input name="logo" placeholder="RG" maxLength={8} />
-            </label>
-            <label>
-              Origem
-              <input name="origin" placeholder="Brasil" />
             </label>
             <label className="checkbox-label">
               <input name="featured" type="checkbox" />
@@ -88,10 +91,6 @@ export default async function AdminBrandsPage({ searchParams }: PageProps) {
                   Logo curto
                   <input name="logo" defaultValue={brand.logo} maxLength={8} />
                 </label>
-                <label>
-                  Origem
-                  <input name="origin" defaultValue={brand.origin} />
-                </label>
                 <label className="checkbox-label">
                   <input name="featured" type="checkbox" defaultChecked={brand.featured} />
                   Marca em destaque
@@ -105,9 +104,21 @@ export default async function AdminBrandsPage({ searchParams }: PageProps) {
                 <span>{brand.slug}</span>
                 <small>{brand._count.products} produtos</small>
               </div>
-              <button className="button secondary" type="submit">
-                Salvar marca
-              </button>
+              <div className="admin-actions">
+                <button className="button secondary" type="submit">
+                  Salvar marca
+                </button>
+                {brand._count.products === 0 ? (
+                  <AdminBrandDeleteButton action={deleteBrandAction} />
+                ) : (
+                  <button className="button secondary" type="button" disabled title="Mova ou remova os produtos antes de excluir.">
+                    Marca com produtos
+                  </button>
+                )}
+              </div>
+              {brand._count.products > 0 ? (
+                <p className="form-hint">Esta marca tem produtos. Mova ou remova os produtos antes de excluir.</p>
+              ) : null}
             </div>
           </form>
         ))}

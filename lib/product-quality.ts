@@ -157,14 +157,14 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
     );
   }
 
-  if (textLooksDraft(product.brand.origin) || textLooksDraft(product.brand.descriptionPt)) {
+  if (!product.brand.descriptionPt.trim() || textLooksDraft(product.brand.descriptionPt)) {
     issues.push(
       issue({
         key: "brand-data-draft",
         group: "content",
         severity: "low",
         label: "Marca sem ficha real",
-        message: "Complete origem e descrição da marca para melhorar confiança e filtros."
+        message: "Complete a descrição da marca para melhorar confiança e filtros."
       })
     );
   }

@@ -568,7 +568,6 @@ export async function saveBrandAction(formData: FormData) {
   const id = field(formData, "brandId");
   const name = field(formData, "name");
   const logo = field(formData, "logo").slice(0, 8).toUpperCase();
-  const origin = field(formData, "origin") || "A ajustar";
   const descriptionPt = field(formData, "descriptionPt") || "Descrição da marca a ajustar.";
   const featured = formData.get("featured") === "on";
   const slug = slugify(name);
@@ -580,7 +579,7 @@ export async function saveBrandAction(formData: FormData) {
     if (id) {
       await prisma.brand.update({
         where: { id },
-        data: { name, slug, logo: logo || name.slice(0, 2).toUpperCase(), origin, descriptionPt, featured }
+        data: { name, slug, logo: logo || name.slice(0, 2).toUpperCase(), origin: "", descriptionPt, featured }
       });
     } else {
       await prisma.brand.create({
@@ -588,7 +587,7 @@ export async function saveBrandAction(formData: FormData) {
           name,
           slug,
           logo: logo || name.slice(0, 2).toUpperCase(),
-          origin,
+          origin: "",
           descriptionPt,
           featured,
           categorySlugs: []
@@ -601,6 +600,31 @@ export async function saveBrandAction(formData: FormData) {
   }
 
   redirect(redirectTo);
+}
+
+export async function deleteBrandAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = field(formData, "brandId");
+  if (!id) redirectError("/admin/marcas", "Marca inválida.");
+
+  const brand = await prisma.brand.findUnique({
+    where: { id },
+    include: { _count: { select: { products: true } } }
+  });
+
+  if (!brand) redirectError("/admin/marcas", "Marca não encontrada.");
+  if (brand._count.products > 0) {
+    redirectError(
+      "/admin/marcas",
+      "Esta marca tem produtos. Mova ou remova os produtos antes de excluir."
+    );
+  }
+
+  await prisma.brand.delete({ where: { id } });
+  revalidateCatalog();
+  revalidatePath("/admin/marcas");
+  redirect("/admin/marcas?deleted=1");
 }
 
 export async function saveCategoryAction(formData: FormData) {

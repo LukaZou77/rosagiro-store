@@ -200,7 +200,6 @@ export default async function HomePage() {
             <Link className="brand-chip" href={`/categoria/all?brand=${encodeURIComponent(brand.name)}`} key={brand.slug}>
               <span>{brand.logo}</span>
               <strong>{brand.name}</strong>
-              <small>{brand.origin}</small>
             </Link>
           ))}
         </div>
