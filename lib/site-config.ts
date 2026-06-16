@@ -51,7 +51,7 @@ export const siteConfig = {
   },
   hero: {
     eyebrow: "Atacado de cosméticos em São Paulo",
-    title: "Ofertas para revenda, kits e reposição com compra rápida.",
+    title: "Produtos para revenda, kits e reposição com compra rápida.",
     body: "Skincare, maquiagem, perfumes, cabelo e acessórios com disponibilidade sinalizada, pedido mínimo, cotação por CEP para todo o Brasil e atendimento no WhatsApp.",
     primaryCta: "Comprar pelo catálogo",
     secondaryCta: "Comprar destaque"
@@ -66,9 +66,9 @@ export const siteConfig = {
   },
   homePromotions: {
     promoBar: {
-      label: "Ofertas no atacado",
+      label: "Destaques no atacado",
       text: "Pedido mínimo R$ 300,00, Pix, entrega para todo o Brasil com cotação por CEP e WhatsApp para revisar estoque.",
-      cta: "Ver ofertas",
+      cta: "Ver destaques",
       href: "/promocoes"
     },
     searchPlaceholder: "Buscar serum, batom, perfume, pincel...",
@@ -86,13 +86,13 @@ export const siteConfig = {
     ],
     quickActions: [
       {
-        label: "Ofertas",
-        description: "Desconto real, disponibilidade e oportunidades para revenda.",
+        label: "Destaques",
+        description: "Produtos selecionados, disponibilidade e oportunidades para revenda.",
         href: "/promocoes"
       },
       {
         label: "Menor preço",
-        description: "Itens com preço comparativo para compras de oportunidade.",
+        description: "Itens de menor preço para compras de oportunidade.",
         href: "/categoria/all?sort=price-asc"
       },
       {
@@ -116,33 +116,33 @@ export const siteConfig = {
     shelfNote: "Confira estoque e combinações pelo WhatsApp antes de fechar pedidos de reposição."
   },
   promotionsPage: {
-    eyebrow: "Promoções",
-    title: "Ofertas para montar pedido de atacado com agilidade.",
-    body: "Uma vitrine direta para encontrar desconto real, itens de menor preço, campeões de venda e produtos em estoque para reposição.",
-    primaryCta: "Comprar ofertas",
+    eyebrow: "Destaques",
+    title: "Produtos em destaque para montar pedido de atacado com agilidade.",
+    body: "Uma vitrine direta para encontrar itens de menor preço, campeões de venda e produtos em estoque para reposição.",
+    primaryCta: "Ver destaques",
     secondaryCta: "Falar no WhatsApp",
-    heroBadge: "Promoção multimarcas",
-    dealShelfTitle: "Descontos reais no catálogo",
-    dealShelfBody: "Produtos com preço anterior cadastrado e oportunidade real para repor estoque.",
-    emptyDealTitle: "Nenhuma oferta ativa no momento.",
-    emptyDealBody: "Novas promoções entram aqui quando houver preço promocional confirmado.",
+    heroBadge: "Destaque multimarcas",
+    dealShelfTitle: "Produtos em destaque",
+    dealShelfBody: "Seleção de itens para reposição, giro de prateleira e composição de pedido no atacado.",
+    emptyDealTitle: "Nenhum destaque ativo no momento.",
+    emptyDealBody: "Novos produtos entram aqui quando forem selecionados para reposição ou giro de prateleira.",
     emptyStockTitle: "Nenhum produto em estoque.",
     emptyStockBody: "Assim que o estoque for atualizado, os itens de reposição voltam para esta prateleira.",
     lowPriceTitle: "Menor preço para completar pedido",
     hotShelfTitle: "Mais procurados para revenda",
     stockShelfTitle: "Em estoque para reposição",
-    shelfNote: "Os destaques usam campos atuais do produto: desconto real, tags, estoque, avaliação, marca e categoria.",
+    shelfNote: "Os destaques usam campos atuais do produto: tags, estoque, marca, categoria e organização da vitrine.",
     signals: [
       "Pedido mínimo R$ 300",
-      "Desconto real quando existe preço comparativo",
+      "Produtos selecionados para reposição",
       "Produtos multimarcas para revenda",
       "Entrega para todo o Brasil",
       "Pix, CEP e WhatsApp visíveis"
     ],
     tiles: [
       {
-        label: "Desconto real",
-        text: "Somente itens com preço antigo cadastrado entram como oferta."
+        label: "Preço direto",
+        text: "A vitrine trabalha com preço real de atacado e leitura simples para compra."
       },
       {
         label: "Compra rápida",
@@ -156,7 +156,6 @@ export const siteConfig = {
   },
   productConversion: {
     priceLabel: "Preço para pedido",
-    discountLabel: "Desconto real",
     minimumLabel: "Pedido mínimo",
     minimumNote: "Pode combinar produtos diferentes no mesmo pedido.",
     stockLabel: "Disponibilidade",
@@ -232,7 +231,7 @@ export const siteConfig = {
 
 export const storefrontLinks = [
   { href: "/categoria/all", label: "Categorias" },
-  { href: "/promocoes", label: "Ofertas" },
+  { href: "/promocoes", label: "Destaques" },
   { href: "/entrega", label: "Entrega" },
   { href: "/trocas-e-devolucoes", label: "Trocas" },
   { href: "/contato", label: "Contato" }

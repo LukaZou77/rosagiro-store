@@ -6,15 +6,10 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getFeaturedBrands, getProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { hasSkuPriceRange, lowestEffectivePriceCents } from "@/lib/product-pricing";
+import { productHeroBadge } from "@/lib/product-conversion";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
-
-function discountLabel(product: Awaited<ReturnType<typeof getProducts>>[number]) {
-  if (!product.compareAtPriceCents || product.compareAtPriceCents <= product.priceCents) return product.badges[0] || "Destaque";
-  const discount = Math.round((1 - product.priceCents / product.compareAtPriceCents) * 100);
-  return `${discount}% OFF`;
-}
 
 function displayPriceLabel(product: Awaited<ReturnType<typeof getProducts>>[number]) {
   const price = money(lowestEffectivePriceCents(product));
@@ -28,9 +23,9 @@ export default async function HomePage() {
     getProducts(),
     getStoreProfile()
   ]);
-  const dealProducts = products.filter((product) => product.compareAtPriceCents).slice(0, 3);
-  const heroProduct = dealProducts[0] || products[0];
-  const secondaryDeals = (dealProducts.length > 1 ? dealProducts.slice(1) : products.filter((product) => product.slug !== heroProduct?.slug)).slice(0, 2);
+  const featuredProducts = products.slice(0, 3);
+  const heroProduct = featuredProducts[0] || products[0];
+  const secondaryDeals = (featuredProducts.length > 1 ? featuredProducts.slice(1) : products.filter((product) => product.slug !== heroProduct?.slug)).slice(0, 2);
   const whatsappHref = buildGeneralWhatsAppHref("home atacado", storeProfile.whatsapp);
   const homeTrustSignals = Array.from(
     new Set([
@@ -65,14 +60,14 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
-        <div className="hero-commerce-panel" aria-label="Ofertas em destaque">
+        <div className="hero-commerce-panel" aria-label="Produtos em destaque">
           <div className="panel-heading">
             <p className="eyebrow">Em estoque</p>
-            <strong>Ofertas e campeões de venda</strong>
+            <strong>Destaques e campeões de venda</strong>
           </div>
           {heroProduct ? (
             <Link className="hero-product" href={`/produto/${heroProduct.slug}`} aria-label="Produto em destaque">
-              <span className="deal-label">{discountLabel(heroProduct)}</span>
+              <span className="deal-label">{productHeroBadge(heroProduct)}</span>
               <img src={heroProduct.image} alt={heroProduct.name} />
               <span>{heroProduct.brand.name}</span>
               <strong>{heroProduct.name}</strong>
@@ -107,7 +102,7 @@ export default async function HomePage() {
               {siteConfig.hero.primaryCta}
             </Link>
             <Link className="button secondary" href="/promocoes">
-              Ver promoções
+              Ver destaques
             </Link>
             {heroProduct ? (
               <Link className="button secondary" href={`/produto/${heroProduct.slug}`}>

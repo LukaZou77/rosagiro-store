@@ -92,7 +92,7 @@ export async function StoreShell({
       <QuickPurchaseDrawer />
       <nav className="mobile-tabs" aria-label="Navegação principal">
         <Link href="/">Início</Link>
-        <Link href="/promocoes">Ofertas</Link>
+        <Link href="/promocoes">Destaques</Link>
         <Link href="/categoria/all">Categorias</Link>
         <Link href="/carrinho">Carrinho</Link>
         <WhatsAppLink href={generalWhatsAppHref}>{siteConfig.whatsapp.label}</WhatsAppLink>

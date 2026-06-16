@@ -81,10 +81,9 @@ export async function getProducts(options: {
   query?: string;
   sort?: string;
   stockFilter?: string;
-  dealFilter?: string;
   activeOnly?: boolean;
 } = {}) {
-  const { categorySlug, brandName, query, sort = "featured", stockFilter = "all", dealFilter = "all", activeOnly = true } = options;
+  const { categorySlug, brandName, query, sort = "featured", stockFilter = "all", activeOnly = true } = options;
   const products = await prisma.product.findMany({
     where: {
       deletedAt: null,
@@ -97,7 +96,6 @@ export async function getProducts(options: {
           : stockFilter === "out"
             ? { quantity: 0 }
             : undefined,
-      compareAtPriceCents: dealFilter === "real-deal" ? { not: null } : undefined,
       OR: query
         ? [
             { name: { contains: query, mode: "insensitive" } },
@@ -120,29 +118,18 @@ export async function getProducts(options: {
               : { featuredRank: "asc" }
   });
 
-  const catalogProducts = products.map(withProductDisplayText);
-  return dealFilter === "real-deal"
-    ? catalogProducts.filter((product) => discountPercent(product) > 0)
-    : catalogProducts;
-}
-
-export function discountPercent(product: CatalogProduct) {
-  if (!product.compareAtPriceCents || product.compareAtPriceCents <= product.priceCents) return 0;
-  return Math.round((1 - product.priceCents / product.compareAtPriceCents) * 100);
+  return products.map(withProductDisplayText);
 }
 
 export async function getPromotionCollections() {
   const products = await getProducts();
   const withStock = (product: CatalogProduct) => (product.inventory?.quantity || 0) > 0;
-  const dealProducts = products
-    .filter((product) => withStock(product) && discountPercent(product) > 0)
-    .sort((a, b) => discountPercent(b) - discountPercent(a));
   const lowPriceProducts = [...products].filter(withStock).sort((a, b) => a.priceCents - b.priceCents).slice(0, 4);
   const hotProducts = [...products]
     .filter(withStock)
     .sort((a, b) => {
-      const aBadge = a.badges.some((badge) => /mais vendido|favorito|oferta/i.test(badge)) ? 1 : 0;
-      const bBadge = b.badges.some((badge) => /mais vendido|favorito|oferta/i.test(badge)) ? 1 : 0;
+      const aBadge = a.badges.some((badge) => /mais vendido|favorito|destaque/i.test(badge)) ? 1 : 0;
+      const bBadge = b.badges.some((badge) => /mais vendido|favorito|destaque/i.test(badge)) ? 1 : 0;
       return bBadge - aBadge || b.reviewCount - a.reviewCount || b.rating - a.rating;
     })
     .slice(0, 4);
@@ -153,7 +140,6 @@ export async function getPromotionCollections() {
 
   return {
     products,
-    dealProducts,
     lowPriceProducts,
     hotProducts,
     stockReadyProducts

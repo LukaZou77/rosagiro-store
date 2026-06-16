@@ -14,7 +14,6 @@ export type AdminProductListRow = {
   categoryLabel: string;
   subcategory: string;
   price: string;
-  compareAtPrice: string | null;
   featuredRank: number;
   weightGrams: number | null;
   qualityStatusLabel: string | null;
@@ -97,7 +96,6 @@ export function AdminProductBulkList({
               </p>
               <div className="admin-row-meta">
                 <strong>{product.price}</strong>
-                {product.compareAtPrice ? <span>{product.compareAtPrice}</span> : null}
                 <small>Rank {product.featuredRank}</small>
                 {product.weightGrams ? <small>{product.weightGrams} g</small> : null}
               </div>

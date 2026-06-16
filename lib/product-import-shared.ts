@@ -14,7 +14,6 @@ export const productImportRequiredFields = [
 ] as const;
 
 export const productImportOptionalFields = [
-  "compareAtPrice",
   "gallery",
   "benefits",
   "ingredients",
@@ -105,7 +104,6 @@ export type ProductImportPreview = {
 export type ProductImportCsvRecord = Record<ProductImportField, string | number | boolean | null | undefined>;
 
 const headerAliases: Record<string, ProductImportField> = {
-  compareatprice: "compareAtPrice",
   descriptionpt: "descriptionPt",
   skintype: "skinType",
   weightgrams: "weightGrams",
@@ -129,7 +127,6 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   image: "/assets/products/aura-serum.svg",
   gallery: "/assets/products/aura-serum.svg",
   descriptionPt: "Descrição curta do produto para a vitrine.",
-  compareAtPrice: "109,90",
   benefits: "",
   ingredients: "",
   badges: "",
@@ -158,7 +155,6 @@ export const productImportHelpRows = [
   ["active", "Sim", "true/false, sim/não, 1/0, ativo/inativo."],
   ["image", "Sim", "Use /assets/..., /uploads/products/..., /placeholder... ou URL http(s)."],
   ["descriptionPt", "Sim", "Descrição em português para a vitrine."],
-  ["compareAtPrice", "Não", "Preço comparativo maior que o preço atual."],
   ["gallery", "Não", "Até 6 imagens separadas por |. A imagem principal também entra na galeria."],
   ["benefits, ingredients, badges", "Não", "Separe vários itens com |."],
   ["skinType, finish, volume", "Não", "Texto livre para filtros e detalhe do produto."],
@@ -383,7 +379,6 @@ export function parseProductCsv(
     const category = raw.category?.trim() || "";
     const subcategory = raw.subcategory?.trim() || "";
     const priceCents = parseCents(raw.price || "");
-    const compareAtPriceCents = raw.compareAtPrice ? parseCents(raw.compareAtPrice) : null;
     const weight = parseWeightGrams(raw.weightGrams || "");
     const suggestedQuantity = parseOptionalPositiveInt(raw.suggestedQuantity || "");
     const stock = parseStock(raw.stock || "");
@@ -403,9 +398,6 @@ export function parseProductCsv(
     if (!category) errors.push("category obrigatório");
     if (!subcategory) errors.push("subcategory obrigatório");
     if (priceCents <= 0) errors.push("price deve ser maior que zero");
-    if (compareAtPriceCents !== null && compareAtPriceCents <= priceCents) {
-      errors.push("compareAtPrice deve ser maior que price");
-    }
     if (stock < 0) errors.push("stock inválido");
     if (!weight.valid) errors.push("weightGrams deve ser um número maior que zero");
     if (!suggestedQuantity.valid) errors.push("suggestedQuantity deve ser um número maior que zero quando preenchido");
@@ -438,7 +430,7 @@ export function parseProductCsv(
       categorySlug: slugify(category),
       subcategory,
       priceCents,
-      compareAtPriceCents,
+      compareAtPriceCents: null,
       stock: normalizedStock,
       active: active ?? true,
       image,

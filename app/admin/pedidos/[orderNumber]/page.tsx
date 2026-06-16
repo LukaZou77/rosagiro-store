@@ -112,10 +112,12 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
               <span>Subtotal</span>
               <strong>{money(order.subtotalCents)}</strong>
             </div>
-            <div>
-              <span>Desconto</span>
-              <strong>-{money(order.discountCents)}</strong>
-            </div>
+            {order.discountCents > 0 ? (
+              <div>
+                <span>Desconto</span>
+                <strong>-{money(order.discountCents)}</strong>
+              </div>
+            ) : null}
             <div>
               <span>Frete</span>
               <strong>{money(order.shippingCents)}</strong>

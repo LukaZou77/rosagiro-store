@@ -161,7 +161,7 @@ export async function createOrder(input: CheckoutInput) {
   });
 
   const subtotal = subtotalCents(lines);
-  const discount = discountCents(subtotal);
+  const discount = discountCents();
   let shippingQuote;
   try {
     shippingQuote = await resolveOrderShipping({

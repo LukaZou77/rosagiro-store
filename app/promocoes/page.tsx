@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
-import { discountPercent, getCategories, getPromotionCollections } from "@/lib/catalog";
+import { getCategories, getPromotionCollections } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import { hasSkuPriceRange, lowestEffectivePriceCents } from "@/lib/product-pricing";
@@ -14,28 +14,27 @@ import { getStoreProfile } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 export const metadata: Metadata = storefrontMetadata({
-  title: "Promoções",
-  description: "Ofertas, descontos reais e produtos em estoque para compras de beleza no atacado.",
+  title: "Destaques",
+  description: "Produtos em destaque, itens de reposição e opções em estoque para compras de beleza no atacado.",
   path: "/promocoes"
 });
 
-type PromotionProduct = Awaited<ReturnType<typeof getPromotionCollections>>["products"][number];
+type HighlightProduct = Awaited<ReturnType<typeof getPromotionCollections>>["products"][number];
 
-function displayPriceLabel(product: PromotionProduct) {
+function displayPriceLabel(product: HighlightProduct) {
   const price = money(lowestEffectivePriceCents(product));
   return hasSkuPriceRange(product) ? `A partir de ${price}` : price;
 }
 
 export default async function PromotionsPage() {
   const [categories, collections, storeProfile] = await Promise.all([getCategories(), getPromotionCollections(), getStoreProfile()]);
-  const { products, dealProducts, lowPriceProducts, hotProducts, stockReadyProducts } = collections;
+  const { products, lowPriceProducts, hotProducts, stockReadyProducts } = collections;
   const promo = siteConfig.promotionsPage;
-  const whatsappHref = buildGeneralWhatsAppHref("promocoes", storeProfile.whatsapp);
-  const heroProduct = dealProducts[0] || hotProducts[0] || lowPriceProducts[0] || products[0];
-  const strongestDiscount = dealProducts.reduce((max, product) => Math.max(max, discountPercent(product)), 0);
+  const whatsappHref = buildGeneralWhatsAppHref("destaques", storeProfile.whatsapp);
+  const heroProduct = hotProducts[0] || lowPriceProducts[0] || stockReadyProducts[0] || products[0];
   const readyStock = products.filter((product) => productQuantity(product) > 0).length;
-  const heroDiscount = heroProduct ? discountPercent(heroProduct) : 0;
   const heroAvailable = heroProduct ? productQuantity(heroProduct) > 0 : false;
+  const featuredProducts = [...new Map([...hotProducts, ...stockReadyProducts, ...lowPriceProducts].map((product) => [product.slug, product])).values()].slice(0, 8);
 
   return (
     <StoreShell categories={categories}>
@@ -44,13 +43,13 @@ export default async function PromotionsPage() {
           <p className="eyebrow">{promo.eyebrow}</p>
           <h1>{promo.title}</h1>
           <p>{promo.body}</p>
-          <div className="wholesale-signal-row" aria-label="Sinais de promoção">
+          <div className="wholesale-signal-row" aria-label="Sinais de compra">
             {promo.signals.map((signal) => (
               <span key={signal}>{signal}</span>
             ))}
           </div>
           <div className="hero-actions">
-            <Link className="button primary" href="#ofertas">
+            <Link className="button primary" href="#destaques">
               {promo.primaryCta}
             </Link>
             <WhatsAppLink className="button whatsapp" href={whatsappHref}>
@@ -60,8 +59,8 @@ export default async function PromotionsPage() {
         </div>
 
         {heroProduct ? (
-          <Link className="promo-route-feature" href={`/produto/${heroProduct.slug}`} aria-label={`Oferta destaque: ${heroProduct.name}`}>
-            <span className="deal-label">{heroDiscount ? `${heroDiscount}% OFF` : promo.heroBadge}</span>
+          <Link className="promo-route-feature" href={`/produto/${heroProduct.slug}`} aria-label={`Produto em destaque: ${heroProduct.name}`}>
+            <span className="deal-label">{promo.heroBadge}</span>
             <img src={heroProduct.image} alt={heroProduct.name} />
             <div>
               <span>{heroProduct.brand.name}</span>
@@ -72,7 +71,6 @@ export default async function PromotionsPage() {
               </small>
               <div className="price-line compact">
                 <strong>{displayPriceLabel(heroProduct)}</strong>
-                {heroProduct.compareAtPriceCents ? <span>{money(heroProduct.compareAtPriceCents)}</span> : null}
               </div>
             </div>
           </Link>
@@ -80,12 +78,12 @@ export default async function PromotionsPage() {
 
         <dl className="promo-route-stats">
           <div>
-            <dt>{dealProducts.length}</dt>
-            <dd>ofertas com desconto real</dd>
+            <dt>{featuredProducts.length}</dt>
+            <dd>produtos em destaque</dd>
           </div>
           <div>
-            <dt>{strongestDiscount || 0}%</dt>
-            <dd>maior desconto exibido</dd>
+            <dt>{lowPriceProducts.length}</dt>
+            <dd>opções de menor preço</dd>
           </div>
           <div>
             <dt>{readyStock}</dt>
@@ -103,17 +101,17 @@ export default async function PromotionsPage() {
         ))}
       </section>
 
-      <section className="section" id="ofertas">
+      <section className="section" id="destaques">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Ofertas</p>
+            <p className="eyebrow">Destaques</p>
             <h2>{promo.dealShelfTitle}</h2>
           </div>
           <p>{promo.dealShelfBody}</p>
         </div>
         <div className="product-grid">
-          {dealProducts.length ? (
-            dealProducts.map((product) => <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />)
+          {featuredProducts.length ? (
+            featuredProducts.map((product) => <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />)
           ) : (
             <div className="empty-state">
               <h3>{promo.emptyDealTitle}</h3>

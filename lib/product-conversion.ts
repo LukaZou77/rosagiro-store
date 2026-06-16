@@ -2,11 +2,6 @@ import type { CatalogProduct } from "@/lib/catalog";
 
 export type ProductStockTone = "ready" | "low" | "out";
 
-export function productDiscountPercent(product: Pick<CatalogProduct, "compareAtPriceCents" | "priceCents">) {
-  if (!product.compareAtPriceCents || product.compareAtPriceCents <= product.priceCents) return 0;
-  return Math.round((1 - product.priceCents / product.compareAtPriceCents) * 100);
-}
-
 type StockSource = Pick<CatalogProduct, "inventory"> & {
   skus?: Array<{ quantity: number; active: boolean }>;
 };
@@ -38,20 +33,16 @@ export function productShortStockLabel(product: StockSource) {
   return productStockLabel(product);
 }
 
-export function productHeroBadge(product: Pick<CatalogProduct, "badges" | "compareAtPriceCents" | "priceCents" | "inventory" | "stockStatus"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
-  const discount = productDiscountPercent(product);
-  if (discount > 0) return `${discount}% OFF`;
+export function productHeroBadge(product: Pick<CatalogProduct, "badges" | "inventory" | "stockStatus"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
   if (productStockTone(product) === "ready") return "Em estoque";
   return product.badges[0] || "Sem estoque";
 }
 
-export function productPurchaseSignals(product: Pick<CatalogProduct, "volume" | "badges" | "inventory" | "compareAtPriceCents" | "priceCents"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
-  const discount = productDiscountPercent(product);
+export function productPurchaseSignals(product: Pick<CatalogProduct, "volume" | "badges" | "inventory"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
   const quantity = productQuantity(product);
   const signals: string[] = [];
 
   if (product.volume) signals.push(product.volume);
-  if (discount > 0) signals.push("Desconto real");
   if (quantity > 0) signals.push("Em estoque");
   if (product.badges[0] && !signals.includes(product.badges[0])) signals.push(product.badges[0]);
 

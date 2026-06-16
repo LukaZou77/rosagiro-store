@@ -82,7 +82,6 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       categoryLabel: product.category.label,
       subcategory: product.subcategory,
       price: money(product.priceCents),
-      compareAtPrice: product.compareAtPriceCents ? money(product.compareAtPriceCents) : null,
       featuredRank: product.featuredRank,
       weightGrams: product.weightGrams,
       qualityStatusLabel: quality?.statusLabel || null,

@@ -209,7 +209,6 @@ export function CheckoutClient({
   );
   const quoteItems = useMemo(() => items.map((item) => ({ slug: item.slug, quantity: item.quantity })), [items]);
   const subtotal = items.reduce((sum, item) => sum + effectiveSkuPriceCents(item.product, item.sku) * item.quantity, 0);
-  const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
   const minimumReached = subtotal >= siteConfig.wholesale.minimumOrderCents;
   const recommendations = useMemo(
     () => getCartCompletionRecommendations(products, cart, { limit: 4 }),
@@ -221,7 +220,7 @@ export function CheckoutClient({
   );
   const selectedShipping = shippingQuote?.options.find((option) => option.method === shippingMethod) || null;
   const shipping = selectedShipping?.priceCents || 0;
-  const total = subtotal - discount + shipping;
+  const total = subtotal + shipping;
   const emptyCheckoutWhatsAppHref = useMemo(() => buildGeneralWhatsAppHref("checkout sem itens", whatsappPhone), [whatsappPhone]);
   const checkoutWhatsAppItems = useMemo(
     () =>
@@ -868,7 +867,7 @@ export function CheckoutClient({
               Explorar catálogo
             </Link>
             <Link className="button secondary" href="/promocoes">
-              Ver ofertas
+              Ver destaques
             </Link>
             <WhatsAppLink className="button whatsapp" href={emptyCheckoutWhatsAppHref}>
               Falar no WhatsApp
@@ -1205,10 +1204,6 @@ export function CheckoutClient({
           <div>
             <span>Subtotal</span>
             <strong>{money(subtotal)}</strong>
-          </div>
-          <div>
-            <span>Desconto curadoria</span>
-            <strong>-{money(discount)}</strong>
           </div>
           <div>
             <span>Frete base</span>

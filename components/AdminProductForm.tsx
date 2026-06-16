@@ -127,10 +127,6 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             <input name="price" defaultValue={formatImportMoney(product?.priceCents)} required />
           </label>
           <label>
-            Preco comparativo
-            <input name="compareAtPrice" defaultValue={formatImportMoney(product?.compareAtPriceCents)} />
-          </label>
-          <label>
             Disponibilidade
             <select
               name="quantity"
@@ -199,7 +195,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             </label>
           </div>
           <p className="table-note">
-            Use esses campos para orientar revendedoras e lojistas. Eles não criam desconto automático nem alteram o checkout.
+            Use esses campos para orientar revendedoras e lojistas. Eles não alteram o checkout.
           </p>
         </div>
 

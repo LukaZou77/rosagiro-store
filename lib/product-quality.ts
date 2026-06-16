@@ -6,7 +6,7 @@ import { normalizeProductGallery } from "@/lib/product-import-shared";
 
 export type ProductQualityStatus = "READY" | "REVIEW" | "ACTION_REQUIRED";
 export type ProductQualitySeverity = "low" | "medium" | "high";
-export type ProductQualityGroup = "media" | "content" | "wholesale" | "operation" | "promotion" | "launch";
+export type ProductQualityGroup = "media" | "content" | "wholesale" | "operation" | "launch";
 
 export type ProductQualityIssue = {
   key: string;
@@ -26,7 +26,6 @@ export type ProductQualityResult = {
   issues: ProductQualityIssue[];
   galleryCount: number;
   stock: number;
-  hasRealDiscount: boolean;
   primaryImage: string;
 };
 
@@ -59,7 +58,6 @@ export const productQualityGroupLabels: Record<ProductQualityGroup, string> = {
   content: "Conteúdo",
   wholesale: "Atacado",
   operation: "Operação",
-  promotion: "Promoção",
   launch: "Publicação"
 };
 
@@ -96,7 +94,6 @@ function statusMessage(status: ProductQualityStatus) {
 export function evaluateProductQuality(product: ProductWithQualityRelations): ProductQualityResult {
   const gallery = normalizeProductGallery(product.image, product.gallery);
   const stock = product.inventory?.quantity || 0;
-  const hasRealDiscount = Boolean(product.compareAtPriceCents && product.compareAtPriceCents > product.priceCents);
   const issues: ProductQualityIssue[] = [];
 
   if (!product.image || PLACEHOLDER_PATTERN.test(product.image)) {
@@ -253,18 +250,6 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
     );
   }
 
-  if (product.compareAtPriceCents && product.compareAtPriceCents <= product.priceCents) {
-    issues.push(
-      issue({
-        key: "invalid-compare-price",
-        group: "promotion",
-        severity: "high",
-        label: "Desconto inválido",
-        message: "Preço comparativo deve ser maior que o preço atual para exibir desconto real."
-      })
-    );
-  }
-
   const status = statusFromIssues(issues);
 
   return {
@@ -277,7 +262,6 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
     issues,
     galleryCount: gallery.length,
     stock,
-    hasRealDiscount,
     primaryImage: product.image
   };
 }

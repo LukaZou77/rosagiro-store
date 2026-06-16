@@ -27,7 +27,6 @@ export async function currentProductsCsv() {
     image: product.image,
     gallery: pipeListValue(product.gallery),
     descriptionPt: product.descriptionPt,
-    compareAtPrice: formatImportMoney(product.compareAtPriceCents),
     benefits: pipeListValue(product.benefits),
     ingredients: pipeListValue(product.ingredients),
     badges: pipeListValue(product.badges),

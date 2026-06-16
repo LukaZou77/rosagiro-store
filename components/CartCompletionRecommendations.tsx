@@ -58,8 +58,6 @@ export function CartCompletionRecommendations({
       </div>
       <div className="completion-list">
         {recommendations.map((recommendation) => {
-          const hasDiscount =
-            recommendation.compareAtPriceCents && recommendation.compareAtPriceCents > recommendation.priceCents;
           const isAdded = addedSlug === recommendation.slug;
 
           return (
@@ -75,7 +73,6 @@ export function CartCompletionRecommendations({
                 <small>{recommendation.brandName} / Em estoque</small>
                 <div className="completion-price">
                   <b>{money(recommendation.priceCents)}</b>
-                  {hasDiscount ? <em>De {money(recommendation.compareAtPriceCents || 0)}</em> : null}
                 </div>
               </div>
               {recommendation.hasSkuChoices ? (

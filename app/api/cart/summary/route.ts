@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     });
     const validLines = lines.filter((line) => line.quantity > 0 && line.available);
     const subtotal = subtotalCents(validLines.map((line) => ({ priceCents: line.priceCents, quantity: line.quantity })));
-    const discount = discountCents(subtotal);
+    const discount = discountCents();
     const total = totalCents(subtotal, discount, 0);
     const minimumOrderCents = siteConfig.wholesale.minimumOrderCents;
     const remainingToMinimumCents = Math.max(0, minimumOrderCents - subtotal);

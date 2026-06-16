@@ -261,10 +261,6 @@ export function QuickPurchaseDrawer() {
                     <strong>{money(summary.subtotalCents)}</strong>
                   </div>
                   <div>
-                    <span>Desconto curadoria</span>
-                    <strong>-{money(summary.discountCents)}</strong>
-                  </div>
-                  <div>
                     <span>Total sem frete</span>
                     <strong>{money(summary.totalCents)}</strong>
                   </div>

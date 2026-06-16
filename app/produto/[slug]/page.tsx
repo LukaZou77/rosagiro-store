@@ -16,7 +16,7 @@ import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import { effectiveSkuPriceCents, lowestEffectivePriceCents, hasSkuPriceRange } from "@/lib/product-pricing";
 import { productDetailGalleryState, productDetailServiceCards } from "@/lib/product-detail-standard";
-import { productDiscountPercent, productHasActiveSkus, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
+import { productHasActiveSkus, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
 import { productWholesaleLines } from "@/lib/product-wholesale";
 import { breadcrumbJsonLd, noIndexMetadata, productJsonLd, productMetaDescription, storefrontMetadata } from "@/lib/seo";
@@ -60,7 +60,6 @@ export default async function ProductPage({ params }: PageProps) {
   const stockTone = productStockTone(product);
   const activeSkus = product.skus.filter((sku) => sku.active).sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
   const hasSkuChoices = productHasActiveSkus(product);
-  const discount = productDiscountPercent(product);
   const displayPrice = lowestEffectivePriceCents(product);
   const showFromPrice = hasSkuPriceRange(product);
   const whatsappHref = buildProductWhatsAppHref(product, storeProfile.whatsapp);
@@ -106,7 +105,6 @@ export default async function ProductPage({ params }: PageProps) {
           <p className="description">{product.descriptionPt}</p>
           <div className="price-line">
             <strong>{showFromPrice ? `A partir de ${money(displayPrice)}` : money(displayPrice)}</strong>
-            {product.compareAtPriceCents ? <span>{money(product.compareAtPriceCents)}</span> : null}
           </div>
           <div className={`purchase-panel ${available ? "" : "is-unavailable"}`}>
             <div className="purchase-panel-heading">
@@ -124,7 +122,7 @@ export default async function ProductPage({ params }: PageProps) {
                 <strong>{siteConfig.productConversion.freightText}</strong>
               </div>
             </div>
-            <p>{discount > 0 ? `${discount}% OFF nesta oferta. ` : ""}{siteConfig.productConversion.detailPanelNote}</p>
+            <p>{siteConfig.productConversion.detailPanelNote}</p>
             {hasSkuChoices ? (
               <ProductSkuSelector
                 productSlug={product.slug}

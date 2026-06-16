@@ -14,7 +14,7 @@ type PageProps = {
 };
 
 const statusOptions: Array<"all" | ProductQualityStatus> = ["all", "ACTION_REQUIRED", "REVIEW", "READY"];
-const groupOptions: Array<"all" | ProductQualityGroup> = ["all", "media", "content", "wholesale", "operation", "promotion", "launch"];
+const groupOptions: Array<"all" | ProductQualityGroup> = ["all", "media", "content", "wholesale", "operation", "launch"];
 
 function single(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -188,7 +188,6 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
                 <span className={item.stock > 0 ? "status-chip success" : "status-chip warning"}>
                   {item.stock > 0 ? "Em estoque" : "Sem estoque"}
                 </span>
-                {item.hasRealDiscount ? <span className="status-chip success">Desconto real</span> : null}
               </div>
               <h2>{item.name}</h2>
               <p>{item.statusMessage}</p>

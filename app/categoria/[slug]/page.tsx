@@ -5,7 +5,7 @@ import { StoreShell } from "@/components/StoreShell";
 import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getProducts } from "@/lib/catalog";
-import { productDiscountPercent, productQuantity } from "@/lib/product-conversion";
+import { productQuantity } from "@/lib/product-conversion";
 import { breadcrumbJsonLd, categoryMetaDescription, noIndexMetadata, storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile } from "@/lib/store-profile";
@@ -30,11 +30,6 @@ const stockLabels: Record<string, string> = {
   out: "Sem estoque"
 };
 
-const dealLabels: Record<string, string> = {
-  all: "Todos",
-  "real-deal": "Desconto real"
-};
-
 function value(input: string | string[] | undefined) {
   return Array.isArray(input) ? input[0] : input;
 }
@@ -45,10 +40,6 @@ function safeSort(value: string) {
 
 function safeStock(value: string) {
   return stockLabels[value] ? value : "all";
-}
-
-function safeDeal(value: string) {
-  return dealLabels[value] ? value : "all";
 }
 
 function catalogHref(categorySlug: string, params: Record<string, string | undefined>) {
@@ -86,14 +77,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 function FilterFields({
   brand,
   brandOptions,
-  dealFilter,
   query,
   sort,
   stockFilter
 }: {
   brand: string;
   brandOptions: string[];
-  dealFilter: string;
   query: string;
   sort: string;
   stockFilter: string;
@@ -124,13 +113,6 @@ function FilterFields({
         </select>
       </label>
       <label>
-        Oferta
-        <select name="deal" defaultValue={dealFilter}>
-          <option value="all">Todos</option>
-          <option value="real-deal">Desconto real</option>
-        </select>
-      </label>
-      <label>
         Ordenar
         <select name="sort" defaultValue={sort}>
           <option value="featured">Destaque</option>
@@ -154,11 +136,10 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const query = value(queryParams.q) || "";
   const sort = safeSort(value(queryParams.sort) || "featured");
   const stockFilter = safeStock(value(queryParams.stock) || "all");
-  const dealFilter = safeDeal(value(queryParams.deal) || "all");
   const [categories, baseProducts, products, storeProfile] = await Promise.all([
     getCategories(),
     getProducts({ categorySlug }),
-    getProducts({ categorySlug, brandName: brand, query, sort, stockFilter, dealFilter }),
+    getProducts({ categorySlug, brandName: brand, query, sort, stockFilter }),
     getStoreProfile()
   ]);
   const currentCategory = categories.find((category) => category.slug === categorySlug);
@@ -167,22 +148,20 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const brandOptions = [...new Set(baseProducts.map((product) => product.brand.name))].sort();
   const sortLabel = sortLabels[sort] || sortLabels.featured;
   const clearHref = catalogHref(categorySlug, {});
-  const filterCount = [query ? "q" : "", brand !== "all" ? "brand" : "", stockFilter !== "all" ? "stock" : "", dealFilter !== "all" ? "deal" : ""].filter(Boolean).length;
+  const filterCount = [query ? "q" : "", brand !== "all" ? "brand" : "", stockFilter !== "all" ? "stock" : ""].filter(Boolean).length;
   const activeFilters = [
-    query ? { key: "q", label: `Busca: ${query}`, href: catalogHref(categorySlug, { brand, stock: stockFilter, deal: dealFilter, sort }) } : null,
-    brand !== "all" ? { key: "brand", label: `Marca: ${brand}`, href: catalogHref(categorySlug, { q: query, stock: stockFilter, deal: dealFilter, sort }) } : null,
-    stockFilter !== "all" ? { key: "stock", label: stockLabels[stockFilter], href: catalogHref(categorySlug, { q: query, brand, deal: dealFilter, sort }) } : null,
-    dealFilter !== "all" ? { key: "deal", label: dealLabels[dealFilter], href: catalogHref(categorySlug, { q: query, brand, stock: stockFilter, sort }) } : null
+    query ? { key: "q", label: `Busca: ${query}`, href: catalogHref(categorySlug, { brand, stock: stockFilter, sort }) } : null,
+    brand !== "all" ? { key: "brand", label: `Marca: ${brand}`, href: catalogHref(categorySlug, { q: query, stock: stockFilter, sort }) } : null,
+    stockFilter !== "all" ? { key: "stock", label: stockLabels[stockFilter], href: catalogHref(categorySlug, { q: query, brand, sort }) } : null
   ].filter((item): item is { key: string; label: string; href: string } => Boolean(item));
   const readyCount = products.filter((product) => productQuantity(product) > 0).length;
-  const dealCount = products.filter((product) => productDiscountPercent(product) > 0).length;
   const outOfStockCount = products.filter((product) => productQuantity(product) <= 0).length;
 
   return (
     <StoreShell categories={categories}>
       <StructuredData
         data={breadcrumbJsonLd([
-            { name: "Início", path: "/" },
+          { name: "Início", path: "/" },
           { name: "Catálogo", path: "/categoria/all" },
           { name: categoryLabel, path: `/categoria/${categorySlug}` }
         ])}
@@ -204,8 +183,8 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             Em estoque
           </span>
           <span>
-            <strong>{dealCount}</strong>
-            Desconto real
+            <strong>{brandOptions.length}</strong>
+            Marcas
           </span>
           <span>
             <strong>{outOfStockCount}</strong>
@@ -235,7 +214,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
               </div>
               <p>{siteConfig.mobilePurchase.filterHint}</p>
               <form className="filters" action={`/categoria/${categorySlug}`}>
-                <FilterFields brand={brand} brandOptions={brandOptions} dealFilter={dealFilter} query={query} sort={sort} stockFilter={stockFilter} />
+                <FilterFields brand={brand} brandOptions={brandOptions} query={query} sort={sort} stockFilter={stockFilter} />
                 <Link className="button secondary wide" href={clearHref}>
                   Limpar
                 </Link>
@@ -246,7 +225,6 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             <input type="hidden" name="q" value={query} />
             <input type="hidden" name="brand" value={brand} />
             <input type="hidden" name="stock" value={stockFilter} />
-            <input type="hidden" name="deal" value={dealFilter} />
             <label>
               <span>Ordenar</span>
               <select name="sort" defaultValue={sort}>
@@ -263,7 +241,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
           </form>
         </div>
         <form className="filters desktop-filters" action={`/categoria/${categorySlug}`}>
-          <FilterFields brand={brand} brandOptions={brandOptions} dealFilter={dealFilter} query={query} sort={sort} stockFilter={stockFilter} />
+          <FilterFields brand={brand} brandOptions={brandOptions} query={query} sort={sort} stockFilter={stockFilter} />
           <Link className="button secondary wide" href={clearHref}>
             Limpar filtros
           </Link>
@@ -286,7 +264,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
                 </Link>
               </div>
             ) : (
-              <span className="catalog-result-hint">Use filtros para achar produtos em estoque, oferta real ou marca específica.</span>
+              <span className="catalog-result-hint">Use filtros para achar produtos em estoque, marca específica ou menor preço.</span>
             )}
           </div>
           <div className="category-pills">
@@ -309,13 +287,13 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             ) : (
               <div className="empty-state">
                 <strong>Nenhum produto encontrado</strong>
-                <p>Tente limpar filtros, mudar a marca ou ver as promoções disponíveis.</p>
+                <p>Tente limpar filtros, mudar a marca ou ver os destaques disponíveis.</p>
                 <div className="empty-actions">
                   <Link className="button secondary" href={clearHref}>
                     Limpar filtros
                   </Link>
                   <Link className="button primary" href="/promocoes">
-                    Ver promoções
+                    Ver destaques
                   </Link>
                 </div>
               </div>

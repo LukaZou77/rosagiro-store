@@ -57,8 +57,7 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
     [cart, productMap]
   );
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + effectiveSkuPriceCents(item.product, item.sku) * item.quantity, 0), [items]);
-  const discount = subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
-  const total = subtotal - discount;
+  const total = subtotal;
   const whatsappItems = useMemo(
     () =>
       items.map((item) => ({
@@ -129,13 +128,13 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
         ) : (
           <div className="empty-state">
             <strong>Seu carrinho está vazio</strong>
-            <p>Escolha produtos do catálogo ou veja as ofertas para montar seu pedido mínimo de atacado.</p>
+            <p>Escolha produtos do catálogo ou veja os destaques para montar seu pedido mínimo de atacado.</p>
             <div className="empty-actions">
               <Link className="button primary" href="/categoria/all">
                 Explorar catálogo
               </Link>
               <Link className="button secondary" href="/promocoes">
-                Ver ofertas
+                Ver destaques
               </Link>
             </div>
           </div>
@@ -147,10 +146,6 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
           <div>
             <span>Subtotal</span>
             <strong>{money(subtotal)}</strong>
-          </div>
-          <div>
-            <span>Desconto curadoria</span>
-            <strong>-{money(discount)}</strong>
           </div>
           <div>
             <span>Frete</span>

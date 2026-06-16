@@ -18,8 +18,8 @@ export function subtotalCents(items: Array<{ priceCents: number; quantity: numbe
   return items.reduce((sum, item) => sum + item.priceCents * item.quantity, 0);
 }
 
-export function discountCents(subtotal: number) {
-  return subtotal >= 25000 ? Math.round(subtotal * 0.1) : 0;
+export function discountCents() {
+  return 0;
 }
 
 export function totalCents(subtotal: number, discount: number, shipping: number) {

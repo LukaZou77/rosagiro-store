@@ -6,7 +6,6 @@ import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import { lowestEffectivePriceCents, hasSkuPriceRange } from "@/lib/product-pricing";
 import {
-  productDiscountPercent,
   productHeroBadge,
   productHasActiveSkus,
   productPurchaseSignals,
@@ -22,7 +21,6 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
   const quantity = productQuantity(product);
   const available = quantity > 0;
   const hasSkuChoices = productHasActiveSkus(product);
-  const discount = productDiscountPercent(product);
   const heroBadge = productHeroBadge(product);
   const stockTone = productStockTone(product);
   const stockLabel = productStockLabel(product);
@@ -64,9 +62,8 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
           <div className="price-stack">
             <small>{siteConfig.productConversion.priceLabel}</small>
             <strong>{showFromPrice ? `A partir de ${money(displayPrice)}` : money(displayPrice)}</strong>
-            {product.compareAtPriceCents ? <span>De {money(product.compareAtPriceCents)}</span> : null}
             <div className="price-support-line">
-              {discount > 0 ? <em>{siteConfig.productConversion.discountLabel}</em> : <em>{siteConfig.productConversion.cardMinimumHint}</em>}
+              <em>{siteConfig.productConversion.cardMinimumHint}</em>
               <small>{stockLabel}</small>
             </div>
           </div>

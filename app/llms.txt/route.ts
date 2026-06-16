@@ -25,7 +25,7 @@ export async function GET() {
     "## Principais páginas",
     `- Início: ${siteUrl("/")}`,
     `- Catálogo: ${siteUrl("/categoria/all")}`,
-    `- Promoções: ${siteUrl("/promocoes")}`,
+    `- Destaques: ${siteUrl("/promocoes")}`,
     `- Informações da loja: ${siteUrl("/informacoes-da-loja")}`,
     `- Entrega: ${siteUrl("/entrega")}`,
     `- Trocas e devoluções: ${siteUrl("/trocas-e-devolucoes")}`,

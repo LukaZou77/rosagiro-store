@@ -226,7 +226,6 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const image = field(formData, "image");
   const primaryImageInput = field(formData, "primaryImage");
   const priceCents = parseCents(field(formData, "price"));
-  const compareAtPriceCents = parseCents(field(formData, "compareAtPrice"));
   const quantity = positiveInt(formData, "quantity");
   const weightGrams = optionalPositiveInt(formData, "weightGrams");
   const reviewCount = positiveInt(formData, "reviewCount");
@@ -236,9 +235,6 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
 
   if (!name || !brandId || !categoryId || !subcategory || !descriptionPt || priceCents <= 0) {
     redirectError(options.detailPath, "Preencha os campos obrigatórios do produto.");
-  }
-  if (compareAtPriceCents > 0 && compareAtPriceCents <= priceCents) {
-    redirectError(options.detailPath, "O preço comparativo deve ser maior que o preço atual.");
   }
   if (image && !isAllowedProductImage(image)) {
     redirectError(options.detailPath, "A imagem deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
@@ -292,7 +288,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
       categoryId,
       subcategory,
       priceCents,
-      compareAtPriceCents: compareAtPriceCents > 0 ? compareAtPriceCents : null,
+      compareAtPriceCents: null,
       image: primaryImage,
       gallery,
       descriptionPt,
@@ -349,7 +345,6 @@ export async function updateProductAction(formData: FormData) {
   const subcategory = String(formData.get("subcategory") || "").trim();
   const descriptionPt = String(formData.get("descriptionPt") || "").trim();
   const priceCents = brlInputToCents(formData.get("price"));
-  const compareAtPriceCents = brlInputToCents(formData.get("compareAtPrice"));
   const quantity = Math.max(0, Number(formData.get("quantity")) || 0);
   const active = formData.get("active") === "on";
 
@@ -365,7 +360,7 @@ export async function updateProductAction(formData: FormData) {
         subcategory,
         descriptionPt,
         priceCents,
-        compareAtPriceCents: compareAtPriceCents > 0 ? compareAtPriceCents : null,
+        compareAtPriceCents: null,
         active,
         stockStatus: quantity > 0 ? "Em estoque" : "Sem estoque"
       }
