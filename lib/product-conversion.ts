@@ -34,17 +34,18 @@ export function productShortStockLabel(product: StockSource) {
 }
 
 export function productHeroBadge(product: Pick<CatalogProduct, "badges" | "inventory" | "stockStatus"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
-  if (productStockTone(product) === "ready") return "Em estoque";
-  return product.badges[0] || "Sem estoque";
+  if (productStockTone(product) === "out") return "Sem estoque";
+  return product.badges.find((badge) => !/^em estoque$/i.test(badge.trim())) || "";
 }
 
 export function productPurchaseSignals(product: Pick<CatalogProduct, "volume" | "badges" | "inventory"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
-  const quantity = productQuantity(product);
   const signals: string[] = [];
 
   if (product.volume) signals.push(product.volume);
-  if (quantity > 0) signals.push("Em estoque");
-  if (product.badges[0] && !signals.includes(product.badges[0])) signals.push(product.badges[0]);
+  for (const badge of product.badges) {
+    if (/^em estoque$/i.test(badge.trim())) continue;
+    if (!signals.includes(badge)) signals.push(badge);
+  }
 
   return signals.slice(0, 3);
 }

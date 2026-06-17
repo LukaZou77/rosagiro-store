@@ -11,7 +11,6 @@ import {
   productPurchaseSignals,
   productQuantity,
   productShortStockLabel,
-  productStockLabel,
   productStockTone
 } from "@/lib/product-conversion";
 import { siteConfig } from "@/lib/site-config";
@@ -23,17 +22,20 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
   const hasSkuChoices = productHasActiveSkus(product);
   const heroBadge = productHeroBadge(product);
   const stockTone = productStockTone(product);
-  const stockLabel = productStockLabel(product);
   const shortStockLabel = productShortStockLabel(product);
   const purchaseSignals = productPurchaseSignals(product);
   const whatsappHref = buildProductWhatsAppHref(product, whatsappPhone);
   const displayPrice = lowestEffectivePriceCents(product);
   const showFromPrice = hasSkuPriceRange(product);
+  const visibleBadges = product.badges
+    .map(customerDisplayText)
+    .filter((badge) => !/^em estoque$/i.test(badge.trim()))
+    .slice(0, 2);
 
   return (
     <article className={available ? "product-card" : "product-card is-unavailable"}>
       <Link href={`/produto/${product.slug}`} className="product-image">
-        <span className="product-badge">{heroBadge}</span>
+        {heroBadge ? <span className="product-badge">{heroBadge}</span> : null}
         <img src={product.image} alt={product.name} loading="lazy" />
       </Link>
       <div className="product-card-body">
@@ -45,27 +47,24 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
           <h3>{product.name}</h3>
         </Link>
         <p>{product.subcategory}</p>
-        <div className="purchase-signals" aria-label="Sinais de compra">
-          {purchaseSignals.map((signal) => (
-            <span key={signal}>{signal}</span>
-          ))}
-        </div>
-        {product.badges.length || !available ? (
+        {purchaseSignals.length ? (
+          <div className="purchase-signals" aria-label="Sinais de compra">
+            {purchaseSignals.map((signal) => (
+              <span key={signal}>{signal}</span>
+            ))}
+          </div>
+        ) : null}
+        {visibleBadges.length || !available ? (
           <div className="mini-badge-row">
-            {product.badges.slice(0, 2).map((badge) => (
-              <span key={badge}>{customerDisplayText(badge)}</span>
+            {visibleBadges.map((badge) => (
+              <span key={badge}>{badge}</span>
             ))}
             {!available ? <span>{siteConfig.productConversion.unavailableCta}</span> : null}
           </div>
         ) : null}
         <div className="product-card-bottom">
           <div className="price-stack">
-            <small>{siteConfig.productConversion.priceLabel}</small>
             <strong>{showFromPrice ? `A partir de ${money(displayPrice)}` : money(displayPrice)}</strong>
-            <div className="price-support-line">
-              <em>{siteConfig.productConversion.cardMinimumHint}</em>
-              <small>{stockLabel}</small>
-            </div>
           </div>
           <div className="product-card-actions">
             {hasSkuChoices ? (
