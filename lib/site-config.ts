@@ -52,7 +52,7 @@ export const siteConfig = {
   hero: {
     eyebrow: "Atacado de cosméticos em São Paulo",
     title: "Produtos para revenda, kits e reposição com compra rápida.",
-    body: "Skincare, maquiagem, perfumes, cabelo e acessórios com disponibilidade sinalizada, pedido mínimo, cotação por CEP para todo o Brasil e atendimento no WhatsApp.",
+    body: "Produtos para rosto, olhos, lábios, cabelos, corpo, perfumes e acessórios com disponibilidade sinalizada, pedido mínimo, cotação por CEP para todo o Brasil e atendimento no WhatsApp.",
     primaryCta: "Comprar pelo catálogo",
     secondaryCta: "Comprar destaque"
   },
@@ -97,13 +97,13 @@ export const siteConfig = {
       },
       {
         label: "Reposição",
-        description: "Skincare, make e corpo para completar prateleira.",
+        description: "Rosto, lábios, cabelos e corpo para completar prateleira.",
         href: "/categoria/all"
       },
       {
         label: "Revenda",
         description: "Combine produtos por rotina, marca e categoria.",
-        href: "/categoria/skincare"
+        href: "/categoria/rosto"
       }
     ],
     wholesaleBand: {

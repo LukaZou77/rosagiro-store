@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Prisma } from "@/src/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { BODY_AREA_CATEGORY_ORDER } from "@/lib/category-taxonomy";
 import { customerDisplayText } from "@/lib/display-text";
 
 export type CatalogProduct = {
@@ -57,10 +58,16 @@ function withProductDisplayText(product: CatalogProduct): CatalogProduct {
 }
 
 export async function getCategories() {
-  const order = ["skincare", "makeup", "fragrance", "body", "hair", "tools"];
   const categories = await prisma.category.findMany();
   return categories
-    .sort((a, b) => order.indexOf(a.slug) - order.indexOf(b.slug))
+    .sort((a, b) => {
+      const aIndex = BODY_AREA_CATEGORY_ORDER.indexOf(a.slug);
+      const bIndex = BODY_AREA_CATEGORY_ORDER.indexOf(b.slug);
+      if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
+      if (aIndex >= 0) return -1;
+      if (bIndex >= 0) return 1;
+      return a.label.localeCompare(b.label, "pt-BR");
+    })
     .map((category) => ({
       ...category,
       label: customerDisplayText(category.label),

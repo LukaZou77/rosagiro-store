@@ -2,6 +2,7 @@ import { scryptSync, randomBytes } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import type { Prisma } from "../src/generated/prisma/client";
+import { BODY_AREA_CATEGORIES, LEGACY_CATEGORY_SLUGS, resolveBodyAreaCategorySlug } from "../lib/category-taxonomy";
 import { infoPages } from "../lib/site-config";
 import { INTERNAL_AVAILABLE_STOCK_QUANTITY } from "../lib/product-stock";
 
@@ -15,14 +16,7 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString })
 });
 
-const categories = [
-  { slug: "skincare", label: "Skincare", note: "Limpeza, tratamento e proteção diária" },
-  { slug: "makeup", label: "Maquiagem", note: "Cor, acabamento e longa duração" },
-  { slug: "fragrance", label: "Perfumes", note: "Assinaturas leves, florais e amadeiradas" },
-  { slug: "body", label: "Corpo", note: "Hidratação, banho e cuidado sensorial" },
-  { slug: "hair", label: "Cabelos", note: "Rotinas para brilho, cachos e reparação" },
-  { slug: "tools", label: "Acessórios", note: "Pincéis, nécessaires e ferramentas" }
-];
+const categories = BODY_AREA_CATEGORIES;
 
 const brands = [
   {
@@ -32,7 +26,7 @@ const brands = [
     origin: "São Paulo, Brasil",
     descriptionPt: "Skincare de textura leve para rotinas urbanas.",
     featured: true,
-    categorySlugs: ["skincare", "body"]
+    categorySlugs: ["rosto", "corpo-banho"]
   },
   {
     slug: "nativa-cura",
@@ -41,7 +35,7 @@ const brands = [
     origin: "Curitiba, Brasil",
     descriptionPt: "Fórmulas botânicas com toque profissional.",
     featured: true,
-    categorySlugs: ["skincare", "hair"]
+    categorySlugs: ["rosto", "cabelos"]
   },
   {
     slug: "velvet-rua",
@@ -50,7 +44,7 @@ const brands = [
     origin: "Rio de Janeiro, Brasil",
     descriptionPt: "Maquiagem sofisticada para pele real.",
     featured: true,
-    categorySlugs: ["makeup"]
+    categorySlugs: ["rosto", "labios", "olhos-sobrancelhas"]
   },
   {
     slug: "casa-figo",
@@ -59,7 +53,7 @@ const brands = [
     origin: "Belo Horizonte, Brasil",
     descriptionPt: "Fragrancias de banho e perfume para todos os dias.",
     featured: false,
-    categorySlugs: ["fragrance", "body"]
+    categorySlugs: ["perfumes", "corpo-banho"]
   },
   {
     slug: "linha-lume",
@@ -68,7 +62,7 @@ const brands = [
     origin: "Florianópolis, Brasil",
     descriptionPt: "Cuidado capilar com finalização limpa e brilhante.",
     featured: false,
-    categorySlugs: ["hair", "tools"]
+    categorySlugs: ["cabelos", "acessorios"]
   },
   {
     slug: "rosagiro",
@@ -77,7 +71,7 @@ const brands = [
     origin: "São Paulo, Brasil",
     descriptionPt: "Curadoria própria para organizar compras de cosméticos no atacado.",
     featured: false,
-    categorySlugs: ["tools"]
+    categorySlugs: ["acessorios"]
   }
 ];
 
@@ -237,7 +231,7 @@ const products = [
     slug: "aura-serum-c",
     brand: "AuraLab",
     name: "Serum C Aura 12%",
-    category: "skincare",
+    category: "rosto",
     subcategory: "Tratamentos",
     priceBRL: 149.9,
     image: "/assets/products/aura-serum.svg",
@@ -256,7 +250,7 @@ const products = [
     slug: "nativa-gel-limpeza",
     brand: "Nativa Cura",
     name: "Gel de Limpeza Equilibrio",
-    category: "skincare",
+    category: "rosto",
     subcategory: "Limpeza",
     priceBRL: 82.5,
     image: "/assets/products/nativa-cleanser.svg",
@@ -275,7 +269,7 @@ const products = [
     slug: "velvet-balm",
     brand: "Velvet Rua",
     name: "Balm Tinto Rosa Veludo",
-    category: "makeup",
+    category: "labios",
     subcategory: "Labios",
     priceBRL: 69.9,
     image: "/assets/products/velvet-balm.svg",
@@ -294,7 +288,7 @@ const products = [
     slug: "solar-mist-fps",
     brand: "AuraLab",
     name: "Bruma Solar FPS 50",
-    category: "skincare",
+    category: "rosto",
     subcategory: "Protecao solar",
     priceBRL: 119.9,
     image: "/assets/products/solar-mist.svg",
@@ -313,7 +307,7 @@ const products = [
     slug: "flora-blush",
     brand: "Velvet Rua",
     name: "Blush Creme Flora",
-    category: "makeup",
+    category: "rosto",
     subcategory: "Face",
     priceBRL: 94.9,
     image: "/assets/products/flora-blush.svg",
@@ -332,7 +326,7 @@ const products = [
     slug: "noite-lipstick",
     brand: "Velvet Rua",
     name: "Batom Noite de Seda",
-    category: "makeup",
+    category: "labios",
     subcategory: "Labios",
     priceBRL: 76.9,
     image: "/assets/products/noite-lip.svg",
@@ -351,7 +345,7 @@ const products = [
     slug: "bruma-figo",
     brand: "Casa Figo",
     name: "Bruma Perfumada Figo Verde",
-    category: "fragrance",
+    category: "perfumes",
     subcategory: "Body splash",
     priceBRL: 98.0,
     image: "/assets/products/bruma-figo.svg",
@@ -370,7 +364,7 @@ const products = [
     slug: "madeira-eau",
     brand: "Casa Figo",
     name: "Eau de Parfum Madeira Clara",
-    category: "fragrance",
+    category: "perfumes",
     subcategory: "Perfume",
     priceBRL: 229.9,
     image: "/assets/products/madeira-eau.svg",
@@ -389,7 +383,7 @@ const products = [
     slug: "corpo-amendoa",
     brand: "AuraLab",
     name: "Creme Corpo Amendoa Clara",
-    category: "body",
+    category: "corpo-banho",
     subcategory: "Hidratantes",
     priceBRL: 109.9,
     image: "/assets/products/corpo-amendoa.svg",
@@ -408,7 +402,7 @@ const products = [
     slug: "cachos-oleo",
     brand: "Linha Lume",
     name: "Oleo Cachos Luminosos",
-    category: "hair",
+    category: "cabelos",
     subcategory: "Finalizadores",
     priceBRL: 88.9,
     image: "/assets/products/cachos-oleo.svg",
@@ -427,7 +421,7 @@ const products = [
     slug: "pincel-precisao",
     brand: "Linha Lume",
     name: "Pincel Precisao Duo",
-    category: "tools",
+    category: "acessorios",
     subcategory: "Pinceis",
     priceBRL: 54.9,
     image: "/assets/products/pincel-precisao.svg",
@@ -446,7 +440,7 @@ const products = [
     slug: "necessaire-viagem",
     brand: "RosaGiro",
     name: "Necessaire Curadoria",
-    category: "tools",
+    category: "acessorios",
     subcategory: "Organizacao",
     priceBRL: 72.0,
     image: "/assets/products/necessaire.svg",
@@ -759,6 +753,41 @@ async function applyExactDefaultCopyBackfills() {
   }
 }
 
+async function migrateLegacyProductCategories(categoryRecords: Map<string, { id: string }>) {
+  const legacyProducts = await prisma.product.findMany({
+    where: { category: { slug: { in: [...LEGACY_CATEGORY_SLUGS] } } },
+    select: {
+      id: true,
+      name: true,
+      subcategory: true,
+      category: { select: { slug: true, label: true } }
+    }
+  });
+
+  for (const product of legacyProducts) {
+    const targetSlug = resolveBodyAreaCategorySlug({
+      categorySlug: product.category.slug,
+      categoryLabel: product.category.label,
+      subcategory: product.subcategory,
+      name: product.name
+    });
+    const targetCategory = categoryRecords.get(targetSlug);
+    if (!targetCategory) continue;
+
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { categoryId: targetCategory.id }
+    });
+  }
+
+  await prisma.category.deleteMany({
+    where: {
+      slug: { in: [...LEGACY_CATEGORY_SLUGS] },
+      products: { none: {} }
+    }
+  });
+}
+
 async function main() {
   const categoryRecords = new Map<string, { id: string }>();
   const brandRecords = new Map<string, { id: string }>();
@@ -771,6 +800,8 @@ async function main() {
     });
     categoryRecords.set(category.slug, record);
   }
+
+  await migrateLegacyProductCategories(categoryRecords);
 
   for (const brand of brands) {
     const record = await prisma.brand.upsert({

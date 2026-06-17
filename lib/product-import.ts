@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Prisma } from "@/src/generated/prisma/client";
+import { getBodyAreaCategory, resolveBodyAreaCategorySlug } from "@/lib/category-taxonomy";
 import { prisma } from "@/lib/db";
 import {
   parseProductCsv,
@@ -80,13 +81,20 @@ function productData(row: ProductImportRow, brandId: string, categoryId: string)
 }
 
 async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, index: number) {
+  const categorySlug = resolveBodyAreaCategorySlug({
+    categorySlug: row.categorySlug,
+    categoryLabel: row.category,
+    subcategory: row.subcategory,
+    name: row.name
+  });
+  const categoryDefinition = getBodyAreaCategory(categorySlug);
   const category =
-    (await tx.category.findUnique({ where: { slug: row.categorySlug } })) ||
+    (await tx.category.findUnique({ where: { slug: categorySlug } })) ||
     (await tx.category.create({
       data: {
-        slug: row.categorySlug,
-        label: row.category,
-        note: "Ajustar descrição da categoria"
+        slug: categorySlug,
+        label: categoryDefinition?.label || row.category,
+        note: categoryDefinition?.note || "Ajustar descrição da categoria"
       }
     }));
 
