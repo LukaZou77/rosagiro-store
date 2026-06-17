@@ -1,4 +1,5 @@
 import type { Prisma } from "@/src/generated/prisma/client";
+import { AdminCategorySubcategorySelect } from "@/components/AdminCategorySubcategorySelect";
 import { AdminProductGalleryManager } from "@/components/AdminProductGalleryManager";
 import { AdminProductSubmitButton } from "@/components/AdminProductSubmitButton";
 import { AdminSkuManager } from "@/components/AdminSkuManager";
@@ -14,7 +15,7 @@ type ProductFormAction = (formData: FormData) => void | Promise<void>;
 type AdminProductFormProps = {
   action: ProductFormAction;
   brands: Array<{ id: string; name: string }>;
-  categories: Array<{ id: string; label: string }>;
+  categories: Array<{ id: string; label: string; subcategories: Array<{ id: string; label: string }> }>;
   mode: "create" | "edit";
   product?: AdminProductFormProduct;
 };
@@ -99,21 +100,11 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
               ))}
             </select>
           </label>
-          <label>
-            Categoria
-            <select name="categoryId" defaultValue={product?.categoryId || categories[0]?.id || ""} required>
-              {!categories.length ? <option value="">Cadastre uma categoria primeiro</option> : null}
-              {categories.map((category) => (
-                <option value={category.id} key={category.id}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Subcategoria
-            <input name="subcategory" defaultValue={product?.subcategory || ""} required />
-          </label>
+          <AdminCategorySubcategorySelect
+            categories={categories}
+            defaultCategoryId={product?.categoryId}
+            defaultSubcategoryId={product?.subcategoryId}
+          />
         </div>
 
         <label>

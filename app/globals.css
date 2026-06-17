@@ -4835,6 +4835,27 @@ legend {
   color: var(--muted);
 }
 
+.subcategory-admin-list {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.subcategory-admin-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 86%, var(--rose-50));
+}
+
+.admin-product-row.catalog-row > .admin-product-fields.full-width {
+  grid-column: 1 / -1;
+}
+
 .admin-row-meta strong {
   color: var(--rose-deep);
 }

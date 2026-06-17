@@ -8,6 +8,7 @@ import {
   type ProductImportExistingProduct,
   type ProductImportRow
 } from "@/lib/product-import-shared";
+import { subcategorySlug } from "@/lib/product-subcategories";
 
 export class ProductImportError extends Error {
   constructor(message: string) {
@@ -50,12 +51,13 @@ function brandLogo(name: string) {
     .join("");
 }
 
-function productData(row: ProductImportRow, brandId: string, categoryId: string) {
+function productData(row: ProductImportRow, brandId: string, categoryId: string, subcategoryId: string, subcategoryLabel: string) {
   return {
     brandId,
     categoryId,
+    subcategoryId,
     name: row.name,
-    subcategory: row.subcategory,
+    subcategory: subcategoryLabel,
     priceCents: row.priceCents,
     compareAtPriceCents: null,
     image: row.image,
@@ -97,6 +99,19 @@ async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, in
         note: categoryDefinition?.note || "Ajustar descrição da categoria"
       }
     }));
+  const subcategory = await tx.productSubcategory.findUnique({
+    where: {
+      categoryId_slug: {
+        categoryId: category.id,
+        slug: subcategorySlug(row.subcategory)
+      }
+    }
+  });
+  if (!subcategory) {
+    throw new ProductImportError(
+      `A subcategoria "${row.subcategory}" não está cadastrada em ${category.label}. Cadastre em Categorias antes de importar.`
+    );
+  }
 
   const existingBrand = await tx.brand.findFirst({
     where: {
@@ -131,7 +146,7 @@ async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, in
     throw new ProductImportError(`O produto ${row.slug} está na lixeira. Restaure antes de importar.`);
   }
 
-  const data = productData(row, brand.id, category.id);
+  const data = productData(row, brand.id, category.id, subcategory.id, subcategory.label);
   const product = await tx.product.upsert({
     where: { slug: row.slug },
     update: data,

@@ -1,6 +1,12 @@
-import { deleteCategoryAction, saveCategoryAction } from "@/app/admin/actions";
+import {
+  deleteCategoryAction,
+  deleteProductSubcategoryAction,
+  saveCategoryAction,
+  saveProductSubcategoryAction
+} from "@/app/admin/actions";
 import { AdminCategoryDeleteButton } from "@/components/AdminCategoryDeleteButton";
 import { AdminShell } from "@/components/AdminShell";
+import { AdminSubcategoryDeleteButton } from "@/components/AdminSubcategoryDeleteButton";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
@@ -17,13 +23,21 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
     requireAdmin(),
     searchParams,
     prisma.category.findMany({
-      include: { _count: { select: { products: true } } },
+      include: {
+        _count: { select: { products: true } },
+        subcategories: {
+          include: { _count: { select: { products: true } } },
+          orderBy: [{ sortOrder: "asc" }, { label: "asc" }]
+        }
+      },
       orderBy: { label: "asc" }
     })
   ]);
   const error = single(params.error);
   const saved = single(params.saved);
   const deleted = single(params.deleted);
+  const savedSubcategory = single(params.savedSubcategory);
+  const deletedSubcategory = single(params.deletedSubcategory);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -41,6 +55,16 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
       {deleted ? (
         <div className="admin-notice success" role="status">
           Categoria excluída com sucesso.
+        </div>
+      ) : null}
+      {savedSubcategory ? (
+        <div className="admin-notice success" role="status">
+          Subcategoria salva com sucesso.
+        </div>
+      ) : null}
+      {deletedSubcategory ? (
+        <div className="admin-notice success" role="status">
+          Subcategoria excluída com sucesso.
         </div>
       ) : null}
       {error ? (
@@ -66,11 +90,44 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
         </form>
       </section>
 
+      <section className="import-panel">
+        <h2>Nova subcategoria</h2>
+        <p className="table-note">
+          Use termos naturais do varejo brasileiro, como Base líquida, Batom líquido ou Máscara de cílios.
+        </p>
+        <form action={saveProductSubcategoryAction} className="admin-product-fields">
+          <div className="form-grid">
+            <label>
+              Categoria
+              <select name="categoryId" required>
+                {categories.map((category) => (
+                  <option value={category.id} key={category.id}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Nome da subcategoria
+              <input name="label" placeholder="Ex: Batom líquido" required />
+            </label>
+            <label>
+              Ordem
+              <input name="sortOrder" type="number" min="0" defaultValue="1000" />
+            </label>
+          </div>
+          <button className="button primary" type="submit">
+            Criar subcategoria
+          </button>
+        </form>
+      </section>
+
       <div className="admin-list">
         {categories.map((category) => (
-          <form action={saveCategoryAction} className="admin-product-row catalog-row" key={category.id}>
-            <input type="hidden" name="categoryId" value={category.id} />
-            <div className="admin-product-fields">
+          <article className="admin-product-row catalog-row" key={category.id}>
+            <div className="admin-product-fields full-width">
+              <form action={saveCategoryAction} className="admin-product-fields">
+                <input type="hidden" name="categoryId" value={category.id} />
               <div className="form-grid">
                 <label>
                   Nome
@@ -109,8 +166,48 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
               {category._count.products > 0 ? (
                 <p className="form-hint">Esta categoria tem produtos. Mova ou remova os produtos antes de excluir.</p>
               ) : null}
+              </form>
+              <div className="subcategory-admin-list">
+                <strong>Subcategorias</strong>
+                {category.subcategories.length ? (
+                  category.subcategories.map((subcategory) => (
+                    <form action={saveProductSubcategoryAction} className="subcategory-admin-row" key={subcategory.id}>
+                      <input type="hidden" name="subcategoryId" value={subcategory.id} />
+                      <input type="hidden" name="categoryId" value={category.id} />
+                      <label>
+                        Nome
+                        <input name="label" defaultValue={subcategory.label} required />
+                      </label>
+                      <label>
+                        Ordem
+                        <input name="sortOrder" type="number" min="0" defaultValue={subcategory.sortOrder} />
+                      </label>
+                      <span>{subcategory._count.products} produtos</span>
+                      <div className="admin-actions">
+                        <button className="button secondary" type="submit">
+                          Salvar subcategoria
+                        </button>
+                        {subcategory._count.products === 0 ? (
+                          <AdminSubcategoryDeleteButton action={deleteProductSubcategoryAction} />
+                        ) : (
+                          <button
+                            className="button secondary"
+                            type="button"
+                            disabled
+                            title="Ajuste os produtos antes de excluir."
+                          >
+                            Subcategoria com produtos
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  ))
+                ) : (
+                  <p className="form-hint">Nenhuma subcategoria cadastrada para esta categoria.</p>
+                )}
+              </div>
             </div>
-          </form>
+          </article>
         ))}
       </div>
     </AdminShell>

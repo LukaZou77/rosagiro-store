@@ -5,6 +5,7 @@ import type { Prisma } from "../src/generated/prisma/client";
 import { BODY_AREA_CATEGORIES, LEGACY_CATEGORY_SLUGS, resolveBodyAreaCategorySlug } from "../lib/category-taxonomy";
 import { infoPages } from "../lib/site-config";
 import { INTERNAL_AVAILABLE_STOCK_QUANTITY } from "../lib/product-stock";
+import { normalizeSubcategoryText, productSubcategorySeeds, subcategorySlug } from "../lib/product-subcategories";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -232,7 +233,7 @@ const products = [
     brand: "AuraLab",
     name: "Serum C Aura 12%",
     category: "rosto",
-    subcategory: "Tratamentos",
+    subcategory: "Sérum facial",
     priceBRL: 149.9,
     image: "/assets/products/aura-serum.svg",
     descriptionPt: "Serum antioxidante de toque seco para luminosidade e tom mais uniforme.",
@@ -251,7 +252,7 @@ const products = [
     brand: "Nativa Cura",
     name: "Gel de Limpeza Equilibrio",
     category: "rosto",
-    subcategory: "Limpeza",
+    subcategory: "Gel de limpeza facial",
     priceBRL: 82.5,
     image: "/assets/products/nativa-cleanser.svg",
     descriptionPt: "Limpeza suave para remover oleosidade sem sensacao repuxada.",
@@ -270,7 +271,7 @@ const products = [
     brand: "Velvet Rua",
     name: "Balm Tinto Rosa Veludo",
     category: "labios",
-    subcategory: "Labios",
+    subcategory: "Balm labial",
     priceBRL: 69.9,
     image: "/assets/products/velvet-balm.svg",
     descriptionPt: "Balm pigmentado com brilho confortavel e cor construivel.",
@@ -289,7 +290,7 @@ const products = [
     brand: "AuraLab",
     name: "Bruma Solar FPS 50",
     category: "rosto",
-    subcategory: "Protecao solar",
+    subcategory: "Creme facial",
     priceBRL: 119.9,
     image: "/assets/products/solar-mist.svg",
     descriptionPt: "Protetor em bruma para reaplicar ao longo do dia, inclusive sobre maquiagem.",
@@ -308,7 +309,7 @@ const products = [
     brand: "Velvet Rua",
     name: "Blush Creme Flora",
     category: "rosto",
-    subcategory: "Face",
+    subcategory: "Blush",
     priceBRL: 94.9,
     image: "/assets/products/flora-blush.svg",
     descriptionPt: "Blush cremoso de acabamento natural para um rubor fresco.",
@@ -327,7 +328,7 @@ const products = [
     brand: "Velvet Rua",
     name: "Batom Noite de Seda",
     category: "labios",
-    subcategory: "Labios",
+    subcategory: "Batom",
     priceBRL: 76.9,
     image: "/assets/products/noite-lip.svg",
     descriptionPt: "Batom satin com pigmento intenso e conforto de longa duração.",
@@ -384,7 +385,7 @@ const products = [
     brand: "AuraLab",
     name: "Creme Corpo Amendoa Clara",
     category: "corpo-banho",
-    subcategory: "Hidratantes",
+    subcategory: "Creme hidratante corporal",
     priceBRL: 109.9,
     image: "/assets/products/corpo-amendoa.svg",
     descriptionPt: "Hidratante corporal de absorção rápida com perfume macio.",
@@ -403,7 +404,7 @@ const products = [
     brand: "Linha Lume",
     name: "Oleo Cachos Luminosos",
     category: "cabelos",
-    subcategory: "Finalizadores",
+    subcategory: "Óleo capilar",
     priceBRL: 88.9,
     image: "/assets/products/cachos-oleo.svg",
     descriptionPt: "Oleo leve para selar pontas, reduzir frizz e dar brilho.",
@@ -422,7 +423,7 @@ const products = [
     brand: "Linha Lume",
     name: "Pincel Precisao Duo",
     category: "acessorios",
-    subcategory: "Pinceis",
+    subcategory: "Pincel de maquiagem",
     priceBRL: 54.9,
     image: "/assets/products/pincel-precisao.svg",
     descriptionPt: "Pincel duo para corretivo, iluminador e pequenos detalhes.",
@@ -441,7 +442,7 @@ const products = [
     brand: "RosaGiro",
     name: "Necessaire Curadoria",
     category: "acessorios",
-    subcategory: "Organizacao",
+    subcategory: "Nécessaire",
     priceBRL: 72.0,
     image: "/assets/products/necessaire.svg",
     descriptionPt: "Necessaire resistente para organizar rotina de bolsa, academia ou viagem.",
@@ -788,6 +789,68 @@ async function migrateLegacyProductCategories(categoryRecords: Map<string, { id:
   });
 }
 
+async function seedProductSubcategories(categoryRecords: Map<string, { id: string }>) {
+  const subcategoryRecords = new Map<string, { id: string; label: string }>();
+
+  for (const group of productSubcategorySeeds) {
+    const category = categoryRecords.get(group.categorySlug);
+    if (!category) continue;
+
+    for (const [index, label] of group.labels.entries()) {
+      const record = await prisma.productSubcategory.upsert({
+        where: {
+          categoryId_slug: {
+            categoryId: category.id,
+            slug: subcategorySlug(label)
+          }
+        },
+        update: {
+          label,
+          sortOrder: (index + 1) * 10
+        },
+        create: {
+          categoryId: category.id,
+          slug: subcategorySlug(label),
+          label,
+          sortOrder: (index + 1) * 10
+        }
+      });
+      subcategoryRecords.set(`${group.categorySlug}:${normalizeSubcategoryText(label)}`, record);
+    }
+  }
+
+  return subcategoryRecords;
+}
+
+async function ensureSeedProductSubcategory(
+  subcategoryRecords: Map<string, { id: string; label: string }>,
+  categorySlug: string,
+  categoryId: string,
+  label: string
+) {
+  const key = `${categorySlug}:${normalizeSubcategoryText(label)}`;
+  const existing = subcategoryRecords.get(key);
+  if (existing) return existing;
+
+  const record = await prisma.productSubcategory.upsert({
+    where: {
+      categoryId_slug: {
+        categoryId,
+        slug: subcategorySlug(label)
+      }
+    },
+    update: { label },
+    create: {
+      categoryId,
+      slug: subcategorySlug(label),
+      label,
+      sortOrder: 1000
+    }
+  });
+  subcategoryRecords.set(key, record);
+  return record;
+}
+
 async function main() {
   const categoryRecords = new Map<string, { id: string }>();
   const brandRecords = new Map<string, { id: string }>();
@@ -802,6 +865,7 @@ async function main() {
   }
 
   await migrateLegacyProductCategories(categoryRecords);
+  const subcategoryRecords = await seedProductSubcategories(categoryRecords);
 
   for (const brand of brands) {
     const record = await prisma.brand.upsert({
@@ -816,6 +880,7 @@ async function main() {
     const brand = brandRecords.get(product.brand);
     const category = categoryRecords.get(product.category);
     if (!brand || !category) throw new Error(`Missing relation for ${product.slug}`);
+    const subcategory = await ensureSeedProductSubcategory(subcategoryRecords, product.category, category.id, product.subcategory);
     const wholesaleDetails = wholesaleSeedDetails();
 
     const record = await prisma.product.upsert({
@@ -823,8 +888,9 @@ async function main() {
       update: {
         brandId: brand.id,
         categoryId: category.id,
+        subcategoryId: subcategory.id,
         name: product.name,
-        subcategory: product.subcategory,
+        subcategory: subcategory.label,
         priceCents: cents(product.priceBRL) ?? 0,
         compareAtPriceCents: null,
         weightGrams: null,
@@ -848,8 +914,9 @@ async function main() {
         slug: product.slug,
         brandId: brand.id,
         categoryId: category.id,
+        subcategoryId: subcategory.id,
         name: product.name,
-        subcategory: product.subcategory,
+        subcategory: subcategory.label,
         priceCents: cents(product.priceBRL) ?? 0,
         compareAtPriceCents: null,
         weightGrams: null,

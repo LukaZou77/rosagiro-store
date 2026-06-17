@@ -18,10 +18,13 @@ export default async function AdminNewProductPage({ searchParams }: PageProps) {
     requireAdmin(),
     searchParams,
     prisma.brand.findMany({ orderBy: { name: "asc" } }),
-    prisma.category.findMany({ orderBy: { label: "asc" } })
+    prisma.category.findMany({
+      include: { subcategories: { orderBy: [{ sortOrder: "asc" }, { label: "asc" }] } },
+      orderBy: { label: "asc" }
+    })
   ]);
   const error = single(query.error);
-  const hasCatalogSetup = brands.length > 0 && categories.length > 0;
+  const hasCatalogSetup = brands.length > 0 && categories.some((category) => category.subcategories.length > 0);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -49,7 +52,7 @@ export default async function AdminNewProductPage({ searchParams }: PageProps) {
       ) : null}
       {!hasCatalogSetup ? (
         <div className="admin-notice warning" role="status">
-          Cadastre pelo menos uma marca e uma categoria antes de criar produtos manuais.
+          Cadastre pelo menos uma marca, uma categoria e uma subcategoria antes de criar produtos manuais.
         </div>
       ) : null}
 

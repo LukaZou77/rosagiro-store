@@ -9,6 +9,7 @@ import { markOrderPaid, OrderError } from "@/lib/orders";
 import { isMercadoPagoInstallments } from "@/lib/payments";
 import { importProductsFromCsv, ProductImportError } from "@/lib/product-import";
 import { isAllowedProductImage, normalizeProductGallery, parseCents, parsePipeList, slugify } from "@/lib/product-import-shared";
+import { subcategorySlug } from "@/lib/product-subcategories";
 import {
   assertGalleryCapacity,
   cleanGalleryInput,
@@ -108,6 +109,11 @@ function revalidateCatalog(productSlug?: string) {
   revalidatePath("/admin/importar-produtos");
   revalidatePath("/admin/prontidao");
   if (productSlug) revalidatePath(`/produto/${productSlug}`);
+}
+
+function revalidateCategoryManagement() {
+  revalidateCatalog();
+  revalidatePath("/admin/categorias");
 }
 
 type ProductFormPreparationOptions = {
@@ -221,7 +227,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const name = field(formData, "name");
   const brandId = field(formData, "brandId");
   const categoryId = field(formData, "categoryId");
-  const subcategory = field(formData, "subcategory");
+  const subcategoryId = field(formData, "subcategoryId");
   const descriptionPt = field(formData, "descriptionPt");
   const image = field(formData, "image");
   const primaryImageInput = field(formData, "primaryImage");
@@ -233,18 +239,23 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const active = formData.get("active") === "on";
   const skuInput = parseProductSkuInputs(formData, options.detailPath);
 
-  if (!name || !brandId || !categoryId || !subcategory || !descriptionPt || priceCents <= 0) {
+  if (!name || !brandId || !categoryId || !subcategoryId || !descriptionPt || priceCents <= 0) {
     redirectError(options.detailPath, "Preencha os campos obrigatórios do produto.");
   }
   if (image && !isAllowedProductImage(image)) {
     redirectError(options.detailPath, "A imagem deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
   }
 
-  const [brand, category] = await Promise.all([
+  const [brand, category, subcategory] = await Promise.all([
     prisma.brand.findUnique({ where: { id: brandId } }),
-    prisma.category.findUnique({ where: { id: categoryId } })
+    prisma.category.findUnique({ where: { id: categoryId } }),
+    prisma.productSubcategory.findUnique({ where: { id: subcategoryId } })
   ]);
   if (!brand || !category) redirectError(options.detailPath, "Marca ou categoria inválida.");
+
+  if (!subcategory || subcategory.categoryId !== category.id) {
+    redirectError(options.detailPath, "Selecione uma subcategoria válida para a categoria escolhida.");
+  }
 
   const existingGallery = normalizeProductGallery(options.existingImage || "", options.existingGallery || []);
   const removedImages = new Set(cleanGalleryInput(formData.getAll("removeGalleryImage")));
@@ -286,7 +297,8 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
       name,
       brandId,
       categoryId,
-      subcategory,
+      subcategoryId: subcategory.id,
+      subcategory: subcategory.label,
       priceCents,
       compareAtPriceCents: null,
       image: primaryImage,
@@ -342,22 +354,27 @@ export async function updateProductAction(formData: FormData) {
 
   const productId = String(formData.get("productId") || "");
   const name = String(formData.get("name") || "").trim();
-  const subcategory = String(formData.get("subcategory") || "").trim();
+  const categoryId = String(formData.get("categoryId") || "").trim();
+  const subcategoryId = String(formData.get("subcategoryId") || "").trim();
   const descriptionPt = String(formData.get("descriptionPt") || "").trim();
   const priceCents = brlInputToCents(formData.get("price"));
   const quantity = Math.max(0, Number(formData.get("quantity")) || 0);
   const active = formData.get("active") === "on";
 
-  if (!productId || !name || !subcategory || !descriptionPt || priceCents <= 0) {
+  if (!productId || !name || !categoryId || !subcategoryId || !descriptionPt || priceCents <= 0) {
     redirect("/admin/produtos?error=1");
   }
+  const subcategory = await prisma.productSubcategory.findUnique({ where: { id: subcategoryId } });
+  if (!subcategory || subcategory.categoryId !== categoryId) redirect("/admin/produtos?error=1");
 
   await prisma.$transaction([
     prisma.product.update({
       where: { id: productId },
       data: {
         name,
-        subcategory,
+        categoryId,
+        subcategoryId: subcategory.id,
+        subcategory: subcategory.label,
         descriptionPt,
         priceCents,
         compareAtPriceCents: null,
@@ -670,6 +687,85 @@ export async function deleteCategoryAction(formData: FormData) {
   revalidateCatalog();
   revalidatePath("/admin/categorias");
   redirect("/admin/categorias?deleted=1");
+}
+
+export async function saveProductSubcategoryAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = field(formData, "subcategoryId");
+  const categoryId = field(formData, "categoryId");
+  const label = field(formData, "label");
+  const sortOrder = positiveInt(formData, "sortOrder", 1000);
+  const slug = subcategorySlug(label);
+  let redirectTo = "/admin/categorias?savedSubcategory=1";
+
+  if (!categoryId || !label || !slug) redirectError("/admin/categorias", "Informe categoria e nome da subcategoria.");
+
+  const category = await prisma.category.findUnique({ where: { id: categoryId } });
+  if (!category) redirectError("/admin/categorias", "Categoria da subcategoria não encontrada.");
+
+  const duplicate = await prisma.productSubcategory.findFirst({
+    where: {
+      categoryId,
+      slug,
+      ...(id ? { NOT: { id } } : {})
+    }
+  });
+  if (duplicate) redirectError("/admin/categorias", "Já existe uma subcategoria com esse nome nesta categoria.");
+
+  const current = id
+    ? await prisma.productSubcategory.findUnique({
+        where: { id },
+        include: { _count: { select: { products: true } } }
+      })
+    : null;
+  if (id && !current) redirectError("/admin/categorias", "Subcategoria não encontrada.");
+  if (current && current.categoryId !== categoryId && current._count.products > 0) {
+    redirectError("/admin/categorias", "Subcategoria com produtos não pode trocar de categoria.");
+  }
+
+  try {
+    if (id) {
+      const record = await prisma.productSubcategory.update({
+        where: { id },
+        data: { categoryId, label, slug, sortOrder }
+      });
+      await prisma.product.updateMany({
+        where: { subcategoryId: record.id },
+        data: { categoryId: record.categoryId, subcategory: record.label }
+      });
+    } else {
+      await prisma.productSubcategory.create({
+        data: { categoryId, label, slug, sortOrder }
+      });
+    }
+    revalidateCategoryManagement();
+  } catch {
+    redirectTo = `/admin/categorias?error=${encodeURIComponent("Não foi possível salvar a subcategoria.")}`;
+  }
+
+  redirect(redirectTo);
+}
+
+export async function deleteProductSubcategoryAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = field(formData, "subcategoryId");
+  if (!id) redirectError("/admin/categorias", "Subcategoria inválida.");
+
+  const subcategory = await prisma.productSubcategory.findUnique({
+    where: { id },
+    include: { _count: { select: { products: true } } }
+  });
+
+  if (!subcategory) redirectError("/admin/categorias", "Subcategoria não encontrada.");
+  if (subcategory._count.products > 0) {
+    redirectError("/admin/categorias", "Esta subcategoria tem produtos. Ajuste os produtos antes de excluir.");
+  }
+
+  await prisma.productSubcategory.delete({ where: { id } });
+  revalidateCategoryManagement();
+  redirect("/admin/categorias?deletedSubcategory=1");
 }
 
 export async function updateOrderStatusAction(formData: FormData) {

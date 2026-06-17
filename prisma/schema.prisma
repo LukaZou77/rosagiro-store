@@ -88,13 +88,29 @@ model Brand {
 }
 
 model Category {
+  id            String               @id @default(cuid())
+  slug          String               @unique
+  label         String
+  note          String
+  products      Product[]
+  subcategories ProductSubcategory[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+}
+
+model ProductSubcategory {
   id        String    @id @default(cuid())
-  slug      String    @unique
+  categoryId String
+  slug      String
   label     String
-  note      String
+  sortOrder Int       @default(0)
+  category  Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@unique([categoryId, slug])
+  @@index([categoryId, sortOrder])
 }
 
 model Product {
@@ -102,6 +118,7 @@ model Product {
   slug                String      @unique
   brandId             String
   categoryId          String
+  subcategoryId       String?
   name                String
   subcategory         String
   priceCents          Int
@@ -131,6 +148,7 @@ model Product {
   featuredRank        Int         @default(0)
   brand               Brand       @relation(fields: [brandId], references: [id])
   category            Category    @relation(fields: [categoryId], references: [id])
+  subcategoryOption   ProductSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
   inventory           Inventory?
   skus                ProductSku[]
   orderItems          OrderItem[]
@@ -138,6 +156,7 @@ model Product {
   updatedAt           DateTime    @updatedAt
 
   @@index([categoryId, active])
+  @@index([subcategoryId])
   @@index([brandId, active])
   @@index([deletedAt])
   @@index([active, deletedAt])

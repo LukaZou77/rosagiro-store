@@ -22,7 +22,10 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
     requireAdmin(),
     searchParams,
     prisma.brand.findMany({ orderBy: { name: "asc" } }),
-    prisma.category.findMany({ orderBy: { label: "asc" } })
+    prisma.category.findMany({
+      include: { subcategories: { orderBy: [{ sortOrder: "asc" }, { label: "asc" }] } },
+      orderBy: { label: "asc" }
+    })
   ]);
   const product = await prisma.product.findUnique({
     where: { slug },
