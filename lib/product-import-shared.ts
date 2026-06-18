@@ -155,7 +155,7 @@ export const productImportHelpRows = [
   ["active", "Sim", "true/false, sim/não, 1/0, ativo/inativo."],
   ["image", "Sim", "Use /assets/..., /uploads/products/..., /placeholder... ou URL http(s)."],
   ["descriptionPt", "Sim", "Descrição em português para a vitrine."],
-  ["gallery", "Não", "Até 6 imagens separadas por |. A imagem principal também entra na galeria."],
+  ["gallery", "Não", "Até 9 imagens separadas por |. A imagem principal também entra na galeria."],
   ["benefits, ingredients, badges", "Não", "Separe vários itens com |."],
   ["skinType, finish, volume", "Não", "Texto livre para filtros e detalhe do produto."],
   ["weightGrams", "Não", "Peso unitário em gramas para cotação de frete. Deixe vazio se ainda não foi conferido."],
@@ -276,7 +276,7 @@ export function pipeListValue(values: string[] | null | undefined) {
   return (values || []).join("|");
 }
 
-export const PRODUCT_GALLERY_LIMIT = 6;
+export const PRODUCT_GALLERY_LIMIT = 9;
 
 function parseRating(value: string) {
   if (!value.trim()) return 0;
