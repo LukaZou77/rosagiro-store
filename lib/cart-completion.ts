@@ -35,9 +35,11 @@ export type CartCompletionRecommendation = {
 
 type RecommendationOptions = {
   currentCategorySlug?: string;
+  preferredCategorySlugs?: string[];
   excludeSlug?: string;
   limit?: number;
   minimumOrderCents?: number;
+  cartSubtotalCents?: number;
 };
 
 function productStock(product: Pick<CartCompletionProduct, "inventory"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
@@ -64,14 +66,19 @@ export function getCartCompletionRecommendations(
   const limit = options.limit ?? 4;
   const cartQuantityBySlug = new Map(cart.map((item) => [item.slug, Math.max(0, Math.floor(item.quantity || 0))]));
   const productBySlug = new Map(products.map((product) => [product.slug, product]));
-  const cartSubtotal = cart.reduce((sum, item) => {
-    const product = productBySlug.get(item.slug);
-    return product ? sum + lowestEffectivePriceCents(product) * Math.max(0, Math.floor(item.quantity || 0)) : sum;
-  }, 0);
+  const cartSubtotal =
+    options.cartSubtotalCents ??
+    cart.reduce((sum, item) => {
+      const product = productBySlug.get(item.slug);
+      return product ? sum + lowestEffectivePriceCents(product) * Math.max(0, Math.floor(item.quantity || 0)) : sum;
+    }, 0);
   const remainingCents = Math.max(0, minimumOrderCents - cartSubtotal);
   const preferredCategories = new Set<string>();
 
   if (options.currentCategorySlug) preferredCategories.add(options.currentCategorySlug);
+  for (const categorySlug of options.preferredCategorySlugs || []) {
+    if (categorySlug) preferredCategories.add(categorySlug);
+  }
   for (const item of cart) {
     const product = productBySlug.get(item.slug);
     if (product?.category.slug) preferredCategories.add(product.category.slug);

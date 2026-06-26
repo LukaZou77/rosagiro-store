@@ -1,85 +1,89 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cartLineKey, sameCartLine, useCart, writeCart } from "@/components/CartCount";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { CustomerCheckoutButton } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
+import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
-import { getCartCompletionRecommendations } from "@/lib/cart-completion";
+import type { CartSummary } from "@/lib/cart-summary";
 import { money } from "@/lib/money";
-import { effectiveSkuPriceCents } from "@/lib/product-pricing";
 import { siteConfig } from "@/lib/site-config";
 import { buildCartWhatsAppHref } from "@/lib/whatsapp";
 
-type Product = {
-  slug: string;
-  name: string;
-  image: string;
-  priceCents: number;
-  compareAtPriceCents: number | null;
-  badges: string[];
-  active: boolean;
-  rating?: number;
-  reviewCount?: number;
-  subcategory: string;
-  brand: { name: string };
-  category: { slug: string; label?: string };
-  inventory: { quantity: number } | null;
-  skus?: Array<{ id: string; name: string; code: string; priceCents: number | null; quantity: number; active: boolean }>;
+type CartSummaryState = {
+  key: string;
+  data: CartSummary;
 };
 
-type CartDisplayItem = {
-  slug: string;
-  skuId?: string;
-  quantity: number;
-  product: Product;
-  sku: NonNullable<Product["skus"]>[number] | null;
-};
+function cleanCart(next: Array<{ slug: string; skuId?: string; quantity: number }>) {
+  return next.filter((item) => item.quantity > 0);
+}
 
-export function CartClient({ products, trustSignals }: { products: Product[]; trustSignals: string[] }) {
+export function CartClient({ trustSignals }: { trustSignals: string[] }) {
   const cart = useCart();
   const whatsappPhone = useWhatsAppPhone();
+  const cartKey = useMemo(() => JSON.stringify(cart), [cart]);
+  const [summaryState, setSummaryState] = useState<CartSummaryState | null>(null);
+  const [errorState, setErrorState] = useState<{ key: string; message: string } | null>(null);
 
-  const productMap = useMemo(() => new Map(products.map((product) => [product.slug, product])), [products]);
-  const items = useMemo(
-    () =>
-      cart
-        .map((item) => {
-          const product = productMap.get(item.slug);
-          const sku = item.skuId ? product?.skus?.find((candidate) => candidate.id === item.skuId) || null : null;
-          return { ...item, product, sku };
-        })
-        .filter((item): item is CartDisplayItem => Boolean(item.product)),
-    [cart, productMap]
-  );
-  const subtotal = useMemo(() => items.reduce((sum, item) => sum + effectiveSkuPriceCents(item.product, item.sku) * item.quantity, 0), [items]);
-  const total = subtotal;
+  useEffect(() => {
+    if (!cart.length) {
+      return;
+    }
+
+    const controller = new AbortController();
+    fetch("/api/cart/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: cart }),
+      signal: controller.signal
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as CartSummary;
+        if (!response.ok) throw new Error(data.error || "Não foi possível carregar o resumo.");
+        setSummaryState({ key: cartKey, data });
+        setErrorState(null);
+      })
+      .catch((fetchError: Error) => {
+        if (fetchError.name === "AbortError") return;
+        setErrorState({ key: cartKey, message: fetchError.message || "Não foi possível carregar o resumo." });
+      });
+
+    return () => controller.abort();
+  }, [cart, cartKey]);
+
+  const summary = cart.length && summaryState?.key === cartKey ? summaryState.data : null;
+  const error = cart.length && errorState?.key === cartKey ? errorState.message : "";
+  const loading = cart.length > 0 && !summary && !error;
+  const lines = useMemo(() => summary?.lines ?? [], [summary]);
+  const subtotal = summary?.subtotalCents || 0;
+  const total = summary?.totalCents || subtotal;
+  const recommendations = summary?.recommendations || [];
+  const minimumReached = summary?.minimumReached ?? subtotal >= siteConfig.wholesale.minimumOrderCents;
   const whatsappItems = useMemo(
     () =>
-      items.map((item) => ({
-        quantity: item.quantity,
-        product: {
-          name: item.sku ? `${item.product.name} - ${item.sku.name}` : item.product.name,
-          priceCents: effectiveSkuPriceCents(item.product, item.sku),
-          brand: item.product.brand
-        }
-      })),
-    [items]
+      lines
+        .filter((line) => line.available && line.quantity > 0)
+        .map((line) => ({
+          quantity: line.quantity,
+          product: {
+            name: line.skuName ? `${line.name} - ${line.skuName}` : line.name,
+            priceCents: line.priceCents,
+            brand: { name: line.brandName }
+          }
+        })),
+    [lines]
   );
   const whatsappHref = useMemo(() => buildCartWhatsAppHref(whatsappItems, subtotal, whatsappPhone), [whatsappItems, subtotal, whatsappPhone]);
-  const recommendations = useMemo(
-    () => getCartCompletionRecommendations(products, cart, { limit: 4 }),
-    [cart, products]
-  );
-  const minimumReached = subtotal >= siteConfig.wholesale.minimumOrderCents;
+  const hasValidLines = whatsappItems.length > 0;
 
   function update(next: Array<{ slug: string; skuId?: string; quantity: number }>) {
-    const clean = next.filter((item) => item.quantity > 0);
-    writeCart(clean);
+    writeCart(cleanCart(next));
   }
 
   return (
@@ -88,44 +92,7 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
         <p className="eyebrow">Carrinho</p>
         <h1>Sua seleção</h1>
         <MinimumOrderNotice subtotalCents={subtotal} />
-        {items.length ? (
-          items.map((item) => (
-            <article className="cart-row" key={cartLineKey(item)}>
-              <img src={item.product.image} alt={item.product.name} />
-              <div>
-                <span>{item.product.brand.name}</span>
-                <strong>{item.product.name}</strong>
-                {item.sku ? <small>{item.sku.name} #{item.sku.code}</small> : null}
-                <small>{money(effectiveSkuPriceCents(item.product, item.sku))}</small>
-              </div>
-              <div className="qty-control">
-                <button
-                  type="button"
-                  aria-label="Diminuir quantidade"
-                  onClick={() =>
-                    update(cart.map((line) => (sameCartLine(line, item.slug, item.skuId) ? { ...line, quantity: line.quantity - 1 } : line)))
-                  }
-                >
-                  -
-                </button>
-                <span>{item.quantity}</span>
-                <button
-                  type="button"
-                  aria-label="Aumentar quantidade"
-                  onClick={() =>
-                    update(cart.map((line) => (sameCartLine(line, item.slug, item.skuId) ? { ...line, quantity: line.quantity + 1 } : line)))
-                  }
-                  disabled={((item.sku ? item.sku.quantity : item.product.inventory?.quantity) || 0) <= item.quantity}
-                >
-                  +
-                </button>
-              </div>
-              <button type="button" className="remove-button" onClick={() => update(cart.filter((line) => !sameCartLine(line, item.slug, item.skuId)))}>
-                Remover
-              </button>
-            </article>
-          ))
-        ) : (
+        {!cart.length ? (
           <div className="empty-state">
             <strong>Seu carrinho está vazio</strong>
             <p>Escolha produtos do catálogo ou veja os destaques para montar seu pedido mínimo de atacado.</p>
@@ -137,6 +104,68 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
                 Ver destaques
               </Link>
             </div>
+          </div>
+        ) : loading ? (
+          <div className="empty-state">
+            <strong>Carregando resumo</strong>
+            <p>Estamos conferindo preços, SKU e disponibilidade dos itens do seu carrinho.</p>
+          </div>
+        ) : error ? (
+          <div className="empty-state">
+            <strong>Resumo indisponível</strong>
+            <p>{error}</p>
+            <div className="empty-actions">
+              <Link className="button secondary" href="/categoria/all">
+                Voltar ao catálogo
+              </Link>
+            </div>
+          </div>
+        ) : lines.length ? (
+          lines.map((line) => (
+            <article className={line.available ? "cart-row" : "cart-row muted"} key={cartLineKey({ slug: line.slug, skuId: line.skuId || undefined })}>
+              {line.image ? (
+                <OptimizedProductImage src={line.image} alt={line.name} width={80} height={96} sizes="80px" />
+              ) : (
+                <div className="quick-line-placeholder" aria-hidden="true" />
+              )}
+              <div>
+                <span>{line.brandName}</span>
+                <strong>{line.name}</strong>
+                {line.skuName ? <small>{line.skuName} #{line.skuCode}</small> : null}
+                <small>{money(line.priceCents)}</small>
+                {line.warning ? <em>{line.warning}</em> : null}
+              </div>
+              <div className="qty-control">
+                <button
+                  type="button"
+                  aria-label="Diminuir quantidade"
+                  onClick={() =>
+                    update(cart.map((item) => (sameCartLine(item, line.slug, line.skuId) ? { ...item, quantity: item.quantity - 1 } : item)))
+                  }
+                >
+                  -
+                </button>
+                <span>{line.requestedQuantity}</span>
+                <button
+                  type="button"
+                  aria-label="Aumentar quantidade"
+                  onClick={() =>
+                    update(cart.map((item) => (sameCartLine(item, line.slug, line.skuId) ? { ...item, quantity: item.quantity + 1 } : item)))
+                  }
+                  disabled={!line.available || line.requestedQuantity >= line.stockQuantity}
+                >
+                  +
+                </button>
+              </div>
+              <button type="button" className="remove-button" onClick={() => update(cart.filter((item) => !sameCartLine(item, line.slug, line.skuId)))}>
+                Remover
+              </button>
+            </article>
+          ))
+        ) : (
+          <div className="empty-state">
+            <strong>Nenhum item disponível</strong>
+            <p>Os itens do carrinho não estão disponíveis agora. Remova-os ou fale com o atendimento.</p>
           </div>
         )}
       </div>
@@ -165,28 +194,20 @@ export function CartClient({ products, trustSignals }: { products: Product[]; tr
           ))}
         </div>
         <StoreTrustSignals signals={trustSignals} compact />
-        {items.length ? (
+        {hasValidLines ? (
           <CartCompletionRecommendations
             compact
             recommendations={recommendations}
-            title={
-              minimumReached
-                ? siteConfig.productConversion.completionReachedTitle
-                : siteConfig.productConversion.completionTitle
-            }
-            body={
-              minimumReached
-                ? siteConfig.productConversion.completionReachedBody
-                : siteConfig.productConversion.completionBody
-            }
+            title={minimumReached ? siteConfig.productConversion.completionReachedTitle : siteConfig.productConversion.completionTitle}
+            body={minimumReached ? siteConfig.productConversion.completionReachedBody : siteConfig.productConversion.completionBody}
           />
         ) : null}
-        {items.length ? (
+        {hasValidLines ? (
           <WhatsAppLink href={whatsappHref} className="button whatsapp wide">
             {siteConfig.whatsapp.cartCta}
           </WhatsAppLink>
         ) : null}
-        {items.length ? (
+        {hasValidLines ? (
           <CustomerCheckoutButton className="button primary wide">Continuar para checkout</CustomerCheckoutButton>
         ) : (
           <Link className="button primary wide disabled" href="/categoria/all">

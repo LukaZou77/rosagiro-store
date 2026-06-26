@@ -6,42 +6,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cartLineKey, readCart, sameCartLine, subscribeQuickPurchaseOpen, useCart, writeCart } from "@/components/CartCount";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { CustomerCheckoutButton } from "@/components/CustomerSession";
+import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
-import type { CartCompletionRecommendation } from "@/lib/cart-completion";
+import type { CartSummary, CartSummaryLine } from "@/lib/cart-summary";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
 import { buildCartWhatsAppHref } from "@/lib/whatsapp";
-
-type SummaryLine = {
-  slug: string;
-  skuId: string | null;
-  skuName: string | null;
-  skuCode: string | null;
-  name: string;
-  brandName: string;
-  image: string;
-  priceCents: number;
-  requestedQuantity: number;
-  quantity: number;
-  stockQuantity: number;
-  active: boolean;
-  available: boolean;
-  warning: string;
-  lineTotalCents: number;
-};
-
-type CartSummary = {
-  lines: SummaryLine[];
-  subtotalCents: number;
-  discountCents: number;
-  totalCents: number;
-  minimumOrderCents: number;
-  remainingToMinimumCents: number;
-  minimumReached: boolean;
-  recommendations: CartCompletionRecommendation[];
-  error?: string;
-};
 
 function cartQuantity(cart: Array<{ quantity: number }>) {
   return cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -58,7 +29,7 @@ function removeLine(slug: string, skuId?: string | null) {
   writeCart(readCart().filter((item) => !sameCartLine(item, slug, skuId)));
 }
 
-function lineSummaryLabel(line: Pick<SummaryLine, "available" | "warning" | "priceCents">) {
+function lineSummaryLabel(line: Pick<CartSummaryLine, "available" | "warning" | "priceCents">) {
   if (!line.available) return line.warning || "Indisponível";
   return `${money(line.priceCents)} / Em estoque`;
 }
@@ -208,7 +179,11 @@ export function QuickPurchaseDrawer() {
                 <div className="quick-lines">
                     {summary.lines.map((line) => (
                       <article className={line.available ? "quick-line" : "quick-line muted"} key={cartLineKey({ slug: line.slug, skuId: line.skuId || undefined })}>
-                        {line.image ? <img src={line.image} alt={line.name} /> : <div className="quick-line-placeholder" aria-hidden="true" />}
+                        {line.image ? (
+                          <OptimizedProductImage src={line.image} alt={line.name} width={72} height={86} sizes="72px" />
+                        ) : (
+                          <div className="quick-line-placeholder" aria-hidden="true" />
+                        )}
                         <div className="quick-line-info">
                           <span>{line.brandName || "Produto"}</span>
                           <strong>{line.name}</strong>

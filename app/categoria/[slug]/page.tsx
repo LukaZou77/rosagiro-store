@@ -4,8 +4,14 @@ import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
 import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
-import { getCategories, getProducts } from "@/lib/catalog";
-import { productQuantity } from "@/lib/product-conversion";
+import {
+  CATALOG_PAGE_SIZE,
+  getBrandOptionsForCategory,
+  getCategories,
+  getProductAvailabilityCounts,
+  getProductCount,
+  getProductPage
+} from "@/lib/catalog";
 import { breadcrumbJsonLd, categoryMetaDescription, noIndexMetadata, storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile } from "@/lib/store-profile";
@@ -42,10 +48,16 @@ function safeStock(value: string) {
   return stockLabels[value] ? value : "all";
 }
 
+function safePage(value: string | undefined) {
+  const page = Number(value || "1");
+  if (!Number.isFinite(page) || page < 1) return 1;
+  return Math.floor(page);
+}
+
 function catalogHref(categorySlug: string, params: Record<string, string | undefined>) {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, item]) => {
-    if (!item || item === "all" || (key === "sort" && item === "featured")) return;
+    if (!item || item === "all" || (key === "sort" && item === "featured") || (key === "page" && item === "1")) return;
     search.set(key, item);
   });
   const query = search.toString();
@@ -53,23 +65,23 @@ function catalogHref(categorySlug: string, params: Record<string, string | undef
 }
 
 async function categorySeoContext(slug: string) {
-  const [categories, products] = await Promise.all([getCategories(), getProducts({ categorySlug: slug })]);
+  const [categories, productCount] = await Promise.all([getCategories(), getProductCount({ categorySlug: slug })]);
   const currentCategory = categories.find((category) => category.slug === slug);
   const label = slug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria";
-  return { categories, products, currentCategory, label };
+  return { categories, productCount, currentCategory, label };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const categorySlug = slug || "all";
-  const { currentCategory, label, products } = await categorySeoContext(categorySlug);
+  const { currentCategory, label, productCount } = await categorySeoContext(categorySlug);
   if (categorySlug !== "all" && !currentCategory) {
     return noIndexMetadata("Categoria", "Categoria RosaGiro indisponível.");
   }
   const path = `/categoria/${categorySlug}`;
   return storefrontMetadata({
     title: `${label} no atacado`,
-    description: categoryMetaDescription(label, products.length),
+    description: categoryMetaDescription(label, productCount),
     path
   });
 }
@@ -129,6 +141,60 @@ function FilterFields({
   );
 }
 
+function CatalogPagination({
+  categorySlug,
+  page,
+  totalPages,
+  query,
+  brand,
+  stockFilter,
+  sort
+}: {
+  categorySlug: string;
+  page: number;
+  totalPages: number;
+  query: string;
+  brand: string;
+  stockFilter: string;
+  sort: string;
+}) {
+  if (totalPages <= 1) return null;
+
+  const previousPage = Math.max(1, page - 1);
+  const nextPage = Math.min(totalPages, page + 1);
+  const startPage = Math.max(1, page - 2);
+  const endPage = Math.min(totalPages, page + 2);
+  const pages = Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+  const hrefForPage = (targetPage: number) =>
+    catalogHref(categorySlug, {
+      q: query,
+      brand,
+      stock: stockFilter,
+      sort,
+      page: String(targetPage)
+    });
+
+  return (
+    <nav className="catalog-pagination" aria-label="Paginação do catálogo">
+      <Link className={page === 1 ? "disabled" : ""} href={hrefForPage(previousPage)} aria-disabled={page === 1}>
+        Anterior
+      </Link>
+      <div>
+        {startPage > 1 ? <span>...</span> : null}
+        {pages.map((item) => (
+          <Link className={item === page ? "active" : ""} href={hrefForPage(item)} key={item} aria-current={item === page ? "page" : undefined}>
+            {item}
+          </Link>
+        ))}
+        {endPage < totalPages ? <span>...</span> : null}
+      </div>
+      <Link className={page === totalPages ? "disabled" : ""} href={hrefForPage(nextPage)} aria-disabled={page === totalPages}>
+        Próxima
+      </Link>
+    </nav>
+  );
+}
+
 export default async function CategoryPage({ params, searchParams }: PageProps) {
   const [{ slug }, queryParams] = await Promise.all([params, searchParams]);
   const categorySlug = slug || "all";
@@ -136,16 +202,18 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const query = value(queryParams.q) || "";
   const sort = safeSort(value(queryParams.sort) || "featured");
   const stockFilter = safeStock(value(queryParams.stock) || "all");
-  const [categories, baseProducts, products, storeProfile] = await Promise.all([
+  const page = safePage(value(queryParams.page));
+  const [categories, brandOptions, productPage, availabilityCounts, storeProfile] = await Promise.all([
     getCategories(),
-    getProducts({ categorySlug }),
-    getProducts({ categorySlug, brandName: brand, query, sort, stockFilter }),
+    getBrandOptionsForCategory(categorySlug),
+    getProductPage({ categorySlug, brandName: brand, query, sort, stockFilter, page, pageSize: CATALOG_PAGE_SIZE }),
+    getProductAvailabilityCounts({ categorySlug, brandName: brand, query }),
     getStoreProfile()
   ]);
+  const { products, total, totalPages } = productPage;
   const currentCategory = categories.find((category) => category.slug === categorySlug);
   const categoryLabel = categorySlug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria";
-  const whatsappHref = buildCatalogWhatsAppHref(categoryLabel, products.length, storeProfile.whatsapp);
-  const brandOptions = [...new Set(baseProducts.map((product) => product.brand.name))].sort();
+  const whatsappHref = buildCatalogWhatsAppHref(categoryLabel, total, storeProfile.whatsapp);
   const sortLabel = sortLabels[sort] || sortLabels.featured;
   const clearHref = catalogHref(categorySlug, {});
   const filterCount = [query ? "q" : "", brand !== "all" ? "brand" : "", stockFilter !== "all" ? "stock" : ""].filter(Boolean).length;
@@ -154,8 +222,8 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     brand !== "all" ? { key: "brand", label: `Marca: ${brand}`, href: catalogHref(categorySlug, { q: query, stock: stockFilter, sort }) } : null,
     stockFilter !== "all" ? { key: "stock", label: stockLabels[stockFilter], href: catalogHref(categorySlug, { q: query, brand, sort }) } : null
   ].filter((item): item is { key: string; label: string; href: string } => Boolean(item));
-  const readyCount = products.filter((product) => productQuantity(product) > 0).length;
-  const outOfStockCount = products.filter((product) => productQuantity(product) <= 0).length;
+  const readyCount = availabilityCounts.ready;
+  const outOfStockCount = availabilityCounts.out;
 
   return (
     <StoreShell categories={categories}>
@@ -169,7 +237,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       <section className="catalog-header">
         <p className="eyebrow">Catálogo</p>
         <h1>{categoryLabel}</h1>
-        <p>{products.length} produtos disponíveis, com filtros por categoria, marca e prioridade de compra.</p>
+        <p>{total} produtos disponíveis, com filtros por categoria, marca e prioridade de compra.</p>
         <div className="catalog-service-bar">
           <span>{siteConfig.wholesale.minimumOrderText}</span>
           <span>{siteConfig.wholesale.nationalDeliveryLabel}</span>
@@ -210,7 +278,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
                   <span>Filtros</span>
                   <strong>Encontrar produto</strong>
                 </div>
-                <small>{products.length} produtos</small>
+                <small>{total} produtos</small>
               </div>
               <p>{siteConfig.mobilePurchase.filterHint}</p>
               <form className="filters" action={`/categoria/${categorySlug}`}>
@@ -249,8 +317,10 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         <div>
           <div className="catalog-results-bar">
             <div>
-              <strong>{products.length} produtos encontrados</strong>
-              <span>Ordenado por {sortLabel}</span>
+              <strong>{total} produtos encontrados</strong>
+              <span>
+                Página {productPage.page} de {totalPages} / Ordenado por {sortLabel}
+              </span>
             </div>
             {activeFilters.length ? (
               <div className="active-filter-chips" aria-label="Filtros ativos">
@@ -299,6 +369,15 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
               </div>
             )}
           </div>
+          <CatalogPagination
+            brand={brand}
+            categorySlug={categorySlug}
+            page={productPage.page}
+            query={query}
+            sort={sort}
+            stockFilter={stockFilter}
+            totalPages={totalPages}
+          />
         </div>
       </section>
     </StoreShell>

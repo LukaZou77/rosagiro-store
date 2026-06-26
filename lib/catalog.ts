@@ -37,12 +37,65 @@ export type CatalogProduct = {
   skus: Array<{ id: string; name: string; code: string; priceCents: number | null; quantity: number; active: boolean; sortOrder: number }>;
 };
 
+export const CATALOG_PAGE_SIZE = 48;
+
 const productInclude = {
   brand: true,
   category: true,
   inventory: true,
   skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }
 } satisfies Prisma.ProductInclude;
+
+type ProductQueryOptions = {
+  categorySlug?: string;
+  brandName?: string;
+  query?: string;
+  sort?: string;
+  stockFilter?: string;
+  activeOnly?: boolean;
+};
+
+type ProductListOptions = ProductQueryOptions & {
+  take?: number;
+  skip?: number;
+};
+
+function productWhere(options: ProductQueryOptions = {}): Prisma.ProductWhereInput {
+  const { categorySlug, brandName, query, stockFilter = "all", activeOnly = true } = options;
+
+  return {
+    deletedAt: null,
+    active: activeOnly ? true : undefined,
+    category: categorySlug && categorySlug !== "all" ? { slug: categorySlug } : undefined,
+    brand: brandName && brandName !== "all" ? { name: brandName } : undefined,
+    inventory:
+      stockFilter === "ready"
+        ? { quantity: { gt: 0 } }
+        : stockFilter === "out"
+          ? { quantity: 0 }
+          : undefined,
+    OR: query
+      ? [
+          { name: { contains: query, mode: "insensitive" } },
+          { subcategory: { contains: query, mode: "insensitive" } },
+          { descriptionPt: { contains: query, mode: "insensitive" } },
+          { brand: { name: { contains: query, mode: "insensitive" } } }
+        ]
+      : undefined
+  };
+}
+
+function productOrderBy(sort = "featured"): Prisma.ProductOrderByWithRelationInput {
+  return sort === "price-asc"
+    ? { priceCents: "asc" }
+    : sort === "price-desc"
+      ? { priceCents: "desc" }
+      : sort === "name-asc"
+        ? { name: "asc" }
+        : sort === "name-desc"
+          ? { name: "desc" }
+          : { featuredRank: "asc" };
+}
 
 function withProductDisplayText(product: CatalogProduct): CatalogProduct {
   return {
@@ -82,57 +135,120 @@ export async function getFeaturedBrands() {
   });
 }
 
-export async function getProducts(options: {
+export async function getProducts(options: ProductListOptions = {}) {
+  const { sort = "featured", take, skip } = options;
+  const products = await prisma.product.findMany({
+    where: productWhere(options),
+    include: productInclude,
+    orderBy: productOrderBy(sort),
+    take,
+    skip
+  });
+
+  return products.map(withProductDisplayText);
+}
+
+export async function getProductCount(options: ProductQueryOptions = {}) {
+  return prisma.product.count({ where: productWhere(options) });
+}
+
+export async function getProductPage(options: ProductQueryOptions & { page?: number; pageSize?: number } = {}) {
+  const pageSize = Math.max(1, Math.min(96, Math.floor(options.pageSize || CATALOG_PAGE_SIZE)));
+  const requestedPage = Math.max(1, Math.floor(options.page || 1));
+  const where = productWhere(options);
+  const total = await prisma.product.count({ where });
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(requestedPage, totalPages);
+  const products = await prisma.product.findMany({
+    where,
+    include: productInclude,
+    orderBy: productOrderBy(options.sort),
+    take: pageSize,
+    skip: (page - 1) * pageSize
+  });
+
+  return {
+    products: products.map(withProductDisplayText),
+    total,
+    page,
+    pageSize,
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1
+  };
+}
+
+export async function getProductAvailabilityCounts(options: Omit<ProductQueryOptions, "stockFilter"> = {}) {
+  const [ready, out] = await Promise.all([
+    prisma.product.count({ where: productWhere({ ...options, stockFilter: "ready" }) }),
+    prisma.product.count({ where: productWhere({ ...options, stockFilter: "out" }) })
+  ]);
+
+  return { ready, out };
+}
+
+export async function getBrandOptionsForCategory(categorySlug?: string) {
+  const brands = await prisma.brand.findMany({
+    where: {
+      products: {
+        some: productWhere({ categorySlug })
+      }
+    },
+    select: { name: true },
+    orderBy: { name: "asc" }
+  });
+
+  return brands.map((brand) => brand.name);
+}
+
+export async function getRecommendationProducts(options: {
   categorySlug?: string;
-  brandName?: string;
-  query?: string;
-  sort?: string;
-  stockFilter?: string;
-  activeOnly?: boolean;
+  excludeSlug?: string;
+  take?: number;
 } = {}) {
-  const { categorySlug, brandName, query, sort = "featured", stockFilter = "all", activeOnly = true } = options;
   const products = await prisma.product.findMany({
     where: {
-      deletedAt: null,
-      active: activeOnly ? true : undefined,
-      category: categorySlug && categorySlug !== "all" ? { slug: categorySlug } : undefined,
-      brand: brandName && brandName !== "all" ? { name: brandName } : undefined,
-      inventory:
-        stockFilter === "ready"
-          ? { quantity: { gt: 0 } }
-          : stockFilter === "out"
-            ? { quantity: 0 }
-            : undefined,
-      OR: query
-        ? [
-            { name: { contains: query, mode: "insensitive" } },
-            { subcategory: { contains: query, mode: "insensitive" } },
-            { descriptionPt: { contains: query, mode: "insensitive" } },
-            { brand: { name: { contains: query, mode: "insensitive" } } }
-          ]
-        : undefined
+      ...productWhere({ categorySlug: options.categorySlug }),
+      slug: options.excludeSlug ? { not: options.excludeSlug } : undefined,
+      OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
     },
     include: productInclude,
-    orderBy:
-      sort === "price-asc"
-        ? { priceCents: "asc" }
-        : sort === "price-desc"
-          ? { priceCents: "desc" }
-          : sort === "name-asc"
-            ? { name: "asc" }
-            : sort === "name-desc"
-              ? { name: "desc" }
-              : { featuredRank: "asc" }
+    orderBy: { featuredRank: "asc" },
+    take: Math.max(4, Math.min(64, options.take || 24))
   });
 
   return products.map(withProductDisplayText);
 }
 
 export async function getPromotionCollections() {
-  const products = await getProducts();
+  const stockWhere = {
+    ...productWhere(),
+    OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
+  } satisfies Prisma.ProductWhereInput;
+  const [readyStockCount, lowPriceProducts, stockReadyProducts, products] = await Promise.all([
+    prisma.product.count({ where: stockWhere }),
+    prisma.product.findMany({
+      where: stockWhere,
+      include: productInclude,
+      orderBy: { priceCents: "asc" },
+      take: 4
+    }),
+    prisma.product.findMany({
+      where: stockWhere,
+      include: productInclude,
+      orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }],
+      take: 4
+    }),
+    prisma.product.findMany({
+      where: stockWhere,
+      include: productInclude,
+      orderBy: { featuredRank: "asc" },
+      take: 32
+    })
+  ]);
+  const displayProducts = products.map(withProductDisplayText);
   const withStock = (product: CatalogProduct) => (product.inventory?.quantity || 0) > 0;
-  const lowPriceProducts = [...products].filter(withStock).sort((a, b) => a.priceCents - b.priceCents).slice(0, 4);
-  const hotProducts = [...products]
+  const hotProducts = [...displayProducts]
     .filter(withStock)
     .sort((a, b) => {
       const aBadge = a.badges.some((badge) => /mais vendido|favorito|destaque/i.test(badge)) ? 1 : 0;
@@ -140,16 +256,13 @@ export async function getPromotionCollections() {
       return bBadge - aBadge || b.reviewCount - a.reviewCount || b.rating - a.rating;
     })
     .slice(0, 4);
-  const stockReadyProducts = [...products]
-    .filter(withStock)
-    .sort((a, b) => (b.inventory?.quantity || 0) - (a.inventory?.quantity || 0))
-    .slice(0, 4);
 
   return {
-    products,
-    lowPriceProducts,
+    products: displayProducts,
+    lowPriceProducts: lowPriceProducts.map(withProductDisplayText),
     hotProducts,
-    stockReadyProducts
+    stockReadyProducts: stockReadyProducts.map(withProductDisplayText),
+    readyStockCount
   };
 }
 

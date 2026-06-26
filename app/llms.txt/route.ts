@@ -1,10 +1,15 @@
-import { getCategories, getProducts } from "@/lib/catalog";
+import { getCategories, getProductCount, getProducts } from "@/lib/catalog";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import { storeSummaryForLlms } from "@/lib/seo";
 import { getStoreProfile } from "@/lib/store-profile";
 
 export async function GET() {
-  const [categories, products, profile] = await Promise.all([getCategories(), getProducts(), getStoreProfile()]);
+  const [categories, products, productCount, profile] = await Promise.all([
+    getCategories(),
+    getProducts({ take: 12 }),
+    getProductCount(),
+    getStoreProfile()
+  ]);
   const store = storeSummaryForLlms(profile);
   const categoryLines = categories.map((category) => `- ${category.label}: ${siteUrl(`/categoria/${category.slug}`)}`);
   const productLines = products
@@ -35,6 +40,7 @@ export async function GET() {
     ...categoryLines,
     "",
     "## Produtos em destaque do catálogo",
+    `- Total de produtos ativos no catálogo: ${productCount}`,
     ...productLines,
     "",
     "## Atendimento",

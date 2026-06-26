@@ -10,38 +10,12 @@ import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
-import { getCartCompletionRecommendations } from "@/lib/cart-completion";
+import type { CartSummary } from "@/lib/cart-summary";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
 import { money } from "@/lib/money";
 import { paymentMethodsForCheckout, type PaymentMethodValue } from "@/lib/payments";
-import { effectiveSkuPriceCents } from "@/lib/product-pricing";
 import { siteConfig } from "@/lib/site-config";
 import { buildCartWhatsAppHref, buildGeneralWhatsAppHref } from "@/lib/whatsapp";
-
-type Product = {
-  slug: string;
-  name: string;
-  image: string;
-  priceCents: number;
-  compareAtPriceCents: number | null;
-  weightGrams: number | null;
-  badges: string[];
-  active: boolean;
-  rating?: number;
-  reviewCount?: number;
-  brand: { name: string };
-  category: { slug: string; label?: string };
-  inventory: { quantity: number } | null;
-  skus?: Array<{ id: string; name: string; code: string; priceCents: number | null; quantity: number; active: boolean }>;
-};
-
-type CheckoutDisplayItem = {
-  slug: string;
-  skuId?: string;
-  quantity: number;
-  product: Product;
-  sku: NonNullable<Product["skus"]>[number] | null;
-};
 
 const states = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
 const manualCepMessage = "Preencha manualmente se o CEP não trouxer todos os dados.";
@@ -147,12 +121,10 @@ function stepIndex(step: CheckoutStep) {
 }
 
 export function CheckoutClient({
-  products,
   trustSignals,
   mercadoPagoMaxInstallments,
   includeSimulatedPayment
 }: {
-  products: Product[];
   trustSignals: string[];
   mercadoPagoMaxInstallments: number;
   includeSimulatedPayment: boolean;
@@ -160,6 +132,7 @@ export function CheckoutClient({
   const whatsappPhone = useWhatsAppPhone();
   const router = useRouter();
   const cart = useCart();
+  const cartKey = useMemo(() => JSON.stringify(cart), [cart]);
   const { customer, requireCustomerSession } = useCustomerSession();
   const [contact, setContact] = useState({ name: "", phone: "", email: "", cpf: "" });
   const [contactTouched, setContactTouched] = useState({ name: false, phone: false });
@@ -189,31 +162,48 @@ export function CheckoutClient({
   const [mobileFieldFocused, setMobileFieldFocused] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [summaryState, setSummaryState] = useState<{ key: string; data: CartSummary } | null>(null);
+  const [summaryError, setSummaryError] = useState<{ key: string; message: string } | null>(null);
   const addressSessionToken = useRef(makeAddressSessionToken());
   const formRef = useRef<HTMLFormElement>(null);
   const skipNextAddressSearch = useRef(false);
   const lastAutofilledCep = useRef("");
   const autofilledFields = useRef<Record<AutoFillField, boolean>>({ ...emptyAutofillFields });
 
-  const productMap = useMemo(() => new Map(products.map((product) => [product.slug, product])), [products]);
-  const items = useMemo(
-    () =>
-      cart
-        .map((item) => {
-          const product = productMap.get(item.slug);
-          const sku = item.skuId ? product?.skus?.find((candidate) => candidate.id === item.skuId) || null : null;
-          return { ...item, product, sku };
-        })
-        .filter((item): item is CheckoutDisplayItem => Boolean(item.product)),
-    [cart, productMap]
-  );
-  const quoteItems = useMemo(() => items.map((item) => ({ slug: item.slug, quantity: item.quantity })), [items]);
-  const subtotal = items.reduce((sum, item) => sum + effectiveSkuPriceCents(item.product, item.sku) * item.quantity, 0);
-  const minimumReached = subtotal >= siteConfig.wholesale.minimumOrderCents;
-  const recommendations = useMemo(
-    () => getCartCompletionRecommendations(products, cart, { limit: 4 }),
-    [cart, products]
-  );
+  useEffect(() => {
+    if (!cart.length) {
+      return;
+    }
+
+    const controller = new AbortController();
+    fetch("/api/cart/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: cart }),
+      signal: controller.signal
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as CartSummary;
+        if (!response.ok) throw new Error(data.error || "Não foi possível carregar o resumo do pedido.");
+        setSummaryState({ key: cartKey, data });
+        setSummaryError(null);
+      })
+      .catch((fetchError: Error) => {
+        if (fetchError.name === "AbortError") return;
+        setSummaryError({ key: cartKey, message: fetchError.message || "Não foi possível carregar o resumo do pedido." });
+      });
+
+    return () => controller.abort();
+  }, [cart, cartKey]);
+
+  const summary = cart.length && summaryState?.key === cartKey ? summaryState.data : null;
+  const summaryLoadError = cart.length && summaryError?.key === cartKey ? summaryError.message : "";
+  const summaryLoading = cart.length > 0 && !summary && !summaryLoadError;
+  const items = useMemo(() => (summary?.lines ?? []).filter((line) => line.available && line.quantity > 0), [summary]);
+  const quoteItems = useMemo(() => items.map((item) => ({ slug: item.slug, skuId: item.skuId || undefined, quantity: item.quantity })), [items]);
+  const subtotal = summary?.subtotalCents || 0;
+  const minimumReached = summary?.minimumReached ?? subtotal >= siteConfig.wholesale.minimumOrderCents;
+  const recommendations = summary?.recommendations || [];
   const checkoutPaymentMethods = useMemo(
     () => paymentMethodsForCheckout(mercadoPagoMaxInstallments, { includeSimulated: includeSimulatedPayment }),
     [includeSimulatedPayment, mercadoPagoMaxInstallments]
@@ -225,11 +215,11 @@ export function CheckoutClient({
   const checkoutWhatsAppItems = useMemo(
     () =>
       items.map((item) => ({
-          quantity: item.quantity,
-          product: {
-            name: item.sku ? `${item.product.name} - ${item.sku.name}` : item.product.name,
-            priceCents: effectiveSkuPriceCents(item.product, item.sku),
-          brand: item.product.brand
+        quantity: item.quantity,
+        product: {
+          name: item.skuName ? `${item.name} - ${item.skuName}` : item.name,
+          priceCents: item.priceCents,
+          brand: { name: item.brandName }
         }
       })),
     [items]
@@ -851,6 +841,45 @@ export function CheckoutClient({
     router.push(result.redirectTo);
   }
 
+  if (summaryLoading) {
+    return (
+      <section className="checkout-shell empty-checkout-shell">
+        <div className="cart-panel empty-checkout-card">
+          <p className="eyebrow">Checkout RosaGiro</p>
+          <h1>Carregando seu pedido.</h1>
+          <p>Estamos conferindo preços, SKU e disponibilidade antes de abrir o checkout.</p>
+          <MinimumOrderNotice subtotalCents={0} />
+        </div>
+        <aside className="summary-panel">
+          <StoreTrustSignals signals={trustSignals} compact />
+        </aside>
+      </section>
+    );
+  }
+
+  if (summaryLoadError) {
+    return (
+      <section className="checkout-shell empty-checkout-shell">
+        <div className="cart-panel empty-checkout-card">
+          <p className="eyebrow">Checkout RosaGiro</p>
+          <h1>Resumo indisponível.</h1>
+          <p>{summaryLoadError}</p>
+          <div className="empty-actions">
+            <Link className="button primary" href="/carrinho">
+              Voltar ao carrinho
+            </Link>
+            <WhatsAppLink className="button whatsapp" href={emptyCheckoutWhatsAppHref}>
+              Falar no WhatsApp
+            </WhatsAppLink>
+          </div>
+        </div>
+        <aside className="summary-panel">
+          <StoreTrustSignals signals={trustSignals} compact />
+        </aside>
+      </section>
+    );
+  }
+
   if (!items.length) {
     return (
       <section className="checkout-shell empty-checkout-shell">
@@ -1193,12 +1222,12 @@ export function CheckoutClient({
         <div className="summary-block">
           <h2>Resumo</h2>
             {items.map((item) => (
-              <div key={cartLineKey(item)}>
+              <div key={cartLineKey({ slug: item.slug, skuId: item.skuId || undefined })}>
                 <span>
-                  {item.quantity}x {item.product.name}
-                  {item.sku ? ` - ${item.sku.name}` : ""}
+                  {item.quantity}x {item.name}
+                  {item.skuName ? ` - ${item.skuName}` : ""}
                 </span>
-              <strong>{money(effectiveSkuPriceCents(item.product, item.sku) * item.quantity)}</strong>
+              <strong>{money(item.lineTotalCents)}</strong>
             </div>
           ))}
           <div>

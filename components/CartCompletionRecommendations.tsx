@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { notifyQuickPurchaseOpen, readCart, writeCart } from "@/components/CartCount";
 import { useCustomerSession } from "@/components/CustomerSession";
+import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import type { CartCompletionRecommendation } from "@/lib/cart-completion";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
@@ -63,7 +64,7 @@ export function CartCompletionRecommendations({
           return (
             <article className="completion-item" key={recommendation.slug}>
               <Link className="completion-image" href={`/produto/${recommendation.slug}`} aria-label={recommendation.name}>
-                <img src={recommendation.image} alt={recommendation.name} />
+                <OptimizedProductImage src={recommendation.image} alt={recommendation.name} fill sizes="96px" />
               </Link>
               <div className="completion-copy">
                 <span>{recommendation.reason}</span>

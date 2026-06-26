@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
+import type { CartSummary } from "@/lib/cart-summary";
 import { prisma } from "@/lib/db";
 import { discountCents, subtotalCents, totalCents } from "@/lib/money";
 import { effectiveSkuPriceCents } from "@/lib/product-pricing";
@@ -37,14 +38,19 @@ export async function POST(request: Request) {
     const products = uniqueSlugs.length
       ? await prisma.product.findMany({
           where: { slug: { in: uniqueSlugs }, deletedAt: null },
-          include: { brand: true, inventory: true, skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } }
+          include: { brand: true, category: true, inventory: true, skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } }
         })
       : [];
     const recommendationProducts = requestedItems.length
       ? await prisma.product.findMany({
-          where: { active: true, deletedAt: null },
+          where: {
+            active: true,
+            deletedAt: null,
+            OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
+          },
           include: { brand: true, category: true, inventory: true, skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } },
-          orderBy: { featuredRank: "asc" }
+          orderBy: { featuredRank: "asc" },
+          take: 64
         })
       : [];
     const productMap = new Map(products.map((product) => [product.slug, product]));
@@ -96,12 +102,15 @@ export async function POST(request: Request) {
     const total = totalCents(subtotal, discount, 0);
     const minimumOrderCents = siteConfig.wholesale.minimumOrderCents;
     const remainingToMinimumCents = Math.max(0, minimumOrderCents - subtotal);
+    const preferredCategorySlugs = products.map((product) => product.category.slug).filter(Boolean);
     const recommendations = getCartCompletionRecommendations(recommendationProducts, requestedItems, {
       limit: 4,
-      minimumOrderCents
+      minimumOrderCents,
+      cartSubtotalCents: subtotal,
+      preferredCategorySlugs
     });
 
-    return NextResponse.json({
+    const response: CartSummary = {
       lines,
       subtotalCents: subtotal,
       discountCents: discount,
@@ -110,7 +119,9 @@ export async function POST(request: Request) {
       remainingToMinimumCents,
       minimumReached: remainingToMinimumCents === 0,
       recommendations
-    });
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error(error);
     return NextResponse.json(

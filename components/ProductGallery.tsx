@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 
 type ProductGalleryProps = {
   images: string[];
@@ -175,7 +176,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
               onClick={() => selectImage(index)}
               type="button"
             >
-              <img src={image} alt="" loading="lazy" />
+              <OptimizedProductImage src={image} alt="" width={72} height={72} sizes="72px" loading="lazy" />
             </button>
           ))}
         </div>
@@ -203,7 +204,15 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
           role="button"
           tabIndex={0}
         >
-          <img className="product-gallery-image" draggable={false} src={activeImage} alt={productName} />
+          <OptimizedProductImage
+            alt={productName}
+            className="product-gallery-image"
+            draggable={false}
+            fill
+            priority
+            sizes="(min-width: 960px) 48vw, 100vw"
+            src={activeImage}
+          />
           <span className="product-gallery-zoom-hint">Ver maior</span>
           {hasCarousel ? <span className="product-gallery-count">{activeIndex + 1}/{gallery.length}</span> : null}
         </div>
@@ -253,7 +262,15 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
                   <span aria-hidden="true">&lsaquo;</span>
                 </button>
               ) : null}
-              <img className="product-lightbox-image" draggable={false} src={activeImage} alt={productName} />
+              <OptimizedProductImage
+                alt={productName}
+                className="product-lightbox-image"
+                draggable={false}
+                height={1200}
+                sizes="96vw"
+                src={activeImage}
+                width={1200}
+              />
               {hasCarousel ? (
                 <button
                   aria-label="Próxima imagem"
@@ -276,7 +293,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
                     onClick={() => selectImage(index)}
                     type="button"
                   >
-                    <img src={image} alt="" loading="lazy" />
+                    <OptimizedProductImage src={image} alt="" width={72} height={72} sizes="72px" loading="lazy" />
                   </button>
                 ))}
               </div>

@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
-import { getCategories, getFeaturedBrands, getProducts } from "@/lib/catalog";
+import { getCategories, getFeaturedBrands, getProductCount, getProducts } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { hasSkuPriceRange, lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { productHeroBadge } from "@/lib/product-conversion";
@@ -17,11 +18,12 @@ function displayPriceLabel(product: Awaited<ReturnType<typeof getProducts>>[numb
 }
 
 export default async function HomePage() {
-  const [categories, brands, products, storeProfile] = await Promise.all([
+  const [categories, brands, products, storeProfile, productCount] = await Promise.all([
     getCategories(),
     getFeaturedBrands(),
-    getProducts(),
-    getStoreProfile()
+    getProducts({ take: 12 }),
+    getStoreProfile(),
+    getProductCount()
   ]);
   const featuredProducts = products.slice(0, 3);
   const heroProduct = featuredProducts[0] || products[0];
@@ -36,7 +38,7 @@ export default async function HomePage() {
     ])
   ).slice(0, 5);
   const stats = [
-    { value: `${products.length}+`, label: siteConfig.homePromotions.stats.productsLabel },
+    { value: `${productCount}+`, label: siteConfig.homePromotions.stats.productsLabel },
     { value: `${categories.length}`, label: siteConfig.homePromotions.stats.categoriesLabel },
     { value: `${brands.length}+`, label: siteConfig.homePromotions.stats.brandsLabel }
   ];
@@ -68,7 +70,14 @@ export default async function HomePage() {
           {heroProduct ? (
             <Link className="hero-product" href={`/produto/${heroProduct.slug}`} aria-label="Produto em destaque">
               <span className="deal-label">{productHeroBadge(heroProduct)}</span>
-              <img src={heroProduct.image} alt={heroProduct.name} />
+              <OptimizedProductImage
+                src={heroProduct.image}
+                alt={heroProduct.name}
+                width={720}
+                height={850}
+                sizes="(min-width: 960px) 360px, 92vw"
+                priority
+              />
               <span>{heroProduct.brand.name}</span>
               <strong>{heroProduct.name}</strong>
               <small>{displayPriceLabel(heroProduct)}</small>
@@ -77,7 +86,13 @@ export default async function HomePage() {
           <div className="deal-list">
             {secondaryDeals.map((product) => (
               <Link href={`/produto/${product.slug}`} key={product.slug}>
-                <img src={product.image} alt={product.name} />
+                <OptimizedProductImage
+                  src={product.image}
+                  alt={product.name}
+                  width={96}
+                  height={96}
+                  sizes="64px"
+                />
                 <span>
                   <strong>{product.name}</strong>
                   <small>{product.brand.name}</small>

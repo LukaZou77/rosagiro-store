@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
@@ -28,11 +29,10 @@ function displayPriceLabel(product: HighlightProduct) {
 
 export default async function PromotionsPage() {
   const [categories, collections, storeProfile] = await Promise.all([getCategories(), getPromotionCollections(), getStoreProfile()]);
-  const { products, lowPriceProducts, hotProducts, stockReadyProducts } = collections;
+  const { products, lowPriceProducts, hotProducts, stockReadyProducts, readyStockCount } = collections;
   const promo = siteConfig.promotionsPage;
   const whatsappHref = buildGeneralWhatsAppHref("destaques", storeProfile.whatsapp);
   const heroProduct = hotProducts[0] || lowPriceProducts[0] || stockReadyProducts[0] || products[0];
-  const readyStock = products.filter((product) => productQuantity(product) > 0).length;
   const heroAvailable = heroProduct ? productQuantity(heroProduct) > 0 : false;
   const featuredProducts = [...new Map([...hotProducts, ...stockReadyProducts, ...lowPriceProducts].map((product) => [product.slug, product])).values()].slice(0, 8);
 
@@ -61,7 +61,14 @@ export default async function PromotionsPage() {
         {heroProduct ? (
           <Link className="promo-route-feature" href={`/produto/${heroProduct.slug}`} aria-label={`Produto em destaque: ${heroProduct.name}`}>
             <span className="deal-label">{promo.heroBadge}</span>
-            <img src={heroProduct.image} alt={heroProduct.name} />
+            <OptimizedProductImage
+              src={heroProduct.image}
+              alt={heroProduct.name}
+              width={720}
+              height={850}
+              sizes="(min-width: 960px) 360px, 92vw"
+              priority
+            />
             <div>
               <span>{heroProduct.brand.name}</span>
               <strong>{heroProduct.name}</strong>
@@ -86,7 +93,7 @@ export default async function PromotionsPage() {
             <dd>opções de menor preço</dd>
           </div>
           <div>
-            <dt>{readyStock}</dt>
+            <dt>{readyStockCount}</dt>
             <dd>produtos em estoque</dd>
           </div>
         </dl>
@@ -133,7 +140,13 @@ export default async function PromotionsPage() {
             {lowPriceProducts.length ? (
               lowPriceProducts.map((product) => (
                 <Link href={`/produto/${product.slug}`} key={product.slug}>
-                  <img src={product.image} alt={product.name} />
+                  <OptimizedProductImage
+                    src={product.image}
+                    alt={product.name}
+                    width={96}
+                    height={96}
+                    sizes="64px"
+                  />
                   <span>
                     <strong>{product.name}</strong>
                     <small>{product.brand.name} / {productStockLabel(product)}</small>
@@ -159,7 +172,13 @@ export default async function PromotionsPage() {
             {hotProducts.length ? (
               hotProducts.map((product) => (
                 <Link href={`/produto/${product.slug}`} key={product.slug}>
-                  <img src={product.image} alt={product.name} />
+                  <OptimizedProductImage
+                    src={product.image}
+                    alt={product.name}
+                    width={96}
+                    height={96}
+                    sizes="64px"
+                  />
                   <span>
                     <strong>{product.name}</strong>
                     <small>{customerDisplayText(product.badges[0] || product.category.label)} / {productStockLabel(product)}</small>

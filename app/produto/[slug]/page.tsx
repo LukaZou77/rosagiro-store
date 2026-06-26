@@ -11,7 +11,7 @@ import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
-import { getCategories, getProduct, getProducts, getRelatedProducts } from "@/lib/catalog";
+import { getCategories, getProduct, getRecommendationProducts, getRelatedProducts } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import { effectiveSkuPriceCents, lowestEffectivePriceCents, hasSkuPriceRange } from "@/lib/product-pricing";
@@ -48,11 +48,11 @@ export default async function ProductPage({ params }: PageProps) {
   const product = await getProduct(slug);
   if (!product || !product.active) notFound();
 
-  const [categories, related, storeProfile, products] = await Promise.all([
+  const [categories, related, storeProfile, recommendationProducts] = await Promise.all([
     getCategories(),
     getRelatedProducts(product.category.slug, product.slug),
     getStoreProfile(),
-    getProducts()
+    getRecommendationProducts({ categorySlug: product.category.slug, excludeSlug: product.slug, take: 32 })
   ]);
   const quantity = productQuantity(product);
   const available = quantity > 0;
@@ -68,7 +68,7 @@ export default async function ProductPage({ params }: PageProps) {
   const galleryState = productDetailGalleryState(gallery);
   const serviceCards = productDetailServiceCards();
   const wholesaleLines = productWholesaleLines(product);
-  const completionRecommendations = getCartCompletionRecommendations(products, [{ slug: product.slug, quantity: 1 }], {
+  const completionRecommendations = getCartCompletionRecommendations(recommendationProducts, [{ slug: product.slug, quantity: 1 }], {
     currentCategorySlug: product.category.slug,
     excludeSlug: product.slug,
     limit: 4

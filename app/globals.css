@@ -1131,6 +1131,7 @@ textarea:focus-visible {
   position: relative;
   display: block;
   overflow: hidden;
+  aspect-ratio: 1 / 1.18;
   background:
     radial-gradient(circle at 78% 8%, rgba(var(--deal-rgb), 0.2), transparent 34%),
     linear-gradient(135deg, #fff7f3, #f7ece8 56%, #eef7f1);
@@ -1138,7 +1139,7 @@ textarea:focus-visible {
 
 .product-image img {
   width: 100%;
-  aspect-ratio: 1 / 1.18;
+  height: 100%;
   object-fit: cover;
   transition: transform 180ms var(--ease-out);
 }
@@ -1854,6 +1855,48 @@ textarea:focus-visible {
   color: var(--muted);
   font-size: 0.86rem;
   font-weight: 850;
+}
+
+.catalog-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.catalog-pagination > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.catalog-pagination a,
+.catalog-pagination span {
+  display: inline-flex;
+  min-width: 38px;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.catalog-pagination a.active {
+  border-color: var(--promo-deep);
+  background: var(--promo-deep);
+  color: white;
+}
+
+.catalog-pagination a.disabled {
+  pointer-events: none;
+  opacity: 0.45;
 }
 
 .active-filter-chips {
@@ -3299,6 +3342,7 @@ dd {
 
 .cart-row img {
   width: 72px;
+  height: 72px;
   aspect-ratio: 1;
   border-radius: 8px;
   object-fit: cover;
@@ -3613,6 +3657,7 @@ dd {
 .quick-line img,
 .quick-line-placeholder {
   width: 58px;
+  height: 58px;
   aspect-ratio: 1;
   border-radius: 8px;
   object-fit: cover;
@@ -3756,12 +3801,21 @@ dd {
   background: rgba(255, 255, 255, 0.86);
 }
 
+.completion-image {
+  position: relative;
+  display: block;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--paper);
+}
+
 .completion-image img {
   width: 64px;
+  height: 64px;
   aspect-ratio: 1;
-  border-radius: 8px;
   object-fit: cover;
-  background: var(--paper);
 }
 
 .completion-copy {
@@ -5944,8 +5998,10 @@ a.readiness-signal:focus-visible {
     grid-template-columns: 58px minmax(0, 1fr);
   }
 
+  .completion-image,
   .completion-image img {
     width: 58px;
+    height: 58px;
   }
 
   .completion-item > button,

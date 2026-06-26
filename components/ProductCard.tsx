@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import type { CatalogProduct } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
@@ -36,7 +37,12 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
     <article className={available ? "product-card" : "product-card is-unavailable"}>
       <Link href={`/produto/${product.slug}`} className="product-image">
         {heroBadge ? <span className="product-badge">{heroBadge}</span> : null}
-        <img src={product.image} alt={product.name} loading="lazy" />
+        <OptimizedProductImage
+          src={product.image}
+          alt={product.name}
+          fill
+          sizes="(min-width: 1180px) 23vw, (min-width: 760px) 31vw, 50vw"
+        />
       </Link>
       <div className="product-card-body">
         <div className="product-meta-line">
