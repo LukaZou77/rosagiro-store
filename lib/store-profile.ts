@@ -37,6 +37,9 @@ export type StoreProfileView = {
   pixBankName: string;
   pixInstructions: string;
   mercadoPagoMaxInstallments: number;
+  priceAdjustmentDirection: string;
+  priceAdjustmentType: string;
+  priceAdjustmentValue: number;
   exchangeNote: string;
   trustBadges: string[];
   launchNote: string;
@@ -100,6 +103,9 @@ export const defaultStoreProfile = {
   pixKey: "",
   pixBankName: "",
   mercadoPagoMaxInstallments: defaultMercadoPagoInstallments,
+  priceAdjustmentDirection: "none",
+  priceAdjustmentType: "percent",
+  priceAdjustmentValue: 0,
   pixInstructions: "Finalize o pedido, faça o Pix e envie o comprovante pelo WhatsApp para confirmação do atendimento.",
   exchangeNote: "Trocas e devoluções seguem política própria antes da publicação oficial.",
   trustBadges: ["Atendimento por WhatsApp", "Entrega para todo o Brasil", "Pedido mínimo sinalizado", "Políticas visíveis"],

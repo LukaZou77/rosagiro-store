@@ -122,6 +122,9 @@ model Product {
   name                String
   subcategory         String
   priceCents          Int
+  basePriceCents      Int?
+  baseBoxPriceCents   Int?
+  baseBoxPieces       Int?
   compareAtPriceCents Int?
   weightGrams         Int?
   suggestedQuantity   Int?
@@ -177,6 +180,7 @@ model ProductSku {
   code       String
   image      String?
   priceCents Int?
+  basePriceCents Int?
   quantity   Int         @default(0)
   active     Boolean     @default(true)
   sortOrder  Int         @default(0)
@@ -411,6 +415,9 @@ model StoreProfile {
   pixKey            String   @default("")
   pixBankName       String   @default("")
   mercadoPagoMaxInstallments Int @default(6)
+  priceAdjustmentDirection String @default("none")
+  priceAdjustmentType      String @default("percent")
+  priceAdjustmentValue     Int    @default(0)
   pixInstructions   String   @default("Finalize o pedido, faça o Pix e envie o comprovante pelo WhatsApp para confirmação do atendimento.")
   exchangeNote      String   @default("Trocas e devoluções seguem política própria antes da publicação oficial.")
   trustBadges       String[] @default(["Atendimento por WhatsApp", "Entrega para todo o Brasil", "Pedido mínimo sinalizado"])

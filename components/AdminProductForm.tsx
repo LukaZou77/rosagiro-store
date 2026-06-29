@@ -114,8 +114,8 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
 
         <div className="form-grid">
           <label>
-            Preco
-            <input name="price" defaultValue={formatImportMoney(product?.priceCents)} required />
+            Preço base
+            <input name="price" defaultValue={formatImportMoney(product?.basePriceCents ?? product?.priceCents)} required />
           </label>
           <label>
             Disponibilidade
@@ -147,6 +147,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             code: sku.code,
             image: sku.image,
             priceCents: sku.priceCents,
+            basePriceCents: sku.basePriceCents,
             quantity: sku.quantity,
             active: sku.active,
             sortOrder: sku.sortOrder

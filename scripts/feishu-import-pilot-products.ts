@@ -3,6 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import {
+  buildAdjustedProductPricing,
+  priceAdjustmentConfigFromStoredValues
+} from "../lib/product-price-adjustment";
 import { INTERNAL_AVAILABLE_STOCK_QUANTITY } from "../lib/product-stock";
 
 type Mode = "dry-run" | "apply";
@@ -917,6 +921,19 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
   const databaseUrl = requireEnv("DATABASE_URL");
   requireEnv("BLOB_READ_WRITE_TOKEN");
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
+  const priceProfile = await prisma.storeProfile.findUnique({
+    where: { id: "main" },
+    select: {
+      priceAdjustmentDirection: true,
+      priceAdjustmentType: true,
+      priceAdjustmentValue: true
+    }
+  });
+  const priceAdjustment = priceAdjustmentConfigFromStoredValues(
+    priceProfile?.priceAdjustmentDirection,
+    priceProfile?.priceAdjustmentType,
+    priceProfile?.priceAdjustmentValue
+  );
   const applied: unknown[][] = [
     ["slug", "rows", "brand", "name", "mainModel", "skuCount", "category", "subcategory", "image", "galleryCount"]
   ];
@@ -961,6 +978,15 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
       const gallery = Array.from(new Set([...uploadedSkuImages.slice(1), trayUrl, packageUrl].filter(Boolean))).slice(0, 8);
       const catalog = await ensureCatalogRecords(prisma, group);
       const descriptionPt = descriptionFor(group);
+      const adjustedPricing = buildAdjustedProductPricing({
+        basePriceCents: group.unitPriceCents,
+        descriptionPt,
+        config: priceAdjustment
+      });
+      if (!adjustedPricing.ok) {
+        skipped.push([group.rows.map((row) => row.rowNumber).join("|"), group.brand, group.mainModel, adjustedPricing.reason]);
+        continue;
+      }
 
       await prisma.$transaction(async (tx) => {
         const product = await tx.product.upsert({
@@ -971,12 +997,15 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
             subcategoryId: catalog.subcategoryId,
             subcategory: catalog.subcategoryLabel,
             name: group.displayName,
-            priceCents: group.unitPriceCents,
+            priceCents: adjustedPricing.priceCents,
+            basePriceCents: group.unitPriceCents,
+            baseBoxPriceCents: adjustedPricing.baseBoxPriceCents,
+            baseBoxPieces: adjustedPricing.baseBoxPieces,
             compareAtPriceCents: null,
             weightGrams: null,
             image: primaryImage,
             gallery,
-            descriptionPt,
+            descriptionPt: adjustedPricing.descriptionPt,
             benefits: [],
             ingredients: [],
             skinType: "",
@@ -1001,12 +1030,15 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
             subcategoryId: catalog.subcategoryId,
             subcategory: catalog.subcategoryLabel,
             name: group.displayName,
-            priceCents: group.unitPriceCents,
+            priceCents: adjustedPricing.priceCents,
+            basePriceCents: group.unitPriceCents,
+            baseBoxPriceCents: adjustedPricing.baseBoxPriceCents,
+            baseBoxPieces: adjustedPricing.baseBoxPieces,
             compareAtPriceCents: null,
             weightGrams: null,
             image: primaryImage,
             gallery,
-            descriptionPt,
+            descriptionPt: adjustedPricing.descriptionPt,
             benefits: [],
             ingredients: [],
             skinType: "",
@@ -1038,7 +1070,8 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
             update: {
               name: sku.name,
               image: sku.image,
-              priceCents: group.unitPriceCents,
+              priceCents: adjustedPricing.priceCents,
+              basePriceCents: group.unitPriceCents,
               quantity: INTERNAL_AVAILABLE_STOCK_QUANTITY,
               active: true,
               sortOrder: sku.sortOrder
@@ -1048,7 +1081,8 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
               name: sku.name,
               code: sku.code,
               image: sku.image,
-              priceCents: group.unitPriceCents,
+              priceCents: adjustedPricing.priceCents,
+              basePriceCents: group.unitPriceCents,
               quantity: INTERNAL_AVAILABLE_STOCK_QUANTITY,
               active: true,
               sortOrder: sku.sortOrder

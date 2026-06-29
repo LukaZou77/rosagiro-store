@@ -1,11 +1,13 @@
 import type { Prisma } from "@/src/generated/prisma/client";
 import Link from "next/link";
-import { moveProductsToTrashAction } from "@/app/admin/actions";
+import { moveProductsToTrashAction, saveProductPriceAdjustmentAction } from "@/app/admin/actions";
 import { AdminProductBulkList, type AdminProductListRow } from "@/components/AdminProductBulkList";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
+import { formatPlainBrl, parsePriceAdjustmentInput, priceAdjustmentLabel } from "@/lib/product-price-adjustment";
+import { configFromStoreProfile, previewPriceAdjustment } from "@/lib/product-price-adjustment-server";
 import { evaluateProductQuality } from "@/lib/product-quality";
 
 type PageProps = {
@@ -17,11 +19,19 @@ function single(value: string | string[] | undefined) {
 }
 
 export default async function AdminProductsPage({ searchParams }: PageProps) {
-  const [admin, params, brands, categories] = await Promise.all([
+  const [admin, params, brands, categories, priceProfile] = await Promise.all([
     requireAdmin(),
     searchParams,
     prisma.brand.findMany({ orderBy: { name: "asc" } }),
-    prisma.category.findMany({ orderBy: { label: "asc" } })
+    prisma.category.findMany({ orderBy: { label: "asc" } }),
+    prisma.storeProfile.findUnique({
+      where: { id: "main" },
+      select: {
+        priceAdjustmentDirection: true,
+        priceAdjustmentType: true,
+        priceAdjustmentValue: true
+      }
+    })
   ]);
   const q = single(params.q)?.trim() || "";
   const brand = single(params.brand) || "all";
@@ -30,6 +40,30 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   const stock = single(params.stock) || "all";
   const trashed = single(params.trashed);
   const error = single(params.error);
+  const priceAdjusted = single(params.priceAdjusted);
+  const priceAdjustedSkus = single(params.priceAdjustedSkus);
+  const priceSkipped = single(params.priceSkipped);
+  const priceWarnings = single(params.priceWarnings);
+  const pricePreviewRequested = single(params.pricePreview) === "1";
+  const savedPriceAdjustment = configFromStoreProfile(priceProfile);
+  const savedPriceAdjustmentInput =
+    savedPriceAdjustment.direction === "none"
+      ? ""
+      : savedPriceAdjustment.type === "fixed"
+        ? formatPlainBrl(savedPriceAdjustment.value)
+        : String(savedPriceAdjustment.value / 100).replace(".", ",");
+  const priceDirection = single(params.priceAdjustmentDirection) || savedPriceAdjustment.direction || "increase";
+  const priceType = single(params.priceAdjustmentType) || savedPriceAdjustment.type || "percent";
+  const priceValue = single(params.priceAdjustmentValue) || savedPriceAdjustmentInput;
+  const requestedPriceAdjustment = parsePriceAdjustmentInput({
+    direction: priceDirection,
+    type: priceType,
+    value: priceValue
+  });
+  const pricePreview =
+    pricePreviewRequested && requestedPriceAdjustment.direction !== "none"
+      ? await previewPriceAdjustment(requestedPriceAdjustment)
+      : null;
 
   const where: Prisma.ProductWhereInput = {
     deletedAt: null,
@@ -124,6 +158,105 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           {error}
         </div>
       ) : null}
+      {priceAdjusted ? (
+        <div className="admin-notice success" role="status">
+          Ajuste aplicado em {priceAdjusted} produto(s) e {priceAdjustedSkus || "0"} SKU(s).{" "}
+          {priceSkipped && Number(priceSkipped) > 0 ? `${priceSkipped} item(ns) foram ignorados por preço mínimo.` : ""}
+          {priceWarnings && Number(priceWarnings) > 0 ? ` ${priceWarnings} descrição(ões) personalizada(s) não foram alteradas.` : ""}
+        </div>
+      ) : null}
+
+      <section className="import-panel">
+        <div className="product-gallery-heading">
+          <div>
+            <strong>Ajuste global de preços</strong>
+            <small>
+              Regra atual: {priceAdjustmentLabel(savedPriceAdjustment)}. Aplica em todos os produtos fora da lixeira,
+              incluindo itens ativos e inativos.
+            </small>
+          </div>
+        </div>
+        <form className="filters admin-filters" action="/admin/produtos">
+          <input name="pricePreview" type="hidden" value="1" />
+          <label>
+            Operação
+            <select name="priceAdjustmentDirection" defaultValue={priceDirection === "none" ? "increase" : priceDirection}>
+              <option value="increase">Aumentar</option>
+              <option value="decrease">Reduzir</option>
+            </select>
+          </label>
+          <label>
+            Tipo
+            <select name="priceAdjustmentType" defaultValue={priceType}>
+              <option value="percent">Percentual %</option>
+              <option value="fixed">Valor fixo R$</option>
+            </select>
+          </label>
+          <label>
+            Valor
+            <input name="priceAdjustmentValue" defaultValue={priceValue} inputMode="decimal" placeholder="Ex: 20 ou 1,00" />
+          </label>
+          <button className="button secondary" type="submit">
+            Pré-visualizar impacto
+          </button>
+        </form>
+
+        {pricePreview ? (
+          <div className="admin-form-block">
+            <div className="metric-grid compact">
+              <div>
+                <span>Produtos alteráveis</span>
+                <strong>{pricePreview.productCount}</strong>
+              </div>
+              <div>
+                <span>SKU alteráveis</span>
+                <strong>{pricePreview.skuCount}</strong>
+              </div>
+              <div>
+                <span>Ignorados</span>
+                <strong>{pricePreview.skippedProductCount + pricePreview.skippedSkuCount}</strong>
+              </div>
+              <div>
+                <span>Descrições personalizadas</span>
+                <strong>{pricePreview.descriptionWarningCount}</strong>
+              </div>
+            </div>
+            {pricePreview.examples.length ? (
+              <div className="admin-list compact">
+                {pricePreview.examples.map((example) => (
+                  <div className="admin-list-row" key={example.slug}>
+                    <div>
+                      <strong>{example.name}</strong>
+                      <p>
+                        {money(example.oldPriceCents)} → {money(example.newPriceCents)} · {example.note}
+                      </p>
+                    </div>
+                    <Link className="button secondary" href={`/admin/produtos/${example.slug}`}>
+                      Ver ficha
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <form action={saveProductPriceAdjustmentAction} className="filters admin-filters">
+              <input name="priceAdjustmentDirection" type="hidden" value={requestedPriceAdjustment.direction} />
+              <input name="priceAdjustmentType" type="hidden" value={requestedPriceAdjustment.type} />
+              <input name="priceAdjustmentValue" type="hidden" value={priceValue} />
+              <label>
+                Confirmação
+                <input name="confirmPriceAdjustment" placeholder="Digite APLICAR" />
+              </label>
+              <button className="button primary" type="submit">
+                Salvar regra e aplicar em todos
+              </button>
+            </form>
+          </div>
+        ) : (
+          <p className="table-note">
+            Primeiro pré-visualize. Ajustes fixos são por unidade; a embalagem de atacado muda pelo número de peças.
+          </p>
+        )}
+      </section>
 
       <div className="metric-grid compact">
         <div>

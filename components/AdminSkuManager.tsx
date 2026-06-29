@@ -10,6 +10,7 @@ type AdminSkuRow = {
   code: string;
   image?: string | null;
   priceCents?: number | null;
+  basePriceCents?: number | null;
   quantity: number;
   active: boolean;
   sortOrder: number;
@@ -99,7 +100,7 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
               <label>
                 Preço do SKU
                 <input
-                  defaultValue={formatImportMoney(row.priceCents)}
+                  defaultValue={formatImportMoney(row.basePriceCents ?? row.priceCents)}
                   inputMode="decimal"
                   name={`skuPrice:${row.key}`}
                   onChange={(event) => updateRow(row.key, { priceCents: parseCents(event.target.value) || null })}

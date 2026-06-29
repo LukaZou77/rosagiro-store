@@ -3,6 +3,8 @@ import "server-only";
 import type { Prisma } from "@/src/generated/prisma/client";
 import { getBodyAreaCategory, resolveBodyAreaCategorySlug } from "@/lib/category-taxonomy";
 import { prisma } from "@/lib/db";
+import { buildAdjustedProductPricing, type PriceAdjustmentConfig } from "@/lib/product-price-adjustment";
+import { getSavedPriceAdjustmentConfig } from "@/lib/product-price-adjustment-server";
 import {
   parseProductCsv,
   type ProductImportExistingProduct,
@@ -31,7 +33,7 @@ export async function getProductImportExistingProducts(slugs?: string[]): Promis
   return products.map((product) => ({
     slug: product.slug,
     name: product.name,
-    priceCents: product.priceCents,
+    priceCents: product.basePriceCents ?? product.priceCents,
     stock: product.inventory?.quantity || 0,
     hasActiveSkus: product.skus.some((sku) => sku.active),
     active: product.active,
@@ -51,18 +53,37 @@ function brandLogo(name: string) {
     .join("");
 }
 
-function productData(row: ProductImportRow, brandId: string, categoryId: string, subcategoryId: string, subcategoryLabel: string) {
+function productData(
+  row: ProductImportRow,
+  brandId: string,
+  categoryId: string,
+  subcategoryId: string,
+  subcategoryLabel: string,
+  priceAdjustment: PriceAdjustmentConfig
+) {
+  const adjustedPricing = buildAdjustedProductPricing({
+    basePriceCents: row.priceCents,
+    descriptionPt: row.descriptionPt,
+    config: priceAdjustment
+  });
+  if (!adjustedPricing.ok) {
+    throw new ProductImportError(`O ajuste global deixaria o preço de ${row.slug} abaixo de R$ 0,01.`);
+  }
+
   return {
     brandId,
     categoryId,
     subcategoryId,
     name: row.name,
     subcategory: subcategoryLabel,
-    priceCents: row.priceCents,
+    priceCents: adjustedPricing.priceCents,
+    basePriceCents: row.priceCents,
+    baseBoxPriceCents: adjustedPricing.baseBoxPriceCents,
+    baseBoxPieces: adjustedPricing.baseBoxPieces,
     compareAtPriceCents: null,
     image: row.image,
     gallery: row.gallery,
-    descriptionPt: row.descriptionPt,
+    descriptionPt: adjustedPricing.descriptionPt,
     benefits: row.benefits,
     ingredients: row.ingredients,
     skinType: row.skinType,
@@ -82,7 +103,7 @@ function productData(row: ProductImportRow, brandId: string, categoryId: string,
   };
 }
 
-async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, index: number) {
+async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, index: number, priceAdjustment: PriceAdjustmentConfig) {
   const categorySlug = resolveBodyAreaCategorySlug({
     categorySlug: row.categorySlug,
     categoryLabel: row.category,
@@ -146,7 +167,7 @@ async function importRow(tx: Prisma.TransactionClient, row: ProductImportRow, in
     throw new ProductImportError(`O produto ${row.slug} está na lixeira. Restaure antes de importar.`);
   }
 
-  const data = productData(row, brand.id, category.id, subcategory.id, subcategory.label);
+  const data = productData(row, brand.id, category.id, subcategory.id, subcategory.label, priceAdjustment);
   const product = await tx.product.upsert({
     where: { slug: row.slug },
     update: data,
@@ -183,11 +204,13 @@ export async function importProductsFromCsv(csvText: string): Promise<ImportCoun
     throw new ProductImportError("Corrija os erros da pre-visualizacao antes de importar.");
   }
 
+  const priceAdjustment = await getSavedPriceAdjustmentConfig();
+
   return prisma.$transaction(async (tx) => {
     const counters: ImportCounters = { created: 0, updated: 0, stockUpdated: 0 };
 
     for (const [index, row] of preview.rows.entries()) {
-      const outcome = await importRow(tx, row, index);
+      const outcome = await importRow(tx, row, index, priceAdjustment);
       counters.stockUpdated += 1;
       if (outcome === "created") counters.created += 1;
       else counters.updated += 1;

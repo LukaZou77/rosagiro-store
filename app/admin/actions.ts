@@ -8,6 +8,12 @@ import { brlInputToCents } from "@/lib/money";
 import { markOrderPaid, OrderError } from "@/lib/orders";
 import { isMercadoPagoInstallments } from "@/lib/payments";
 import { importProductsFromCsv, ProductImportError } from "@/lib/product-import";
+import {
+  adjustPriceCents,
+  buildAdjustedProductPricing,
+  parsePriceAdjustmentInput
+} from "@/lib/product-price-adjustment";
+import { getSavedPriceAdjustmentConfig, saveAndApplyPriceAdjustment } from "@/lib/product-price-adjustment-server";
 import { isAllowedProductImage, normalizeProductGallery, parseCents, parsePipeList, slugify } from "@/lib/product-import-shared";
 import { subcategorySlug } from "@/lib/product-subcategories";
 import {
@@ -116,6 +122,35 @@ function revalidateCategoryManagement() {
   revalidatePath("/admin/categorias");
 }
 
+export async function saveProductPriceAdjustmentAction(formData: FormData) {
+  await requireAdmin();
+
+  const config = parsePriceAdjustmentInput({
+    direction: field(formData, "priceAdjustmentDirection"),
+    type: field(formData, "priceAdjustmentType"),
+    value: field(formData, "priceAdjustmentValue")
+  });
+  const confirmation = field(formData, "confirmPriceAdjustment").toUpperCase();
+
+  if (config.direction === "none" || config.value <= 0) {
+    redirectError("/admin/produtos", "Informe um ajuste de preço válido antes de aplicar.");
+  }
+  if (confirmation !== "APLICAR") {
+    redirectError("/admin/produtos", "Digite APLICAR para confirmar o ajuste global de preços.");
+  }
+
+  const summary = await saveAndApplyPriceAdjustment(config);
+  revalidateCatalog();
+
+  const params = new URLSearchParams({
+    priceAdjusted: String(summary.productCount),
+    priceAdjustedSkus: String(summary.skuCount),
+    priceSkipped: String(summary.skippedProductCount + summary.skippedSkuCount),
+    priceWarnings: String(summary.descriptionWarningCount)
+  });
+  redirect(`/admin/produtos?${params.toString()}`);
+}
+
 type ProductFormPreparationOptions = {
   detailPath: string;
   productSlug: string;
@@ -123,6 +158,8 @@ type ProductFormPreparationOptions = {
   existingGallery?: string[];
   existingSuggestedQuantity?: number | null;
   existingKitRecommendation?: string | null;
+  existingBaseBoxPriceCents?: number | null;
+  existingBaseBoxPieces?: number | null;
 };
 
 type ProductSkuInput = {
@@ -131,6 +168,7 @@ type ProductSkuInput = {
   code: string;
   image: string | null;
   priceCents: number | null;
+  basePriceCents: number | null;
   quantity: number;
   active: boolean;
   sortOrder: number;
@@ -180,7 +218,8 @@ function parseProductSkuInputs(formData: FormData, detailPath: string) {
       name: name.slice(0, 120),
       code: code.slice(0, 80),
       image: image || null,
-      priceCents: priceCents > 0 ? priceCents : null,
+      priceCents: null,
+      basePriceCents: priceCents > 0 ? priceCents : null,
       quantity,
       active: formData.get(`skuActive:${rowKey}`) === "on",
       sortOrder
@@ -206,6 +245,7 @@ async function syncProductSkus(
       code: sku.code,
       image: sku.image,
       priceCents: sku.priceCents,
+      basePriceCents: sku.basePriceCents,
       quantity: sku.quantity,
       active: sku.active,
       sortOrder: sku.sortOrder
@@ -264,6 +304,25 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
     redirectError(options.detailPath, "Selecione uma subcategoria válida para a categoria escolhida.");
   }
 
+  const priceAdjustment = await getSavedPriceAdjustmentConfig();
+  const adjustedPricing = buildAdjustedProductPricing({
+    basePriceCents: priceCents,
+    descriptionPt,
+    config: priceAdjustment,
+    baseBoxPriceCents: options.existingBaseBoxPriceCents,
+    baseBoxPieces: options.existingBaseBoxPieces
+  });
+  if (!adjustedPricing.ok) redirectError(options.detailPath, adjustedPricing.reason);
+
+  const adjustedSkus = skuInput.rows.map((sku) => {
+    if (!sku.basePriceCents) return sku;
+    const adjustedSkuPrice = adjustPriceCents(sku.basePriceCents, priceAdjustment);
+    if (!adjustedSkuPrice) {
+      redirectError(options.detailPath, `O ajuste deixaria o preço do SKU ${sku.code} abaixo de R$ 0,01.`);
+    }
+    return { ...sku, priceCents: adjustedSkuPrice };
+  });
+
   const existingGallery = normalizeProductGallery(options.existingImage || "", options.existingGallery || []);
   const removedImages = new Set(cleanGalleryInput(formData.getAll("removeGalleryImage")));
   const keptExistingImages = cleanGalleryInput(formData.getAll("galleryExisting"))
@@ -306,11 +365,14 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
       categoryId,
       subcategoryId: subcategory.id,
       subcategory: subcategory.label,
-      priceCents,
+      priceCents: adjustedPricing.priceCents,
+      basePriceCents: priceCents,
+      baseBoxPriceCents: adjustedPricing.baseBoxPriceCents,
+      baseBoxPieces: adjustedPricing.baseBoxPieces,
       compareAtPriceCents: null,
       image: primaryImage,
       gallery,
-      descriptionPt,
+      descriptionPt: adjustedPricing.descriptionPt,
       benefits: parsePipeList(field(formData, "benefits")),
       ingredients: parsePipeList(field(formData, "ingredients")),
       badges: parsePipeList(field(formData, "badges")),
@@ -330,7 +392,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
       featuredRank
     },
     quantity,
-    skus: skuInput.rows,
+    skus: adjustedSkus,
     deletedSkuIds: skuInput.deletedIds,
     gallery,
     uploadedImages,
@@ -408,7 +470,15 @@ export async function updateProductDetailAction(formData: FormData) {
   const product = productId
     ? await prisma.product.findUnique({
         where: { id: productId },
-        select: { slug: true, image: true, gallery: true, suggestedQuantity: true, kitRecommendation: true }
+        select: {
+          slug: true,
+          image: true,
+          gallery: true,
+          suggestedQuantity: true,
+          kitRecommendation: true,
+          baseBoxPriceCents: true,
+          baseBoxPieces: true
+        }
       })
     : null;
   if (!product) redirectError("/admin/produtos", "Produto não encontrado.");
@@ -420,7 +490,9 @@ export async function updateProductDetailAction(formData: FormData) {
     existingImage: product.image,
     existingGallery: product.gallery,
     existingSuggestedQuantity: product.suggestedQuantity,
-    existingKitRecommendation: product.kitRecommendation
+    existingKitRecommendation: product.kitRecommendation,
+    existingBaseBoxPriceCents: product.baseBoxPriceCents,
+    existingBaseBoxPieces: product.baseBoxPieces
   });
 
   try {
