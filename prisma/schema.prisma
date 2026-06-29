@@ -133,6 +133,7 @@ model Product {
   validityNote        String?
   purchaseNote        String?
   image               String
+  trayImage           String?
   gallery             String[]
   descriptionPt       String
   benefits            String[]

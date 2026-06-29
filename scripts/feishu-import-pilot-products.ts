@@ -566,7 +566,7 @@ function parseRows(values: unknown[][], headers: HeaderMap): FeishuRow[] {
 function shouldUseRow(row: FeishuRow) {
   return (
     row.trayStatus.includes("已有货盘图") &&
-    Boolean(row.category && row.brand && row.productName && row.model && row.sampleToken && row.trayToken && row.unitPriceCents > 0)
+    Boolean(row.category && row.brand && row.productName && row.model && row.sampleToken && row.unitPriceCents > 0)
   );
 }
 
@@ -620,7 +620,7 @@ function selectGroups(rows: FeishuRow[], limit: number) {
           row: row.rowNumber,
           brand: row.brand,
           model: row.model,
-          reason: row.productName ? "missing price/sample/tray token" : "missing product name"
+          reason: row.productName ? "missing price or sample image" : "missing_product_name"
         });
       }
       flush();
@@ -638,10 +638,7 @@ function selectGroups(rows: FeishuRow[], limit: number) {
 
 function groupImageIssue(group: ProductGroup, images: Map<string, DownloadedImage>) {
   const missingSamples = group.rows.filter((row) => !row.sampleToken || !images.has(row.sampleToken));
-  const missingTray = !group.trayToken || !images.has(group.trayToken);
-  if (missingSamples.length && missingTray) return "sample and tray images unavailable";
   if (missingSamples.length) return `sample image unavailable for row(s) ${missingSamples.map((row) => row.rowNumber).join("|")}`;
-  if (missingTray) return "tray image unavailable";
   return "";
 }
 
@@ -935,20 +932,20 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
     priceProfile?.priceAdjustmentValue
   );
   const applied: unknown[][] = [
-    ["slug", "rows", "brand", "name", "mainModel", "skuCount", "category", "subcategory", "image", "galleryCount"]
+    ["slug", "rows", "brand", "name", "mainModel", "skuCount", "category", "subcategory", "image", "galleryCount", "trayImage"]
   ];
   const skipped: unknown[][] = [["rows", "brand", "mainModel", "reason"]];
 
   try {
     for (const group of groups) {
       const missingImageRows = group.rows.filter((row) => !images.has(row.sampleToken));
-      const tray = images.get(group.trayToken);
-      if (missingImageRows.length || !tray) {
+      const tray = group.trayToken ? images.get(group.trayToken) : undefined;
+      if (missingImageRows.length) {
         skipped.push([
           group.rows.map((row) => row.rowNumber).join("|"),
           group.brand,
           group.mainModel,
-          missingImageRows.length ? "sample image download failed" : "tray image download failed"
+          "sample image download failed"
         ]);
         continue;
       }
@@ -968,14 +965,16 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
         skuData.push({ name: row.model, code: row.model, image: url, sortOrder: (index + 1) * 10 });
       }
 
-      const trayUrl = await uploadToBlob(tray.localPath, `products/${group.slug}/tray-${safeFilePart(group.mainModel)}.jpg`, tray.contentType);
+      const trayUrl = tray
+        ? await uploadToBlob(tray.localPath, `products/${group.slug}/tray-${safeFilePart(group.mainModel)}.jpg`, tray.contentType)
+        : "";
       const packageImage = group.packageToken ? images.get(group.packageToken) : undefined;
       const packageUrl = packageImage
         ? await uploadToBlob(packageImage.localPath, `products/${group.slug}/package-${safeFilePart(group.mainModel)}.jpg`, packageImage.contentType)
         : "";
 
       const primaryImage = uploadedSkuImages[0];
-      const gallery = Array.from(new Set([...uploadedSkuImages.slice(1), trayUrl, packageUrl].filter(Boolean))).slice(0, 8);
+      const gallery = Array.from(new Set([...uploadedSkuImages.slice(1), packageUrl].filter(Boolean))).slice(0, 8);
       const catalog = await ensureCatalogRecords(prisma, group);
       const descriptionPt = descriptionFor(group);
       const adjustedPricing = buildAdjustedProductPricing({
@@ -1004,6 +1003,7 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
             compareAtPriceCents: null,
             weightGrams: null,
             image: primaryImage,
+            trayImage: trayUrl || undefined,
             gallery,
             descriptionPt: adjustedPricing.descriptionPt,
             benefits: [],
@@ -1037,6 +1037,7 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
             compareAtPriceCents: null,
             weightGrams: null,
             image: primaryImage,
+            trayImage: trayUrl || null,
             gallery,
             descriptionPt: adjustedPricing.descriptionPt,
             benefits: [],
@@ -1106,7 +1107,8 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
         group.classification.categoryLabel,
         catalog.subcategoryLabel,
         primaryImage,
-        gallery.length
+        gallery.length,
+        trayUrl || "missing internal tray image"
       ]);
     }
   } finally {
@@ -1180,13 +1182,14 @@ async function main() {
       "category",
       "subcategory",
       "slug",
-      "imageStatus"
+      "imageStatus",
+      "trayPolicy",
+      "trayInternalStatus"
     ]
   ];
   for (const group of selected) {
     const missingTokens = [
       ...group.rows.map((row) => row.sampleToken),
-      group.trayToken,
       group.packageToken
     ].filter((token) => token && !images.has(token));
     previewRows.push([
@@ -1201,7 +1204,9 @@ async function main() {
       group.classification.categoryLabel,
       group.classification.subcategoryLabel,
       group.slug,
-      missingTokens.length ? `missing ${missingTokens.length} image(s)` : "ok"
+      missingTokens.length ? `missing ${missingTokens.length} storefront image(s)` : "ok",
+      "internal",
+      group.trayToken && images.has(group.trayToken) ? "saved to Product.trayImage" : "missing internal tray image"
     ]);
   }
   await writeCsv(path.join(reportDir, "pilot-products-preview.csv"), previewRows);

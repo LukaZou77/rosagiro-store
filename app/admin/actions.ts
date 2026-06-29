@@ -277,6 +277,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const subcategoryId = field(formData, "subcategoryId");
   const descriptionPt = field(formData, "descriptionPt");
   const image = field(formData, "image");
+  const trayImage = field(formData, "trayImage");
   const primaryImageInput = field(formData, "primaryImage");
   const priceCents = parseCents(field(formData, "price"));
   const quantity = positiveInt(formData, "quantity");
@@ -291,6 +292,9 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   }
   if (image && !isAllowedProductImage(image)) {
     redirectError(options.detailPath, "A imagem deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
+  }
+  if (trayImage && !isAllowedProductImage(trayImage)) {
+    redirectError(options.detailPath, "A imagem interna da bandeja deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
   }
 
   const [brand, category, subcategory] = await Promise.all([
@@ -371,6 +375,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
       baseBoxPieces: adjustedPricing.baseBoxPieces,
       compareAtPriceCents: null,
       image: primaryImage,
+      trayImage: trayImage || null,
       gallery,
       descriptionPt: adjustedPricing.descriptionPt,
       benefits: parsePipeList(field(formData, "benefits")),

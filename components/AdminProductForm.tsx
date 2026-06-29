@@ -80,6 +80,18 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
           /uploads/products/..., /placeholder... ou URL http(s).
         </p>
 
+        <label>
+          Imagem da bandeja/atacado (uso interno)
+          <input
+            name="trayImage"
+            defaultValue={product?.trayImage || ""}
+            placeholder="URL interna da imagem de referência do atacado"
+          />
+        </label>
+        <p className="table-note">
+          Esta imagem fica apenas no admin para conferência. Ela não entra na galeria da loja nem nas imagens de SKU.
+        </p>
+
         <AdminProductGalleryManager currentImage={currentImage} gallery={gallery} isEdit={isEdit} />
       </section>
 
