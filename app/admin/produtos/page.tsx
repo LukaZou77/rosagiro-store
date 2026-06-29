@@ -1,7 +1,9 @@
 import type { Prisma } from "@/src/generated/prisma/client";
 import Link from "next/link";
 import { moveProductsToTrashAction, saveProductPriceAdjustmentAction } from "@/app/admin/actions";
+import { AdminPriceAdjustmentJobProgress } from "@/components/AdminPriceAdjustmentJobProgress";
 import { AdminPriceAdjustmentResultDialog } from "@/components/AdminPriceAdjustmentResultDialog";
+import { AdminPriceAdjustmentSubmitButton } from "@/components/AdminPriceAdjustmentSubmitButton";
 import { AdminProductBulkList, type AdminProductListRow } from "@/components/AdminProductBulkList";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
@@ -48,6 +50,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   const error = single(params.error);
   const priceAdjusted = single(params.priceAdjusted);
   const priceAdjustedSkus = single(params.priceAdjustedSkus);
+  const priceAdjustmentJob = single(params.priceAdjustmentJob);
   const priceSkippedProducts = single(params.priceSkippedProducts);
   const priceSkippedSkus = single(params.priceSkippedSkus);
   const legacyPriceSkipped = single(params.priceSkipped);
@@ -191,6 +194,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         </div>
       ) : null}
       {priceResult ? <AdminPriceAdjustmentResultDialog {...priceResult} /> : null}
+      {priceAdjustmentJob ? <AdminPriceAdjustmentJobProgress jobId={priceAdjustmentJob} /> : null}
 
       <section className="import-panel">
         <div className="product-gallery-heading">
@@ -272,9 +276,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                 Confirmação
                 <input name="confirmPriceAdjustment" placeholder="Digite rosagiro" />
               </label>
-              <button className="button primary" type="submit">
-                Salvar regra e aplicar em todos
-              </button>
+              <AdminPriceAdjustmentSubmitButton />
             </form>
           </div>
         ) : (

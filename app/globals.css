@@ -5154,6 +5154,145 @@ legend {
   justify-self: end;
 }
 
+.price-adjustment-submit {
+  display: grid;
+  gap: 8px;
+  align-self: end;
+  min-width: min(360px, 100%);
+}
+
+.price-adjustment-submit > .button {
+  width: 100%;
+}
+
+.admin-progress-status {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(var(--promo-deep-rgb), 0.18);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.admin-progress-status-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-progress-status strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.admin-progress-status small {
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.admin-progress-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f5dfe5;
+}
+
+.admin-progress-bar span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--promo), var(--deal));
+  animation: admin-progress-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes admin-progress-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+.admin-job-progress {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(113, 138, 122, 0.42);
+  border-radius: 8px;
+  background: #f6fbf7;
+  color: var(--ink);
+}
+
+.admin-job-progress.warning {
+  border-color: rgba(var(--deal-rgb), 0.48);
+  background: var(--deal-soft);
+}
+
+.admin-job-progress-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-job-progress-heading div {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-job-progress-heading strong {
+  font-size: 1rem;
+}
+
+.admin-job-progress-heading small {
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.admin-job-progress-heading > span {
+  color: var(--promo-deep);
+  font-size: 1.45rem;
+  font-weight: 950;
+}
+
+.admin-job-progress-bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(113, 138, 122, 0.18);
+}
+
+.admin-job-progress-bar span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--promo), var(--deal));
+  transition: width 0.2s ease;
+}
+
+.admin-job-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-job-progress-grid span {
+  padding: 9px 10px;
+  border: 1px solid rgba(113, 138, 122, 0.2);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.admin-job-progress-grid strong {
+  color: var(--promo-deep);
+}
+
 .import-workspace {
   display: grid;
   gap: 14px;
@@ -6064,6 +6203,10 @@ a.readiness-signal:focus-visible {
 }
 
 @media (max-width: 520px) {
+  .admin-job-progress-grid {
+    grid-template-columns: 1fr;
+  }
+
   .prelaunch-step {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
@@ -6134,6 +6277,12 @@ a.readiness-signal:focus-visible {
 
   .sku-admin-row .button {
     width: 100%;
+  }
+}
+
+@media (min-width: 521px) and (max-width: 679px) {
+  .admin-job-progress-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

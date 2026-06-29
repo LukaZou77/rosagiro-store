@@ -353,6 +353,29 @@ model PaymentWebhookEvent {
   @@index([provider, requestId])
 }
 
+model PriceAdjustmentJob {
+  id                  String    @id @default(cuid())
+  status              String    @default("PENDING")
+  direction           String
+  type                String
+  value               Int
+  totalProducts       Int       @default(0)
+  processedProducts   Int       @default(0)
+  adjustedProducts    Int       @default(0)
+  adjustedSkus        Int       @default(0)
+  skippedProducts     Int       @default(0)
+  skippedSkus         Int       @default(0)
+  descriptionWarnings Int       @default(0)
+  error               String?
+  createdByAdminEmail String?
+  startedAt           DateTime?
+  finishedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([status, createdAt])
+}
+
 model LaunchReadinessItem {
   id          String                @id @default(cuid())
   itemKey     String                @unique

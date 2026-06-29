@@ -13,7 +13,7 @@ import {
   buildAdjustedProductPricing,
   parsePriceAdjustmentInput
 } from "@/lib/product-price-adjustment";
-import { getSavedPriceAdjustmentConfig, saveAndApplyPriceAdjustment } from "@/lib/product-price-adjustment-server";
+import { createPriceAdjustmentJob, getSavedPriceAdjustmentConfig } from "@/lib/product-price-adjustment-server";
 import { isAllowedProductImage, normalizeProductGallery, parseCents, parsePipeList, slugify } from "@/lib/product-import-shared";
 import { subcategorySlug } from "@/lib/product-subcategories";
 import {
@@ -123,7 +123,7 @@ function revalidateCategoryManagement() {
 }
 
 export async function saveProductPriceAdjustmentAction(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const config = parsePriceAdjustmentInput({
     direction: field(formData, "priceAdjustmentDirection"),
@@ -139,15 +139,11 @@ export async function saveProductPriceAdjustmentAction(formData: FormData) {
     redirectError("/admin/produtos", "Digite rosagiro para confirmar o ajuste global de preços.");
   }
 
-  const summary = await saveAndApplyPriceAdjustment(config);
-  revalidateCatalog();
+  const job = await createPriceAdjustmentJob(config, admin.email);
+  revalidatePath("/admin/produtos");
 
   const params = new URLSearchParams({
-    priceAdjusted: String(summary.productCount),
-    priceAdjustedSkus: String(summary.skuCount),
-    priceSkippedProducts: String(summary.skippedProductCount),
-    priceSkippedSkus: String(summary.skippedSkuCount),
-    priceWarnings: String(summary.descriptionWarningCount)
+    priceAdjustmentJob: job.id
   });
   redirect(`/admin/produtos?${params.toString()}`);
 }
