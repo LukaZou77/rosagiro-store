@@ -130,13 +130,13 @@ export async function saveProductPriceAdjustmentAction(formData: FormData) {
     type: field(formData, "priceAdjustmentType"),
     value: field(formData, "priceAdjustmentValue")
   });
-  const confirmation = field(formData, "confirmPriceAdjustment").toUpperCase();
+  const confirmation = field(formData, "confirmPriceAdjustment").trim().toLowerCase();
 
   if (config.direction === "none" || config.value <= 0) {
     redirectError("/admin/produtos", "Informe um ajuste de preço válido antes de aplicar.");
   }
-  if (confirmation !== "APLICAR") {
-    redirectError("/admin/produtos", "Digite APLICAR para confirmar o ajuste global de preços.");
+  if (confirmation !== "rosagiro") {
+    redirectError("/admin/produtos", "Digite rosagiro para confirmar o ajuste global de preços.");
   }
 
   const summary = await saveAndApplyPriceAdjustment(config);

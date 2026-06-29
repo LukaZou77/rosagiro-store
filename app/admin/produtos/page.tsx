@@ -52,9 +52,13 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       : savedPriceAdjustment.type === "fixed"
         ? formatPlainBrl(savedPriceAdjustment.value)
         : String(savedPriceAdjustment.value / 100).replace(".", ",");
-  const priceDirection = single(params.priceAdjustmentDirection) || savedPriceAdjustment.direction || "increase";
-  const priceType = single(params.priceAdjustmentType) || savedPriceAdjustment.type || "percent";
-  const priceValue = single(params.priceAdjustmentValue) || savedPriceAdjustmentInput;
+  const draftPriceDirection = single(params.priceAdjustmentDirection);
+  const draftPriceType = single(params.priceAdjustmentType);
+  const draftPriceValue = single(params.priceAdjustmentValue);
+  const savedPriceDirection = savedPriceAdjustment.direction === "none" ? "increase" : savedPriceAdjustment.direction;
+  const priceDirection = pricePreviewRequested ? draftPriceDirection || savedPriceDirection : savedPriceDirection;
+  const priceType = pricePreviewRequested ? draftPriceType || savedPriceAdjustment.type : savedPriceAdjustment.type;
+  const priceValue = pricePreviewRequested ? draftPriceValue ?? savedPriceAdjustmentInput : savedPriceAdjustmentInput;
   const requestedPriceAdjustment = parsePriceAdjustmentInput({
     direction: priceDirection,
     type: priceType,
@@ -244,7 +248,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
               <input name="priceAdjustmentValue" type="hidden" value={priceValue} />
               <label>
                 Confirmação
-                <input name="confirmPriceAdjustment" placeholder="Digite APLICAR" />
+                <input name="confirmPriceAdjustment" placeholder="Digite rosagiro" />
               </label>
               <button className="button primary" type="submit">
                 Salvar regra e aplicar em todos
