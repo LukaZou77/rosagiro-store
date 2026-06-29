@@ -145,7 +145,8 @@ export async function saveProductPriceAdjustmentAction(formData: FormData) {
   const params = new URLSearchParams({
     priceAdjusted: String(summary.productCount),
     priceAdjustedSkus: String(summary.skuCount),
-    priceSkipped: String(summary.skippedProductCount + summary.skippedSkuCount),
+    priceSkippedProducts: String(summary.skippedProductCount),
+    priceSkippedSkus: String(summary.skippedSkuCount),
     priceWarnings: String(summary.descriptionWarningCount)
   });
   redirect(`/admin/produtos?${params.toString()}`);

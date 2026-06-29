@@ -1,6 +1,7 @@
 import type { Prisma } from "@/src/generated/prisma/client";
 import Link from "next/link";
 import { moveProductsToTrashAction, saveProductPriceAdjustmentAction } from "@/app/admin/actions";
+import { AdminPriceAdjustmentResultDialog } from "@/components/AdminPriceAdjustmentResultDialog";
 import { AdminProductBulkList, type AdminProductListRow } from "@/components/AdminProductBulkList";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
@@ -16,6 +17,11 @@ type PageProps = {
 
 function single(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function numberParam(value: string | string[] | undefined) {
+  const parsed = Number(single(value) || "0");
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
 }
 
 export default async function AdminProductsPage({ searchParams }: PageProps) {
@@ -42,8 +48,19 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   const error = single(params.error);
   const priceAdjusted = single(params.priceAdjusted);
   const priceAdjustedSkus = single(params.priceAdjustedSkus);
-  const priceSkipped = single(params.priceSkipped);
+  const priceSkippedProducts = single(params.priceSkippedProducts);
+  const priceSkippedSkus = single(params.priceSkippedSkus);
+  const legacyPriceSkipped = single(params.priceSkipped);
   const priceWarnings = single(params.priceWarnings);
+  const priceResult = priceAdjusted
+    ? {
+        productCount: numberParam(priceAdjusted),
+        skuCount: numberParam(priceAdjustedSkus),
+        skippedProductCount: priceSkippedProducts ? numberParam(priceSkippedProducts) : numberParam(legacyPriceSkipped),
+        skippedSkuCount: numberParam(priceSkippedSkus),
+        descriptionWarningCount: numberParam(priceWarnings)
+      }
+    : null;
   const pricePreviewRequested = single(params.pricePreview) === "1";
   const savedPriceAdjustment = configFromStoreProfile(priceProfile);
   const savedPriceAdjustmentInput =
@@ -164,11 +181,16 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       ) : null}
       {priceAdjusted ? (
         <div className="admin-notice success" role="status">
-          Ajuste aplicado em {priceAdjusted} produto(s) e {priceAdjustedSkus || "0"} SKU(s).{" "}
-          {priceSkipped && Number(priceSkipped) > 0 ? `${priceSkipped} item(ns) foram ignorados por preço mínimo.` : ""}
-          {priceWarnings && Number(priceWarnings) > 0 ? ` ${priceWarnings} descrição(ões) personalizada(s) não foram alteradas.` : ""}
+          Ajuste aplicado em {priceResult?.productCount || 0} produto(s) e {priceResult?.skuCount || 0} SKU(s).{" "}
+          {priceResult && priceResult.skippedProductCount + priceResult.skippedSkuCount > 0
+            ? `${priceResult.skippedProductCount + priceResult.skippedSkuCount} item(ns) foram ignorados por preço mínimo.`
+            : ""}
+          {priceResult && priceResult.descriptionWarningCount > 0
+            ? ` ${priceResult.descriptionWarningCount} descrição(ões) personalizada(s) não foram alteradas.`
+            : ""}
         </div>
       ) : null}
+      {priceResult ? <AdminPriceAdjustmentResultDialog {...priceResult} /> : null}
 
       <section className="import-panel">
         <div className="product-gallery-heading">

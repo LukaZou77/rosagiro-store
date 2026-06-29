@@ -5090,6 +5090,70 @@ legend {
   color: #8b5a1f;
 }
 
+.admin-result-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(40, 20, 26, 0.28);
+}
+
+.admin-result-dialog {
+  width: min(520px, 100%);
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(40, 20, 26, 0.24);
+}
+
+.admin-result-dialog.success {
+  border-color: rgba(113, 138, 122, 0.5);
+}
+
+.admin-result-dialog.warning {
+  border-color: rgba(var(--deal-rgb), 0.48);
+}
+
+.admin-result-dialog-status {
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #eef6f0;
+  color: #315742;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-result-dialog.warning .admin-result-dialog-status {
+  background: var(--deal-soft);
+  color: #8b5a1f;
+}
+
+.admin-result-dialog h2 {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1.05;
+}
+
+.admin-result-dialog ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.admin-result-dialog button {
+  justify-self: end;
+}
+
 .import-workspace {
   display: grid;
   gap: 14px;
