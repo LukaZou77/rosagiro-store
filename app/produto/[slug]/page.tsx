@@ -64,7 +64,8 @@ export default async function ProductPage({ params }: PageProps) {
   const showFromPrice = hasSkuPriceRange(product);
   const whatsappHref = buildProductWhatsAppHref(product, storeProfile.whatsapp);
   const trustSignals = storeTrustSignals(storeProfile);
-  const gallery = normalizeProductGallery(product.image, product.gallery);
+  const skuImages = activeSkus.map((sku) => sku.image).filter((image): image is string => Boolean(image));
+  const gallery = Array.from(new Set([...normalizeProductGallery(product.image, product.gallery), ...skuImages]));
   const galleryState = productDetailGalleryState(gallery);
   const serviceCards = productDetailServiceCards();
   const wholesaleLines = productWholesaleLines(product);

@@ -175,6 +175,7 @@ model ProductSku {
   productId  String
   name       String
   code       String
+  image      String?
   priceCents Int?
   quantity   Int         @default(0)
   active     Boolean     @default(true)

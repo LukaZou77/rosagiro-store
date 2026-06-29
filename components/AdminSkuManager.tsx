@@ -8,6 +8,7 @@ type AdminSkuRow = {
   id?: string;
   name: string;
   code: string;
+  image?: string | null;
   priceCents?: number | null;
   quantity: number;
   active: boolean;
@@ -46,6 +47,7 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
         key: `new-${Date.now()}-${current.length}`,
         name: "",
         code: "",
+        image: "",
         priceCents: null,
         quantity: INTERNAL_AVAILABLE_STOCK_QUANTITY,
         active: true,
@@ -104,6 +106,15 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
                   placeholder="Em branco usa o preço principal"
                 />
               </label>
+              <label className="sku-image-field">
+                Imagem do SKU
+                <input
+                  name={`skuImage:${row.key}`}
+                  onChange={(event) => updateRow(row.key, { image: event.target.value })}
+                  placeholder="URL da imagem desta variação"
+                  value={row.image || ""}
+                />
+              </label>
               <label>
                 Disponibilidade
                 <select
@@ -153,7 +164,7 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
       </button>
       <p className="table-note">
         Se houver SKU ativo, o cliente escolherá as variações na página do produto. Preço em branco usa o preço principal;
-        peso e imagens continuam iguais ao produto principal.
+        peso segue o produto principal; imagem do SKU troca a foto principal quando cadastrada.
       </p>
     </div>
   );

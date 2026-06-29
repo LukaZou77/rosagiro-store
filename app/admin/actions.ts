@@ -129,6 +129,7 @@ type ProductSkuInput = {
   id?: string;
   name: string;
   code: string;
+  image: string | null;
   priceCents: number | null;
   quantity: number;
   active: boolean;
@@ -152,15 +153,19 @@ function parseProductSkuInputs(formData: FormData, detailPath: string) {
     const id = field(formData, `skuId:${rowKey}`);
     const name = field(formData, `skuName:${rowKey}`);
     const code = field(formData, `skuCode:${rowKey}`);
+    const image = field(formData, `skuImage:${rowKey}`);
     const priceCents = parseCents(field(formData, `skuPrice:${rowKey}`));
     const quantityRaw = field(formData, `skuQuantity:${rowKey}`);
     const sortRaw = field(formData, `skuSortOrder:${rowKey}`);
     const quantityValue = Number(quantityRaw.replace(",", "."));
     const availabilityQuantity = quantityRaw === "in" || quantityRaw === "out" ? stockQuantityFromAvailability(quantityRaw) : null;
-    const hasAnyValue = Boolean(id || name || code || priceCents > 0 || (Number.isFinite(quantityValue) && quantityValue > 0));
+    const hasAnyValue = Boolean(id || name || code || image || priceCents > 0 || (Number.isFinite(quantityValue) && quantityValue > 0));
 
     if (!hasAnyValue) continue;
     if (!name || !code) redirectError(detailPath, "Preencha nome e código de todas as variações SKU.");
+    if (image && !isAllowedProductImage(image)) {
+      redirectError(detailPath, "A imagem do SKU deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
+    }
 
     const quantity =
       availabilityQuantity ??
@@ -174,6 +179,7 @@ function parseProductSkuInputs(formData: FormData, detailPath: string) {
       id: id || undefined,
       name: name.slice(0, 120),
       code: code.slice(0, 80),
+      image: image || null,
       priceCents: priceCents > 0 ? priceCents : null,
       quantity,
       active: formData.get(`skuActive:${rowKey}`) === "on",
@@ -198,6 +204,7 @@ async function syncProductSkus(
     const data = {
       name: sku.name,
       code: sku.code,
+      image: sku.image,
       priceCents: sku.priceCents,
       quantity: sku.quantity,
       active: sku.active,

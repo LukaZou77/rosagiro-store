@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 
+const PRODUCT_IMAGE_SELECT_EVENT = "rosagiro:select-product-image";
+
 type ProductGalleryProps = {
   images: string[];
   productName: string;
@@ -85,6 +87,20 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
       document.removeEventListener("keydown", handleDocumentKeyDown);
     };
   }, [gallery.length, hasCarousel, isLightboxOpen]);
+
+  useEffect(() => {
+    function handleSkuImageSelect(event: Event) {
+      const image = (event as CustomEvent<{ image?: string }>).detail?.image;
+      if (!image) return;
+      const nextIndex = gallery.indexOf(image);
+      if (nextIndex < 0) return;
+      setSelectedIndex(nextIndex);
+      setIsZooming(false);
+    }
+
+    window.addEventListener(PRODUCT_IMAGE_SELECT_EVENT, handleSkuImageSelect);
+    return () => window.removeEventListener(PRODUCT_IMAGE_SELECT_EVENT, handleSkuImageSelect);
+  }, [gallery]);
 
   function selectImage(index: number) {
     setSelectedIndex(index);

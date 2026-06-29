@@ -229,7 +229,7 @@ export async function createOrder(input: CheckoutInput) {
           productSlug: line.product.slug,
           productName: line.product.name,
           productBrand: line.product.brand.name,
-          productImage: line.product.image,
+          productImage: line.sku?.image || line.product.image,
           productSkuName: line.sku?.name || null,
           productSkuCode: line.sku?.code || null,
           unitPriceCents: line.priceCents,

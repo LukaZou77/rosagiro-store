@@ -5,12 +5,15 @@ import { notifyQuickPurchaseOpen, readCart, sameCartLine, writeCart } from "@/co
 import { useCustomerSession } from "@/components/CustomerSession";
 import { money } from "@/lib/money";
 
+const PRODUCT_IMAGE_SELECT_EVENT = "rosagiro:select-product-image";
+
 type ProductSkuSelectorProps = {
   productSlug: string;
   skus: Array<{
     id: string;
     name: string;
     code: string;
+    image?: string | null;
     priceCents: number;
     quantity: number;
   }>;
@@ -28,8 +31,14 @@ export function ProductSkuSelector({ productSlug, skus }: ProductSkuSelectorProp
   function updateQuantity(skuId: string, nextQuantity: number) {
     const sku = skus.find((item) => item.id === skuId);
     if (!sku) return;
+    selectSkuImage(sku.image);
     const safeQuantity = Math.max(0, Math.min(sku.quantity, Math.floor(nextQuantity || 0)));
     setQuantities((current) => ({ ...current, [skuId]: safeQuantity }));
+  }
+
+  function selectSkuImage(image?: string | null) {
+    if (!image || typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent(PRODUCT_IMAGE_SELECT_EVENT, { detail: { image } }));
   }
 
   function addSelectedSkus() {
@@ -67,7 +76,11 @@ export function ProductSkuSelector({ productSlug, skus }: ProductSkuSelectorProp
           const unavailable = sku.quantity <= 0;
 
           return (
-            <div className={unavailable ? "sku-row is-unavailable" : "sku-row"} key={sku.id}>
+            <div
+              className={unavailable ? "sku-row is-unavailable" : "sku-row"}
+              key={sku.id}
+              onClick={() => selectSkuImage(sku.image)}
+            >
               <div className="sku-row-info">
                 <strong>{sku.name}</strong>
                 <small>#{sku.code}</small>

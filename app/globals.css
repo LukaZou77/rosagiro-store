@@ -3116,7 +3116,7 @@ dd {
 
 .sku-admin-row {
   display: grid;
-  grid-template-columns: minmax(150px, 1.2fr) minmax(130px, 1fr) minmax(110px, 0.85fr) 90px 82px auto auto;
+  grid-template-columns: minmax(150px, 1.2fr) minmax(130px, 1fr) minmax(120px, 0.85fr) minmax(96px, auto);
   align-items: end;
   gap: 10px;
   padding: 12px;
@@ -3127,6 +3127,10 @@ dd {
 
 .sku-admin-row label {
   min-width: 0;
+}
+
+.sku-admin-row .sku-image-field {
+  grid-column: span 2;
 }
 
 .checkout-shell {
@@ -6026,6 +6030,10 @@ a.readiness-signal:focus-visible {
   .sku-admin-row {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+
+  .sku-admin-row .sku-image-field {
+    grid-column: span 1;
   }
 
   .sku-admin-row .button {

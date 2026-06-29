@@ -85,7 +85,7 @@ export async function POST(request: Request) {
         skuCode: selectedSku?.code || null,
         name: product?.name || item.slug,
         brandName: product?.brand.name || "",
-        image: product?.image || "",
+        image: selectedSku?.image || product?.image || "",
         priceCents,
         requestedQuantity: item.quantity,
         quantity: acceptedQuantity,

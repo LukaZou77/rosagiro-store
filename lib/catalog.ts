@@ -34,7 +34,7 @@ export type CatalogProduct = {
   brand: { slug: string; name: string; logo: string; origin: string; descriptionPt: string; featured: boolean };
   category: { slug: string; label: string; note: string };
   inventory: { quantity: number } | null;
-  skus: Array<{ id: string; name: string; code: string; priceCents: number | null; quantity: number; active: boolean; sortOrder: number }>;
+  skus: Array<{ id: string; name: string; code: string; image: string | null; priceCents: number | null; quantity: number; active: boolean; sortOrder: number }>;
 };
 
 export const CATALOG_PAGE_SIZE = 48;

@@ -145,6 +145,7 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             id: sku.id,
             name: sku.name,
             code: sku.code,
+            image: sku.image,
             priceCents: sku.priceCents,
             quantity: sku.quantity,
             active: sku.active,
