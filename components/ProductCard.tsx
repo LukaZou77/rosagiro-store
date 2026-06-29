@@ -7,9 +7,7 @@ import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import { lowestEffectivePriceCents, hasSkuPriceRange } from "@/lib/product-pricing";
 import {
-  productHeroBadge,
   productHasActiveSkus,
-  productPurchaseSignals,
   productQuantity,
   productShortStockLabel,
   productStockTone
@@ -17,21 +15,43 @@ import {
 import { siteConfig } from "@/lib/site-config";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 
+function normalizedLabel(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function isSpecialCardBadge(badge: string) {
+  const normalized = normalizedLabel(badge);
+  if (!normalized || /^(atacado|em estoque|sem estoque|批发|有存货|缺货)/i.test(normalized)) return false;
+  return /^(destaque|novo|mais vendido|favorito|lancamento|lançamento|top)$/i.test(normalized);
+}
+
+function productCardTags(product: CatalogProduct) {
+  const tags = [product.category.label, product.subcategory].map(customerDisplayText).filter(Boolean);
+  const seen = new Set<string>();
+
+  return tags.filter((tag) => {
+    const key = normalizedLabel(tag);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 2);
+}
+
 export function ProductCard({ product, whatsappPhone }: { product: CatalogProduct; whatsappPhone?: string | null }) {
   const quantity = productQuantity(product);
   const available = quantity > 0;
   const hasSkuChoices = productHasActiveSkus(product);
-  const heroBadge = productHeroBadge(product);
+  const heroBadge = product.badges.map(customerDisplayText).find(isSpecialCardBadge) || "";
   const stockTone = productStockTone(product);
   const shortStockLabel = productShortStockLabel(product);
-  const purchaseSignals = productPurchaseSignals(product);
   const whatsappHref = buildProductWhatsAppHref(product, whatsappPhone);
   const displayPrice = lowestEffectivePriceCents(product);
   const showFromPrice = hasSkuPriceRange(product);
-  const visibleBadges = product.badges
-    .map(customerDisplayText)
-    .filter((badge) => !/^em estoque$/i.test(badge.trim()))
-    .slice(0, 2);
+  const infoTags = productCardTags(product);
 
   return (
     <article className={available ? "product-card" : "product-card is-unavailable"}>
@@ -52,20 +72,11 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
         <Link href={`/produto/${product.slug}`}>
           <h3>{product.name}</h3>
         </Link>
-        <p>{product.subcategory}</p>
-        {purchaseSignals.length ? (
-          <div className="purchase-signals" aria-label="Sinais de compra">
-            {purchaseSignals.map((signal) => (
-              <span key={signal}>{signal}</span>
+        {infoTags.length ? (
+          <div className="product-card-tags" aria-label="Área de uso e tipo do produto">
+            {infoTags.map((tag) => (
+              <span key={tag}>{tag}</span>
             ))}
-          </div>
-        ) : null}
-        {visibleBadges.length || !available ? (
-          <div className="mini-badge-row">
-            {visibleBadges.map((badge) => (
-              <span key={badge}>{badge}</span>
-            ))}
-            {!available ? <span>{siteConfig.productConversion.unavailableCta}</span> : null}
           </div>
         ) : null}
         <div className="product-card-bottom">
