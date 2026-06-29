@@ -376,6 +376,28 @@ function brandSlug(value: string) {
   return slugify(value).slice(0, 70) || "marca";
 }
 
+function brandAliasKey(value: string) {
+  return slugify(value).replace(/-/g, " ");
+}
+
+const BRAND_ALIASES = new Map<string, string>([
+  ["bobbi bara", "Bobbi Rara"],
+  ["bobbi rara", "Bobbi Rara"],
+  ["derma chem", "DERMA CHEM"],
+  ["dermachem", "DERMA CHEM"],
+  ["ruby rose", "Ruby Rose"],
+  ["rubyrose", "Ruby Rose"],
+  ["amor anjo", "Amor Anjo"],
+  ["fenzza", "FENZZA"],
+  ["febella", "Febella"],
+  ["hudamoji", "Hudamoji"],
+  ["melu", "melu"]
+]);
+
+function canonicalBrandName(value: string) {
+  return BRAND_ALIASES.get(brandAliasKey(value)) || value.trim();
+}
+
 function normalizeSearch(value: string) {
   return value
     .normalize("NFD")
@@ -514,7 +536,7 @@ function parseRows(values: unknown[][], headers: HeaderMap): FeishuRow[] {
     const packageToken = headers.columns.packageImage >= 0 ? fileToken(row[headers.columns.packageImage]) : "";
 
     if (rawCategory) lastCategory = rawCategory;
-    if (rawBrand) lastBrand = rawBrand;
+    if (rawBrand) lastBrand = canonicalBrandName(rawBrand);
     if (rawName) {
       lastName = rawName;
       lastNameBase = base;
@@ -547,7 +569,7 @@ function parseRows(values: unknown[][], headers: HeaderMap): FeishuRow[] {
     rows.push({
       rowNumber,
       category: rawCategory || lastCategory,
-      brand: rawBrand || lastBrand,
+      brand: rawBrand ? canonicalBrandName(rawBrand) : lastBrand,
       productName,
       model,
       mainModel: base,
@@ -898,34 +920,41 @@ async function ensureCatalogRecords(
   prisma: PrismaClient,
   group: ProductGroup
 ): Promise<{ brandId: string; categoryId: string; subcategoryId: string; subcategoryLabel: string }> {
-  const existingBrand = await prisma.brand.findUnique({
-    where: { name: group.brand },
-    select: { categorySlugs: true }
+  const brandName = canonicalBrandName(group.brand);
+  const slug = brandSlug(brandName);
+  const existingBrand = await prisma.brand.findFirst({
+    where: {
+      OR: [{ name: brandName }, { slug }]
+    },
+    select: { id: true, categorySlugs: true }
   });
   const brandCategorySlugs = Array.from(
     new Set([...(existingBrand?.categorySlugs || []), group.classification.categorySlug])
   );
 
-  const brand = await prisma.brand.upsert({
-    where: { name: group.brand },
-    update: {
-      categorySlugs: brandCategorySlugs
-    },
-    create: {
-      name: group.brand,
-      slug: brandSlug(group.brand),
-      logo: group.brand
-        .split(/\s+/)
-        .map((part) => part[0])
-        .join("")
-        .slice(0, 3)
-        .toUpperCase(),
-      origin: "",
-      descriptionPt: `${group.brand} no atacado RosaGiro.`,
-      featured: false,
-      categorySlugs: brandCategorySlugs
-    }
-  });
+  const brand = existingBrand
+    ? await prisma.brand.update({
+        where: { id: existingBrand.id },
+        data: {
+          categorySlugs: brandCategorySlugs
+        }
+      })
+    : await prisma.brand.create({
+        data: {
+          name: brandName,
+          slug,
+          logo: brandName
+            .split(/\s+/)
+            .map((part) => part[0])
+            .join("")
+            .slice(0, 3)
+            .toUpperCase(),
+          origin: "",
+          descriptionPt: `${brandName} no atacado RosaGiro.`,
+          featured: false,
+          categorySlugs: brandCategorySlugs
+        }
+      });
 
   const category = await prisma.category.upsert({
     where: { slug: group.classification.categorySlug },
