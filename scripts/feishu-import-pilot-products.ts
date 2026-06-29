@@ -169,7 +169,9 @@ function parseArgs() {
     yes: args.includes("--yes"),
     limit: Math.max(1, Number(get("--limit", "5")) || 5),
     readRange: get("--read-range", process.env.FEISHU_READ_RANGE || DEFAULT_READ_RANGE),
-    sheetTitle: get("--sheet", process.env.FEISHU_SHEET_TITLE || DEFAULT_SHEET_TITLE)
+    sheetTitle: get("--sheet", process.env.FEISHU_SHEET_TITLE || DEFAULT_SHEET_TITLE),
+    skipExisting: !args.includes("--no-skip-existing"),
+    batchLabel: get("--batch-label", "")
   };
 }
 
@@ -707,6 +709,7 @@ async function cachedSheetImagePath(reportDir: string, row: FeishuRow, token: st
   const reportRoot = path.dirname(reportDir);
   const directPaths = [
     path.join(reportDir, "image-cache", `${safeFilePart(token)}.jpg`),
+    path.join(sharedImageCacheDir(reportDir), `${safeFilePart(token)}.jpg`),
     path.join(reportRoot, "sample-cache", `row-${row.rowNumber}-${token}.jpg`)
   ];
   for (const item of directPaths) {
@@ -743,6 +746,18 @@ async function tmpDownloadUrls(tokens: string[], tenantToken: string) {
   return urls;
 }
 
+async function mapWithConcurrency<T>(items: T[], limit: number, worker: (item: T) => Promise<void>) {
+  const queue = [...items];
+  const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
+    while (queue.length) {
+      const item = queue.shift();
+      if (item === undefined) return;
+      await worker(item);
+    }
+  });
+  await Promise.all(workers);
+}
+
 async function downloadFeishuMedia(token: string, tenantToken: string) {
   const response = await fetch(`https://open.feishu.cn/open-apis/drive/v1/medias/${encodeURIComponent(token)}/download`, {
     headers: {
@@ -754,13 +769,17 @@ async function downloadFeishuMedia(token: string, tenantToken: string) {
   return Buffer.from(await response.arrayBuffer());
 }
 
+function sharedImageCacheDir(reportDir: string) {
+  return path.join(path.dirname(reportDir), "shared-image-cache");
+}
+
 async function downloadImages(groups: ProductGroup[], tenantToken: string, reportDir: string) {
   const imageRoot = process.env.FEISHU_LOCAL_IMAGE_ROOT || DEFAULT_IMAGE_ROOT;
   const localImages = await walkLocalImages(imageRoot);
   const tokens = Array.from(
     new Set(groups.flatMap((group) => [...group.rows.map((row) => row.sampleToken), group.trayToken, group.packageToken].filter(Boolean)))
   );
-  const cacheDir = path.join(reportDir, "image-cache");
+  const cacheDir = sharedImageCacheDir(reportDir);
   await fs.mkdir(cacheDir, { recursive: true });
   const downloaded = new Map<string, DownloadedImage>();
 
@@ -786,9 +805,10 @@ async function downloadImages(groups: ProductGroup[], tenantToken: string, repor
     }
   }
 
-  const urls = await tmpDownloadUrls(tokens.filter((token) => !downloaded.has(token)), tenantToken);
-  for (const token of tokens) {
-    if (downloaded.has(token)) continue;
+  const pendingTokens = tokens.filter((token) => !downloaded.has(token));
+  const urls = await tmpDownloadUrls(pendingTokens, tenantToken);
+  await mapWithConcurrency(pendingTokens, Number(process.env.FEISHU_IMAGE_DOWNLOAD_CONCURRENCY || "8") || 8, async (token) => {
+    if (downloaded.has(token)) return;
     const cachePath = path.join(cacheDir, `${safeFilePart(token)}.jpg`);
     try {
       const existing = await fs.stat(cachePath).then((stat) => stat.size > 0).catch(() => false);
@@ -805,7 +825,7 @@ async function downloadImages(groups: ProductGroup[], tenantToken: string, repor
           if (response.ok) buffer = Buffer.from(await response.arrayBuffer());
         }
         buffer ||= await downloadFeishuMedia(token, tenantToken);
-        if (!buffer) continue;
+        if (!buffer) return;
         await fs.writeFile(cachePath, buffer);
       }
       downloaded.set(token, {
@@ -816,7 +836,7 @@ async function downloadImages(groups: ProductGroup[], tenantToken: string, repor
     } catch {
       // Keep the failure in the report instead of throwing away the full batch.
     }
-  }
+  });
   return downloaded;
 }
 
@@ -828,6 +848,31 @@ function csvValue(value: unknown) {
 async function writeCsv(filePath: string, rows: unknown[][]) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, rows.map((row) => row.map(csvValue).join(",")).join("\n"), "utf8");
+}
+
+function timestampLabel() {
+  return new Date().toISOString().replace(/[:.]/g, "-");
+}
+
+function createPrismaClient() {
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: requireEnv("DATABASE_URL") }) });
+}
+
+async function findExistingProductSlugs(slugs: string[]) {
+  const uniqueSlugs = Array.from(new Set(slugs.filter(Boolean)));
+  if (!uniqueSlugs.length) return new Set<string>();
+  const prisma = createPrismaClient();
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        slug: { in: uniqueSlugs }
+      },
+      select: { slug: true }
+    });
+    return new Set(products.map((product) => product.slug));
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 function descriptionFor(group: ProductGroup) {
@@ -915,9 +960,8 @@ async function ensureCatalogRecords(
 }
 
 async function applyGroups(groups: ProductGroup[], images: Map<string, DownloadedImage>, reportDir: string) {
-  const databaseUrl = requireEnv("DATABASE_URL");
   requireEnv("BLOB_READ_WRITE_TOKEN");
-  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
+  const prisma = createPrismaClient();
   const priceProfile = await prisma.storeProfile.findUnique({
     where: { id: "main" },
     select: {
@@ -1127,7 +1171,8 @@ async function main() {
   if (args.mode === "apply" && !args.yes) throw new Error("Refusing to apply without --yes.");
 
   const spreadsheetToken = process.env.FEISHU_SPREADSHEET_TOKEN || DEFAULT_SPREADSHEET_TOKEN;
-  const reportDir = process.env.FEISHU_REPORT_DIR || DEFAULT_REPORT_DIR;
+  const baseReportDir = process.env.FEISHU_REPORT_DIR || DEFAULT_REPORT_DIR;
+  const reportDir = path.join(baseReportDir, args.batchLabel || `remaining-${timestampLabel()}`);
   await fs.mkdir(reportDir, { recursive: true });
 
   const tenantToken = await getTenantAccessToken();
@@ -1137,37 +1182,54 @@ async function main() {
   const values = await readRange(spreadsheetToken, sheet.sheetId, args.readRange, tenantToken);
   const headers = findHeader(values);
   const rows = parseRows(values, headers);
-  const candidateLimit = Math.max(args.limit * 5, args.limit);
-  const candidateResult = selectGroups(rows, candidateLimit);
-  const images = await downloadImages(candidateResult.selected, tenantToken, reportDir);
+  const candidateResult = selectGroups(rows, rows.length);
+  const existingSlugs = args.skipExisting
+    ? await findExistingProductSlugs(candidateResult.selected.map((group) => group.slug))
+    : new Set<string>();
+  const existingSkipped = candidateResult.selected
+    .filter((group) => existingSlugs.has(group.slug))
+    .map((group) => ({
+      row: group.rows[0]?.rowNumber || 0,
+      brand: group.brand,
+      model: group.mainModel,
+      reason: "already_imported"
+    }));
+  const availableCandidates = candidateResult.selected.filter((group) => !existingSlugs.has(group.slug));
+  const images = new Map<string, DownloadedImage>();
   const imageSkipped: Array<{ row: number; brand: string; model: string; reason: string }> = [];
   const selected: ProductGroup[] = [];
   const selectedSlugs = new Set<string>();
-  for (const group of candidateResult.selected) {
-    const imageIssue = groupImageIssue(group, images);
-    if (imageIssue) {
-      imageSkipped.push({
-        row: group.rows[0]?.rowNumber || 0,
-        brand: group.brand,
-        model: group.mainModel,
-        reason: imageIssue
-      });
-      continue;
+  const chunkSize = Math.max(args.limit, 100);
+  for (let offset = 0; selected.length < args.limit && offset < availableCandidates.length; offset += chunkSize) {
+    const chunk = availableCandidates.slice(offset, offset + chunkSize);
+    const chunkImages = await downloadImages(chunk, tenantToken, reportDir);
+    for (const [token, image] of chunkImages) images.set(token, image);
+    for (const group of chunk) {
+      const imageIssue = groupImageIssue(group, images);
+      if (imageIssue) {
+        imageSkipped.push({
+          row: group.rows[0]?.rowNumber || 0,
+          brand: group.brand,
+          model: group.mainModel,
+          reason: imageIssue
+        });
+        continue;
+      }
+      if (selectedSlugs.has(group.slug)) {
+        imageSkipped.push({
+          row: group.rows[0]?.rowNumber || 0,
+          brand: group.brand,
+          model: group.mainModel,
+          reason: "duplicate product slug already selected"
+        });
+        continue;
+      }
+      selectedSlugs.add(group.slug);
+      selected.push(group);
+      if (selected.length >= args.limit) break;
     }
-    if (selectedSlugs.has(group.slug)) {
-      imageSkipped.push({
-        row: group.rows[0]?.rowNumber || 0,
-        brand: group.brand,
-        model: group.mainModel,
-        reason: "duplicate product slug already selected"
-      });
-      continue;
-    }
-    selectedSlugs.add(group.slug);
-    selected.push(group);
-    if (selected.length >= args.limit) break;
   }
-  const skipped = [...candidateResult.skipped, ...imageSkipped];
+  const skipped = [...candidateResult.skipped, ...existingSkipped, ...imageSkipped];
 
   const previewRows: unknown[][] = [
     [
@@ -1222,6 +1284,10 @@ async function main() {
         sheet: sheet.title,
         readRange: args.readRange,
         parsedRows: rows.length,
+        candidateGroups: candidateResult.selected.length,
+        skipExisting: args.skipExisting,
+        existingProductsSkipped: existingSkipped.length,
+        availableCandidateGroups: availableCandidates.length,
         selectedGroups: selected.length,
         skippedRows: skipped.length,
         downloadedImages: images.size,
@@ -1241,6 +1307,10 @@ async function main() {
     JSON.stringify(
       {
         mode: args.mode,
+        skipExisting: args.skipExisting,
+        candidateGroups: candidateResult.selected.length,
+        existingProductsSkipped: existingSkipped.length,
+        availableCandidateGroups: availableCandidates.length,
         selectedGroups: selected.length,
         downloadedImages: images.size,
         reportDir,
