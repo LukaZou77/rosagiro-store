@@ -61,7 +61,7 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
           src={product.image}
           alt={product.name}
           fill
-          sizes="(min-width: 1180px) 23vw, (min-width: 760px) 31vw, 50vw"
+          sizes="(min-width: 1180px) 23vw, (min-width: 760px) 31vw, (min-width: 521px) 50vw, 100vw"
         />
       </Link>
       <div className="product-card-body">

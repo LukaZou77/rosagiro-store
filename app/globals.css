@@ -1548,6 +1548,8 @@ textarea:focus-visible {
     overflow: hidden;
     font-size: 0.88rem;
     line-height: 1.15;
+    overflow-wrap: normal;
+    word-break: normal;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
@@ -6360,6 +6362,14 @@ a.readiness-signal:focus-visible {
 }
 
 @media (max-width: 520px) {
+  .product-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .product-card {
+    min-width: 0;
+  }
+
   .admin-job-progress-grid {
     grid-template-columns: 1fr;
   }
