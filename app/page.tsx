@@ -44,6 +44,12 @@ export default async function HomePage() {
     { value: `${categories.length}`, label: siteConfig.homePromotions.stats.categoriesLabel },
     { value: `${brands.length}+`, label: siteConfig.homePromotions.stats.brandsLabel }
   ];
+  const wholesaleBandTrustPoints = siteConfig.homePromotions.trustPoints.filter(
+    (point) => !point.toLowerCase().includes("entrega para todo o brasil")
+  );
+  const wholesaleBandDeliveryModes = siteConfig.wholesale.deliveryModes.filter(
+    (mode) => !mode.toLowerCase().includes("anjun")
+  );
 
   return (
     <StoreShell categories={categories}>
@@ -228,10 +234,10 @@ export default async function HomePage() {
           </div>
         </div>
         <ul className="service-list">
-          {siteConfig.homePromotions.trustPoints.map((point) => (
+          {wholesaleBandTrustPoints.map((point) => (
             <li key={point}>{point}</li>
           ))}
-          {siteConfig.wholesale.deliveryModes.map((mode) => (
+          {wholesaleBandDeliveryModes.map((mode) => (
             <li key={mode}>{mode}</li>
           ))}
         </ul>
