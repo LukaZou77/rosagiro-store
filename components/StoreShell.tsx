@@ -71,6 +71,7 @@ export async function StoreShell({
               {link.label}
             </Link>
           ))}
+          <Link href="/guias">Guias</Link>
           <Link href="/contato">Contato</Link>
           <Link href="/informacoes-da-loja">Informações da loja</Link>
         </nav>

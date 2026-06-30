@@ -1,20 +1,23 @@
 import { getCategories, getProductCount, getProducts } from "@/lib/catalog";
+import { getPublishedGuideArticles } from "@/lib/guide-articles";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import { storeSummaryForLlms } from "@/lib/seo";
 import { getStoreProfile } from "@/lib/store-profile";
 
 export async function GET() {
-  const [categories, products, productCount, profile] = await Promise.all([
+  const [categories, products, productCount, profile, guides] = await Promise.all([
     getCategories(),
     getProducts({ take: 12 }),
     getProductCount(),
-    getStoreProfile()
+    getStoreProfile(),
+    getPublishedGuideArticles({ take: 6 })
   ]);
   const store = storeSummaryForLlms(profile);
   const categoryLines = categories.map((category) => `- ${category.label}: ${siteUrl(`/categoria/${category.slug}`)}`);
   const productLines = products
     .slice(0, 12)
     .map((product) => `- ${product.name} (${product.brand.name}): ${siteUrl(`/produto/${product.slug}`)}`);
+  const guideLines = guides.map((guide) => `- ${guide.title}: ${siteUrl(`/guias/${guide.slug}`)}`);
   const contactLines = [
     store.whatsapp ? `- WhatsApp: ${store.whatsapp}` : "",
     store.email ? `- Email: ${store.email}` : "",
@@ -31,6 +34,7 @@ export async function GET() {
     `- Início: ${siteUrl("/")}`,
     `- Catálogo: ${siteUrl("/categoria/all")}`,
     `- Destaques: ${siteUrl("/promocoes")}`,
+    `- Guias: ${siteUrl("/guias")}`,
     `- Informações da loja: ${siteUrl("/informacoes-da-loja")}`,
     `- Entrega: ${siteUrl("/entrega")}`,
     `- Trocas e devoluções: ${siteUrl("/trocas-e-devolucoes")}`,
@@ -42,6 +46,9 @@ export async function GET() {
     "## Produtos em destaque do catálogo",
     `- Total de produtos ativos no catálogo: ${productCount}`,
     ...productLines,
+    "",
+    "## Guias publicados",
+    ...(guideLines.length ? guideLines : ["- Guias editoriais em preparacao."]),
     "",
     "## Atendimento",
     ...(contactLines.length ? contactLines : ["- Atendimento comercial disponível pelos canais publicados no site."]),

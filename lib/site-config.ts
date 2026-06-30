@@ -232,6 +232,7 @@ export const siteConfig = {
 export const storefrontLinks = [
   { href: "/categoria/all", label: "Categorias" },
   { href: "/promocoes", label: "Destaques" },
+  { href: "/guias", label: "Guias" },
   { href: "/entrega", label: "Entrega" },
   { href: "/trocas-e-devolucoes", label: "Trocas" },
   { href: "/contato", label: "Contato" }

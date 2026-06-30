@@ -7,6 +7,8 @@ import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
 import { markOrderPaid, OrderError } from "@/lib/orders";
 import { isMercadoPagoInstallments } from "@/lib/payments";
+import { extractGuideCoverUpload, saveGuideCoverUpload, deleteGuideImages } from "@/lib/guide-images";
+import { GuideArticleValidationError, validateGuideArticleInput } from "@/lib/guide-articles";
 import { importProductsFromCsv, ProductImportError } from "@/lib/product-import";
 import {
   adjustPriceCents,
@@ -120,6 +122,16 @@ function revalidateCatalog(productSlug?: string) {
 function revalidateCategoryManagement() {
   revalidateCatalog();
   revalidatePath("/admin/categorias");
+}
+
+function revalidateGuides(articleSlug?: string, previousSlug?: string) {
+  revalidatePath("/");
+  revalidatePath("/guias");
+  revalidatePath("/sitemap.xml");
+  revalidatePath("/llms.txt");
+  revalidatePath("/admin/guias");
+  if (articleSlug) revalidatePath(`/guias/${articleSlug}`);
+  if (previousSlug && previousSlug !== articleSlug) revalidatePath(`/guias/${previousSlug}`);
 }
 
 export async function saveProductPriceAdjustmentAction(formData: FormData) {
@@ -1109,6 +1121,114 @@ export async function saveSiteInfoPageAction(formData: FormData) {
   revalidatePath("/admin/politicas");
   revalidatePath("/admin/prontidao");
   redirect(`/admin/politicas?pagina=${encodeURIComponent(page.pageKey)}&saved=1`);
+}
+
+export async function saveGuideArticleAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = field(formData, "id");
+  const detailPath = "/admin/guias";
+  const upload = extractGuideCoverUpload(formData.get("coverFile"));
+
+  let input;
+  try {
+    input = validateGuideArticleInput({
+      id,
+      title: formData.get("title"),
+      slug: formData.get("slug"),
+      excerpt: formData.get("excerpt"),
+      coverImage: formData.get("coverImage"),
+      body: formData.get("body"),
+      active: formData.get("active") === "on",
+      sortOrder: positiveInt(formData, "sortOrder", 0)
+    });
+  } catch (error) {
+    const message = error instanceof GuideArticleValidationError ? error.message : "Nao foi possivel validar este guia.";
+    redirectError(detailPath, message);
+  }
+
+  const [existingArticle, slugOwner] = await Promise.all([
+    input.id ? prisma.guideArticle.findUnique({ where: { id: input.id } }) : null,
+    prisma.guideArticle.findUnique({ where: { slug: input.slug } })
+  ]);
+
+  if (input.id && !existingArticle) {
+    redirectError(detailPath, "Guia nao encontrado.");
+  }
+  if (slugOwner && slugOwner.id !== input.id) {
+    redirectError(detailPath, "Este slug ja esta em uso por outro guia.");
+  }
+
+  let uploadedCover = "";
+  try {
+    uploadedCover = await saveGuideCoverUpload(input.slug, upload);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Nao foi possivel enviar a imagem de capa.";
+    redirectError(detailPath, message);
+  }
+
+  const coverImage = uploadedCover || input.coverImage;
+  const publishedAt = input.active ? existingArticle?.publishedAt || new Date() : null;
+  let savedArticleSlug = input.slug;
+
+  try {
+    const savedArticle = input.id
+      ? await prisma.guideArticle.update({
+          where: { id: input.id },
+          data: {
+            slug: input.slug,
+            title: input.title,
+            excerpt: input.excerpt,
+            coverImage,
+            body: input.body,
+            active: input.active,
+            publishedAt,
+            sortOrder: input.sortOrder
+          }
+        })
+      : await prisma.guideArticle.create({
+          data: {
+            slug: input.slug,
+            title: input.title,
+            excerpt: input.excerpt,
+            coverImage,
+            body: input.body,
+            active: input.active,
+            publishedAt,
+            sortOrder: input.sortOrder
+          }
+        });
+    savedArticleSlug = savedArticle.slug;
+  } catch (error) {
+    if (uploadedCover) await deleteGuideImages(input.slug, [uploadedCover]).catch(() => undefined);
+    const message = error instanceof Error ? error.message : "Nao foi possivel salvar o guia.";
+    redirectError(detailPath, message);
+  }
+
+  if (uploadedCover && existingArticle?.coverImage && existingArticle.coverImage !== uploadedCover) {
+    await deleteGuideImages(existingArticle.slug, [existingArticle.coverImage]).catch(() => undefined);
+  }
+
+  revalidateGuides(savedArticleSlug, existingArticle?.slug);
+  redirect(`/admin/guias?saved=${encodeURIComponent(savedArticleSlug)}`);
+}
+
+export async function deleteGuideArticleAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = field(formData, "id");
+  if (!id) redirectError("/admin/guias", "Guia nao encontrado.");
+
+  const article = await prisma.guideArticle.findUnique({ where: { id } });
+  if (!article) redirectError("/admin/guias", "Guia nao encontrado.");
+
+  await prisma.guideArticle.delete({ where: { id } });
+  if (article.coverImage) {
+    await deleteGuideImages(article.slug, [article.coverImage]).catch(() => undefined);
+  }
+
+  revalidateGuides(undefined, article.slug);
+  redirect("/admin/guias?deleted=1");
 }
 
 export async function importProductsAction(formData: FormData) {

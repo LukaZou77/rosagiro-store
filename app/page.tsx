@@ -5,6 +5,7 @@ import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getFeaturedBrands, getProductCount, getProducts } from "@/lib/catalog";
+import { getPublishedGuideArticles } from "@/lib/guide-articles";
 import { money } from "@/lib/money";
 import { hasSkuPriceRange, lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { productHeroBadge } from "@/lib/product-conversion";
@@ -18,12 +19,13 @@ function displayPriceLabel(product: Awaited<ReturnType<typeof getProducts>>[numb
 }
 
 export default async function HomePage() {
-  const [categories, brands, products, storeProfile, productCount] = await Promise.all([
+  const [categories, brands, products, storeProfile, productCount, guideArticles] = await Promise.all([
     getCategories(),
     getFeaturedBrands(),
     getProducts({ take: 12 }),
     getStoreProfile(),
-    getProductCount()
+    getProductCount(),
+    getPublishedGuideArticles({ take: 3 })
   ]);
   const featuredProducts = products.slice(0, 3);
   const heroProduct = featuredProducts[0] || products[0];
@@ -160,6 +162,41 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {guideArticles.length ? (
+        <section className="section guide-home-section">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Guias</p>
+              <h2>Conteudo rapido para comprar melhor</h2>
+            </div>
+            <Link className="button secondary" href="/guias">
+              Ver guias
+            </Link>
+          </div>
+          <div className="guide-card-grid compact">
+            {guideArticles.map((article) => (
+              <Link className="guide-card" href={`/guias/${article.slug}`} key={article.slug}>
+                <span className="guide-card-media">
+                  {article.coverImage ? (
+                    <OptimizedProductImage
+                      src={article.coverImage}
+                      alt={article.title}
+                      fill
+                      sizes="(min-width: 960px) 28vw, 90vw"
+                    />
+                  ) : (
+                    <span className="guide-card-placeholder">RG</span>
+                  )}
+                </span>
+                <span className="eyebrow">Guia de compra</span>
+                <strong>{article.title}</strong>
+                <small>{article.excerpt}</small>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="section">
         <div className="section-heading">

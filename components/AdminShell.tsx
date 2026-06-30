@@ -32,6 +32,7 @@ export function AdminShell({
           <Link href="/admin/clientes">Clientes</Link>
           <Link href="/admin/loja">Loja / Confiança</Link>
           <Link href="/admin/politicas">Políticas / Conteúdo</Link>
+          <Link href="/admin/guias">Guias / Artigos</Link>
           <Link href="/admin/prontidao">Prontidão / Launch</Link>
           <Link href="/">Ver loja</Link>
         </nav>
