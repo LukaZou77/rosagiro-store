@@ -101,7 +101,7 @@ export function CartCount() {
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
   return (
     <Link className="cart-link" href="/carrinho" aria-label="Abrir carrinho">
-      <span className="cart-icon">Bag</span>
+      <span className="cart-icon">Sacola</span>
       <span className="cart-count">{count}</span>
     </Link>
   );

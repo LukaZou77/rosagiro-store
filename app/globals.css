@@ -1372,15 +1372,28 @@ textarea:focus-visible {
 }
 
 @media (max-width: 679px) {
+  .store-alert {
+    gap: 4px 6px;
+    padding: 4px 8px;
+    font-size: 0.58rem;
+    line-height: 1.05;
+  }
+
+  .store-alert a {
+    min-height: 22px;
+    padding: 3px 6px;
+  }
+
   .topbar {
-    gap: 10px;
-    min-height: 66px;
+    gap: 8px;
+    min-height: 58px;
+    padding: 8px 12px;
   }
 
   .topbar .brand-logo-icon {
     display: block;
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 34px;
   }
 
   .topbar .brand-logo-header-image {
@@ -1388,7 +1401,7 @@ textarea:focus-visible {
   }
 
   .topbar .brand-logo-copy strong {
-    font-size: 1.06rem;
+    font-size: 0.98rem;
   }
 
   .topbar .brand-logo-copy {
@@ -1397,6 +1410,41 @@ textarea:focus-visible {
 
   .topbar .brand-logo-copy small {
     display: none;
+  }
+
+  .topbar .cart-link {
+    min-height: 34px;
+    gap: 6px;
+    padding: 0 9px;
+  }
+
+  .topbar .cart-icon {
+    font-size: 0.76rem;
+  }
+
+  .topbar .cart-count {
+    min-width: 20px;
+    height: 20px;
+    font-size: 0.72rem;
+  }
+
+  .promo-strip {
+    gap: 4px;
+    padding: 6px 12px;
+  }
+
+  .promo-strip span {
+    font-size: 0.68rem;
+  }
+
+  .promo-strip p {
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  .promo-strip a {
+    padding: 3px 7px;
+    font-size: 0.72rem;
   }
 
   .hero {
@@ -7034,6 +7082,18 @@ a.readiness-signal:focus-visible {
 }
 
 @media (max-width: 959px) {
+  body:has(.mobile-product-action-bar) main {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  body:has(.mobile-product-action-bar) .mobile-tabs {
+    display: none;
+  }
+
+  body:has(.mobile-product-action-bar) .mobile-product-action-bar {
+    bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+
   .checkout-step-actions .button.primary {
     display: none;
   }
