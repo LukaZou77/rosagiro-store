@@ -17,6 +17,12 @@ server.err.log
 concept.out.log
 concept.err.log
 
+_feishu_reports/
+scratch/
+confirmed-*.csv
+scripts/__pycache__/
+*.pyc
+
 Thumbs.db
 .DS_Store
 .vercel

@@ -156,6 +156,28 @@ function requireEnv(name: string) {
   return value;
 }
 
+function parseRowFilter(value: string) {
+  const rows = new Set<number>();
+  for (const part of value.split(",")) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const range = trimmed.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (range) {
+      const start = Number(range[1]);
+      const end = Number(range[2]);
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start <= 0 || end < start) {
+        throw new Error(`Invalid --only-rows range: ${trimmed}`);
+      }
+      for (let row = start; row <= end; row += 1) rows.add(row);
+      continue;
+    }
+    const row = Number(trimmed);
+    if (!Number.isInteger(row) || row <= 0) throw new Error(`Invalid --only-rows value: ${trimmed}`);
+    rows.add(row);
+  }
+  return rows;
+}
+
 function parseArgs() {
   const args = process.argv.slice(2);
   const get = (name: string, fallback = "") => {
@@ -171,7 +193,8 @@ function parseArgs() {
     readRange: get("--read-range", process.env.FEISHU_READ_RANGE || DEFAULT_READ_RANGE),
     sheetTitle: get("--sheet", process.env.FEISHU_SHEET_TITLE || DEFAULT_SHEET_TITLE),
     skipExisting: !args.includes("--no-skip-existing"),
-    batchLabel: get("--batch-label", "")
+    batchLabel: get("--batch-label", ""),
+    onlyRows: parseRowFilter(get("--only-rows", ""))
   };
 }
 
@@ -315,22 +338,24 @@ function normalizeCode(value: string) {
     .toUpperCase()
     .replace(/[–—_]/g, "-")
     .replace(/\s+/g, "-")
-    .replace(/[^A-Z0-9-]+/g, "")
+    .replace(/[^A-Z0-9.-]+/g, "")
     .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/^[.-]+|[.-]+$/g, "");
 }
 
 function mainModel(value: string) {
   const code = normalizeCode(value);
   const parts = code.split("-").filter(Boolean);
+  const colorSuffixes = new Set(["PRETO", "BRANCO", "ROSA", "NUDE", "MARROM", "VERMELHO", "LILAS", "AZUL", "VERDE"]);
+  const hasVariantSuffix = (suffix: string) =>
+    /^\d{1,3}$/.test(suffix) || /^[A-Z]{1,4}\d{1,3}$/.test(suffix) || colorSuffixes.has(suffix);
   if (parts.length >= 3) {
     const suffix = parts.at(-1) || "";
-    const colorSuffixes = new Set(["PRETO", "BRANCO", "ROSA", "NUDE", "MARROM", "VERMELHO", "LILAS", "AZUL", "VERDE"]);
-    if (/^\d{1,3}$/.test(suffix) || /^[A-Z]{1,4}\d{1,3}$/.test(suffix) || colorSuffixes.has(suffix)) {
+    if (hasVariantSuffix(suffix)) {
       return parts.slice(0, -1).join("-");
     }
   }
-  if (parts.length === 2 && /[A-Z]/.test(parts[0]) && /\d/.test(parts[0]) && /^\d{1,3}$/.test(parts[1])) {
+  if (parts.length === 2 && /\d/.test(parts[0]) && hasVariantSuffix(parts[1])) {
     return parts[0];
   }
   return code;
@@ -1212,10 +1237,16 @@ async function main() {
   const headers = findHeader(values);
   const rows = parseRows(values, headers);
   const candidateResult = selectGroups(rows, rows.length);
+  const candidateGroups = args.onlyRows.size
+    ? candidateResult.selected.filter((group) => group.rows.some((row) => args.onlyRows.has(row.rowNumber)))
+    : candidateResult.selected;
+  const candidateSkipped = args.onlyRows.size
+    ? candidateResult.skipped.filter((item) => args.onlyRows.has(item.row))
+    : candidateResult.skipped;
   const existingSlugs = args.skipExisting
-    ? await findExistingProductSlugs(candidateResult.selected.map((group) => group.slug))
+    ? await findExistingProductSlugs(candidateGroups.map((group) => group.slug))
     : new Set<string>();
-  const existingSkipped = candidateResult.selected
+  const existingSkipped = candidateGroups
     .filter((group) => existingSlugs.has(group.slug))
     .map((group) => ({
       row: group.rows[0]?.rowNumber || 0,
@@ -1223,7 +1254,7 @@ async function main() {
       model: group.mainModel,
       reason: "already_imported"
     }));
-  const availableCandidates = candidateResult.selected.filter((group) => !existingSlugs.has(group.slug));
+  const availableCandidates = candidateGroups.filter((group) => !existingSlugs.has(group.slug));
   const images = new Map<string, DownloadedImage>();
   const imageSkipped: Array<{ row: number; brand: string; model: string; reason: string }> = [];
   const selected: ProductGroup[] = [];
@@ -1258,7 +1289,7 @@ async function main() {
       if (selected.length >= args.limit) break;
     }
   }
-  const skipped = [...candidateResult.skipped, ...existingSkipped, ...imageSkipped];
+  const skipped = [...candidateSkipped, ...existingSkipped, ...imageSkipped];
 
   const previewRows: unknown[][] = [
     [
@@ -1312,8 +1343,10 @@ async function main() {
         mode: args.mode,
         sheet: sheet.title,
         readRange: args.readRange,
+        onlyRows: Array.from(args.onlyRows).sort((a, b) => a - b),
         parsedRows: rows.length,
-        candidateGroups: candidateResult.selected.length,
+        parsedCandidateGroups: candidateResult.selected.length,
+        candidateGroups: candidateGroups.length,
         skipExisting: args.skipExisting,
         existingProductsSkipped: existingSkipped.length,
         availableCandidateGroups: availableCandidates.length,
@@ -1337,7 +1370,9 @@ async function main() {
       {
         mode: args.mode,
         skipExisting: args.skipExisting,
-        candidateGroups: candidateResult.selected.length,
+        onlyRows: Array.from(args.onlyRows).sort((a, b) => a - b),
+        parsedCandidateGroups: candidateResult.selected.length,
+        candidateGroups: candidateGroups.length,
         existingProductsSkipped: existingSkipped.length,
         availableCandidateGroups: availableCandidates.length,
         selectedGroups: selected.length,
