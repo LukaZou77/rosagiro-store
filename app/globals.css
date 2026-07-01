@@ -1622,7 +1622,9 @@ textarea:focus-visible {
   .hero-product img {
     grid-row: 1 / span 4;
     width: 96px;
-    aspect-ratio: 1.08 / 1;
+    height: 96px;
+    aspect-ratio: 1;
+    object-fit: cover;
   }
 
   .hero-product > span:not(.deal-label) {
@@ -1788,7 +1790,7 @@ textarea:focus-visible {
     box-shadow: 0 8px 18px rgba(var(--ink-rgb), 0.055);
   }
 
-  .product-image img {
+  .product-image {
     aspect-ratio: 1 / 1.04;
   }
 
@@ -6688,7 +6690,7 @@ a.readiness-signal:focus-visible {
 
 @media (max-width: 520px) {
   .product-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .product-card {
