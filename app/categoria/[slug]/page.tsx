@@ -237,7 +237,16 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       <section className="catalog-header">
         <p className="eyebrow">Catálogo</p>
         <h1>{categoryLabel}</h1>
-        <p>{total} produtos disponíveis, com filtros por categoria, marca e prioridade de compra.</p>
+        <p>{total} produtos disponíveis para filtrar por categoria, marca e estoque.</p>
+        <form className="catalog-quick-search" action={`/categoria/${categorySlug}`}>
+          <input name="q" defaultValue={query} placeholder="Buscar produto, marca ou código" />
+          <input type="hidden" name="brand" value={brand} />
+          <input type="hidden" name="stock" value={stockFilter} />
+          <input type="hidden" name="sort" value={sort} />
+          <button className="button primary" type="submit">
+            Buscar
+          </button>
+        </form>
         <div className="catalog-service-bar">
           <span>{siteConfig.wholesale.minimumOrderText}</span>
           <span>{siteConfig.wholesale.nationalDeliveryLabel}</span>
@@ -245,7 +254,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             {siteConfig.whatsapp.serviceLabel}
           </WhatsAppLink>
         </div>
-        <div className="catalog-kpis" aria-label="Resumo de compra da categoria">
+        <div className="catalog-summary-strip" aria-label="Resumo de compra da categoria">
           <span>
             <strong>{readyCount}</strong>
             Em estoque

@@ -30,6 +30,7 @@ export default async function HomePage() {
   const featuredProducts = products.slice(0, 3);
   const heroProduct = featuredProducts[0] || products[0];
   const secondaryDeals = (featuredProducts.length > 1 ? featuredProducts.slice(1) : products.filter((product) => product.slug !== heroProduct?.slug)).slice(0, 2);
+  const quickCategories = categories.slice(0, 4);
   const whatsappHref = buildGeneralWhatsAppHref("home atacado", storeProfile.whatsapp);
   const homeTrustSignals = Array.from(
     new Set([
@@ -57,6 +58,23 @@ export default async function HomePage() {
         <span>{siteConfig.homePromotions.promoBar.label}</span>
         <p>{siteConfig.homePromotions.promoBar.text}</p>
         <Link href={siteConfig.homePromotions.promoBar.href}>{siteConfig.homePromotions.promoBar.cta}</Link>
+      </section>
+
+      <section className="section shelf-section home-first-shelf">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Compra rápida</p>
+            <h2>Produtos em estoque para comprar agora</h2>
+          </div>
+          <Link className="button secondary" href="/categoria/all">
+            Ver catálogo
+          </Link>
+        </div>
+        <div className="product-grid">
+          {products.slice(0, 8).map((product) => (
+            <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />
+          ))}
+        </div>
       </section>
 
       <section className="hero promo-hero">
@@ -132,6 +150,15 @@ export default async function HomePage() {
                 {siteConfig.hero.secondaryCta}
               </Link>
             ) : null}
+          </div>
+          <div className="home-quick-links" aria-label="Atalhos para comprar por categoria">
+            <span>Comprar por:</span>
+            {quickCategories.map((category) => (
+              <Link href={`/categoria/${category.slug}`} key={category.slug}>
+                {category.label}
+              </Link>
+            ))}
+            <Link href="/marcas">Marcas</Link>
           </div>
         </div>
         <dl className="hero-stats">
@@ -261,20 +288,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="section shelf-section">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">{siteConfig.homeSections.featuredEyebrow}</p>
-            <h2>{siteConfig.homeSections.featuredTitle}</h2>
-          </div>
-          <p>{siteConfig.homePromotions.shelfNote}</p>
-        </div>
-        <div className="product-grid">
-          {products.slice(0, 8).map((product) => (
-            <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />
-          ))}
-        </div>
-      </section>
     </StoreShell>
   );
 }
