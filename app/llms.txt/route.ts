@@ -33,6 +33,7 @@ export async function GET() {
     "## Principais páginas",
     `- Início: ${siteUrl("/")}`,
     `- Catálogo: ${siteUrl("/categoria/all")}`,
+    `- Marcas: ${siteUrl("/marcas")}`,
     `- Destaques: ${siteUrl("/promocoes")}`,
     `- Guias: ${siteUrl("/guias")}`,
     `- Informações da loja: ${siteUrl("/informacoes-da-loja")}`,

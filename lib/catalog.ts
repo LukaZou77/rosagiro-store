@@ -135,6 +135,46 @@ export async function getFeaturedBrands() {
   });
 }
 
+export async function getActiveBrandSummaries() {
+  const brands = await prisma.brand.findMany({
+    where: {
+      products: {
+        some: productWhere()
+      }
+    },
+    select: {
+      slug: true,
+      name: true,
+      logo: true,
+      descriptionPt: true,
+      featured: true,
+      _count: {
+        select: {
+          products: {
+            where: productWhere()
+          }
+        }
+      }
+    },
+    orderBy: [{ featured: "desc" }, { name: "asc" }]
+  });
+
+  return brands
+    .map((brand) => ({
+      slug: brand.slug,
+      name: brand.name,
+      logo: brand.logo,
+      descriptionPt: brand.descriptionPt,
+      featured: brand.featured,
+      productCount: brand._count.products
+    }))
+    .sort((a, b) => {
+      if (a.featured !== b.featured) return a.featured ? -1 : 1;
+      if (a.productCount !== b.productCount) return b.productCount - a.productCount;
+      return a.name.localeCompare(b.name, "pt-BR");
+    });
+}
+
 export async function getProducts(options: ProductListOptions = {}) {
   const { sort = "featured", take, skip } = options;
   const products = await prisma.product.findMany({

@@ -1101,6 +1101,94 @@ textarea:focus-visible {
   font-weight: 900;
 }
 
+.brand-market-link {
+  display: inline-flex;
+  margin-top: 16px;
+  color: var(--promo-deep);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.brand-directory-hero {
+  padding-top: 54px;
+  padding-bottom: 30px;
+  background:
+    linear-gradient(135deg, rgba(255, 240, 243, 0.7), rgba(var(--mist-rgb), 0.76)),
+    var(--paper);
+}
+
+.brand-directory-hero p:not(.eyebrow) {
+  max-width: 680px;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.brand-directory-section {
+  padding-top: 30px;
+}
+
+.brand-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.brand-directory-card {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 10px 14px;
+  align-content: start;
+  min-height: 178px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 12px 26px rgba(var(--ink-rgb), 0.055);
+  transition: transform 160ms var(--ease-out), border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.brand-directory-card:hover {
+  border-color: rgba(var(--promo-deep-rgb), 0.28);
+  box-shadow: 0 16px 30px rgba(var(--ink-rgb), 0.08);
+  transform: translateY(-2px);
+}
+
+.brand-directory-card .brand-mark {
+  width: 48px;
+  height: 48px;
+}
+
+.brand-directory-card strong,
+.brand-directory-card small,
+.brand-directory-card p,
+.brand-directory-card em {
+  display: block;
+}
+
+.brand-directory-card small,
+.brand-directory-card p {
+  color: var(--muted);
+}
+
+.brand-directory-card p {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.brand-directory-card em {
+  grid-column: 1 / -1;
+  align-self: end;
+  color: var(--promo-deep);
+  font-size: 0.86rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.brand-directory-empty {
+  max-width: 640px;
+}
+
 .product-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

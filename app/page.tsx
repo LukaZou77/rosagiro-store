@@ -247,6 +247,9 @@ export default async function HomePage() {
         <div>
           <p className="eyebrow">{siteConfig.homeSections.brandsEyebrow}</p>
           <h2>{siteConfig.homeSections.brandsTitle}</h2>
+          <Link className="brand-market-link" href="/marcas">
+            Ver todas as marcas
+          </Link>
         </div>
         <div className="brand-row">
           {brands.map((brand) => (
