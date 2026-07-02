@@ -47,12 +47,12 @@ export const siteConfig = {
       "Retirada local mediante confirmação",
       "Anjun, transportadora ou excursão sob consulta"
     ],
-    shelfSignals: ["Pedido mínimo R$ 300", "Entrega para todo o Brasil", "Compra para revenda", "WhatsApp rápido"]
+    shelfSignals: ["Pedido mínimo R$ 300", "Envio para todo o Brasil", "Produtos em estoque", "Atendimento no WhatsApp"]
   },
   hero: {
     eyebrow: "Atacado de cosméticos em São Paulo",
-    title: "Produtos para revenda, kits e reposição com compra rápida.",
-    body: "Produtos para rosto, olhos, lábios, cabelos, corpo, perfumes e acessórios com disponibilidade sinalizada, pedido mínimo, cotação por CEP para todo o Brasil e atendimento no WhatsApp.",
+    title: "Cosméticos no atacado para revenda",
+    body: "Maquiagem, skincare, perfumes, cabelos e acessórios com estoque sinalizado, pedido mínimo de R$ 300 e atendimento pelo WhatsApp.",
     primaryCta: "Comprar pelo catálogo",
     secondaryCta: "Comprar destaque"
   },
