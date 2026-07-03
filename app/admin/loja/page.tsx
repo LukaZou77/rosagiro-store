@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { saveStoreProfileAction } from "@/app/admin/actions";
+import { saveStoreProfileAction, updateAdminCredentialsAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { getLaunchReadinessSnapshot, launchReadinessSignalLabels } from "@/lib/launch-readiness";
@@ -31,6 +31,7 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
   ]);
   const saved = single(params.saved);
   const error = single(params.error);
+  const adminCredentialsSaved = single(params.adminCredentials);
   const trustBadges = profile.trustBadges.join(" | ");
   const storeSignals = launchSnapshot.signals.filter((signal) => signal.group === "Loja");
   const pixAccount = getPublicPixPaymentAccount(profile);
@@ -51,6 +52,11 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
       {saved ? (
         <div className="admin-notice success" role="status">
           Dados da loja salvos com sucesso.
+        </div>
+      ) : null}
+      {adminCredentialsSaved ? (
+        <div className="admin-notice success" role="status">
+          Acesso administrativo atualizado com sucesso.
         </div>
       ) : null}
       {error ? (
@@ -75,6 +81,48 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="import-panel">
+        <div className="readiness-group-heading">
+          <div>
+            <span>Admin</span>
+            <h2>Acesso administrativo</h2>
+            <p className="table-note">
+              Altere o e-mail e a senha usados para entrar no painel. A nova senha e salva apenas como hash.
+            </p>
+          </div>
+        </div>
+        <form action={updateAdminCredentialsAction} className="form-grid">
+          <label>
+            Nome do administrador
+            <input name="adminName" defaultValue={admin.name} autoComplete="name" />
+          </label>
+          <label>
+            E-mail de login
+            <input name="adminEmail" type="email" defaultValue={admin.email} autoComplete="username" required />
+          </label>
+          <label>
+            Senha atual
+            <input name="currentPassword" type="password" autoComplete="current-password" required />
+          </label>
+          <label>
+            Nova senha
+            <input name="newPassword" type="password" autoComplete="new-password" minLength={10} placeholder="Opcional" />
+          </label>
+          <label>
+            Confirmar nova senha
+            <input name="confirmPassword" type="password" autoComplete="new-password" minLength={10} placeholder="Repita se trocar a senha" />
+          </label>
+          <div className="store-profile-preview">
+            <span>Seguranca</span>
+            <strong>Use uma senha forte e guarde fora do WhatsApp.</strong>
+            <small>Para trocar apenas o e-mail, confirme com a senha atual e deixe a nova senha em branco.</small>
+          </div>
+          <button className="button primary wide" type="submit">
+            Salvar acesso admin
+          </button>
+        </form>
       </section>
 
       <form action={saveStoreProfileAction} className="admin-detail-grid store-profile-editor">

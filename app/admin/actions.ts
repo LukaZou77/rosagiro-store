@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { clearAdminSession, requireAdmin, setAdminSession, verifyPassword } from "@/lib/auth";
+import { clearAdminSession, hashPassword, requireAdmin, setAdminSession, verifyPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
 import { markOrderPaid, OrderError } from "@/lib/orders";
@@ -430,6 +430,59 @@ export async function loginAction(formData: FormData) {
 export async function logoutAction() {
   await clearAdminSession();
   redirect("/admin/login");
+}
+
+export async function updateAdminCredentialsAction(formData: FormData) {
+  const sessionAdmin = await requireAdmin();
+  const redirectPath = "/admin/loja";
+  const name = field(formData, "adminName");
+  const email = field(formData, "adminEmail").toLowerCase();
+  const currentPassword = String(formData.get("currentPassword") || "");
+  const newPassword = String(formData.get("newPassword") || "");
+  const confirmPassword = String(formData.get("confirmPassword") || "");
+
+  if (!email || !email.includes("@")) {
+    redirectError(redirectPath, "Informe um e-mail de administrador valido.");
+  }
+
+  const admin = await prisma.adminUser.findUnique({ where: { id: sessionAdmin.id } });
+  if (!admin || !verifyPassword(currentPassword, admin.passwordHash)) {
+    redirectError(redirectPath, "Senha atual invalida.");
+  }
+
+  const duplicateEmail = await prisma.adminUser.findFirst({
+    where: { email, id: { not: admin.id } },
+    select: { id: true }
+  });
+  if (duplicateEmail) {
+    redirectError(redirectPath, "Ja existe outro administrador com este e-mail.");
+  }
+
+  const updateData: Prisma.AdminUserUpdateInput = {
+    name: name || admin.name,
+    email
+  };
+
+  if (newPassword || confirmPassword) {
+    if (newPassword !== confirmPassword) {
+      redirectError(redirectPath, "A confirmacao da nova senha nao confere.");
+    }
+    if (newPassword.length < 10) {
+      redirectError(redirectPath, "A nova senha deve ter pelo menos 10 caracteres.");
+    }
+    updateData.passwordHash = hashPassword(newPassword);
+  }
+
+  const updatedAdmin = await prisma.adminUser.update({
+    where: { id: admin.id },
+    data: updateData,
+    select: { id: true }
+  });
+
+  await setAdminSession(updatedAdmin.id);
+  revalidatePath("/admin");
+  revalidatePath("/admin/loja");
+  redirect(`${redirectPath}?adminCredentials=1`);
 }
 
 export async function updateProductAction(formData: FormData) {

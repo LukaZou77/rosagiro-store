@@ -19,11 +19,11 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
         <h1>Entrar</h1>
         <label>
           E-mail
-          <input name="email" type="email" defaultValue="admin@rosagiro.local" required />
+          <input name="email" type="email" autoComplete="username" placeholder="seu@email.com" required />
         </label>
         <label>
           Senha
-          <input name="password" type="password" required />
+          <input name="password" type="password" autoComplete="current-password" required />
         </label>
         <div className="form-error" role="alert">
           {hasError ? "E-mail ou senha inválidos." : ""}

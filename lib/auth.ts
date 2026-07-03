@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, timingSafeEqual, scryptSync } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual, scryptSync } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -23,6 +23,12 @@ export function verifyPassword(password: string, stored: string) {
   if (scheme !== "scrypt" || !salt || !expected) return false;
   const actual = scryptSync(password, salt, 64).toString("hex");
   return timingSafeEqual(Buffer.from(actual, "hex"), Buffer.from(expected, "hex"));
+}
+
+export function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `scrypt$${salt}$${hash}`;
 }
 
 export async function setAdminSession(userId: string) {
