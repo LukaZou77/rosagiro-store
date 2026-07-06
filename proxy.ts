@@ -63,7 +63,8 @@ const publicApiRateLimits: RateLimitRule[] = [
   { prefix: "/api/address/autocomplete", methods: ["GET"], limit: 80, windowMs: 60_000 },
   { prefix: "/api/address/place-details", methods: ["GET"], limit: 50, windowMs: 60_000 },
   { prefix: "/api/address/validate", methods: ["POST"], limit: 60, windowMs: 60_000 },
-  { prefix: "/api/customers/session", methods: ["POST"], limit: 40, windowMs: 60_000 }
+  { prefix: "/api/customers/session", methods: ["POST"], limit: 40, windowMs: 60_000 },
+  { prefix: "/api/analytics/product-events", methods: ["POST"], limit: 180, windowMs: 60_000 }
 ];
 
 const jsonOnlyApiPaths = [
@@ -71,7 +72,8 @@ const jsonOnlyApiPaths = [
   "/api/cart/summary",
   "/api/shipping/quote",
   "/api/address/validate",
-  "/api/customers/session"
+  "/api/customers/session",
+  "/api/analytics/product-events"
 ];
 
 function clientIp(request: NextRequest) {

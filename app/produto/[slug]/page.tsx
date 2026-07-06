@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductAnalyticsTracker } from "@/components/ProductAnalyticsTracker";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductSkuSelector } from "@/components/ProductSkuSelector";
 import { StoreShell } from "@/components/StoreShell";
@@ -77,6 +78,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   return (
     <StoreShell categories={categories}>
+      <ProductAnalyticsTracker slug={product.slug} />
       <StructuredData
         data={[
           productJsonLd(product),

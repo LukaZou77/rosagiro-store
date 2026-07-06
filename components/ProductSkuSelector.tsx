@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { notifyQuickPurchaseOpen, readCart, sameCartLine, writeCart } from "@/components/CartCount";
 import { useCustomerSession } from "@/components/CustomerSession";
+import { trackProductEvent } from "@/components/ProductAnalyticsTracker";
 import { money } from "@/lib/money";
 
 const PRODUCT_IMAGE_SELECT_EVENT = "rosagiro:select-product-image";
@@ -59,6 +60,14 @@ export function ProductSkuSelector({ productSlug, skus }: ProductSkuSelectorProp
     }
 
     writeCart(cart);
+    for (const item of selected) {
+      trackProductEvent({
+        type: "ADD_TO_CART",
+        slug: productSlug,
+        skuId: item.sku.id,
+        quantity: item.quantity
+      });
+    }
     notifyQuickPurchaseOpen();
     setMessage(`${selectedTotal} item(ns) adicionados ao pedido.`);
     setQuantities({});

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { notifyQuickPurchaseOpen, readCart, sameCartLine, writeCart } from "@/components/CartCount";
 import { useCustomerSession } from "@/components/CustomerSession";
+import { trackProductEvent } from "@/components/ProductAnalyticsTracker";
 
 export function AddToCartButton({
   slug,
@@ -37,6 +38,7 @@ export function AddToCartButton({
     if (existing) existing.quantity += 1;
     else cart.push({ slug, skuId, quantity: 1 });
     writeCart(cart);
+    trackProductEvent({ type: "ADD_TO_CART", slug, skuId: skuId || null, quantity: 1 });
     notifyQuickPurchaseOpen();
     setAdded(true);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
