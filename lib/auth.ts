@@ -18,11 +18,19 @@ function sign(payload: string) {
   return createHmac("sha256", secret()).update(payload).digest("hex");
 }
 
+function timingSafeHexEqual(actualHex: string, expectedHex: string) {
+  if (!/^[a-f0-9]+$/i.test(actualHex) || !/^[a-f0-9]+$/i.test(expectedHex)) return false;
+  const actual = Buffer.from(actualHex, "hex");
+  const expected = Buffer.from(expectedHex, "hex");
+  if (actual.length !== expected.length) return false;
+  return timingSafeEqual(actual, expected);
+}
+
 export function verifyPassword(password: string, stored: string) {
   const [scheme, salt, expected] = stored.split("$");
   if (scheme !== "scrypt" || !salt || !expected) return false;
   const actual = scryptSync(password, salt, 64).toString("hex");
-  return timingSafeEqual(Buffer.from(actual, "hex"), Buffer.from(expected, "hex"));
+  return timingSafeHexEqual(actual, expected);
 }
 
 export function hashPassword(password: string) {
@@ -58,7 +66,7 @@ export async function getAdmin() {
   if (parts.length !== 3) return null;
   const [userId, expiresAt, signature] = parts;
   const payload = `${userId}.${expiresAt}`;
-  if (sign(payload) !== signature || Number(expiresAt) < Date.now()) return null;
+  if (!timingSafeHexEqual(sign(payload), signature) || Number(expiresAt) < Date.now()) return null;
 
   return prisma.adminUser.findFirst({
     where: { id: userId, active: true },

@@ -10,7 +10,8 @@ type PageProps = {
 export default async function AdminLoginPage({ searchParams }: PageProps) {
   const [admin, params] = await Promise.all([getAdmin(), searchParams]);
   if (admin) redirect("/admin");
-  const hasError = Boolean(params.error);
+  const error = Array.isArray(params.error) ? params.error[0] : params.error;
+  const hasError = Boolean(error);
 
   return (
     <main className="login-screen">
