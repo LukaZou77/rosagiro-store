@@ -117,6 +117,7 @@ export function QuickPurchaseDrawer() {
       : 0;
   const hasValidLines = whatsappItems.length > 0;
   const hideFloatingEntry =
+    pathname === "/" ||
     pathname.startsWith("/produto/") ||
     drawerDisabled ||
     pathname.startsWith("/pagamento-simulado/") ||

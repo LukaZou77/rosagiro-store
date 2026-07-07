@@ -1573,15 +1573,15 @@ textarea:focus-visible {
 
   .promo-hero {
     grid-template-areas:
-      "panel"
-      "shop"
       "copy"
+      "shop"
+      "panel"
       "stats";
   }
 
   .hero-copy h1 {
-    margin-bottom: 0;
-    font-size: clamp(1.5rem, 7vw, 1.72rem);
+    margin-bottom: 10px;
+    font-size: 1.72rem;
     line-height: 1.02;
   }
 
@@ -1589,15 +1589,21 @@ textarea:focus-visible {
     font-size: 0.9rem;
   }
 
-  .hero-copy > p:not(.eyebrow),
-  .wholesale-signal-row,
   .hero-stats,
   .deal-list {
     display: none;
   }
 
   .wholesale-signal-row {
-    margin-top: 12px;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .wholesale-signal-row span {
+    min-height: 28px;
+    padding: 5px 8px;
+    font-size: 0.68rem;
+    line-height: 1.1;
   }
 
   .hero-commerce-panel {

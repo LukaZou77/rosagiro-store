@@ -60,23 +60,6 @@ export default async function HomePage() {
         <Link href={siteConfig.homePromotions.promoBar.href}>{siteConfig.homePromotions.promoBar.cta}</Link>
       </section>
 
-      <section className="section shelf-section home-first-shelf">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Compra rápida</p>
-            <h2>Produtos em estoque para comprar agora</h2>
-          </div>
-          <Link className="button secondary" href="/categoria/all">
-            Ver catálogo
-          </Link>
-        </div>
-        <div className="product-grid">
-          {products.slice(0, 8).map((product) => (
-            <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />
-          ))}
-        </div>
-      </section>
-
       <section className="hero promo-hero">
         <div className="hero-copy">
           <p className="eyebrow">{siteConfig.hero.eyebrow}</p>
@@ -182,6 +165,23 @@ export default async function HomePage() {
           <Link href="/entrega">Entrega e retirada</Link>
           <Link href="/trocas-e-devolucoes">Trocas</Link>
           <WhatsAppLink href={whatsappHref}>WhatsApp</WhatsAppLink>
+        </div>
+      </section>
+
+      <section className="section shelf-section home-first-shelf">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Compra rápida</p>
+            <h2>Produtos em estoque para comprar agora</h2>
+          </div>
+          <Link className="button secondary" href="/categoria/all">
+            Ver catálogo
+          </Link>
+        </div>
+        <div className="product-grid">
+          {products.slice(0, 8).map((product) => (
+            <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />
+          ))}
         </div>
       </section>
 
