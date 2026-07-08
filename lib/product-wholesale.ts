@@ -21,19 +21,19 @@ export function productWholesaleLines(product: WholesaleProductDetails): Product
   return [
     {
       key: "wholesalePackage",
-      label: "Caixa fechada / atacado",
-      value: clean(product.wholesalePackage) || "Condicao sob consulta",
+      label: "Condição de atacado",
+      value: clean(product.wholesalePackage) || "Sob consulta",
       fallback: !clean(product.wholesalePackage)
     },
     {
       key: "validityNote",
-      label: "Validade / lote",
+      label: "Validade/lote",
       value: clean(product.validityNote) || "Confirmar no atendimento",
       fallback: !clean(product.validityNote)
     },
     {
       key: "purchaseNote",
-      label: "Observacao",
+      label: "Observação",
       value: clean(product.purchaseNote) || "Confirme estoque antes de fechar volume",
       fallback: !clean(product.purchaseNote)
     }
@@ -42,6 +42,6 @@ export function productWholesaleLines(product: WholesaleProductDetails): Product
 
 export function productWholesaleWhatsAppLines(product: WholesaleProductDetails) {
   return productWholesaleLines(product)
-    .filter((line) => !line.fallback)
+    .filter((line) => !line.fallback && line.key !== "purchaseNote")
     .map((line) => `${line.label}: ${line.value}`);
 }

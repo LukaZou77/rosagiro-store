@@ -42,14 +42,29 @@ function stockAvailabilityLabel(quantity: number | null) {
   return quantity > 0 ? "Disponibilidade: em estoque" : "Disponibilidade: sob consulta";
 }
 
+function sourceLine(source: string) {
+  const normalizedSource = source.trim();
+  if (!normalizedSource || normalizedSource === "loja") return "Estou vindo pelo site da RosaGiro.";
+  if (normalizedSource === "navegacao principal") return "Estou vindo pelo menu principal do site.";
+  if (normalizedSource === "home atacado") return "Estou vindo pela página inicial.";
+  if (normalizedSource === "destaques") return "Estou vindo pela página de destaques.";
+  if (normalizedSource === "checkout sem itens") return "Estou no checkout e ainda quero montar minha lista.";
+  if (normalizedSource.startsWith("guia ")) return `Estou vindo pelo guia: ${normalizedSource.replace(/^guia\s+/i, "")}.`;
+  return `Estou vindo pelo site da RosaGiro: ${normalizedSource}.`;
+}
+
+function minimumOrderLine() {
+  return `Pedido mínimo para atacado: ${money(siteConfig.wholesale.minimumOrderCents)}.`;
+}
+
 export function buildGeneralWhatsAppHref(source = "loja", phone?: string | null) {
   return buildHref(
     [
       siteConfig.whatsapp.messages.generalGreeting,
-      `Canal: ${source}`,
-      `Pedido mínimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
-      "Cidade/UF: ",
-      "Compra para: revenda, reposição ou uso profissional?",
+      sourceLine(source),
+      "Quero comprar para revenda ou reposição.",
+      minimumOrderLine(),
+      "Minha cidade/UF: ",
       siteConfig.whatsapp.messages.generalQuestion
     ].join("\n"),
     phone
@@ -59,13 +74,15 @@ export function buildGeneralWhatsAppHref(source = "loja", phone?: string | null)
 export function buildCatalogWhatsAppHref(categoryLabel: string, productCount: number, phone?: string | null) {
   return buildHref(
     [
-      siteConfig.whatsapp.messages.generalGreeting,
-      `Estou olhando o catálogo: ${categoryLabel}.`,
-      `Produtos encontrados: ${productCount}.`,
-      `Pedido mínimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
-      "Cidade/UF para cotação de entrega nacional ou retirada: ",
-      "Pode me ajudar com estoque, frete para todo o Brasil, retirada, transportadora ou excursão?"
-    ].join("\n"),
+      "Oi, tudo bem? Estou vendo o catálogo da RosaGiro e gostaria de montar um pedido no atacado.",
+      `Categoria: ${categoryLabel}.`,
+      productCount > 0 ? `Vi ${productCount} produtos nessa vitrine.` : "",
+      minimumOrderLine(),
+      "Minha cidade/UF: ",
+      "Pode me ajudar a conferir estoque e a melhor forma de entrega ou retirada?"
+    ]
+      .filter(Boolean)
+      .join("\n"),
     phone
   );
 }
@@ -77,16 +94,15 @@ export function buildProductWhatsAppHref(product: ProductContact, phone?: string
     [
       siteConfig.whatsapp.messages.productGreeting,
       `Produto: ${product.name}`,
-      `Slug: ${product.slug}`,
       `Marca: ${product.brand.name}`,
-      `Preço: ${money(lowestEffectivePriceCents(product))}`,
+      `Preço no site: ${money(lowestEffectivePriceCents(product))}`,
       product.volume ? `Volume: ${product.volume}` : "",
       stockAvailabilityLabel(quantity),
       ...wholesaleLines,
       `Link: ${siteUrl(`/produto/${product.slug}`)}`,
-      `Pedido mínimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
-      "Cidade/UF para cotação de entrega nacional ou retirada: ",
-      "Compra para revenda/reposição? ",
+      minimumOrderLine(),
+      "Minha cidade/UF: ",
+      "Tenho interesse para revenda ou reposição.",
       siteConfig.whatsapp.messages.productQuestion
     ]
       .filter(Boolean)
@@ -107,11 +123,11 @@ export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: n
     [
       siteConfig.whatsapp.messages.cartGreeting,
       ...lines,
-      `Subtotal do carrinho: ${money(subtotalCents)}`,
-      `Pedido mínimo: ${money(siteConfig.wholesale.minimumOrderCents)}`,
-      missingCents > 0 ? `Ainda faltam: ${money(missingCents)}` : "Lista acima do mínimo sugerido.",
-      "Cidade/UF para cotação de entrega nacional ou retirada: ",
-      "Compra para revenda/reposição? ",
+      `Subtotal da lista: ${money(subtotalCents)}`,
+      minimumOrderLine(),
+      missingCents > 0 ? `Ainda faltam ${money(missingCents)} para fechar o pedido mínimo.` : "A lista já passa do pedido mínimo.",
+      "Minha cidade/UF: ",
+      "Compra para revenda ou reposição.",
       siteConfig.whatsapp.messages.cartQuestion
     ].join("\n"),
     phone
@@ -121,11 +137,11 @@ export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: n
 export function buildOrderPaymentWhatsAppHref(orderNumber: string, totalCents: number, phone?: string | null) {
   return buildHref(
     [
-      siteConfig.whatsapp.messages.cartGreeting,
+      "Oi, tudo bem? Fiz um pedido no site da RosaGiro e gostaria de confirmar o pagamento.",
       `Pedido: ${orderNumber}`,
       `Total: ${money(totalCents)}`,
-      "Acabei de fazer ou vou fazer o Pix.",
-      "Posso enviar o comprovante por aqui para confirmação do atendimento?"
+      "Vou enviar o comprovante do Pix por aqui.",
+      "Pode conferir para mim, por favor?"
     ].join("\n"),
     phone
   );

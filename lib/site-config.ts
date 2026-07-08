@@ -24,12 +24,12 @@ export const siteConfig = {
     productSecondaryCta: "Tirar dúvida",
     cartCta: "Enviar lista pelo WhatsApp",
     messages: {
-      generalGreeting: "Olá, RosaGiro! Quero atendimento para comprar no atacado.",
-      generalQuestion: "Sou revendedora/lojista ou quero comprar para reposição. Pode me orientar sobre produtos, estoque, cidade/UF e cotação de entrega para todo o Brasil?",
-      productGreeting: "Olá, RosaGiro! Quero consultar este produto.",
-      productQuestion: "Pode confirmar estoque, condição para atacado e indicar a melhor opção de entrega nacional, retirada, transportadora ou excursão?",
-      cartGreeting: "Olá, RosaGiro! Quero confirmar esta lista de compra.",
-      cartQuestion: "Pode revisar estoque, sugerir itens para completar o pedido mínimo e me orientar sobre entrega para todo o Brasil, retirada ou excursão?"
+      generalGreeting: "Oi, tudo bem? Vi a RosaGiro e gostaria de comprar cosméticos no atacado.",
+      generalQuestion: "Pode me ajudar a ver os produtos em estoque e a melhor forma de entrega ou retirada?",
+      productGreeting: "Oi, tudo bem? Vi este produto no site da RosaGiro e gostaria de consultar no atacado.",
+      productQuestion: "Pode confirmar se tem em estoque e me orientar sobre condição para volume?",
+      cartGreeting: "Oi, tudo bem? Montei uma lista no site da RosaGiro e gostaria de seguir com a compra no atacado.",
+      cartQuestion: "Pode revisar disponibilidade e me orientar sobre entrega ou retirada?"
     }
   },
   marketplace: "Brasil",
