@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import "./globals.css";
+
+const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || "AW-17323505855";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -34,7 +37,21 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsId}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-ads-tag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${googleAdsId}');
+          `}
+        </Script>
+        {children}
+      </body>
     </html>
   );
 }

@@ -8,7 +8,21 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "frame-ancestors 'self'",
   "form-action 'self'",
-  "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://rosagiro.com.br https://www.rosagiro.com.br",
+  [
+    "img-src",
+    "'self'",
+    "data:",
+    "blob:",
+    "https://*.public.blob.vercel-storage.com",
+    "https://rosagiro.com.br",
+    "https://www.rosagiro.com.br",
+    "https://www.googletagmanager.com",
+    "https://www.google-analytics.com",
+    "https://www.google.com",
+    "https://www.google.com.br",
+    "https://www.googleadservices.com",
+    "https://googleads.g.doubleclick.net"
+  ].join(" "),
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   [
@@ -16,11 +30,32 @@ const contentSecurityPolicy = [
     "'self'",
     "'unsafe-inline'",
     ...(isDevelopment ? ["'unsafe-eval'"] : []),
+    "https://www.googletagmanager.com",
+    "https://www.googleadservices.com",
     "https://*.mercadopago.com",
     "https://*.mercadolivre.com"
   ].join(" "),
-  "connect-src 'self' https://*.mercadopago.com https://*.mercadolivre.com https://api.mercadopago.com",
-  "frame-src 'self' https://*.mercadopago.com https://*.mercadolivre.com",
+  [
+    "connect-src",
+    "'self'",
+    "https://www.google-analytics.com",
+    "https://*.google-analytics.com",
+    "https://www.googletagmanager.com",
+    "https://www.google.com",
+    "https://www.google.com.br",
+    "https://stats.g.doubleclick.net",
+    "https://googleads.g.doubleclick.net",
+    "https://*.mercadopago.com",
+    "https://*.mercadolivre.com",
+    "https://api.mercadopago.com"
+  ].join(" "),
+  [
+    "frame-src",
+    "'self'",
+    "https://td.doubleclick.net",
+    "https://*.mercadopago.com",
+    "https://*.mercadolivre.com"
+  ].join(" "),
   "upgrade-insecure-requests"
 ].join("; ");
 
