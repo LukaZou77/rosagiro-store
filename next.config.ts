@@ -32,6 +32,7 @@ const contentSecurityPolicy = [
     ...(isDevelopment ? ["'unsafe-eval'"] : []),
     "https://www.googletagmanager.com",
     "https://www.googleadservices.com",
+    "https://googleads.g.doubleclick.net",
     "https://*.mercadopago.com",
     "https://*.mercadolivre.com"
   ].join(" "),
