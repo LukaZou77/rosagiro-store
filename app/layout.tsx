@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { GoogleAdsWhatsAppConversionTracker } from "@/components/GoogleAdsWhatsAppConversionTracker";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import "./globals.css";
 
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             gtag('config', '${googleAdsId}');
           `}
         </Script>
+        <GoogleAdsWhatsAppConversionTracker />
         {children}
       </body>
     </html>
