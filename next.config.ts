@@ -18,9 +18,11 @@ const contentSecurityPolicy = [
     "https://www.rosagiro.com.br",
     "https://www.googletagmanager.com",
     "https://www.google-analytics.com",
+    "https://google.com",
     "https://www.google.com",
     "https://www.google.com.br",
     "https://www.googleadservices.com",
+    "https://pagead2.googlesyndication.com",
     "https://googleads.g.doubleclick.net"
   ].join(" "),
   "font-src 'self' data:",
@@ -32,6 +34,8 @@ const contentSecurityPolicy = [
     ...(isDevelopment ? ["'unsafe-eval'"] : []),
     "https://www.googletagmanager.com",
     "https://www.googleadservices.com",
+    "https://www.google.com",
+    "https://pagead2.googlesyndication.com",
     "https://googleads.g.doubleclick.net",
     "https://*.mercadopago.com",
     "https://*.mercadolivre.com"
@@ -42,8 +46,12 @@ const contentSecurityPolicy = [
     "https://www.google-analytics.com",
     "https://*.google-analytics.com",
     "https://www.googletagmanager.com",
+    "https://google.com",
     "https://www.google.com",
     "https://www.google.com.br",
+    "https://www.googleadservices.com",
+    "https://pagead2.googlesyndication.com",
+    "https://ad.doubleclick.net",
     "https://stats.g.doubleclick.net",
     "https://googleads.g.doubleclick.net",
     "https://*.mercadopago.com",
@@ -53,6 +61,7 @@ const contentSecurityPolicy = [
   [
     "frame-src",
     "'self'",
+    "https://www.googletagmanager.com",
     "https://td.doubleclick.net",
     "https://*.mercadopago.com",
     "https://*.mercadolivre.com"
