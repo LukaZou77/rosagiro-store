@@ -3,12 +3,26 @@ import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { siteConfig, siteUrl } from "@/lib/site-config";
-import type { StoreProfileView } from "@/lib/store-profile";
-import { storeProfileAddress, storeSocialLinks } from "@/lib/store-profile";
+import type { StoreProfileView } from "@/lib/store-profile-public";
+import { storeProfileAddress, storeSocialLinks } from "@/lib/store-profile-public";
 
 type BreadcrumbEntry = {
   name: string;
   path: string;
+};
+
+type ItemListEntry = {
+  name: string;
+  path: string;
+};
+
+type GuideArticleJsonLdInput = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  coverImage?: string | null;
+  publishedAt?: Date | null;
+  updatedAt: Date;
 };
 
 function compactText(value: string, maxLength = 155) {
@@ -144,6 +158,39 @@ export function breadcrumbJsonLd(items: BreadcrumbEntry[]) {
   };
 }
 
+export function itemListJsonLd(items: ItemListEntry[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      url: siteUrl(item.path)
+    }))
+  };
+}
+
+export function guideArticleJsonLd(article: GuideArticleJsonLdInput) {
+  const url = siteUrl(`/guias/${article.slug}`);
+  const publishedAt = article.publishedAt || article.updatedAt;
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": siteUrl(`/guias/${article.slug}#article`),
+    headline: article.title,
+    description: compactText(article.excerpt, 240),
+    image: article.coverImage ? [absoluteImageUrl(article.coverImage)] : undefined,
+    inLanguage: "pt-BR",
+    datePublished: publishedAt.toISOString(),
+    dateModified: article.updatedAt.toISOString(),
+    mainEntityOfPage: url,
+    publisher: {
+      "@id": siteUrl("/#store")
+    }
+  };
+}
+
 export function productJsonLd(product: CatalogProduct) {
   const inStock = (product.inventory?.quantity || 0) > 0;
   const images = [product.image, ...product.gallery].filter(Boolean).map(absoluteImageUrl);
@@ -182,13 +229,34 @@ export function productJsonLd(product: CatalogProduct) {
 export function productMetaDescription(product: CatalogProduct) {
   const stock = (product.inventory?.quantity || 0) > 0 ? "em estoque" : "disponibilidade sob consulta";
   return compactText(
-    `${product.name} da ${product.brand.name}: ${product.descriptionPt} Preço ${money(lowestEffectivePriceCents(product))}, ${stock}, compra no atacado com pedido mínimo R$ 300,00, cotação por CEP para todo o Brasil e atendimento WhatsApp.`
+    `Compre ${product.name} da ${product.brand.name} no atacado na RosaGiro. Preço ${money(lowestEffectivePriceCents(product))}, ${stock}, pedido mínimo R$ 300,00 e atendimento pelo WhatsApp para entrega ou retirada.`
   );
 }
 
-export function categoryMetaDescription(label: string, count: number) {
+export function categoryMetadataTitle(label: string, isAllCategory = false) {
+  return isAllCategory ? "Cosméticos no atacado para revenda" : `${label} no atacado para revenda`;
+}
+
+export function categoryIntroText(label: string, count: number, isAllCategory = false) {
+  const productText = `${count} ${count === 1 ? "produto" : "produtos"}`;
+  if (isAllCategory) {
+    return compactText(
+      `Cosméticos no atacado para revenda: ${productText} de maquiagem, skincare, perfumes, cabelos e acessórios com estoque sinalizado e atendimento para lojistas.`
+    );
+  }
   return compactText(
-    `${label} no catálogo RosaGiro: ${count} produto(s) de cosméticos no atacado em São Paulo para revenda, disponibilidade sinalizada, pedido mínimo R$ 300,00, entrega para todo o Brasil com cotação por CEP e WhatsApp.`
+    `${label} no atacado para lojistas e revendedores: ${productText} com estoque sinalizado, pedido mínimo R$ 300,00 e suporte para montar reposição.`
+  );
+}
+
+export function categoryMetaDescription(label: string, count: number, isAllCategory = false) {
+  if (isAllCategory) {
+    return compactText(
+      `Cosméticos no atacado para revenda na RosaGiro: ${count} produtos com estoque sinalizado, pedido mínimo R$ 300,00, entrega nacional e WhatsApp.`
+    );
+  }
+  return compactText(
+    `${label} no atacado para lojistas e revendedores: ${count} produtos com estoque sinalizado, pedido mínimo R$ 300,00, entrega para todo o Brasil e WhatsApp.`
   );
 }
 

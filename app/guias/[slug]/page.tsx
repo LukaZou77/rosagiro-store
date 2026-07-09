@@ -3,10 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import { StoreShell } from "@/components/StoreShell";
+import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories } from "@/lib/catalog";
 import { getGuideArticleBySlug, guideBodyParagraphs, getPublishedGuideArticles } from "@/lib/guide-articles";
-import { siteUrl } from "@/lib/site-config";
+import { breadcrumbJsonLd, guideArticleJsonLd, noIndexMetadata, storefrontMetadata } from "@/lib/seo";
 import { getStoreProfile } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
@@ -18,24 +19,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const article = await getGuideArticleBySlug(slug);
   if (!article) {
-    return {
-      title: "Guia nao encontrado | RosaGiro"
-    };
+    return noIndexMetadata("Guia não encontrado", "Guia RosaGiro indisponível.");
   }
 
-  return {
-    title: `${article.title} | RosaGiro`,
+  return storefrontMetadata({
+    title: article.title,
     description: article.excerpt,
-    alternates: {
-      canonical: siteUrl(`/guias/${article.slug}`)
-    },
-    openGraph: {
-      title: article.title,
-      description: article.excerpt,
-      images: article.coverImage ? [article.coverImage] : undefined,
-      url: siteUrl(`/guias/${article.slug}`)
-    }
-  };
+    path: `/guias/${article.slug}`,
+    image: article.coverImage,
+    type: "article"
+  });
 }
 
 export async function generateStaticParams() {
@@ -58,6 +51,16 @@ export default async function GuideArticlePage({ params }: PageProps) {
 
   return (
     <StoreShell categories={categories}>
+      <StructuredData
+        data={[
+          guideArticleJsonLd(article),
+          breadcrumbJsonLd([
+            { name: "Início", path: "/" },
+            { name: "Guias", path: "/guias" },
+            { name: article.title, path: `/guias/${article.slug}` }
+          ])
+        ]}
+      />
       <article className="guide-article">
         <header className="guide-article-header">
           <p className="eyebrow">Guia RosaGiro</p>
@@ -65,10 +68,10 @@ export default async function GuideArticlePage({ params }: PageProps) {
           <p>{article.excerpt}</p>
           <div className="hero-actions">
             <Link className="button primary" href="/categoria/all">
-              Ver catalogo
+              Ver catálogo
             </Link>
             <WhatsAppLink className="button whatsapp" href={whatsappHref}>
-              Tirar duvida no WhatsApp
+              Tirar dúvida no WhatsApp
             </WhatsAppLink>
           </div>
         </header>
@@ -92,11 +95,11 @@ export default async function GuideArticlePage({ params }: PageProps) {
         </div>
 
         <footer className="guide-article-footer">
-          <strong>Quer montar pedido com orientacao?</strong>
-          <p>Use o catalogo para combinar produtos e chame o atendimento para confirmar estoque, lote, validade e entrega.</p>
+          <strong>Quer montar pedido com orientação?</strong>
+          <p>Use o catálogo para combinar produtos e chame o atendimento para confirmar estoque, lote, validade e entrega.</p>
           <div className="hero-actions">
             <Link className="button primary" href="/categoria/all">
-              Comprar pelo catalogo
+              Comprar pelo catálogo
             </Link>
             <WhatsAppLink className="button secondary" href={whatsappHref}>
               Falar com atendimento

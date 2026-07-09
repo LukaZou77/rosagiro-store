@@ -8,8 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [infoPages, guides] = await Promise.all([getAllSiteInfoPages(), getPublishedGuideArticles()]);
   const staticRoutes = ["", "/categoria/all", "/marcas", "/promocoes", "/guias", ...infoPages.map((page) => page.href)].map(
     (path) => ({
-      url: siteUrl(path),
-      lastModified: new Date()
+      url: siteUrl(path)
     })
   );
 

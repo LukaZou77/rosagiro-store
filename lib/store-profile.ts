@@ -3,47 +3,12 @@ import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { defaultMercadoPagoInstallments, normalizeMercadoPagoInstallments } from "@/lib/payments";
+import type { StoreProfileView } from "@/lib/store-profile-public";
+
+export type { StoreProfileView } from "@/lib/store-profile-public";
+export { storeProfileAddress, storeSocialLinks } from "@/lib/store-profile-public";
 
 export const STORE_PROFILE_ID = "main";
-
-export type StoreProfileView = {
-  id: string;
-  storeName: string;
-  legalName: string;
-  cnpj: string;
-  stateRegistration: string;
-  cep: string;
-  state: string;
-  city: string;
-  district: string;
-  street: string;
-  number: string;
-  complement: string | null;
-  email: string;
-  whatsapp: string;
-  businessHours: string;
-  instagramUrl: string;
-  facebookUrl: string;
-  tiktokUrl: string;
-  pickupNote: string;
-  shippingNote: string;
-  paymentNote: string;
-  pixPaymentEnabled: boolean;
-  pixAccountType: string;
-  pixRecipientName: string;
-  pixRecipientDocument: string;
-  pixKeyType: string;
-  pixKey: string;
-  pixBankName: string;
-  pixInstructions: string;
-  mercadoPagoMaxInstallments: number;
-  priceAdjustmentDirection: string;
-  priceAdjustmentType: string;
-  priceAdjustmentValue: number;
-  exchangeNote: string;
-  trustBadges: string[];
-  launchNote: string;
-};
 
 export const pixAccountTypeOptions = [
   { value: "TEMPORARY_PERSONAL", label: "Pix pessoal temporário" },
@@ -136,12 +101,6 @@ export function configuredMercadoPagoInstallments(profile?: Pick<StoreProfileVie
   );
 }
 
-export function storeProfileAddress(profile: StoreProfileView) {
-  return [profile.street, profile.number, profile.complement, profile.district, `${profile.city} - ${profile.state}`, `CEP ${profile.cep}`]
-    .filter(Boolean)
-    .join(", ");
-}
-
 export function storeCnpjLabel(profile: StoreProfileView) {
   const digits = profile.cnpj.replace(/\D/g, "");
   return digits.length === 14 && !/^0+$/.test(digits) ? `CNPJ ${profile.cnpj}` : "Dados da loja";
@@ -161,21 +120,6 @@ function cleanPublicSignal(signal: string) {
   if (/cnpj em revisao|cnpj em revisão/i.test(normalized)) return "Dados da loja";
   if (/pedido minimo|pedido mínimo/i.test(normalized)) return "Pedido mínimo sinalizado";
   return normalized;
-}
-
-export function storeSocialLinks(profile: StoreProfileView) {
-  return [
-    { label: "Instagram", href: profile.instagramUrl },
-    { label: "Facebook", href: profile.facebookUrl },
-    { label: "TikTok", href: profile.tiktokUrl }
-  ].filter((link) => {
-    try {
-      const url = new URL(link.href);
-      return url.protocol === "http:" || url.protocol === "https:";
-    } catch {
-      return false;
-    }
-  });
 }
 
 export function storeTrustSignals(profile: StoreProfileView, limit = 4) {

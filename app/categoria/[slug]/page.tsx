@@ -12,7 +12,15 @@ import {
   getProductCount,
   getProductPage
 } from "@/lib/catalog";
-import { breadcrumbJsonLd, categoryMetaDescription, noIndexMetadata, storefrontMetadata } from "@/lib/seo";
+import {
+  breadcrumbJsonLd,
+  categoryIntroText,
+  categoryMetaDescription,
+  categoryMetadataTitle,
+  itemListJsonLd,
+  noIndexMetadata,
+  storefrontMetadata
+} from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile } from "@/lib/store-profile";
 import { buildCatalogWhatsAppHref } from "@/lib/whatsapp";
@@ -79,9 +87,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return noIndexMetadata("Categoria", "Categoria RosaGiro indisponível.");
   }
   const path = `/categoria/${categorySlug}`;
+  const isAllCategory = categorySlug === "all";
   return storefrontMetadata({
-    title: `${label} no atacado`,
-    description: categoryMetaDescription(label, productCount),
+    title: categoryMetadataTitle(label, isAllCategory),
+    description: categoryMetaDescription(label, productCount, isAllCategory),
     path
   });
 }
@@ -213,6 +222,9 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const { products, total, totalPages } = productPage;
   const currentCategory = categories.find((category) => category.slug === categorySlug);
   const categoryLabel = categorySlug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria";
+  const isAllCategory = categorySlug === "all";
+  const categoryTitle = categoryMetadataTitle(categoryLabel, isAllCategory);
+  const categoryIntro = categoryIntroText(categoryLabel, total, isAllCategory);
   const whatsappHref = buildCatalogWhatsAppHref(categoryLabel, total, storeProfile.whatsapp);
   const sortLabel = sortLabels[sort] || sortLabels.featured;
   const clearHref = catalogHref(categorySlug, {});
@@ -228,16 +240,19 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   return (
     <StoreShell categories={categories}>
       <StructuredData
-        data={breadcrumbJsonLd([
-          { name: "Início", path: "/" },
-          { name: "Catálogo", path: "/categoria/all" },
-          { name: categoryLabel, path: `/categoria/${categorySlug}` }
-        ])}
+        data={[
+          breadcrumbJsonLd([
+            { name: "Início", path: "/" },
+            { name: "Catálogo", path: "/categoria/all" },
+            { name: categoryLabel, path: `/categoria/${categorySlug}` }
+          ]),
+          itemListJsonLd(products.map((product) => ({ name: product.name, path: `/produto/${product.slug}` })))
+        ]}
       />
       <section className="catalog-header">
         <p className="eyebrow">Catálogo</p>
-        <h1>{categoryLabel}</h1>
-        <p>{total} produtos disponíveis para filtrar por categoria, marca e estoque.</p>
+        <h1>{categoryTitle}</h1>
+        <p>{categoryIntro}</p>
         <form className="catalog-quick-search" action={`/categoria/${categorySlug}`}>
           <input name="q" defaultValue={query} placeholder="Buscar produto, marca ou código" />
           <input type="hidden" name="brand" value={brand} />
