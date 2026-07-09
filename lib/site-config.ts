@@ -52,7 +52,7 @@ export const siteConfig = {
   hero: {
     eyebrow: "Atacado de cosméticos em São Paulo",
     title: "Cosméticos no atacado para revenda",
-    body: "Maquiagem, skincare, perfumes, cabelos e acessórios com estoque sinalizado, pedido mínimo de R$ 300 e atendimento pelo WhatsApp.",
+    body: "Maquiagens, skincare, perfumes, produtos para cabelo e acessórios no atacado para lojistas e revendedores, com estoque sinalizado, pedido mínimo de R$ 300,00 e atendimento pelo WhatsApp.",
     primaryCta: "Comprar pelo catálogo",
     secondaryCta: "Comprar destaque"
   },
