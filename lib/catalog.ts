@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import type { Prisma } from "@/src/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { BODY_AREA_CATEGORY_ORDER } from "@/lib/category-taxonomy";
@@ -110,7 +111,7 @@ function withProductDisplayText(product: CatalogProduct): CatalogProduct {
   };
 }
 
-export async function getCategories() {
+export const getCategories = cache(async function getCategories() {
   const categories = await prisma.category.findMany();
   return categories
     .sort((a, b) => {
@@ -126,7 +127,7 @@ export async function getCategories() {
       label: customerDisplayText(category.label),
       note: customerDisplayText(category.note)
     }));
-}
+});
 
 export async function getFeaturedBrands() {
   const brands = await prisma.brand.findMany({
@@ -183,7 +184,7 @@ export async function getActiveBrandSummaries() {
     });
 }
 
-export async function getActiveBrandSummary(slug: string) {
+export const getActiveBrandSummary = cache(async function getActiveBrandSummary(slug: string) {
   const brand = await prisma.brand.findFirst({
     where: {
       slug,
@@ -218,7 +219,7 @@ export async function getActiveBrandSummary(slug: string) {
     featured: brand.featured,
     productCount: brand._count.products
   };
-}
+});
 
 export async function getProducts(options: ProductListOptions = {}) {
   const { sort = "featured", take, skip } = options;
@@ -351,14 +352,14 @@ export async function getPromotionCollections() {
   };
 }
 
-export async function getProduct(slug: string) {
+export const getProduct = cache(async function getProduct(slug: string) {
   const product = await prisma.product.findFirst({
     where: { slug, active: true, deletedAt: null },
     include: productInclude
   });
 
   return product ? withProductDisplayText(product) : null;
-}
+});
 
 export async function getRelatedProducts(categorySlug: string, currentSlug: string) {
   const products = await prisma.product.findMany({

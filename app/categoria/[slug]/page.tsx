@@ -101,8 +101,8 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     totalPages: Math.ceil(productCount / CATALOG_PAGE_SIZE)
   });
   const metadata = storefrontMetadata({
-    title: categoryMetadataTitle(label, isAllCategory),
-    description: categoryMetaDescription(label, productCount, isAllCategory),
+    title: categoryMetadataTitle(label, isAllCategory, page),
+    description: categoryMetaDescription(label, productCount, isAllCategory, page),
     path: indexing.canonicalPath
   });
 

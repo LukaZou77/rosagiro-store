@@ -158,11 +158,10 @@ main {
   object-fit: contain;
 }
 
-.brand-logo-icon {
-  display: none;
-  flex: 0 0 auto;
-  width: 42px;
-  height: 42px;
+.brand-logo-responsive-image {
+  display: block;
+  width: clamp(190px, 24vw, 330px);
+  height: auto;
   object-fit: contain;
 }
 
@@ -1545,14 +1544,9 @@ textarea:focus-visible {
     padding: 8px 12px;
   }
 
-  .topbar .brand-logo-icon {
-    display: block;
+  .topbar .brand-logo-responsive-image {
     width: 34px;
     height: 34px;
-  }
-
-  .topbar .brand-logo-header-image {
-    display: none;
   }
 
   .topbar .brand-logo-copy strong {

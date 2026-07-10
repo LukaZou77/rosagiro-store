@@ -153,9 +153,9 @@ export function brandMetadataTitle(name: string, page = 1) {
 }
 
 export function brandMetaDescription(name: string, count: number, page = 1) {
-  const pageText = page > 1 ? `Página ${page}: ` : "";
+  const opening = page > 1 ? `Página ${page}: compre` : "Compre";
   return compactText(
-    `${pageText}compre ${name} no atacado para revenda na RosaGiro: ${count} ${count === 1 ? "produto" : "produtos"} com estoque sinalizado, pedido mínimo de R$ 300,00 e entrega para todo o Brasil.`
+    `${opening} ${name} no atacado para revenda na RosaGiro: ${count} ${count === 1 ? "produto" : "produtos"} com estoque sinalizado, pedido mínimo de R$ 300,00 e entrega para todo o Brasil.`
   );
 }
 
@@ -307,8 +307,9 @@ export function productMetaDescription(product: CatalogProduct) {
   );
 }
 
-export function categoryMetadataTitle(label: string, isAllCategory = false) {
-  return isAllCategory ? "Cosméticos no atacado para revenda" : `${label} no atacado para revenda`;
+export function categoryMetadataTitle(label: string, isAllCategory = false, page = 1) {
+  const title = isAllCategory ? "Cosméticos no atacado para revenda" : `${label} no atacado para revenda`;
+  return page > 1 ? `${title} - página ${page}` : title;
 }
 
 export function categoryIntroText(label: string, count: number, isAllCategory = false) {
@@ -323,14 +324,15 @@ export function categoryIntroText(label: string, count: number, isAllCategory = 
   );
 }
 
-export function categoryMetaDescription(label: string, count: number, isAllCategory = false) {
+export function categoryMetaDescription(label: string, count: number, isAllCategory = false, page = 1) {
+  const pageText = page > 1 ? `Página ${page}: ` : "";
   if (isAllCategory) {
     return compactText(
-      `Cosméticos no atacado para revenda na RosaGiro: ${count} produtos com estoque sinalizado, pedido mínimo R$ 300,00, entrega nacional e WhatsApp.`
+      `${pageText}cosméticos no atacado para revenda na RosaGiro: ${count} produtos com estoque sinalizado, pedido mínimo R$ 300,00, entrega nacional e WhatsApp.`
     );
   }
   return compactText(
-    `${label} no atacado para lojistas e revendedores: ${count} produtos com estoque sinalizado, pedido mínimo R$ 300,00, entrega para todo o Brasil e WhatsApp.`
+    `${pageText}${label} no atacado para lojistas e revendedores: ${count} produtos com estoque sinalizado, pedido mínimo R$ 300,00, entrega para todo o Brasil e WhatsApp.`
   );
 }
 

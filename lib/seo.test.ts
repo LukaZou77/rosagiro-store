@@ -54,6 +54,7 @@ test("builds useful brand landing copy from real catalog facts", () => {
 test("builds local Portuguese category metadata without mechanical wording", () => {
   assert.equal(categoryMetadataTitle("Todas as categorias", true), "Cosméticos no atacado para revenda");
   assert.equal(categoryMetadataTitle("Rosto", false), "Rosto no atacado para revenda");
+  assert.equal(categoryMetadataTitle("Rosto", false, 2), "Rosto no atacado para revenda - página 2");
 
   const description = categoryMetaDescription("Rosto", 326, false);
   assert.match(description, /Rosto no atacado/i);
@@ -61,6 +62,7 @@ test("builds local Portuguese category metadata without mechanical wording", () 
   assert.match(description, /pedido mínimo R\$ 300,00/i);
   assert.doesNotMatch(description, /produto\(s\)|catálogo RosaGiro:/i);
   assert.doesNotMatch(description, mojibakePattern);
+  assert.match(categoryMetaDescription("Rosto", 326, false, 2), /^Página 2:/i);
 });
 
 test("builds category intro copy for the rendered shelf", () => {

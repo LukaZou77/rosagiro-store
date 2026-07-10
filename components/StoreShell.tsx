@@ -40,7 +40,7 @@ export async function StoreShell({
       </div>
       <header className="topbar">
         <Link className="brand" href="/">
-          <BrandLogo />
+          <BrandLogo compact />
         </Link>
         <nav className="desktop-nav" aria-label="Categorias">
           {categories.slice(0, 5).map((category) => (
