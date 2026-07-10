@@ -10,6 +10,7 @@ type ResearchEntry = {
   slug: string;
   name?: string | null;
   brand: string;
+  brandCorrection?: string;
   model: string;
   confidence: Confidence;
   descriptionPt: string;
@@ -46,6 +47,7 @@ function argument(name: string, fallback = "") {
 
 const mode = argument("--mode", "dry-run");
 if (mode !== "dry-run" && mode !== "apply") throw new Error("--mode must be dry-run or apply.");
+const summaryOnly = process.argv.includes("--summary-only");
 
 const batchPath = resolve(argument("--batch", "scripts/data/product-content-batch-001.json"));
 const connectionString = process.env.DATABASE_URL;
@@ -59,10 +61,14 @@ function validateBatch(batch: ResearchBatch) {
   }
 
   const seen = new Set<string>();
+  const descriptions = new Set<string>();
   for (const entry of batch.entries) {
     if (!entry.slug || seen.has(entry.slug)) throw new Error(`Duplicate or empty slug: ${entry.slug}`);
     seen.add(entry.slug);
     if (!entry.brand.trim() || !entry.model.trim()) throw new Error(`${entry.slug}: brand and model are required.`);
+    if (entry.brandCorrection !== undefined && entry.brandCorrection.trim().length < 2) {
+      throw new Error(`${entry.slug}: brandCorrection must contain a valid brand name.`);
+    }
     if (entry.name !== undefined && entry.name !== null && entry.name.trim().length < 10) {
       throw new Error(`${entry.slug}: corrected name must contain at least 10 characters.`);
     }
@@ -74,6 +80,21 @@ function validateBatch(batch: ResearchBatch) {
     }
     if (/preço\s+unitário|embalagem\s+para\s+atacado/i.test(entry.descriptionPt)) {
       throw new Error(`${entry.slug}: commercial terms must stay outside descriptionPt.`);
+    }
+    if (/descubra|imperd[ií]vel|perfeito para|resultados garantidos/i.test(entry.descriptionPt)) {
+      throw new Error(`${entry.slug}: descriptionPt contains prohibited generic marketing language.`);
+    }
+    if (descriptions.has(entry.descriptionPt.trim())) {
+      throw new Error(`${entry.slug}: descriptionPt duplicates another entry in the batch.`);
+    }
+    descriptions.add(entry.descriptionPt.trim());
+    if (!Array.isArray(entry.sources) || !entry.sources.length) {
+      throw new Error(`${entry.slug}: at least one source is required.`);
+    }
+    for (const source of entry.sources) {
+      if (!source.label.trim() || !source.evidence.trim() || !/^https:\/\//i.test(source.url)) {
+        throw new Error(`${entry.slug}: each source requires a label, HTTPS URL and evidence note.`);
+      }
     }
     if (!entry.sources.length || entry.sources.some((source) => !source.url.startsWith("https://"))) {
       throw new Error(`${entry.slug}: at least one HTTPS evidence source is required.`);
@@ -117,6 +138,8 @@ async function main() {
       slug: entry.slug,
       oldName: product.name,
       newName: entry.name?.trim() || product.name,
+      oldBrand: product.brand.name,
+      newBrand: entry.brandCorrection?.trim() || product.brand.name,
       confidence: entry.confidence,
       sources: entry.sources.length,
       oldDescriptionPt: product.descriptionPt,
@@ -129,34 +152,58 @@ async function main() {
       shippingWeightNote: entry.shippingWeightNote
     };
   });
+  const pendingPreviews = previews.filter(
+    (preview) =>
+      preview.oldName !== preview.newName ||
+      preview.oldBrand !== preview.newBrand ||
+      preview.oldDescriptionPt !== preview.newDescriptionPt ||
+      preview.oldVolume !== preview.newVolume ||
+      preview.oldWeightGrams !== preview.newWeightGrams
+  );
+  const pendingSlugs = new Set(pendingPreviews.map((preview) => preview.slug));
+  const pendingEntries = batch.entries.filter((entry) => pendingSlugs.has(entry.slug));
 
   let appliedVerified = 0;
-  if (mode === "apply") {
+  if (mode === "apply" && pendingEntries.length) {
     await prisma.$transaction(
-      batch.entries.map((entry) =>
-        prisma.product.update({
-          where: { slug: entry.slug },
-          data: {
-            ...(entry.name?.trim() ? { name: entry.name.trim() } : {}),
-            descriptionPt: entry.descriptionPt.trim(),
-            ...(entry.volume?.trim() ? { volume: entry.volume.trim() } : {}),
-            ...(entry.shippingWeightGrams !== null ? { weightGrams: entry.shippingWeightGrams } : {})
-          }
-        })
-      )
+      async (transaction) => {
+        for (const entry of pendingEntries) {
+          await transaction.product.update({
+            where: { slug: entry.slug },
+            data: {
+              ...(entry.name?.trim() ? { name: entry.name.trim() } : {}),
+              ...(entry.brandCorrection?.trim()
+                ? { brand: { connect: { name: entry.brandCorrection.trim() } } }
+                : {}),
+              descriptionPt: entry.descriptionPt.trim(),
+              ...(entry.volume?.trim() ? { volume: entry.volume.trim() } : {}),
+              ...(entry.shippingWeightGrams !== null ? { weightGrams: entry.shippingWeightGrams } : {})
+            }
+          });
+        }
+      },
+      { maxWait: 10_000, timeout: 180_000 }
     );
 
     const appliedProducts = await prisma.product.findMany({
-      where: { slug: { in: batch.entries.map((entry) => entry.slug) }, deletedAt: null },
-      select: { slug: true, name: true, descriptionPt: true, volume: true, weightGrams: true }
+      where: { slug: { in: pendingEntries.map((entry) => entry.slug) }, deletedAt: null },
+      select: {
+        slug: true,
+        name: true,
+        descriptionPt: true,
+        volume: true,
+        weightGrams: true,
+        brand: { select: { name: true } }
+      }
     });
     const appliedBySlug = new Map(appliedProducts.map((product) => [product.slug, product]));
-    const failedVerification = batch.entries.filter((entry) => {
+    const failedVerification = pendingEntries.filter((entry) => {
       const before = productBySlug.get(entry.slug)!;
       const after = appliedBySlug.get(entry.slug);
       return (
         !after ||
         after.name !== (entry.name?.trim() || before.name) ||
+        after.brand.name !== (entry.brandCorrection?.trim() || before.brand.name) ||
         after.descriptionPt !== entry.descriptionPt.trim() ||
         after.volume !== (entry.volume?.trim() || before.volume) ||
         after.weightGrams !== (entry.shippingWeightGrams ?? before.weightGrams)
@@ -174,12 +221,12 @@ async function main() {
         mode,
         batch: batch.batch,
         scanned: batch.entries.length,
-        ready: previews.length,
+        ready: pendingEntries.length,
         appliedVerified,
         missing: missing.length,
-        verifiedShippingWeights: batch.entries.filter((entry) => entry.shippingWeightGrams !== null).length,
-        specificationUpdates: batch.entries.filter((entry) => entry.volume?.trim()).length,
-        previews
+        verifiedShippingWeights: pendingEntries.filter((entry) => entry.shippingWeightGrams !== null).length,
+        specificationUpdates: pendingEntries.filter((entry) => entry.volume?.trim()).length,
+        ...(summaryOnly ? {} : { previews: pendingPreviews })
       },
       null,
       2
