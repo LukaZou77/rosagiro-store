@@ -7,7 +7,9 @@ import {
   categoryMetadataTitle,
   guideArticleJsonLd,
   itemListJsonLd,
-  productMetaDescription
+  productJsonLd,
+  productMetaDescription,
+  storeJsonLd
 } from "@/lib/seo";
 
 const mojibakePattern = /[莽茫谩贸煤铆玫锚]/;
@@ -55,6 +57,65 @@ test("builds natural product metadata for wholesale product pages", () => {
   assert.match(description, /em estoque/i);
   assert.match(description, /pedido mínimo R\$ 300,00/i);
   assert.doesNotMatch(description, mojibakePattern);
+});
+
+test("builds truthful merchant product data without invented reviews", () => {
+  const product = {
+    ...sampleProduct,
+    inventory: { quantity: 0 },
+    skus: [
+      {
+        id: "sku-rose",
+        name: "Rose",
+        code: "HB-L6203-ROSE",
+        image: "/uploads/products/batom-rose.jpg",
+        priceCents: 1090,
+        quantity: 8,
+        active: true,
+        sortOrder: 0
+      }
+    ]
+  } as unknown as Parameters<typeof productJsonLd>[0];
+  const data = productJsonLd(product);
+
+  assert.equal(data.url, "http://localhost:3000/produto/batom-duo-lip-twice-ruby-rose-hb-l6203");
+  assert.equal(data.offers.availability, "https://schema.org/InStock");
+  assert.equal(
+    data.offers.hasMerchantReturnPolicy["@id"],
+    "http://localhost:3000/trocas-e-devolucoes#policy"
+  );
+  assert.ok(data.image.includes("http://localhost:3000/uploads/products/batom-rose.jpg"));
+  assert.equal("aggregateRating" in data, false);
+  assert.equal("review" in data, false);
+
+  const unavailableVariantData = productJsonLd({
+    ...product,
+    inventory: { quantity: 12 },
+    skus: product.skus.map((sku) => ({ ...sku, quantity: 0 }))
+  });
+  assert.equal(unavailableVariantData.offers.availability, "https://schema.org/OutOfStock");
+});
+
+test("links the published Brazil return policy without duplicating editable rules", () => {
+  const data = storeJsonLd({
+    storeName: "RosaGiro",
+    email: "rosagiroatacado@gmail.com",
+    whatsapp: "+55 11 97079-2390",
+    street: "Rua Exemplo",
+    number: "100",
+    complement: null,
+    district: "Centro",
+    city: "São Paulo",
+    state: "SP",
+    cep: "01000-000",
+    instagramUrl: "",
+    facebookUrl: "",
+    tiktokUrl: ""
+  } as unknown as Parameters<typeof storeJsonLd>[0]);
+
+  assert.equal(data.hasMerchantReturnPolicy.applicableCountry, "BR");
+  assert.equal(data.hasMerchantReturnPolicy.merchantReturnLink, "http://localhost:3000/trocas-e-devolucoes");
+  assert.equal("merchantReturnDays" in data.hasMerchantReturnPolicy, false);
 });
 
 test("builds ItemList JSON-LD with absolute product URLs", () => {

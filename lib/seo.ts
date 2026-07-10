@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { lowestEffectivePriceCents } from "@/lib/product-pricing";
+import { productQuantity } from "@/lib/product-conversion";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import type { StoreProfileView } from "@/lib/store-profile-public";
 import { storeProfileAddress, storeSocialLinks } from "@/lib/store-profile-public";
@@ -68,6 +69,19 @@ function publicAddress(profile: StoreProfileView) {
     addressRegion: profile.state,
     postalCode: profile.cep,
     addressCountry: "BR"
+  };
+}
+
+function merchantReturnPolicyId() {
+  return siteUrl("/trocas-e-devolucoes#policy");
+}
+
+function merchantReturnPolicy() {
+  return {
+    "@type": "MerchantReturnPolicy",
+    "@id": merchantReturnPolicyId(),
+    applicableCountry: "BR",
+    merchantReturnLink: siteUrl("/trocas-e-devolucoes")
   };
 }
 
@@ -148,6 +162,7 @@ export function storeJsonLd(profile: StoreProfileView) {
     telephone,
     address,
     areaServed: "BR",
+    hasMerchantReturnPolicy: merchantReturnPolicy(),
     sameAs: socials.length ? socials : undefined
   };
 }
@@ -215,12 +230,20 @@ export function guideArticleJsonLd(article: GuideArticleJsonLdInput) {
 }
 
 export function productJsonLd(product: CatalogProduct) {
-  const inStock = (product.inventory?.quantity || 0) > 0;
-  const images = [product.image, ...product.gallery].filter(Boolean).map(absoluteImageUrl);
+  const url = siteUrl(`/produto/${product.slug}`);
+  const inStock = productQuantity(product) > 0;
+  const images = Array.from(
+    new Set(
+      [product.image, ...product.gallery, ...product.skus.filter((sku) => sku.active).map((sku) => sku.image)]
+        .filter((image): image is string => Boolean(image))
+        .map(absoluteImageUrl)
+    )
+  );
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     "@id": siteUrl(`/produto/${product.slug}#product`),
+    url,
     name: product.name,
     description: compactText(product.descriptionPt, 300),
     image: images.length ? images : [absoluteImageUrl(product.image)],
@@ -232,11 +255,14 @@ export function productJsonLd(product: CatalogProduct) {
     sku: product.slug,
     offers: {
       "@type": "Offer",
-      url: siteUrl(`/produto/${product.slug}`),
+      url,
       priceCurrency: "BRL",
       price: (lowestEffectivePriceCents(product) / 100).toFixed(2),
       availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
+      hasMerchantReturnPolicy: {
+        "@id": merchantReturnPolicyId()
+      },
       seller: {
         "@id": siteUrl("/#store")
       }
