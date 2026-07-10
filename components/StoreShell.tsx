@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CartCount } from "@/components/CartCount";
 import { CustomerSessionProvider } from "@/components/CustomerSession";
+import { MobileStoreNav } from "@/components/MobileStoreNav";
 import { QuickPurchaseDrawer } from "@/components/QuickPurchaseDrawer";
 import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
@@ -91,13 +92,7 @@ export async function StoreShell({
         ) : null}
       </footer>
       <QuickPurchaseDrawer />
-      <nav className="mobile-tabs" aria-label="Navegação principal">
-        <Link href="/">Início</Link>
-        <Link href="/promocoes">Destaques</Link>
-        <Link href="/categoria/all">Categorias</Link>
-        <Link href="/carrinho">Carrinho</Link>
-        <WhatsAppLink href={generalWhatsAppHref}>{siteConfig.whatsapp.label}</WhatsAppLink>
-      </nav>
+      <MobileStoreNav whatsappHref={generalWhatsAppHref} />
       </WhatsAppProvider>
     </CustomerSessionProvider>
   );

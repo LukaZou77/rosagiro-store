@@ -8,9 +8,8 @@ import { getCategories, getFeaturedBrands, getProductCount, getProducts } from "
 import { getPublishedGuideArticles } from "@/lib/guide-articles";
 import { money } from "@/lib/money";
 import { hasSkuPriceRange, lowestEffectivePriceCents } from "@/lib/product-pricing";
-import { productHeroBadge } from "@/lib/product-conversion";
 import { siteConfig } from "@/lib/site-config";
-import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
+import { getStoreProfile } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 function displayPriceLabel(product: Awaited<ReturnType<typeof getProducts>>[number]) {
@@ -32,14 +31,11 @@ export default async function HomePage() {
   const secondaryDeals = (featuredProducts.length > 1 ? featuredProducts.slice(1) : products.filter((product) => product.slug !== heroProduct?.slug)).slice(0, 2);
   const quickCategories = categories.slice(0, 4);
   const whatsappHref = buildGeneralWhatsAppHref("home atacado", storeProfile.whatsapp);
-  const homeTrustSignals = Array.from(
-    new Set([
-      ...storeTrustSignals(storeProfile, 3),
-      "Pix e cartão no checkout",
-      "Retirada ou envio por CEP",
-      "Trocas e políticas visíveis"
-    ])
-  ).slice(0, 5);
+  const homeTrustSignals = [
+    "Atendimento pelo WhatsApp",
+    "Entrega para todo o Brasil",
+    "Pix e cartão via Mercado Pago"
+  ];
   const stats = [
     { value: `${productCount}+`, label: siteConfig.homePromotions.stats.productsLabel },
     { value: `${categories.length}`, label: siteConfig.homePromotions.stats.categoriesLabel },
@@ -68,46 +64,6 @@ export default async function HomePage() {
           <div className="wholesale-signal-row" aria-label="Sinais de compra no atacado">
             {siteConfig.wholesale.shelfSignals.map((signal) => (
               <span key={signal}>{signal}</span>
-            ))}
-          </div>
-        </div>
-        <div className="hero-commerce-panel" aria-label="Produtos em destaque">
-          <div className="panel-heading">
-            <p className="eyebrow">Em estoque</p>
-            <strong>Destaques e campeões de venda</strong>
-          </div>
-          {heroProduct ? (
-            <Link className="hero-product" href={`/produto/${heroProduct.slug}`} aria-label="Produto em destaque">
-              <span className="deal-label">{productHeroBadge(heroProduct)}</span>
-              <OptimizedProductImage
-                src={heroProduct.image}
-                alt={heroProduct.name}
-                width={720}
-                height={850}
-                sizes="(min-width: 960px) 360px, 92vw"
-                priority
-              />
-              <span>{heroProduct.brand.name}</span>
-              <strong>{heroProduct.name}</strong>
-              <small>{displayPriceLabel(heroProduct)}</small>
-            </Link>
-          ) : null}
-          <div className="deal-list">
-            {secondaryDeals.map((product) => (
-              <Link href={`/produto/${product.slug}`} key={product.slug}>
-                <OptimizedProductImage
-                  src={product.image}
-                  alt={product.name}
-                  width={96}
-                  height={96}
-                  sizes="64px"
-                />
-                <span>
-                  <strong>{product.name}</strong>
-                  <small>{product.brand.name}</small>
-                </span>
-                <b>{displayPriceLabel(product)}</b>
-              </Link>
             ))}
           </div>
         </div>
@@ -142,6 +98,53 @@ export default async function HomePage() {
               </Link>
             ))}
             <Link href="/marcas">Marcas</Link>
+          </div>
+        </div>
+        <div className="hero-campaign-visual">
+          <OptimizedProductImage
+            src="/assets/rosagiro-atacado-hero.webp"
+            alt="Estoque organizado de cosméticos no atacado para lojistas e revendedores"
+            fill
+            sizes="100vw"
+            priority
+          />
+        </div>
+        <div className="hero-commerce-panel" aria-label="Produtos em destaque">
+          <div className="panel-heading">
+            <p className="eyebrow">Em estoque</p>
+            <strong>Destaques e campeões de venda</strong>
+          </div>
+          {heroProduct ? (
+            <Link className="hero-product" href={`/produto/${heroProduct.slug}`} aria-label="Produto em destaque">
+              <OptimizedProductImage
+                src={heroProduct.image}
+                alt={heroProduct.name}
+                width={720}
+                height={850}
+                sizes="(min-width: 960px) 360px, 92vw"
+              />
+              <span>{heroProduct.brand.name}</span>
+              <strong>{heroProduct.name}</strong>
+              <small>{displayPriceLabel(heroProduct)}</small>
+            </Link>
+          ) : null}
+          <div className="deal-list">
+            {secondaryDeals.map((product) => (
+              <Link href={`/produto/${product.slug}`} key={product.slug}>
+                <OptimizedProductImage
+                  src={product.image}
+                  alt={product.name}
+                  width={96}
+                  height={96}
+                  sizes="64px"
+                />
+                <span>
+                  <strong>{product.name}</strong>
+                  <small>{product.brand.name}</small>
+                </span>
+                <b>{displayPriceLabel(product)}</b>
+              </Link>
+            ))}
           </div>
         </div>
         <dl className="hero-stats">
