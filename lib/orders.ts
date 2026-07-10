@@ -8,6 +8,7 @@ import { discountCents, subtotalCents, totalCents } from "@/lib/money";
 import { isPaymentMethod, paymentModeAllowsSimulated, type PaymentMethodValue } from "@/lib/payments";
 import { effectiveSkuPriceCents } from "@/lib/product-pricing";
 import { resolveOrderShipping } from "@/lib/shipping";
+import { parseCheckoutShippingMethod, type CheckoutShippingMethod } from "@/lib/shipping-rules";
 import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
 import type { Prisma } from "@/src/generated/prisma/client";
 
@@ -16,8 +17,6 @@ export type CartInput = {
   skuId?: string;
   quantity: number;
 };
-
-type CheckoutShippingMethod = "PADRAO" | "EXPRESSA" | "ANJUN_D2D_PICKUP" | "RETIRADA_LOCAL";
 
 export type CheckoutInput = {
   items: CartInput[];
@@ -90,14 +89,10 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
     complement: cleanText(data.address?.complement)
   };
 
-  const rawShippingMethod = cleanText(data.shippingMethod).toUpperCase();
-  const shippingMethod: CheckoutShippingMethod =
-    rawShippingMethod === "ANJUN_D2D_PICKUP" ||
-    rawShippingMethod === "RETIRADA_LOCAL" ||
-    rawShippingMethod === "EXPRESSA" ||
-    rawShippingMethod === "PADRAO"
-      ? rawShippingMethod
-      : "RETIRADA_LOCAL";
+  const shippingMethod = parseCheckoutShippingMethod(data.shippingMethod);
+  if (!shippingMethod) {
+    throw new OrderError("Escolha Anjun D2D Pickup ou retirada local.");
+  }
   const rawPaymentMethod = cleanText((data as Partial<CheckoutInput>).paymentMethod).toUpperCase();
   if (!isPaymentMethod(rawPaymentMethod)) {
     throw new OrderError("Escolha uma forma de pagamento válida.");
@@ -167,7 +162,6 @@ export async function createOrder(input: CheckoutInput) {
     shippingQuote = await resolveOrderShipping({
       method: input.shippingMethod,
       cep: input.address.cep,
-      subtotal,
       lines
     });
   } catch (error) {

@@ -5,7 +5,15 @@ import { readSheet, type Row } from "read-excel-file/node";
 import { cepDigits, formatCep } from "@/lib/cep";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
-import type { Prisma, ShippingMethod } from "@/src/generated/prisma/client";
+import {
+  billableWeightGrams,
+  productWeightGrams,
+  shippingWeightConfig,
+  type CheckoutShippingMethod
+} from "@/lib/shipping-rules";
+import type { Prisma } from "@/src/generated/prisma/client";
+
+export { billableWeightGrams, productWeightGrams } from "@/lib/shipping-rules";
 
 export const shippingConfig = {
   carrier: "ANJUN",
@@ -15,9 +23,7 @@ export const shippingConfig = {
   originLabel: "SP-São Paulo",
   originDisplay: "SP - São Paulo",
   pickupLabel: "Retirada local",
-  packagingWeightGrams: 150,
-  minBillableWeightGrams: 100,
-  fallbackProductWeightGrams: 150,
+  ...shippingWeightConfig,
   freeShippingEnabled: false,
   manualFeesNote: "Base do frete calculada por CEP e peso. Seguro, ICMS/ISS e área de risco podem exigir confirmação manual."
 } as const;
@@ -82,7 +88,7 @@ export type ShippingQuoteCartItem = {
 };
 
 export type ShippingQuoteOption = {
-  method: Extract<ShippingMethod, "ANJUN_D2D_PICKUP" | "RETIRADA_LOCAL">;
+  method: CheckoutShippingMethod;
   carrier: string;
   service: string;
   label: string;
@@ -106,7 +112,7 @@ export type ShippingQuoteResult = {
 };
 
 export type ResolvedOrderShipping = {
-  method: ShippingMethod;
+  method: CheckoutShippingMethod;
   shippingCents: number;
   carrier: string | null;
   service: string | null;
@@ -316,18 +322,6 @@ export async function importAnjunD2DPickupRates(buffer: Buffer, sourceName: stri
   };
 }
 
-export function productWeightGrams(weightGrams: number | null | undefined) {
-  if (!weightGrams || weightGrams <= 0) return shippingConfig.fallbackProductWeightGrams;
-  return Math.max(1, Math.floor(weightGrams));
-}
-
-export function billableWeightGrams(productTotalWeightGrams: number) {
-  return Math.max(
-    shippingConfig.minBillableWeightGrams,
-    productTotalWeightGrams + shippingConfig.packagingWeightGrams
-  );
-}
-
 export function rateCentsForWeight(ratesCents: number[], additionalKgCents: number, weightGrams: number) {
   const bandIndex = weightBands.findIndex((band) => weightGrams <= band.maxGrams);
   if (bandIndex >= 0) {
@@ -468,11 +462,6 @@ export async function getShippingQuoteForCart(items: ShippingQuoteCartItem[], ce
   };
 }
 
-function legacyShippingCents(subtotal: number, method: ShippingMethod) {
-  if (subtotal >= 29900) return 0;
-  return method === "EXPRESSA" ? 2490 : 1490;
-}
-
 function snapshotFromOption(option: ShippingQuoteOption): Prisma.InputJsonValue {
   return {
     carrier: option.carrier,
@@ -495,12 +484,10 @@ function snapshotFromOption(option: ShippingQuoteOption): Prisma.InputJsonValue 
 export async function resolveOrderShipping({
   method,
   cep,
-  subtotal,
   lines
 }: {
-  method: ShippingMethod;
+  method: CheckoutShippingMethod;
   cep: string;
-  subtotal: number;
   lines: Array<{ weightGrams: number | null; quantity: number }>;
 }): Promise<ResolvedOrderShipping> {
   const productTotalWeightGrams = lines.reduce(
@@ -528,48 +515,23 @@ export async function resolveOrderShipping({
     };
   }
 
-  if (method === "ANJUN_D2D_PICKUP") {
-    const option = await quoteAnjunD2DPickup(cep, productTotalWeightGrams);
-    if (!option) {
-      throw new Error("Não foi possível calcular Anjun D2D Pickup para este CEP. Escolha retirada local ou fale no WhatsApp.");
-    }
-    return {
-      method,
-      shippingCents: option.priceCents,
-      carrier: option.carrier,
-      service: option.service,
-      serviceLabel: option.label,
-      rateId: option.rateId,
-      zone: option.zone,
-      city: option.city,
-      weightGrams: option.billableWeightGrams,
-      estimate: option.estimate,
-      status: "QUOTED",
-      message: option.note,
-      snapshot: snapshotFromOption(option)
-    };
+  const option = await quoteAnjunD2DPickup(cep, productTotalWeightGrams);
+  if (!option) {
+    throw new Error("Não foi possível calcular Anjun D2D Pickup para este CEP. Escolha retirada local ou fale no WhatsApp.");
   }
-
-  const shipping = legacyShippingCents(subtotal, method);
   return {
     method,
-    shippingCents: shipping,
-    carrier: "LEGACY",
-    service: method,
-    serviceLabel: method === "EXPRESSA" ? "Entrega expressa legada" : "Entrega padrão legada",
-    rateId: null,
-    zone: null,
-    city: null,
-    weightGrams: billable,
-    estimate: method === "EXPRESSA" ? "2 a 3 dias úteis (legado)" : "4 a 7 dias úteis (legado)",
-    status: "LEGACY",
-    message: "Pedido criado por fluxo antigo de frete fixo.",
-    snapshot: {
-      method,
-      priceCents: shipping,
-      productWeightGrams: productTotalWeightGrams,
-      billableWeightGrams: billable,
-      legacy: true
-    }
+    shippingCents: option.priceCents,
+    carrier: option.carrier,
+    service: option.service,
+    serviceLabel: option.label,
+    rateId: option.rateId,
+    zone: option.zone,
+    city: option.city,
+    weightGrams: option.billableWeightGrams,
+    estimate: option.estimate,
+    status: "QUOTED",
+    message: option.note,
+    snapshot: snapshotFromOption(option)
   };
 }
