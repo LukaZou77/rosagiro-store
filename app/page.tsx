@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import { ProductCard } from "@/components/ProductCard";
@@ -8,9 +9,18 @@ import { getCategories, getFeaturedBrands, getProductCount, getProducts } from "
 import { getPublishedGuideArticles } from "@/lib/guide-articles";
 import { money } from "@/lib/money";
 import { hasSkuPriceRange, lowestEffectivePriceCents } from "@/lib/product-pricing";
-import { siteConfig } from "@/lib/site-config";
+import { siteConfig, siteUrl } from "@/lib/site-config";
 import { getStoreProfile } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: `${siteConfig.name} | ${siteConfig.tagline}`
+  },
+  alternates: {
+    canonical: siteUrl()
+  }
+};
 
 function displayPriceLabel(product: Awaited<ReturnType<typeof getProducts>>[number]) {
   const price = money(lowestEffectivePriceCents(product));

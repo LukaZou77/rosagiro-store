@@ -6,8 +6,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: ["Googlebot", "Bingbot"],
-        allow: ["/", "/categoria", "/produto", "/marcas", "/promocoes", "/guias"],
-        disallow: ["/admin", "/api", "/carrinho", "/checkout", "/pedido", "/pagamento-simulado"]
+        allow: "/",
+        disallow: ["/admin", "/api"]
       },
       {
         userAgent: [
@@ -26,7 +26,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/api", "/carrinho", "/checkout", "/pedido", "/pagamento-simulado"]
+        disallow: ["/admin", "/api"]
       }
     ],
     sitemap: siteUrl("/sitemap.xml")

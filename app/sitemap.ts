@@ -6,11 +6,16 @@ import { siteUrl } from "@/lib/site-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [infoPages, guides] = await Promise.all([getAllSiteInfoPages(), getPublishedGuideArticles()]);
-  const staticRoutes = ["", "/categoria/all", "/marcas", "/promocoes", "/guias", ...infoPages.map((page) => page.href)].map(
-    (path) => ({
-      url: siteUrl(path)
-    })
-  );
+  const staticPaths = new Set([
+    "",
+    "/categoria/all",
+    "/marcas",
+    "/promocoes",
+    "/informacoes-da-loja",
+    ...(guides.length ? ["/guias"] : []),
+    ...infoPages.filter((page) => page.active).map((page) => page.href)
+  ]);
+  const staticRoutes = Array.from(staticPaths, (path) => ({ url: siteUrl(path) }));
 
   try {
     const [categories, products] = await Promise.all([

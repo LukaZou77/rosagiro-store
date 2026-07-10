@@ -22,9 +22,6 @@ export const metadata: Metadata = {
     url: siteUrl(),
     images: [{ url: siteUrl(siteConfig.brandAssets.ogImage) }]
   },
-  alternates: {
-    canonical: siteUrl()
-  },
   icons: {
     icon: [
       { url: siteConfig.brandAssets.icon64, sizes: "64x64", type: "image/png" },

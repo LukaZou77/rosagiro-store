@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
 import { StructuredData } from "@/components/StructuredData";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/catalog";
 import {
   breadcrumbJsonLd,
+  catalogIndexing,
   categoryIntroText,
   categoryMetaDescription,
   categoryMetadataTitle,
@@ -79,8 +81,8 @@ async function categorySeoContext(slug: string) {
   return { categories, productCount, currentCategory, label };
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+  const [{ slug }, queryParams] = await Promise.all([params, searchParams]);
   const categorySlug = slug || "all";
   const { currentCategory, label, productCount } = await categorySeoContext(categorySlug);
   if (categorySlug !== "all" && !currentCategory) {
@@ -88,11 +90,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
   const path = `/categoria/${categorySlug}`;
   const isAllCategory = categorySlug === "all";
-  return storefrontMetadata({
+  const page = safePage(value(queryParams.page));
+  const indexing = catalogIndexing({
+    path,
+    page,
+    query: value(queryParams.q) || "",
+    brand: value(queryParams.brand) || "all",
+    stockFilter: safeStock(value(queryParams.stock) || "all"),
+    sort: safeSort(value(queryParams.sort) || "featured"),
+    totalPages: Math.ceil(productCount / CATALOG_PAGE_SIZE)
+  });
+  const metadata = storefrontMetadata({
     title: categoryMetadataTitle(label, isAllCategory),
     description: categoryMetaDescription(label, productCount, isAllCategory),
-    path
+    path: indexing.canonicalPath
   });
+
+  if (!indexing.shouldNoIndex) return metadata;
+  return {
+    ...metadata,
+    robots: {
+      index: false,
+      follow: true
+    }
+  };
 }
 
 function FilterFields({
@@ -220,6 +241,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     getStoreProfile()
   ]);
   const { products, total, totalPages } = productPage;
+  if (page > Math.max(1, totalPages)) notFound();
   const currentCategory = categories.find((category) => category.slug === categorySlug);
   const categoryLabel = categorySlug === "all" ? "Todas as categorias" : currentCategory?.label || "Categoria";
   const isAllCategory = categorySlug === "all";

@@ -25,6 +25,16 @@ type GuideArticleJsonLdInput = {
   updatedAt: Date;
 };
 
+type CatalogIndexingInput = {
+  path: string;
+  page: number;
+  query: string;
+  brand: string;
+  stockFilter: string;
+  sort: string;
+  totalPages: number;
+};
+
 function compactText(value: string, maxLength = 155) {
   const text = value.replace(/\s+/g, " ").trim();
   if (text.length <= maxLength) return text;
@@ -106,6 +116,19 @@ export function storefrontMetadata(input: {
       description,
       images: [image]
     }
+  };
+}
+
+export function catalogIndexing(input: CatalogIndexingInput) {
+  const hasFilters = Boolean(
+    input.query || input.brand !== "all" || input.stockFilter !== "all" || input.sort !== "featured"
+  );
+  const pageOutOfRange = input.page > Math.max(1, input.totalPages);
+  const canonicalPath = !hasFilters && input.page > 1 && !pageOutOfRange ? `${input.path}?page=${input.page}` : input.path;
+
+  return {
+    canonicalPath,
+    shouldNoIndex: hasFilters || pageOutOfRange
   };
 }
 

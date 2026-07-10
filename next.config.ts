@@ -81,6 +81,11 @@ const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" }
 ];
 
+const nonIndexablePageHeaders = [
+  { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+  { key: "Cache-Control", value: "no-store, max-age=0" }
+];
+
 const nextConfig: NextConfig = {
   devIndicators: false,
   images: {
@@ -105,6 +110,16 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "36mb"
     }
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.rosagiro.com.br" }],
+        destination: "https://rosagiro.com.br/:path*",
+        permanent: true
+      }
+    ];
+  },
   async headers() {
     return [
       {
@@ -113,17 +128,27 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/admin/:path*",
-        headers: [
-          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
-          { key: "Cache-Control", value: "no-store, max-age=0" }
-        ]
+        headers: nonIndexablePageHeaders
       },
       {
         source: "/api/:path*",
-        headers: [
-          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
-          { key: "Cache-Control", value: "no-store, max-age=0" }
-        ]
+        headers: nonIndexablePageHeaders
+      },
+      {
+        source: "/carrinho",
+        headers: nonIndexablePageHeaders
+      },
+      {
+        source: "/checkout",
+        headers: nonIndexablePageHeaders
+      },
+      {
+        source: "/pedido/:path*",
+        headers: nonIndexablePageHeaders
+      },
+      {
+        source: "/pagamento-simulado/:path*",
+        headers: nonIndexablePageHeaders
       }
     ];
   }

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  catalogIndexing,
   categoryIntroText,
   categoryMetaDescription,
   categoryMetadataTitle,
@@ -83,4 +84,58 @@ test("builds Article JSON-LD for published guide pages", () => {
   assert.equal(data.mainEntityOfPage, "http://localhost:3000/guias/como-comprar-cosmeticos-no-atacado");
   assert.equal(data.datePublished, "2026-07-01T12:00:00.000Z");
   assert.equal(data.publisher["@id"], "http://localhost:3000/#store");
+});
+
+test("keeps paginated category pages self-canonical", () => {
+  assert.deepEqual(
+    catalogIndexing({
+      path: "/categoria/all",
+      page: 2,
+      query: "",
+      brand: "all",
+      stockFilter: "all",
+      sort: "featured",
+      totalPages: 17
+    }),
+    {
+      canonicalPath: "/categoria/all?page=2",
+      shouldNoIndex: false
+    }
+  );
+});
+
+test("keeps filtered catalog URLs out of the index", () => {
+  assert.deepEqual(
+    catalogIndexing({
+      path: "/categoria/all",
+      page: 1,
+      query: "",
+      brand: "Ruby Rose",
+      stockFilter: "ready",
+      sort: "price-asc",
+      totalPages: 17
+    }),
+    {
+      canonicalPath: "/categoria/all",
+      shouldNoIndex: true
+    }
+  );
+});
+
+test("marks out-of-range catalog pages as non-indexable", () => {
+  assert.deepEqual(
+    catalogIndexing({
+      path: "/categoria/all",
+      page: 99,
+      query: "",
+      brand: "all",
+      stockFilter: "all",
+      sort: "featured",
+      totalPages: 17
+    }),
+    {
+      canonicalPath: "/categoria/all",
+      shouldNoIndex: true
+    }
+  );
 });
