@@ -3358,6 +3358,10 @@ textarea {
   gap: 14px;
 }
 
+.product-recommendations-loading {
+  min-height: 320px;
+}
+
 .product-realness-card {
   padding: 16px;
   border: 1px solid rgba(var(--line-rgb), 0.88);

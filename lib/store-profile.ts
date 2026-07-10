@@ -1,6 +1,8 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
+import { STORE_PROFILE_CACHE_TAG } from "@/lib/cache-tags";
 import { prisma } from "@/lib/db";
 import { defaultMercadoPagoInstallments, normalizeMercadoPagoInstallments } from "@/lib/payments";
 import type { StoreProfileView } from "@/lib/store-profile-public";
@@ -77,7 +79,7 @@ export const defaultStoreProfile = {
   launchNote: "Confira os dados da loja, canais de atendimento e políticas antes de finalizar sua compra."
 } satisfies StoreProfileView;
 
-export const getStoreProfile = cache(async (): Promise<StoreProfileView> => {
+const getStoreProfileCached = unstable_cache(async (): Promise<StoreProfileView> => {
   const profile = await prisma.storeProfile.findUnique({
     where: { id: STORE_PROFILE_ID }
   });
@@ -92,7 +94,12 @@ export const getStoreProfile = cache(async (): Promise<StoreProfileView> => {
         ? profile.trustBadges
         : defaultStoreProfile.trustBadges
   };
+}, ["store-profile"], {
+  revalidate: 3600,
+  tags: [STORE_PROFILE_CACHE_TAG]
 });
+
+export const getStoreProfile = cache(getStoreProfileCached);
 
 export function configuredMercadoPagoInstallments(profile?: Pick<StoreProfileView, "mercadoPagoMaxInstallments"> | null) {
   return normalizeMercadoPagoInstallments(

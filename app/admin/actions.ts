@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   adminLoginRateLimitStatus,
@@ -8,6 +8,7 @@ import {
   recordAdminLoginFailure
 } from "@/lib/admin-login-rate-limit";
 import { clearAdminSession, hashPassword, requireAdmin, setAdminSession, verifyPassword } from "@/lib/auth";
+import { STOREFRONT_CATALOG_CACHE_TAG, STORE_PROFILE_CACHE_TAG } from "@/lib/cache-tags";
 import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
 import { markOrderPaid, OrderError } from "@/lib/orders";
@@ -109,7 +110,8 @@ function validatePixKey(type: string, key: string) {
   return key.length >= 8;
 }
 
-function revalidateCatalog(productSlug?: string) {
+function revalidateCatalog(productSlug?: string, invalidateData = true) {
+  if (invalidateData) updateTag(STOREFRONT_CATALOG_CACHE_TAG);
   revalidatePath("/");
   revalidatePath("/promocoes");
   revalidatePath("/categoria/[slug]", "page");
@@ -676,7 +678,7 @@ export async function moveProductsToTrashAction(formData: FormData) {
   });
 
   revalidateCatalog();
-  for (const product of products) revalidateCatalog(product.slug);
+  for (const product of products) revalidateCatalog(product.slug, false);
   redirect(`/admin/produtos?trashed=${products.length}`);
 }
 
@@ -702,7 +704,7 @@ export async function restoreProductsFromTrashAction(formData: FormData) {
   });
 
   revalidateCatalog();
-  for (const product of products) revalidateCatalog(product.slug);
+  for (const product of products) revalidateCatalog(product.slug, false);
   redirect(`/admin/produtos/lixeira?restored=${products.length}`);
 }
 
@@ -730,7 +732,7 @@ export async function permanentlyDeleteProductsAction(formData: FormData) {
   );
 
   revalidateCatalog();
-  for (const product of products) revalidateCatalog(product.slug);
+  for (const product of products) revalidateCatalog(product.slug, false);
   redirect(`/admin/produtos/lixeira?deleted=${products.length}`);
 }
 
@@ -1110,6 +1112,7 @@ export async function saveStoreProfileAction(formData: FormData) {
     }
   });
 
+  updateTag(STORE_PROFILE_CACHE_TAG);
   revalidatePath("/");
   revalidatePath("/informacoes-da-loja");
   revalidatePath("/contato");

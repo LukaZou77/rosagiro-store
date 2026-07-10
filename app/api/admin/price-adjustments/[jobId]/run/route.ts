@@ -1,6 +1,7 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/auth";
+import { STOREFRONT_CATALOG_CACHE_TAG, STORE_PROFILE_CACHE_TAG } from "@/lib/cache-tags";
 import { processPriceAdjustmentJobChunk } from "@/lib/product-price-adjustment-server";
 
 export const runtime = "nodejs";
@@ -12,6 +13,8 @@ type RouteContext = {
 };
 
 function revalidatePriceAdjustmentSurfaces() {
+  revalidateTag(STOREFRONT_CATALOG_CACHE_TAG, { expire: 0 });
+  revalidateTag(STORE_PROFILE_CACHE_TAG, { expire: 0 });
   revalidatePath("/");
   revalidatePath("/categoria/all");
   revalidatePath("/promocoes");

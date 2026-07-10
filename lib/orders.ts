@@ -1,5 +1,7 @@
 import "server-only";
 
+import { revalidateTag } from "next/cache";
+import { STOREFRONT_CATALOG_CACHE_TAG } from "@/lib/cache-tags";
 import { randomInt } from "node:crypto";
 import { normalizeBrazilWhatsapp, upsertCustomerFromContact } from "@/lib/customers";
 import { prisma } from "@/lib/db";
@@ -259,7 +261,7 @@ type PaidOrderPaymentUpdate = {
 };
 
 export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrderPaymentUpdate = {}) {
-  return prisma.$transaction(async (tx) => {
+  const order = await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { orderNumber },
       include: { items: true, payment: true }
@@ -365,6 +367,9 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
       include: { items: true, payment: true }
     });
   });
+
+  revalidateTag(STOREFRONT_CATALOG_CACHE_TAG, { expire: 0 });
+  return order;
 }
 
 export async function simulatePayment(orderNumber: string) {

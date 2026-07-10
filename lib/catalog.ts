@@ -1,7 +1,9 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import type { Prisma } from "@/src/generated/prisma/client";
+import { STOREFRONT_CATALOG_CACHE_TAG } from "@/lib/cache-tags";
 import { prisma } from "@/lib/db";
 import { BODY_AREA_CATEGORY_ORDER } from "@/lib/category-taxonomy";
 import { customerDisplayText } from "@/lib/display-text";
@@ -111,7 +113,7 @@ function withProductDisplayText(product: CatalogProduct): CatalogProduct {
   };
 }
 
-export const getCategories = cache(async function getCategories() {
+const getCategoriesCached = unstable_cache(async function getCategories() {
   const categories = await prisma.category.findMany();
   return categories
     .sort((a, b) => {
@@ -127,7 +129,12 @@ export const getCategories = cache(async function getCategories() {
       label: customerDisplayText(category.label),
       note: customerDisplayText(category.note)
     }));
+}, ["storefront-categories"], {
+  revalidate: 3600,
+  tags: [STOREFRONT_CATALOG_CACHE_TAG]
 });
+
+export const getCategories = cache(getCategoriesCached);
 
 export async function getFeaturedBrands() {
   const brands = await prisma.brand.findMany({
@@ -184,7 +191,7 @@ export async function getActiveBrandSummaries() {
     });
 }
 
-export const getActiveBrandSummary = cache(async function getActiveBrandSummary(slug: string) {
+const getActiveBrandSummaryCached = unstable_cache(async function getActiveBrandSummary(slug: string) {
   const brand = await prisma.brand.findFirst({
     where: {
       slug,
@@ -219,7 +226,12 @@ export const getActiveBrandSummary = cache(async function getActiveBrandSummary(
     featured: brand.featured,
     productCount: brand._count.products
   };
+}, ["active-brand-summary"], {
+  revalidate: 300,
+  tags: [STOREFRONT_CATALOG_CACHE_TAG]
 });
+
+export const getActiveBrandSummary = cache(getActiveBrandSummaryCached);
 
 export async function getProducts(options: ProductListOptions = {}) {
   const { sort = "featured", take, skip } = options;
@@ -352,14 +364,19 @@ export async function getPromotionCollections() {
   };
 }
 
-export const getProduct = cache(async function getProduct(slug: string) {
+const getProductCached = unstable_cache(async function getProduct(slug: string) {
   const product = await prisma.product.findFirst({
     where: { slug, active: true, deletedAt: null },
     include: productInclude
   });
 
   return product ? withProductDisplayText(product) : null;
+}, ["storefront-product"], {
+  revalidate: 300,
+  tags: [STOREFRONT_CATALOG_CACHE_TAG]
 });
+
+export const getProduct = cache(getProductCached);
 
 export async function getRelatedProducts(categorySlug: string, currentSlug: string) {
   const products = await prisma.product.findMany({

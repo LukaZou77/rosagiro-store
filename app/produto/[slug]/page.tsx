@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { ProductCard } from "@/components/ProductCard";
@@ -48,17 +49,62 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 }
 
+async function ProductRecommendations({
+  categorySlug,
+  productName,
+  productSlug,
+  whatsappPhone
+}: {
+  categorySlug: string;
+  productName: string;
+  productSlug: string;
+  whatsappPhone: string;
+}) {
+  const [related, recommendationProducts] = await Promise.all([
+    getRelatedProducts(categorySlug, productSlug),
+    getRecommendationProducts({ categorySlug, excludeSlug: productSlug, take: 32 })
+  ]);
+  const completionRecommendations = getCartCompletionRecommendations(
+    recommendationProducts,
+    [{ slug: productSlug, quantity: 1 }],
+    {
+      currentCategorySlug: categorySlug,
+      excludeSlug: productSlug,
+      limit: 4
+    }
+  );
+
+  return (
+    <section className="section">
+      {completionRecommendations.length ? (
+        <CartCompletionRecommendations
+          recommendations={completionRecommendations}
+          openDrawerOnAdd
+          title={siteConfig.productConversion.completionTitle}
+          body={`Combine ${productName} com itens em estoque para aproximar sua lista do pedido mínimo.`}
+        />
+      ) : (
+        <>
+          <div className="section-heading">
+            <p className="eyebrow">Completar pedido</p>
+            <h2>Tambem nesta categoria</h2>
+          </div>
+          <div className="product-grid compact">
+            {related.map((item) => (
+              <ProductCard product={item} whatsappPhone={whatsappPhone} key={item.slug} />
+            ))}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
-  const product = await getProduct(slug);
+  const [product, categories, storeProfile] = await Promise.all([getProduct(slug), getCategories(), getStoreProfile()]);
   if (!product || !product.active) notFound();
 
-  const [categories, related, storeProfile, recommendationProducts] = await Promise.all([
-    getCategories(),
-    getRelatedProducts(product.category.slug, product.slug),
-    getStoreProfile(),
-    getRecommendationProducts({ categorySlug: product.category.slug, excludeSlug: product.slug, take: 32 })
-  ]);
   const quantity = productQuantity(product);
   const available = quantity > 0;
   const stockLabel = productStockLabel(product);
@@ -75,11 +121,6 @@ export default async function ProductPage({ params }: PageProps) {
   const serviceCards = productDetailServiceCards();
   const wholesaleLines = productWholesaleLines(product);
   const editorialDescription = productEditorialDescription(product.descriptionPt);
-  const completionRecommendations = getCartCompletionRecommendations(recommendationProducts, [{ slug: product.slug, quantity: 1 }], {
-    currentCategorySlug: product.category.slug,
-    excludeSlug: product.slug,
-    limit: 4
-  });
 
   return (
     <StoreShell categories={categories}>
@@ -186,28 +227,23 @@ export default async function ProductPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="section">
-        {completionRecommendations.length ? (
-          <CartCompletionRecommendations
-            recommendations={completionRecommendations}
-            openDrawerOnAdd
-            title={siteConfig.productConversion.completionTitle}
-            body={`Combine ${product.name} com itens em estoque para aproximar sua lista do pedido mínimo.`}
-          />
-        ) : (
-          <>
+      <Suspense
+        fallback={
+          <section className="section product-recommendations-loading" aria-busy="true">
             <div className="section-heading">
               <p className="eyebrow">Completar pedido</p>
-              <h2>Tambem nesta categoria</h2>
+              <h2>Carregando sugestões...</h2>
             </div>
-            <div className="product-grid compact">
-              {related.map((item) => (
-                <ProductCard product={item} whatsappPhone={storeProfile.whatsapp} key={item.slug} />
-              ))}
-            </div>
-          </>
-        )}
-      </section>
+          </section>
+        }
+      >
+        <ProductRecommendations
+          categorySlug={product.category.slug}
+          productName={product.name}
+          productSlug={product.slug}
+          whatsappPhone={storeProfile.whatsapp}
+        />
+      </Suspense>
     </StoreShell>
   );
 }
