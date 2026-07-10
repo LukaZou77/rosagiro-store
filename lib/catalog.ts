@@ -299,23 +299,32 @@ export async function getBrandOptionsForCategory(categorySlug?: string) {
   return brands.map((brand) => brand.name);
 }
 
+const getRecommendationPoolCached = unstable_cache(async function getRecommendationPool(categorySlug?: string) {
+  const products = await prisma.product.findMany({
+    where: {
+      ...productWhere({ categorySlug }),
+      OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
+    },
+    include: productInclude,
+    orderBy: { featuredRank: "asc" },
+    take: 64
+  });
+
+  return products.map(withProductDisplayText);
+}, ["recommendation-product-pool"], {
+  revalidate: 300,
+  tags: [STOREFRONT_CATALOG_CACHE_TAG]
+});
+
 export async function getRecommendationProducts(options: {
   categorySlug?: string;
   excludeSlug?: string;
   take?: number;
 } = {}) {
-  const products = await prisma.product.findMany({
-    where: {
-      ...productWhere({ categorySlug: options.categorySlug }),
-      slug: options.excludeSlug ? { not: options.excludeSlug } : undefined,
-      OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
-    },
-    include: productInclude,
-    orderBy: { featuredRank: "asc" },
-    take: Math.max(4, Math.min(64, options.take || 24))
-  });
+  const take = Math.max(4, Math.min(64, options.take || 24));
+  const products = await getRecommendationPoolCached(options.categorySlug);
 
-  return products.map(withProductDisplayText);
+  return products.filter((product) => product.slug !== options.excludeSlug).slice(0, take);
 }
 
 export async function getPromotionCollections() {

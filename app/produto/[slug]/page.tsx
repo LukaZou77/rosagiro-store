@@ -60,10 +60,7 @@ async function ProductRecommendations({
   productSlug: string;
   whatsappPhone: string;
 }) {
-  const [related, recommendationProducts] = await Promise.all([
-    getRelatedProducts(categorySlug, productSlug),
-    getRecommendationProducts({ categorySlug, excludeSlug: productSlug, take: 32 })
-  ]);
+  const recommendationProducts = await getRecommendationProducts({ categorySlug, excludeSlug: productSlug, take: 32 });
   const completionRecommendations = getCartCompletionRecommendations(
     recommendationProducts,
     [{ slug: productSlug, quantity: 1 }],
@@ -74,28 +71,31 @@ async function ProductRecommendations({
     }
   );
 
-  return (
-    <section className="section">
-      {completionRecommendations.length ? (
+  if (completionRecommendations.length) {
+    return (
+      <section className="section">
         <CartCompletionRecommendations
           recommendations={completionRecommendations}
           openDrawerOnAdd
           title={siteConfig.productConversion.completionTitle}
           body={`Combine ${productName} com itens em estoque para aproximar sua lista do pedido mínimo.`}
         />
-      ) : (
-        <>
-          <div className="section-heading">
-            <p className="eyebrow">Completar pedido</p>
-            <h2>Tambem nesta categoria</h2>
-          </div>
-          <div className="product-grid compact">
-            {related.map((item) => (
-              <ProductCard product={item} whatsappPhone={whatsappPhone} key={item.slug} />
-            ))}
-          </div>
-        </>
-      )}
+      </section>
+    );
+  }
+
+  const related = await getRelatedProducts(categorySlug, productSlug);
+  return (
+    <section className="section">
+      <div className="section-heading">
+        <p className="eyebrow">Completar pedido</p>
+        <h2>Tambem nesta categoria</h2>
+      </div>
+      <div className="product-grid compact">
+        {related.map((item) => (
+          <ProductCard product={item} whatsappPhone={whatsappPhone} key={item.slug} />
+        ))}
+      </div>
     </section>
   );
 }
