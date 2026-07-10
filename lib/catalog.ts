@@ -129,10 +129,18 @@ export async function getCategories() {
 }
 
 export async function getFeaturedBrands() {
-  return prisma.brand.findMany({
-    where: { featured: true },
+  const brands = await prisma.brand.findMany({
+    where: {
+      featured: true,
+      products: {
+        some: productWhere()
+      }
+    },
     orderBy: { name: "asc" }
   });
+
+  if (brands.length) return brands;
+  return (await getActiveBrandSummaries()).slice(0, 8);
 }
 
 export async function getActiveBrandSummaries() {
