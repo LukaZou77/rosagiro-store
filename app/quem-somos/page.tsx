@@ -56,18 +56,31 @@ export default async function AboutPage() {
       <section className="section split-band">
         <div>
           <p className="eyebrow">Operação</p>
-          <h2>Endereço operacional e retirada</h2>
+          <h2>Estoque e retirada em Arujá</h2>
           <p>{storeProfileAddress(profile)}</p>
           <p>{profile.pickupNote}</p>
         </div>
         <div>
+          <p className="eyebrow">Unidade São Paulo</p>
+          <h2>Estoque e retirada em São Paulo</h2>
+          <p>
+            {siteConfig.businessIdentity.legalAddress.streetAddress}, {siteConfig.businessIdentity.legalAddress.district},{" "}
+            {siteConfig.businessIdentity.legalAddress.city} - {siteConfig.businessIdentity.legalAddress.state}, CEP{" "}
+            {siteConfig.businessIdentity.legalAddress.postalCode}.
+          </p>
+          <p>{siteConfig.businessIdentity.pickupNote}</p>
+          <Link className="button secondary" href="/informacoes-da-loja">Ver dados da loja</Link>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="section-heading compact">
           <p className="eyebrow">Compromisso</p>
           <h2>Informação antes da compra</h2>
           <p>
             Mantemos dados comerciais, políticas, canais oficiais e condições de atacado visíveis. Informações de
             produto são revisadas com base em embalagem, fornecedor ou fontes de mercado antes da publicação.
           </p>
-          <Link className="button secondary" href="/informacoes-da-loja">Ver dados da loja</Link>
         </div>
       </section>
     </StoreShell>

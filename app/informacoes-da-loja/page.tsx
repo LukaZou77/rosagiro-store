@@ -98,20 +98,20 @@ export default async function StoreInformationPage() {
 
         <article className="store-info-card wide">
           <span>{siteConfig.businessIdentity.operatingAddressLabel}</span>
-          <h2>Retirada e conferência</h2>
+          <h2>Estoque e retirada em Arujá</h2>
           <p>{storeProfileAddress(profile)}</p>
           <p>{profile.pickupNote}</p>
         </article>
 
         <article className="store-info-card wide">
-          <span>Endereço legal</span>
-          <h2>Sede registrada</h2>
+          <span>{siteConfig.businessIdentity.saoPauloLocationLabel}</span>
+          <h2>Estoque e retirada em São Paulo</h2>
           <p>
             {siteConfig.businessIdentity.legalAddress.streetAddress}, {siteConfig.businessIdentity.legalAddress.district},{" "}
             {siteConfig.businessIdentity.legalAddress.city} - {siteConfig.businessIdentity.legalAddress.state}, CEP{" "}
             {siteConfig.businessIdentity.legalAddress.postalCode}.
           </p>
-          <p>Este é o endereço cadastral da empresa. Retiradas são combinadas no endereço operacional informado acima.</p>
+          <p>{siteConfig.businessIdentity.pickupNote}</p>
         </article>
 
         <article className="store-info-card">

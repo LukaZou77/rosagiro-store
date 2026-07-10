@@ -18,7 +18,9 @@ export const siteConfig = {
       postalCode: "03032-020",
       country: "BR"
     },
-    operatingAddressLabel: "Endereço operacional e retirada"
+    operatingAddressLabel: "Unidade Arujá - estoque e retirada",
+    saoPauloLocationLabel: "Unidade São Paulo - estoque e retirada",
+    pickupNote: "As duas unidades pertencem à operação RosaGiro e recebem retiradas com agendamento prévio pelo WhatsApp."
   },
   brandAssets: {
     avatar: "/brand/rosagiro-avatar.webp",

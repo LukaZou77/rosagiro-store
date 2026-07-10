@@ -203,7 +203,22 @@ export function storeJsonLd(profile: StoreProfileView) {
         addressRegion: siteConfig.businessIdentity.legalAddress.state,
         postalCode: siteConfig.businessIdentity.legalAddress.postalCode,
         addressCountry: siteConfig.businessIdentity.legalAddress.country
-      }
+      },
+      location: [
+        {
+          "@type": "Place",
+          name: siteConfig.businessIdentity.saoPauloLocationLabel,
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: siteConfig.businessIdentity.legalAddress.streetAddress,
+            addressLocality: siteConfig.businessIdentity.legalAddress.city,
+            addressRegion: siteConfig.businessIdentity.legalAddress.state,
+            postalCode: siteConfig.businessIdentity.legalAddress.postalCode,
+            addressCountry: siteConfig.businessIdentity.legalAddress.country
+          }
+        },
+        ...(address ? [{ "@type": "Place", name: siteConfig.businessIdentity.operatingAddressLabel, address }] : [])
+      ]
     },
     sameAs: socials.length ? socials : undefined
   };
