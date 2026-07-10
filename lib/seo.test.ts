@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  brandDisplayDescription,
+  brandIntroText,
+  brandMetaDescription,
+  brandMetadataTitle,
   catalogIndexing,
   categoryIntroText,
   categoryMetaDescription,
@@ -29,6 +33,23 @@ const sampleProduct = {
   inventory: { quantity: 12 },
   skus: []
 } as unknown as Parameters<typeof productMetaDescription>[0];
+
+test("builds useful brand landing copy from real catalog facts", () => {
+  assert.equal(brandMetadataTitle("Ruby Rose"), "Ruby Rose no atacado para revenda");
+  assert.equal(brandMetadataTitle("Ruby Rose", 2), "Ruby Rose no atacado - página 2");
+
+  const description = brandMetaDescription("Ruby Rose", 72);
+  const intro = brandIntroText("Ruby Rose", 72);
+  assert.match(description, /72 produtos/i);
+  assert.match(description, /pedido mínimo de R\$ 300,00/i);
+  assert.match(intro, /lojistas e revendedores/i);
+  assert.match(intro, /entrega por CEP/i);
+  assert.match(brandMetaDescription("Ruby Rose", 72, 2), /^Página 2:/i);
+  assert.doesNotMatch(`${description} ${intro}`, /a ajustar|produto\(s\)|Descrição da marca/i);
+  assert.equal(brandDisplayDescription("Descrição da marca a ajustar."), "");
+  assert.equal(brandDisplayDescription("Ruby Rose no atacado RosaGiro."), "");
+  assert.equal(brandDisplayDescription("Maquiagem brasileira com linhas para rosto e lábios."), "Maquiagem brasileira com linhas para rosto e lábios.");
+});
 
 test("builds local Portuguese category metadata without mechanical wording", () => {
   assert.equal(categoryMetadataTitle("Todas as categorias", true), "Cosméticos no atacado para revenda");

@@ -175,6 +175,43 @@ export async function getActiveBrandSummaries() {
     });
 }
 
+export async function getActiveBrandSummary(slug: string) {
+  const brand = await prisma.brand.findFirst({
+    where: {
+      slug,
+      products: {
+        some: productWhere()
+      }
+    },
+    select: {
+      slug: true,
+      name: true,
+      logo: true,
+      origin: true,
+      descriptionPt: true,
+      featured: true,
+      _count: {
+        select: {
+          products: {
+            where: productWhere()
+          }
+        }
+      }
+    }
+  });
+
+  if (!brand) return null;
+  return {
+    slug: brand.slug,
+    name: brand.name,
+    logo: brand.logo,
+    origin: brand.origin,
+    descriptionPt: brand.descriptionPt,
+    featured: brand.featured,
+    productCount: brand._count.products
+  };
+}
+
 export async function getProducts(options: ProductListOptions = {}) {
   const { sort = "featured", take, skip } = options;
   const products = await prisma.product.findMany({

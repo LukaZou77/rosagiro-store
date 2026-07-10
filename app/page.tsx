@@ -293,7 +293,7 @@ export default async function HomePage() {
         </div>
         <div className="brand-row">
           {brands.map((brand) => (
-            <Link className="brand-chip" href={`/categoria/all?brand=${encodeURIComponent(brand.name)}`} key={brand.slug}>
+            <Link className="brand-chip" href={`/marcas/${brand.slug}`} key={brand.slug}>
               <span>{brand.logo}</span>
               <strong>{brand.name}</strong>
             </Link>

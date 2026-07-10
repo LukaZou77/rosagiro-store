@@ -36,6 +36,8 @@ type CatalogIndexingInput = {
   totalPages: number;
 };
 
+export const MIN_INDEXABLE_BRAND_PRODUCTS = 3;
+
 function compactText(value: string, maxLength = 155) {
   const text = value.replace(/\s+/g, " ").trim();
   if (text.length <= maxLength) return text;
@@ -144,6 +146,29 @@ export function catalogIndexing(input: CatalogIndexingInput) {
     canonicalPath,
     shouldNoIndex: hasFilters || pageOutOfRange
   };
+}
+
+export function brandMetadataTitle(name: string, page = 1) {
+  return page > 1 ? `${name} no atacado - página ${page}` : `${name} no atacado para revenda`;
+}
+
+export function brandMetaDescription(name: string, count: number, page = 1) {
+  const pageText = page > 1 ? `Página ${page}: ` : "";
+  return compactText(
+    `${pageText}compre ${name} no atacado para revenda na RosaGiro: ${count} ${count === 1 ? "produto" : "produtos"} com estoque sinalizado, pedido mínimo de R$ 300,00 e entrega para todo o Brasil.`
+  );
+}
+
+export function brandIntroText(name: string, count: number) {
+  return compactText(
+    `${count} ${count === 1 ? "produto" : "produtos"} ${name} no atacado para lojistas e revendedores. Combine marcas no pedido mínimo de R$ 300,00 e consulte a entrega por CEP.`
+  );
+}
+
+export function brandDisplayDescription(value: string) {
+  const description = value.replace(/\s+/g, " ").trim();
+  if (!description || /a ajustar/i.test(description) || /^.+\s+no atacado RosaGiro\.?$/i.test(description)) return "";
+  return description;
 }
 
 export function storeJsonLd(profile: StoreProfileView) {

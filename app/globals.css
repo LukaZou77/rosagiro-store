@@ -2980,6 +2980,18 @@ textarea {
   font-weight: 800;
 }
 
+.product-brand-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-brand-link:hover,
+.product-brand-link:focus-visible {
+  color: var(--promo-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .product-info h1 {
   margin-bottom: 10px;
   font-size: 2.1rem;
@@ -7072,6 +7084,13 @@ a.readiness-signal:focus-visible {
     line-height: 1.3;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+  }
+
+  .brand-catalog-header > p:not(.eyebrow) {
+    display: block;
+    overflow: visible;
+    margin-bottom: 8px;
+    -webkit-line-clamp: unset;
   }
 
   .catalog-quick-search {

@@ -102,7 +102,10 @@ export default async function ProductPage({ params }: PageProps) {
             Voltar para {product.category.label}
           </Link>
           <p className="eyebrow">
-            {product.brand.name} / {product.subcategory}
+            <Link className="product-brand-link" href={`/marcas/${product.brand.slug}`}>
+              {product.brand.name}
+            </Link>{" "}
+            / {product.subcategory}
           </p>
           <h1>{product.name}</h1>
           <p className="description">{product.descriptionPt}</p>
