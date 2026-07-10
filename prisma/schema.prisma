@@ -451,17 +451,22 @@ model SiteInfoPage {
 }
 
 model GuideArticle {
-  id          String    @id @default(cuid())
-  slug        String    @unique
-  title       String
-  excerpt     String
-  coverImage  String?
-  body        String
-  active      Boolean   @default(false)
-  publishedAt DateTime?
-  sortOrder   Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  title         String
+  excerpt       String
+  coverImage    String?
+  coverImageAlt String?
+  body          String
+  authorName    String?
+  reviewerName  String?
+  reviewedAt    DateTime?
+  sourceNotes   String?
+  active        Boolean   @default(false)
+  publishedAt   DateTime?
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([active, publishedAt])
   @@index([sortOrder])

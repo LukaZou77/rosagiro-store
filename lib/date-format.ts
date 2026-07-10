@@ -12,9 +12,23 @@ const adminDateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   timeZoneName: "short"
 });
 
+const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: ADMIN_TIME_ZONE,
+  day: "2-digit",
+  month: "long",
+  year: "numeric"
+});
+
 export function formatAdminDateTime(value?: Date | string | null, fallback = "Sem registro") {
   if (!value) return fallback;
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return fallback;
   return adminDateTimeFormatter.format(date);
+}
+
+export function formatDatePtBr(value?: Date | string | null, fallback = "Sem registro") {
+  if (!value) return fallback;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return dateFormatter.format(date);
 }

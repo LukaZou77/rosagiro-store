@@ -1,90 +1,19 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
-import { slugify } from "@/lib/product-import-shared";
 import type { GuideArticle } from "@/src/generated/prisma/client";
 
-export const GUIDE_BODY_MAX_LENGTH = 12000;
-export const GUIDE_EXCERPT_MAX_LENGTH = 280;
-
-export type GuideArticleInput = {
-  id?: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  coverImage: string;
-  body: string;
-  active: boolean;
-  sortOrder: number;
-};
-
-export class GuideArticleValidationError extends Error {}
-
-function hasHtml(value: string) {
-  return /<\s*[a-z][\s\S]*>/i.test(value);
-}
-
-function cleanText(value: unknown) {
-  return String(value || "").replace(/\r\n/g, "\n").trim();
-}
-
-function normalizeSlug(value: string, title: string) {
-  return slugify(value || title).slice(0, 90);
-}
-
-export function validateGuideArticleInput(input: {
-  id?: unknown;
-  title: unknown;
-  slug: unknown;
-  excerpt: unknown;
-  coverImage: unknown;
-  body: unknown;
-  active: boolean;
-  sortOrder: number;
-}): GuideArticleInput {
-  const title = cleanText(input.title).slice(0, 160);
-  const slug = normalizeSlug(cleanText(input.slug), title);
-  const excerpt = cleanText(input.excerpt).slice(0, GUIDE_EXCERPT_MAX_LENGTH);
-  const body = cleanText(input.body).slice(0, GUIDE_BODY_MAX_LENGTH);
-  const coverImage = cleanText(input.coverImage);
-
-  if (!title) throw new GuideArticleValidationError("Informe o titulo do guia.");
-  if (!slug) throw new GuideArticleValidationError("Informe um slug valido para o guia.");
-  if (!excerpt) throw new GuideArticleValidationError("Informe um resumo curto para o guia.");
-  if (!body) throw new GuideArticleValidationError("Escreva o conteudo do guia.");
-  if ([title, excerpt, body].some(hasHtml)) {
-    throw new GuideArticleValidationError("Use apenas texto simples nos guias. Nao cole HTML.");
-  }
-  if (coverImage && !isAllowedGuideImage(coverImage)) {
-    throw new GuideArticleValidationError("A imagem de capa deve usar /uploads/guides/..., /assets/... ou URL http(s).");
-  }
-
-  return {
-    id: cleanText(input.id) || undefined,
-    title,
-    slug,
-    excerpt,
-    coverImage,
-    body,
-    active: input.active,
-    sortOrder: Math.max(0, Math.floor(input.sortOrder || 0))
-  };
-}
-
-export function isAllowedGuideImage(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return true;
-  if (trimmed.startsWith("/uploads/guides/") || trimmed.startsWith("/assets/") || trimmed.startsWith("/placeholder")) {
-    return true;
-  }
-  if (!/^https?:\/\//i.test(trimmed)) return false;
-  try {
-    const parsed = new URL(trimmed);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+export {
+  GUIDE_BODY_MAX_LENGTH,
+  GUIDE_COVER_ALT_MAX_LENGTH,
+  GUIDE_EDITOR_NAME_MAX_LENGTH,
+  GUIDE_EXCERPT_MAX_LENGTH,
+  GUIDE_SOURCE_NOTES_MAX_LENGTH,
+  GuideArticleValidationError,
+  isAllowedGuideImage,
+  validateGuideArticleInput
+} from "@/lib/guide-article-input";
+export type { GuideArticleInput } from "@/lib/guide-article-input";
 
 export function guideBodyParagraphs(body: string) {
   return body
@@ -104,6 +33,11 @@ export async function getPublishedGuideArticles(options: { take?: number } = {})
         title: true,
         excerpt: true,
         coverImage: true,
+        coverImageAlt: true,
+        authorName: true,
+        reviewerName: true,
+        reviewedAt: true,
+        sourceNotes: true,
         publishedAt: true,
         updatedAt: true
       }

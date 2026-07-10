@@ -41,7 +41,7 @@ function GuideEditor({ article }: { article?: GuideArticle }) {
         {article
           ? `Ultima atualizacao: ${formatAdminDateTime(article.updatedAt, "Conteudo em preparacao")}.`
           : "Use guias para SEO, atendimento e compra consciente no atacado."}{" "}
-        Use texto simples, sem HTML.
+        Use texto simples, sem HTML. Para publicar, informe autor, revisao humana, data e fontes ou criterio de verificacao.
       </p>
 
       <div className="form-grid">
@@ -77,6 +77,22 @@ function GuideEditor({ article }: { article?: GuideArticle }) {
         />
       </label>
 
+      <div className="form-grid">
+        <label>
+          Autor responsavel
+          <input name="authorName" defaultValue={article?.authorName || ""} maxLength={120} placeholder="Ex: Equipe RosaGiro" />
+        </label>
+        <label>
+          Revisado por
+          <input name="reviewerName" defaultValue={article?.reviewerName || ""} maxLength={120} placeholder="Nome da pessoa responsavel pela revisao" />
+        </label>
+      </div>
+
+      <label>
+        Data da revisao humana
+        <input name="reviewedAt" type="date" defaultValue={article?.reviewedAt?.toISOString().slice(0, 10) || ""} />
+      </label>
+
       <div className="form-grid guide-cover-grid">
         <label>
           URL da capa
@@ -87,9 +103,18 @@ function GuideEditor({ article }: { article?: GuideArticle }) {
           <input accept="image/jpeg,image/png,image/webp" name="coverFile" type="file" />
         </label>
       </div>
+      <label>
+        Descricao da capa
+        <input
+          name="coverImageAlt"
+          defaultValue={article?.coverImageAlt || ""}
+          maxLength={180}
+          placeholder="Descreva apenas o que aparece de fato na imagem."
+        />
+      </label>
       {article?.coverImage ? (
         <div className="guide-cover-preview">
-          <OptimizedProductImage src={article.coverImage} alt={article.title} width={320} height={180} sizes="220px" />
+          <OptimizedProductImage src={article.coverImage} alt={article.coverImageAlt || article.title} width={320} height={180} sizes="220px" />
           <span>Imagem atual de capa</span>
         </div>
       ) : null}
@@ -102,6 +127,16 @@ function GuideEditor({ article }: { article?: GuideArticle }) {
           defaultValue={article?.body || ""}
           placeholder={"Escreva em paragrafos. Separe os blocos com uma linha em branco.\n\nEx: O que conferir antes de comprar no atacado..."}
           required
+        />
+      </label>
+
+      <label>
+        Fontes e criterio de verificacao
+        <textarea
+          name="sourceNotes"
+          defaultValue={article?.sourceNotes || ""}
+          maxLength={2400}
+          placeholder="Ex: Conferencia do rotulo, catalogo do fabricante e estoque RosaGiro em 10/07/2026. Inclua links ou referencias quando houver."
         />
       </label>
 
@@ -145,7 +180,7 @@ export default async function AdminGuidesPage({ searchParams }: PageProps) {
       ) : null}
 
       <section className="admin-notice">
-        Guias aceitam capa JPG/PNG/WebP de ate 5MB. Mantenha o texto em portugues do Brasil, sem HTML, sem token e sem dados sensiveis.
+        Guias aceitam capa JPG/PNG/WebP de ate 5MB. Use fotos reais de produtos ou da operacao e descreva exatamente o que aparece. Mantenha o texto em portugues do Brasil, sem HTML, sem token e sem dados sensiveis.
       </section>
 
       <div className="policy-editor-list">

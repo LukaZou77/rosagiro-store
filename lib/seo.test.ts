@@ -163,6 +163,10 @@ test("builds Article JSON-LD for published guide pages", () => {
     title: "Como comprar cosméticos no atacado",
     excerpt: "Guia para montar um pedido de revenda com mais segurança.",
     coverImage: "/uploads/guides/atacado.jpg",
+    authorName: "Equipe RosaGiro",
+    reviewerName: "Atendimento RosaGiro",
+    reviewedAt: new Date("2026-07-03T12:00:00.000Z"),
+    sourceNotes: "Conferencia do catalogo e do estoque RosaGiro.",
     publishedAt: new Date("2026-07-01T12:00:00.000Z"),
     updatedAt: new Date("2026-07-02T12:00:00.000Z")
   });
@@ -171,6 +175,11 @@ test("builds Article JSON-LD for published guide pages", () => {
   assert.equal(data.headline, "Como comprar cosméticos no atacado");
   assert.equal(data.mainEntityOfPage, "http://localhost:3000/guias/como-comprar-cosmeticos-no-atacado");
   assert.equal(data.datePublished, "2026-07-01T12:00:00.000Z");
+  assert.equal(data.author.name, "Equipe RosaGiro");
+  assert.ok(data.reviewedBy);
+  assert.equal(data.reviewedBy.name, "Atendimento RosaGiro");
+  assert.equal(data.dateReviewed, "2026-07-03T12:00:00.000Z");
+  assert.equal(data.citation, "Conferencia do catalogo e do estoque RosaGiro.");
   assert.equal(data.publisher["@id"], "http://localhost:3000/#store");
 });
 

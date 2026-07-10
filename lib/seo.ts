@@ -22,6 +22,11 @@ type GuideArticleJsonLdInput = {
   title: string;
   excerpt: string;
   coverImage?: string | null;
+  coverImageAlt?: string | null;
+  authorName?: string | null;
+  reviewerName?: string | null;
+  reviewedAt?: Date | null;
+  sourceNotes?: string | null;
   publishedAt?: Date | null;
   updatedAt: Date;
 };
@@ -269,6 +274,10 @@ export function itemListJsonLd(items: ItemListEntry[]) {
 export function guideArticleJsonLd(article: GuideArticleJsonLdInput) {
   const url = siteUrl(`/guias/${article.slug}`);
   const publishedAt = article.publishedAt || article.updatedAt;
+  const authorName = article.authorName || siteConfig.name;
+  const reviewerName = article.reviewerName || undefined;
+  const isStoreAuthor = authorName === siteConfig.name || authorName === "Equipe RosaGiro";
+  const isStoreReviewer = reviewerName === siteConfig.name || reviewerName === "Equipe RosaGiro";
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -279,6 +288,18 @@ export function guideArticleJsonLd(article: GuideArticleJsonLdInput) {
     inLanguage: "pt-BR",
     datePublished: publishedAt.toISOString(),
     dateModified: article.updatedAt.toISOString(),
+    author: {
+      "@type": isStoreAuthor ? "Organization" : "Person",
+      name: authorName
+    },
+    reviewedBy: reviewerName
+      ? {
+          "@type": isStoreReviewer ? "Organization" : "Person",
+          name: reviewerName
+        }
+      : undefined,
+    dateReviewed: article.reviewedAt?.toISOString(),
+    citation: article.sourceNotes || undefined,
     mainEntityOfPage: url,
     publisher: {
       "@id": siteUrl("/#store")

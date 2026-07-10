@@ -46,7 +46,7 @@ export default async function GuidesPage() {
                   {article.coverImage ? (
                     <OptimizedProductImage
                       src={article.coverImage}
-                      alt={article.title}
+                      alt={article.coverImageAlt || article.title}
                       fill
                       sizes="(min-width: 960px) 30vw, 90vw"
                     />

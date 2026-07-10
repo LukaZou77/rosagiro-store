@@ -9,6 +9,7 @@ import { getCategories } from "@/lib/catalog";
 import { getGuideArticleBySlug, guideBodyParagraphs, getPublishedGuideArticles } from "@/lib/guide-articles";
 import { breadcrumbJsonLd, guideArticleJsonLd, noIndexMetadata, storefrontMetadata } from "@/lib/seo";
 import { getStoreProfile } from "@/lib/store-profile";
+import { formatDatePtBr } from "@/lib/date-format";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 type PageProps = {
@@ -80,7 +81,7 @@ export default async function GuideArticlePage({ params }: PageProps) {
           <div className="guide-article-cover">
             <OptimizedProductImage
               src={article.coverImage}
-              alt={article.title}
+              alt={article.coverImageAlt || article.title}
               fill
               priority
               sizes="(min-width: 960px) 74vw, 92vw"
@@ -93,6 +94,34 @@ export default async function GuideArticlePage({ params }: PageProps) {
             <p key={`${article.slug}-${index}`}>{paragraph}</p>
           ))}
         </div>
+
+        <aside className="guide-article-editorial" aria-label="Informacoes editoriais">
+          <h2>Como este guia foi preparado</h2>
+          <dl>
+            <div>
+              <dt>Autor</dt>
+              <dd>{article.authorName || "Equipe RosaGiro"}</dd>
+            </div>
+            {article.reviewerName && article.reviewedAt ? (
+              <div>
+                <dt>Revisao</dt>
+                <dd>
+                  {article.reviewerName} em {formatDatePtBr(article.reviewedAt)}
+                </dd>
+              </div>
+            ) : null}
+            {article.sourceNotes ? (
+              <div>
+                <dt>Fontes e verificacao</dt>
+                <dd className="guide-source-notes">{article.sourceNotes}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>Atualizacao</dt>
+              <dd>{formatDatePtBr(article.updatedAt)}</dd>
+            </div>
+          </dl>
+        </aside>
 
         <footer className="guide-article-footer">
           <strong>Quer montar pedido com orientação?</strong>

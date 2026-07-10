@@ -1216,7 +1216,12 @@ export async function saveGuideArticleAction(formData: FormData) {
       slug: formData.get("slug"),
       excerpt: formData.get("excerpt"),
       coverImage: formData.get("coverImage"),
+      coverImageAlt: formData.get("coverImageAlt"),
       body: formData.get("body"),
+      authorName: formData.get("authorName"),
+      reviewerName: formData.get("reviewerName"),
+      reviewedAt: formData.get("reviewedAt"),
+      sourceNotes: formData.get("sourceNotes"),
       active: formData.get("active") === "on",
       sortOrder: positiveInt(formData, "sortOrder", 0)
     });
@@ -1258,7 +1263,12 @@ export async function saveGuideArticleAction(formData: FormData) {
             title: input.title,
             excerpt: input.excerpt,
             coverImage,
+            coverImageAlt: input.coverImageAlt || null,
             body: input.body,
+            authorName: input.authorName || null,
+            reviewerName: input.reviewerName || null,
+            reviewedAt: input.reviewedAt,
+            sourceNotes: input.sourceNotes || null,
             active: input.active,
             publishedAt,
             sortOrder: input.sortOrder
@@ -1270,7 +1280,12 @@ export async function saveGuideArticleAction(formData: FormData) {
             title: input.title,
             excerpt: input.excerpt,
             coverImage,
+            coverImageAlt: input.coverImageAlt || null,
             body: input.body,
+            authorName: input.authorName || null,
+            reviewerName: input.reviewerName || null,
+            reviewedAt: input.reviewedAt,
+            sourceNotes: input.sourceNotes || null,
             active: input.active,
             publishedAt,
             sortOrder: input.sortOrder
