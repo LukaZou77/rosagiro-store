@@ -11,8 +11,10 @@ import {
   categoryMetadataTitle,
   guideArticleJsonLd,
   itemListJsonLd,
+  META_DESCRIPTION_MAX_LENGTH,
   productJsonLd,
   productMetaDescription,
+  storefrontMetadata,
   storeJsonLd
 } from "@/lib/seo";
 
@@ -47,6 +49,7 @@ test("builds useful brand landing copy from real catalog facts", () => {
   assert.match(intro, /lojistas e revendedores/i);
   assert.match(intro, /entrega por CEP/i);
   assert.match(brandMetaDescription("Ruby Rose", 72, 2), /^Página 2:/i);
+  assert.ok(description.length <= META_DESCRIPTION_MAX_LENGTH);
   assert.doesNotMatch(`${description} ${intro}`, /a ajustar|produto\(s\)|Descrição da marca/i);
   assert.equal(brandDisplayDescription("Descrição da marca a ajustar."), "");
   assert.equal(brandDisplayDescription("Ruby Rose no atacado RosaGiro."), "");
@@ -65,6 +68,7 @@ test("builds local Portuguese category metadata without mechanical wording", () 
   assert.doesNotMatch(description, /produto\(s\)|catálogo RosaGiro:/i);
   assert.doesNotMatch(description, mojibakePattern);
   assert.match(categoryMetaDescription("Rosto", 326, false, 2), /^Página 2:/i);
+  assert.ok(description.length <= META_DESCRIPTION_MAX_LENGTH);
 });
 
 test("builds category intro copy for the rendered shelf", () => {
@@ -82,6 +86,23 @@ test("builds natural product metadata for wholesale product pages", () => {
   assert.match(description, /em estoque/i);
   assert.match(description, /pedido mínimo R\$ 300,00/i);
   assert.doesNotMatch(description, mojibakePattern);
+  assert.ok(description.length <= META_DESCRIPTION_MAX_LENGTH);
+});
+
+test("publishes verified dimensions for the default social image", () => {
+  const metadata = storefrontMetadata({
+    title: "Cosméticos no atacado",
+    description: "Cosméticos no atacado para lojistas e revendedores.",
+    path: "/"
+  });
+  const image = Array.isArray(metadata.openGraph?.images) ? metadata.openGraph.images[0] : null;
+
+  assert.deepEqual(image, {
+    url: "http://localhost:3000/brand/rosagiro-og.png",
+    width: 1200,
+    height: 630,
+    alt: "RosaGiro - cosméticos no atacado"
+  });
 });
 
 test("builds truthful merchant product data without invented reviews", () => {

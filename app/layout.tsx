@@ -22,7 +22,14 @@ export const metadata: Metadata = {
     title: `${siteConfig.name} | ${siteConfig.tagline}`,
     description: siteConfig.description,
     url: siteUrl(),
-    images: [{ url: siteUrl(siteConfig.brandAssets.ogImage) }]
+    images: [
+      {
+        url: siteUrl(siteConfig.brandAssets.ogImage),
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} - cosméticos no atacado`
+      }
+    ]
   },
   icons: {
     icon: [

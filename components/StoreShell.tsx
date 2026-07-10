@@ -33,6 +33,9 @@ export async function StoreShell({
     <CustomerSessionProvider>
       <WhatsAppProvider phone={storeProfile.whatsapp}>
       <StructuredData data={[storeJsonLd(storeProfile), websiteJsonLd()]} />
+      <a className="skip-link" href="#conteudo-principal">
+        Pular para o conteúdo principal
+      </a>
       <div className="store-alert" aria-label="Condições de compra">
         <span>{siteConfig.wholesale.headerStrip}</span>
         <Link href="/informacoes-da-loja">{storeCnpjLabel(storeProfile)}</Link>
@@ -57,7 +60,7 @@ export async function StoreShell({
         </nav>
         <CartCount />
       </header>
-      <main>{children}</main>
+      <main id="conteudo-principal" tabIndex={-1}>{children}</main>
       <footer className="site-footer">
         <div>
           <Link className="brand" href="/">

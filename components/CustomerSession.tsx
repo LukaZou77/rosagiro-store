@@ -157,11 +157,14 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
               required
             />
           </label>
-          <label>
-            Seu WhatsApp <span>*</span>
+          <div className="customer-login-field">
+            <label htmlFor="customer-whatsapp">
+              Seu WhatsApp <span>*</span>
+            </label>
             <div className="whatsapp-input-row">
               <span aria-hidden="true">BR +55</span>
               <input
+                id="customer-whatsapp"
                 name="customerWhatsapp"
                 value={whatsapp}
                 onChange={(event) => setWhatsapp(cleanPhoneInput(event.target.value))}
@@ -170,7 +173,7 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
                 required
               />
             </div>
-          </label>
+          </div>
           <p className="customer-login-note">
             Usamos nome e WhatsApp para atendimento, pedido e compra no atacado. Não criamos senha nesta fase.{" "}
             <Link href="/politica-de-privacidade">Privacidade</Link>

@@ -42,6 +42,7 @@ type CatalogIndexingInput = {
 };
 
 export const MIN_INDEXABLE_BRAND_PRODUCTS = 3;
+export const META_DESCRIPTION_MAX_LENGTH = 130;
 
 function compactText(value: string, maxLength = 155) {
   const text = value.replace(/\s+/g, " ").trim();
@@ -115,8 +116,17 @@ export function storefrontMetadata(input: {
   type?: "website" | "article";
 }): Metadata {
   const canonical = publicCanonical(input.path);
-  const description = compactText(input.description);
+  const description = compactText(input.description, META_DESCRIPTION_MAX_LENGTH);
+  const usesDefaultImage = !input.image;
   const image = absoluteImageUrl(input.image || siteConfig.brandAssets.ogImage);
+  const openGraphImage = usesDefaultImage
+    ? {
+        url: image,
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} - cosméticos no atacado`
+      }
+    : { url: image };
 
   return {
     title: input.title,
@@ -129,7 +139,7 @@ export function storefrontMetadata(input: {
       title: input.title,
       description,
       url: canonical,
-      images: [{ url: image }]
+      images: [openGraphImage]
     },
     twitter: {
       card: "summary_large_image",
@@ -158,9 +168,10 @@ export function brandMetadataTitle(name: string, page = 1) {
 }
 
 export function brandMetaDescription(name: string, count: number, page = 1) {
-  const opening = page > 1 ? `Página ${page}: compre` : "Compre";
+  const opening = page > 1 ? `Página ${page}: ` : "";
   return compactText(
-    `${opening} ${name} no atacado para revenda na RosaGiro: ${count} ${count === 1 ? "produto" : "produtos"} com estoque sinalizado, pedido mínimo de R$ 300,00 e entrega para todo o Brasil.`
+    `${opening}${name} no atacado para revenda: ${count} ${count === 1 ? "produto" : "produtos"} com estoque sinalizado, pedido mínimo de R$ 300,00 e entrega no Brasil.`,
+    META_DESCRIPTION_MAX_LENGTH
   );
 }
 
@@ -357,8 +368,11 @@ export function productJsonLd(product: CatalogProduct) {
 
 export function productMetaDescription(product: CatalogProduct) {
   const stock = (product.inventory?.quantity || 0) > 0 ? "em estoque" : "disponibilidade sob consulta";
+  const nameIncludesBrand = product.name.toLocaleLowerCase("pt-BR").includes(product.brand.name.toLocaleLowerCase("pt-BR"));
+  const productName = nameIncludesBrand ? product.name : `${product.name} da ${product.brand.name}`;
   return compactText(
-    `Compre ${product.name} da ${product.brand.name} no atacado na RosaGiro. Preço ${money(lowestEffectivePriceCents(product))}, ${stock}, pedido mínimo R$ 300,00 e atendimento pelo WhatsApp para entrega ou retirada.`
+    `${productName} no atacado: preço ${money(lowestEffectivePriceCents(product))}, ${stock}. Pedido mínimo R$ 300,00; entrega ou retirada.`,
+    META_DESCRIPTION_MAX_LENGTH
   );
 }
 
@@ -383,11 +397,13 @@ export function categoryMetaDescription(label: string, count: number, isAllCateg
   const pageText = page > 1 ? `Página ${page}: ` : "";
   if (isAllCategory) {
     return compactText(
-      `${pageText}cosméticos no atacado para revenda na RosaGiro: ${count} produtos com estoque sinalizado, pedido mínimo R$ 300,00, entrega nacional e WhatsApp.`
+      `${pageText}cosméticos no atacado para revenda: ${count} produtos com estoque sinalizado, pedido mínimo R$ 300,00 e entrega no Brasil.`,
+      META_DESCRIPTION_MAX_LENGTH
     );
   }
   return compactText(
-    `${pageText}${label} no atacado para lojistas e revendedores: ${count} produtos com estoque sinalizado, pedido mínimo R$ 300,00, entrega para todo o Brasil e WhatsApp.`
+    `${pageText}${label} no atacado: ${count} produtos para lojistas e revendedores, com estoque sinalizado, pedido mínimo R$ 300,00 e entrega no Brasil.`,
+    META_DESCRIPTION_MAX_LENGTH
   );
 }
 

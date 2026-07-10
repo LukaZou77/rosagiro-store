@@ -3,7 +3,7 @@ const whatsappPhone = "5511970792390";
 export const siteConfig = {
   name: "RosaGiro",
   tagline: "Atacado de cosméticos em São Paulo",
-  description: "Cosméticos no atacado para lojistas e revendedores, com pedido mínimo de R$ 300,00, estoque sinalizado, entrega no Brasil e atendimento pelo WhatsApp.",
+  description: "Cosméticos no atacado para lojistas e revendedores, com pedido mínimo de R$ 300,00, entrega no Brasil e atendimento pelo WhatsApp.",
   defaultUrl: "http://localhost:3000",
   supportEmail: "rosagiroatacado@gmail.com",
   businessIdentity: {

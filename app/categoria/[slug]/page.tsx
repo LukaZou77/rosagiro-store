@@ -212,7 +212,13 @@ function CatalogPagination({
       <div>
         {startPage > 1 ? <span>...</span> : null}
         {pages.map((item) => (
-          <Link className={item === page ? "active" : ""} href={hrefForPage(item)} key={item} aria-current={item === page ? "page" : undefined}>
+          <Link
+            className={item === page ? "active" : ""}
+            href={hrefForPage(item)}
+            key={item}
+            aria-current={item === page ? "page" : undefined}
+            aria-label={`Ir para a página ${item}`}
+          >
             {item}
           </Link>
         ))}
@@ -276,7 +282,12 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         <h1>{categoryTitle}</h1>
         <p>{categoryIntro}</p>
         <form className="catalog-quick-search" action={`/categoria/${categorySlug}`}>
-          <input name="q" defaultValue={query} placeholder="Buscar produto, marca ou código" />
+          <input
+            name="q"
+            defaultValue={query}
+            placeholder="Buscar produto, marca ou código"
+            aria-label="Buscar produto, marca ou código"
+          />
           <input type="hidden" name="brand" value={brand} />
           <input type="hidden" name="stock" value={stockFilter} />
           <input type="hidden" name="sort" value={sort} />
@@ -361,6 +372,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
           </Link>
         </form>
         <div>
+          <h2 className="catalog-results-title">
+            {isAllCategory
+              ? "Produtos disponíveis no catálogo"
+              : `Produtos disponíveis na categoria ${categoryLabel}`}
+          </h2>
           <div className="catalog-results-bar">
             <div>
               <strong>{total} produtos encontrados</strong>
