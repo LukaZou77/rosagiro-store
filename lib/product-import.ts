@@ -90,6 +90,8 @@ function productData(
     skinType: row.skinType,
     finish: row.finish,
     volume: row.volume,
+    gtin: row.gtin,
+    mpn: row.mpn,
     weightGrams: row.weightGrams,
     suggestedQuantity: row.suggestedQuantity,
     kitRecommendation: row.kitRecommendation,

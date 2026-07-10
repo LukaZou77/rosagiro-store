@@ -143,6 +143,14 @@ export function AdminProductForm({ action, brands, categories, mode, product }: 
             Peso unitario (g)
             <input name="weightGrams" type="number" min="1" defaultValue={numberValue(product?.weightGrams)} placeholder="Opcional" />
           </label>
+          <label>
+            GTIN / EAN
+            <input name="gtin" inputMode="numeric" defaultValue={textValue(product?.gtin)} placeholder="Somente código conferido" />
+          </label>
+          <label>
+            Modelo do fabricante (MPN)
+            <input name="mpn" defaultValue={textValue(product?.mpn)} placeholder="Ex: HB-L6203" />
+          </label>
           <label className="checkbox-label">
             <input name="active" type="checkbox" defaultChecked={product?.active ?? true} />
             Produto ativo

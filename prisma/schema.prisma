@@ -146,6 +146,8 @@ model Product {
   skinType            String
   finish              String
   volume              String
+  gtin                String?
+  mpn                 String?
   rating              Float
   reviewCount         Int
   stockStatus         String
@@ -170,6 +172,8 @@ model Product {
   @@index([brandId, active])
   @@index([deletedAt])
   @@index([active, deletedAt])
+  @@index([gtin])
+  @@index([mpn])
 }
 
 model Inventory {

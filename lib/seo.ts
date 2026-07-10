@@ -309,7 +309,9 @@ export function productJsonLd(product: CatalogProduct) {
       name: product.brand.name
     },
     category: product.category.label,
-    sku: product.slug,
+    sku: product.mpn || undefined,
+    mpn: product.mpn || undefined,
+    gtin: product.gtin || undefined,
     offers: {
       "@type": "Offer",
       url,

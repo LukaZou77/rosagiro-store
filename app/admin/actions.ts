@@ -22,6 +22,7 @@ import {
   parsePriceAdjustmentInput
 } from "@/lib/product-price-adjustment";
 import { createPriceAdjustmentJob, getSavedPriceAdjustmentConfig } from "@/lib/product-price-adjustment-server";
+import { cleanGtin, cleanMpn, isValidGtin } from "@/lib/product-identifiers";
 import { isAllowedProductImage, normalizeProductGallery, parseCents, parsePipeList, slugify } from "@/lib/product-import-shared";
 import { subcategorySlug } from "@/lib/product-subcategories";
 import {
@@ -299,6 +300,8 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const priceCents = parseCents(field(formData, "price"));
   const quantity = positiveInt(formData, "quantity");
   const weightGrams = optionalPositiveInt(formData, "weightGrams");
+  const gtin = cleanGtin(field(formData, "gtin"));
+  const mpn = cleanMpn(field(formData, "mpn"));
   const reviewCount = positiveInt(formData, "reviewCount");
   const featuredRank = positiveInt(formData, "featuredRank", 1000);
   const active = formData.get("active") === "on";
@@ -312,6 +315,9 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   }
   if (trayImage && !isAllowedProductImage(trayImage)) {
     redirectError(options.detailPath, "A imagem interna da bandeja deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
+  }
+  if (gtin && !isValidGtin(gtin)) {
+    redirectError(options.detailPath, "GTIN/EAN inválido. Confira o código de barras da embalagem ou deixe o campo vazio.");
   }
 
   const [brand, category, subcategory] = await Promise.all([
@@ -402,6 +408,8 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
       skinType: field(formData, "skinType"),
       finish: field(formData, "finish"),
       volume: field(formData, "volume"),
+      gtin,
+      mpn,
       weightGrams,
       suggestedQuantity: options.existingSuggestedQuantity ?? null,
       kitRecommendation: options.existingKitRecommendation ?? null,

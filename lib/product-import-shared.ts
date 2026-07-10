@@ -1,4 +1,5 @@
 import { stockQuantityFromImport } from "@/lib/product-stock";
+import { cleanGtin, cleanMpn, isValidGtin } from "@/lib/product-identifiers";
 
 export const productImportRequiredFields = [
   "slug",
@@ -21,6 +22,8 @@ export const productImportOptionalFields = [
   "skinType",
   "finish",
   "volume",
+  "gtin",
+  "mpn",
   "weightGrams",
   "suggestedQuantity",
   "kitRecommendation",
@@ -70,6 +73,8 @@ export type ProductImportRow = {
   skinType: string;
   finish: string;
   volume: string;
+  gtin: string | null;
+  mpn: string | null;
   weightGrams: number | null;
   suggestedQuantity: number | null;
   kitRecommendation: string | null;
@@ -133,6 +138,8 @@ export const productImportTemplateRecord: ProductImportCsvRecord = {
   skinType: "",
   finish: "",
   volume: "",
+  gtin: "",
+  mpn: "",
   weightGrams: "",
   suggestedQuantity: "",
   kitRecommendation: "",
@@ -158,6 +165,8 @@ export const productImportHelpRows = [
   ["gallery", "Não", "Até 9 imagens separadas por |. A imagem principal também entra na galeria."],
   ["benefits, ingredients, badges", "Não", "Separe vários itens com |."],
   ["skinType, finish, volume", "Não", "Texto livre para filtros e detalhe do produto."],
+  ["gtin", "Não", "Código de barras GTIN/EAN de 8, 12, 13 ou 14 dígitos. Só preencha se conferido na embalagem."],
+  ["mpn", "Não", "Código/modelo do fabricante. Não use o slug da loja."],
   ["weightGrams", "Não", "Peso unitário em gramas para cotação de frete. Deixe vazio se ainda não foi conferido."],
   ["suggestedQuantity", "Não", "Campo legado mantido para CSV antigo; não é mais necessário preencher."],
   ["kitRecommendation", "Não", "Campo legado mantido para CSV antigo; prefira usar purchaseNote para orientar compra em volume."],
@@ -380,6 +389,8 @@ export function parseProductCsv(
     const subcategory = raw.subcategory?.trim() || "";
     const priceCents = parseCents(raw.price || "");
     const weight = parseWeightGrams(raw.weightGrams || "");
+    const gtin = cleanGtin(raw.gtin || "");
+    const mpn = cleanMpn(raw.mpn || "");
     const suggestedQuantity = parseOptionalPositiveInt(raw.suggestedQuantity || "");
     const stock = parseStock(raw.stock || "");
     const normalizedStock = stockQuantityFromImport(Math.max(0, stock));
@@ -400,6 +411,7 @@ export function parseProductCsv(
     if (priceCents <= 0) errors.push("price deve ser maior que zero");
     if (stock < 0) errors.push("stock inválido");
     if (!weight.valid) errors.push("weightGrams deve ser um número maior que zero");
+    if (gtin && !isValidGtin(gtin)) errors.push("gtin deve ter checksum válido de 8, 12, 13 ou 14 dígitos");
     if (!suggestedQuantity.valid) errors.push("suggestedQuantity deve ser um número maior que zero quando preenchido");
     if (active === null) errors.push("active deve ser true/false, sim/não ou 1/0");
     if (!image) errors.push("image obrigatório");
@@ -442,6 +454,8 @@ export function parseProductCsv(
       skinType: (raw.skinType || "").trim(),
       finish: (raw.finish || "").trim(),
       volume: (raw.volume || "").trim(),
+      gtin,
+      mpn,
       weightGrams: weight.value,
       suggestedQuantity: suggestedQuantity.value,
       kitRecommendation: optionalNullableText(raw.kitRecommendation || ""),

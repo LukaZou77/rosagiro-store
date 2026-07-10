@@ -33,6 +33,8 @@ export async function currentProductsCsv() {
     skinType: product.skinType,
     finish: product.finish,
     volume: product.volume,
+    gtin: product.gtin,
+    mpn: product.mpn,
     weightGrams: product.weightGrams,
     suggestedQuantity: product.suggestedQuantity,
     kitRecommendation: product.kitRecommendation,

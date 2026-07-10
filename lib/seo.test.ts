@@ -26,6 +26,8 @@ const sampleProduct = {
   image: "/uploads/products/batom.jpg",
   gallery: [],
   volume: "",
+  gtin: null,
+  mpn: "HB-L6203",
   finish: "",
   weightGrams: null,
   brand: { name: "Ruby Rose" },
@@ -110,6 +112,8 @@ test("builds truthful merchant product data without invented reviews", () => {
   assert.ok(data.image.includes("http://localhost:3000/uploads/products/batom-rose.jpg"));
   assert.equal("aggregateRating" in data, false);
   assert.equal("review" in data, false);
+  assert.equal(data.sku, "HB-L6203");
+  assert.equal(data.gtin, undefined);
 
   const unavailableVariantData = productJsonLd({
     ...product,

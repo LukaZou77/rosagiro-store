@@ -29,6 +29,8 @@ export type CatalogProduct = {
   skinType: string;
   finish: string;
   volume: string;
+  gtin: string | null;
+  mpn: string | null;
   rating: number;
   reviewCount: number;
   stockStatus: string;
