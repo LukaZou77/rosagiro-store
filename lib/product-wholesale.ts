@@ -1,3 +1,10 @@
+import {
+  formatPlainBrl,
+  formatWholesalePackage,
+  parseStandardWholesaleDescription,
+  wholesalePackageConsultText
+} from "@/lib/product-price-adjustment";
+
 export type WholesaleProductDetails = {
   suggestedQuantity?: number | null;
   kitRecommendation?: string | null;
@@ -15,6 +22,29 @@ export type ProductWholesaleLine = {
 
 function clean(value: string | null | undefined) {
   return value?.trim() || "";
+}
+
+export function wholesalePackageFromLegacyDescription(description: string) {
+  const parsed = parseStandardWholesaleDescription(description);
+  if (!parsed.matched) return null;
+  if (parsed.whatsappBox || !parsed.boxPriceCents || !parsed.boxPieces) {
+    return wholesalePackageConsultText;
+  }
+  return formatWholesalePackage(parsed.boxPriceCents, parsed.boxPieces);
+}
+
+export function productCommercialSummary(product: {
+  priceCents: number;
+  wholesalePackage?: string | null;
+  descriptionPt: string;
+}) {
+  const legacyPackage = wholesalePackageFromLegacyDescription(product.descriptionPt);
+  const packageText = legacyPackage || clean(product.wholesalePackage) || wholesalePackageConsultText;
+  return `Preço unitário: R$ ${formatPlainBrl(product.priceCents)}. ${packageText}`;
+}
+
+export function productEditorialDescription(description: string) {
+  return parseStandardWholesaleDescription(description).matched ? "" : description.trim();
 }
 
 export function productWholesaleLines(product: WholesaleProductDetails): ProductWholesaleLine[] {

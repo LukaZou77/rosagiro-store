@@ -1,0 +1,462 @@
+{
+  "batch": "product-content-001",
+  "createdAt": "2026-07-10",
+  "entries": [
+    {
+      "slug": "bronzer-compacto-choco-fun-fenzza-fz34034",
+      "brand": "FENZZA",
+      "model": "FZ34034",
+      "confidence": "high",
+      "descriptionPt": "O Bronzer Compacto Choco Fun Fenzza FZ34034 é um pó bronzer disponível nas cores Gourmet e Cacau. Pode ser esfumado nas maçãs do rosto, têmporas, testa e queixo para criar contorno e aquecer a maquiagem; a fragrância de chocolate acompanha a proposta da linha.",
+      "volume": "10 g",
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Os 10 g informados são conteúdo líquido, não peso bruto com embalagem.",
+      "sources": [
+        {
+          "label": "Loja Fenzza Make Up",
+          "url": "https://www.lojafenzzamakeup.com.br/bronzer-compacto-choco-fun",
+          "evidence": "Código FZ34034, tipo bronzer, cores Gourmet e Cacau e modo de aplicação."
+        },
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://produto.mercadolivre.com.br/MLB-5738679992-fenzza-choco-fun-blush-compacto-em-po-_JM",
+          "evidence": "Modelo Bronzer Compacto Choco Fun e conteúdo de 10 g."
+        }
+      ]
+    },
+    {
+      "slug": "duo-kiss-batom-duo-ruby-rose-hb-l6203",
+      "brand": "Ruby Rose",
+      "model": "HB-L6203",
+      "confidence": "high",
+      "descriptionPt": "O Duo Kiss Ruby Rose HB-L6203 reúne batom líquido matte e gloss incolor na mesma embalagem. A cor pode ser usada sozinha para um efeito opaco ou receber o gloss depois de seca, permitindo mudar o acabamento sem trocar de produto. A linha oferece diferentes tonalidades.",
+      "volume": "5 g",
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Os 5 g informados são conteúdo do produto, não peso bruto para transporte.",
+      "sources": [
+        {
+          "label": "Ruby Rose Oficial na Renner",
+          "url": "https://www.lojasrenner.com.br/ashua/p/batom-dou-kiss-hbl6203-ruby-rose/-/A-7010706820092-br.lr?sku=7510714659010",
+          "evidence": "Modelo HBL6203, batom líquido matte, gloss incolor, conteúdo de 5 g e variações de cor."
+        },
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://www.mercadolivre.com.br/duo-kiss-batom-duo-ruby-rose-dk07-hbl62037/up/MLBU3231054345",
+          "evidence": "Linha Duo Kiss, modelo HB-L6203 e formato líquido."
+        }
+      ]
+    },
+    {
+      "slug": "esponja-stay-fix-twofix-blender-ruby-rose-hb-s03",
+      "brand": "Ruby Rose",
+      "model": "HB-S03",
+      "confidence": "high",
+      "descriptionPt": "A esponja Stay Fix Twofix Blender Ruby Rose HB-S03 tem formato anatômico com recortes para trabalhar áreas maiores e pontos de precisão. É macia, flexível, livre de látex e pode ser usada seca ou úmida; quando umedecida, aumenta de tamanho e ajuda a espalhar produtos líquidos, cremosos ou em pó.",
+      "volume": null,
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Nenhuma fonte confiável informou peso bruto unitário com embalagem.",
+      "sources": [
+        {
+          "label": "Ruby Rose Maquiagem",
+          "url": "https://www.rubyrosemaquiagem.com.br/produto/3206-esponja-stay-fix-twofix-blend-hbs03-rubyrose",
+          "evidence": "Modelo HBS03, recortes anatômicos, uso seco ou úmido, livre de látex e composição em poliuretano."
+        },
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://produto.mercadolivre.com.br/MLB-3508618779-kit-3-esponja-ruby-rose-stay-fix-para-maquiagem-atacado-make-_JM",
+          "evidence": "Código HB-S03 e uso com produtos líquidos, cremosos e em pó."
+        }
+      ]
+    },
+    {
+      "slug": "cleansing-oil-make-melt-by-natalia-beauty-ruby-rose-hb-s3000",
+      "brand": "Ruby Rose",
+      "model": "HB-S3000",
+      "confidence": "high",
+      "descriptionPt": "O Cleansing Oil Make Melt by Natalia Beauty Ruby Rose HB-S3000 é um óleo de limpeza facial de 130 ml. A textura oleosa ajuda a dissolver maquiagem, protetor solar e resíduos acumulados ao longo do dia, preparando a pele para as próximas etapas da rotina de limpeza.",
+      "volume": "130 ml",
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "A capacidade de 130 ml não permite determinar o peso bruto da embalagem para frete.",
+      "sources": [
+        {
+          "label": "Soneda",
+          "url": "https://www.soneda.com.br/fabricante/natalia-beauty-ruby-rose",
+          "evidence": "Referência HBS3000, produto Cleansing Oil Make Melt e capacidade de 130 ml."
+        },
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://lista.mercadolivre.com.br/cleansing-oil-ruby-rose",
+          "evidence": "Correspondência de marca, linha Make Melt, colaboração Natalia Beauty e capacidade de 130 ml."
+        }
+      ]
+    },
+    {
+      "slug": "batom-duo-lip-twice-ruby-rose-hb-l6101",
+      "brand": "Ruby Rose",
+      "model": "HB-L6101",
+      "confidence": "high",
+      "descriptionPt": "O Batom Duo Lip Twice Ruby Rose HB-L6101 combina um batom líquido de textura fina e alta pigmentação com um batom em bala cremoso. Os dois lados podem ser usados separadamente ou em camadas, permitindo variar a intensidade e o acabamento com uma única embalagem.",
+      "volume": null,
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "As fontes consultadas não informaram peso bruto unitário com embalagem.",
+      "sources": [
+        {
+          "label": "Ruby Rose Maquiagem",
+          "url": "https://www.rubyrosemaquiagem.com.br/produto/4470-batom-duo-lip-twice-hbl6101-lt70-ruby-rose",
+          "evidence": "Modelo HBL6101, lado líquido, lado em bala, textura e forma de uso."
+        },
+        {
+          "label": "Shopee Brasil",
+          "url": "https://shopee.com.br/Batom-Duo-Lip-Twice-Linha-Rosa-HBL6101-Ruby-Rose-i.1784788471.58208210134",
+          "evidence": "Correspondência de marca, linha e modelo HBL6101."
+        }
+      ]
+    },
+    {
+      "slug": "iluminador-stick-shine-stone-ruby-rose-hb-m702",
+      "brand": "Ruby Rose",
+      "model": "HB-M702",
+      "confidence": "high",
+      "descriptionPt": "O Iluminador Stick Shine Stone Ruby Rose HB-M702 tem textura cremosa e formato em bastão, que facilita a aplicação direta nos pontos altos do rosto. Pode ser esfumado com os dedos, pincel ou esponja, e o brilho pode ser construído em camadas conforme o acabamento desejado.",
+      "volume": "6,57 g",
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Os 6,57 g correspondem ao conteúdo do iluminador, não ao peso bruto com embalagem.",
+      "sources": [
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://lista.mercadolivre.com.br/iluminador-stick-ruby-rose-shine-stone",
+          "evidence": "Linha Shine Stone, modelo HB-M702, formato em stick e conteúdo aproximado de 6,5 g em diferentes cores."
+        },
+        {
+          "label": "Ruby Rose",
+          "url": "https://www.rubyrose.com.co/products/iluminador-en-barra",
+          "evidence": "Referência HB-M702, textura cremosa, formato em bastão e conteúdo da linha."
+        }
+      ]
+    },
+    {
+      "slug": "batom-moisture-febella-bm40221",
+      "brand": "Febella",
+      "model": "BM40221",
+      "confidence": "medium",
+      "descriptionPt": "O Batom Juicy Moisture Febella BM40221 é apresentado em bastão e vendido em diferentes tonalidades. O formato permite aplicar a cor diretamente nos lábios e fazer retoques com facilidade, enquanto a variedade de tons ajuda a compor um mostruário mais amplo para revenda.",
+      "volume": null,
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Nenhuma fonte localizada informou conteúdo líquido ou peso bruto confiável para este modelo.",
+      "sources": [
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://lista.mercadolivre.com.br/batom-febella",
+          "evidence": "A busca confirma a categoria de batons Febella e a comercialização em diferentes cores; o modelo foi conferido pela embalagem."
+        },
+        {
+          "label": "Imagem da embalagem RosaGiro",
+          "url": "https://jqphak399n3b6nli.public.blob.vercel-storage.com/products/batom-moisture-febella-bm40221/package-bm40221.jpg",
+          "evidence": "A embalagem mostra a linha Juicy Moisture, o modelo BM40221, o formato em bastão e a variedade de cores."
+        }
+      ]
+    },
+    {
+      "slug": "batom-matte-bobbi-rara-brb-274",
+      "brand": "Bobbi Rara",
+      "model": "BRB-274",
+      "confidence": "medium",
+      "descriptionPt": "O Batom Matte Bobbi Rara BRB-274 vem em formato de bastão, com acabamento sem brilho e diferentes tonalidades no expositor. A embalagem acompanha um pequeno acessório tipo chaveiro, detalhe que facilita a identificação do produto e chama atenção no ponto de venda.",
+      "volume": null,
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "As fontes consultadas não apresentaram peso bruto ou conteúdo líquido verificável para a unidade.",
+      "sources": [
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://lista.mercadolivre.com.br/bobbi-rara",
+          "evidence": "A busca confirma batons Bobbi Rara e produtos da marca com acessório tipo chaveiro."
+        },
+        {
+          "label": "Imagem da embalagem RosaGiro",
+          "url": "https://jqphak399n3b6nli.public.blob.vercel-storage.com/products/batom-matte-bobbi-rara-brb-274/package-brb_274.jpg",
+          "evidence": "O expositor identifica o modelo BRB-274, mostra o batom em bastão, as cores variadas e o acessório."
+        }
+      ]
+    },
+    {
+      "slug": "lip-oil-bobbi-rara-brb-116322",
+      "brand": "Bobbi Rara",
+      "model": "BRB-116 322",
+      "confidence": "medium",
+      "descriptionPt": "O conjunto labial Bobbi Rara BRB-116 322 combina lip oil e lip gloss em uma proposta portátil. A embalagem traz o produto principal com acessório para prender ao celular ou às chaves e uma peça menor para levar junto, mantendo brilho labial e praticidade no mesmo conjunto.",
+      "volume": null,
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Não foi encontrado peso bruto nem conteúdo líquido confiável para este conjunto.",
+      "sources": [
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://lista.mercadolivre.com.br/bobbi-rara",
+          "evidence": "A busca mostra lip gloss Bobbi Rara com chaveiro e confirma a família comercial do produto."
+        },
+        {
+          "label": "Imagem da embalagem RosaGiro",
+          "url": "https://jqphak399n3b6nli.public.blob.vercel-storage.com/products/lip-oil-bobbi-rara-brb-116322/package-brb_116322.jpg",
+          "evidence": "A caixa identifica o modelo BRB-116 322, os termos Lip Oil e Lip Gloss, o acessório e o expositor com 12 peças."
+        }
+      ]
+    },
+    {
+      "slug": "iluminador-facial-compacto-celestial-shine-ruby-rose-hb-m701",
+      "brand": "Ruby Rose",
+      "model": "HB-M701",
+      "confidence": "high",
+      "descriptionPt": "O Iluminador Facial Compacto Celestial Shine Ruby Rose HB-M701 tem textura em pó e partículas luminosas para destacar pontos como têmporas, arco das sobrancelhas e ponta do nariz. A aplicação pode ser leve ou construída em camadas, e a linha oferece diferentes tonalidades.",
+      "volume": null,
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Não foi localizado peso bruto unitário confiável para o compacto com embalagem.",
+      "sources": [
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://lista.mercadolivre.com.br/iluminador-rubi-rose",
+          "evidence": "Resultados exatos para Celestial Shine HBM701, em formato compacto e com diferentes tonalidades."
+        },
+        {
+          "label": "SHEIN Brasil",
+          "url": "https://br.shein.com/Compact-Highlighter-Celestial-Shine-Pink-Line-Ruby-Rose-HB-M701-p-55966862.html",
+          "evidence": "Modelo HB-M701, iluminador compacto em pó e acabamento luminoso."
+        }
+      ]
+    },
+    {
+      "slug": "soft-blend-base-liquida-facial-matte-linha-rosa-ruby-rose-hb-m301",
+      "brand": "Ruby Rose",
+      "model": "HB-M301",
+      "confidence": "high",
+      "descriptionPt": "A Base Líquida Soft Blend Ruby Rose HB-M301 tem cobertura média e acabamento matte, com textura fluida para espalhar com pincel, esponja ou dedos. A linha reúne vários tons e pode receber uma segunda camada nas áreas em que se deseja maior uniformização.",
+      "volume": "30 g",
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Os 30 g são o conteúdo da base; não representam o peso bruto do frasco para cálculo de frete.",
+      "sources": [
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://www.mercadolivre.com.br/base-facial-soft-blend-ruby-rose-linha-rosa-tom-f-30/up/MLBU2892797106",
+          "evidence": "Modelo HB-M301, formato líquido, cobertura média, acabamento fosco e conteúdo de 30 g."
+        },
+        {
+          "label": "Mercado Livre Brasil - variações",
+          "url": "https://www.mercadolivre.com.br/base-liquida-soft-blend-ruby-rose-matte-varios-tons-original/up/MLBU3775024044",
+          "evidence": "Referência HBM301, relação de tons, acabamento matte e peso líquido de 30 g."
+        }
+      ]
+    },
+    {
+      "slug": "blush-cremoso-stick-dreamy-cheeks-ruby-rose-hb-m01",
+      "brand": "Ruby Rose",
+      "model": "HB-M01",
+      "confidence": "high",
+      "descriptionPt": "O Blush Cremoso Stick Dreamy Cheeks Ruby Rose HB-M01 vem em bastão e pode ser aplicado diretamente nas maçãs do rosto. A textura cremosa permite esfumar com os dedos, pincel ou esponja e construir a intensidade aos poucos; a linha conta com dez opções de cor.",
+      "volume": "6,57 g",
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Os 6,57 g são o conteúdo líquido do blush, não o peso bruto com tampa e embalagem.",
+      "sources": [
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://produto.mercadolivre.com.br/MLB-4081295961-blush-stick-cremoso-dreamy-cheeks-ruby-rose-linha-rosa-_JM",
+          "evidence": "Modelo HB-M01, formato em stick e conteúdo de 6,57 g."
+        },
+        {
+          "label": "Mercado Livre Brasil - cores",
+          "url": "https://produto.mercadolivre.com.br/MLB-5537652854-blush-ruby-rose-basto-cremoso-dreamy-cheeks-escolha-sua-cor-_JM",
+          "evidence": "Linha Dreamy Cheeks, acabamento cremoso, dez variações de cor e peso de 6,57 g."
+        }
+      ]
+    },
+    {
+      "slug": "lenco-demaquilante-frutas-vermelhas-fenzza-fz53035",
+      "brand": "FENZZA",
+      "model": "FZ53035",
+      "confidence": "high",
+      "descriptionPt": "O Lenço Demaquilante Frutas Vermelhas Fenzza FZ53035 vem umedecido e pronto para ajudar na remoção de maquiagem e resíduos da pele. As folhas medem aproximadamente 20 x 12 cm, tamanho prático para a rotina diária e para levar no nécessaire.",
+      "volume": null,
+      "shippingWeightGrams": 99,
+      "shippingWeightStatus": "verified_gross",
+      "shippingWeightNote": "O distribuidor informa peso cadastral de 99 g junto das dimensões logísticas de 2,2 x 11 x 17,5 cm.",
+      "sources": [
+        {
+          "label": "Distribuidora JCF",
+          "url": "https://www.distribuidorajcf.com.br/fenzza-lenco-demaquilante-frutas-vermelhas-fz53035",
+          "evidence": "Código FZ53035, finalidade do produto, folha de 20 x 12 cm, peso cadastral de 99 g e dimensões da embalagem."
+        }
+      ]
+    },
+    {
+      "slug": "hidratante-facial-stitch-disney-fenzza-dis219",
+      "brand": "FENZZA",
+      "model": "DIS219",
+      "confidence": "high",
+      "descriptionPt": "O Hidratante Facial Stitch Disney Fenzza DIS219 tem textura voltada ao cuidado diário do rosto e fórmula com aloe vera, algas marinhas e ácido hialurônico. A embalagem temática traz 30 g e pode ser usada antes da maquiagem ou como parte da rotina de hidratação.",
+      "volume": "30 g",
+      "shippingWeightGrams": 57,
+      "shippingWeightStatus": "verified_gross",
+      "shippingWeightNote": "O distribuidor separa conteúdo de 30 g e peso cadastral de 57 g, acompanhado das dimensões da embalagem.",
+      "sources": [
+        {
+          "label": "Fenzza Make Up",
+          "url": "https://www.lojafenzzamakeup.com.br/hidratante-facial-stitch-fenzza-",
+          "evidence": "Modelo DIS219, ativos declarados, uso facial e modo de aplicação."
+        },
+        {
+          "label": "Distribuidora JCF",
+          "url": "https://www.distribuidorajcf.com.br/fenzza-hidratante-facial-stitch-disney-dis219",
+          "evidence": "Código DIS219, conteúdo de 30 g, peso cadastral de 57 g e dimensões logísticas."
+        }
+      ]
+    },
+    {
+      "slug": "lapis-para-olho-preto-com-apontador-fenzza-fz14011",
+      "brand": "FENZZA",
+      "model": "FZ14011",
+      "confidence": "high",
+      "descriptionPt": "O Lápis para Olho Preto com Apontador Fenzza FZ14011 permite definir o contorno dos olhos ou esfumar o traço logo após a aplicação. A tampa traz um apontador integrado, recurso útil para manter a ponta pronta para uso sem carregar outro acessório.",
+      "volume": "1,2 g",
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Os 1,2 g correspondem ao conteúdo do lápis; não há peso bruto unitário confiável.",
+      "sources": [
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://lista.mercadolivre.com.br/lapis-para-olhos-prova-agua-fenzza",
+          "evidence": "Resultados confirmam o lápis preto Fenzza apontável com apontador integrado."
+        },
+        {
+          "label": "Virtual Make",
+          "url": "https://www.virtualmake.com.br/lapis-de-olho-preto-com-apontador-fenzza-fz14011-pacote-c-12-unid",
+          "evidence": "Código FZ14011, cor preta, apontador na tampa e peso líquido de 1,2 g."
+        }
+      ]
+    },
+    {
+      "slug": "sombra-stick-disney-princesas-fenzza-dis20",
+      "brand": "FENZZA",
+      "model": "DIS20",
+      "confidence": "medium",
+      "descriptionPt": "A Sombra Stick Disney Princesas Fenzza DIS20 vem em formato de bastão para aplicar a cor diretamente nas pálpebras. As versões trazem tonalidades variadas e embalagem inspirada nas personagens, permitindo usar o produto sozinho ou combinar mais de uma cor.",
+      "volume": null,
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Não foi encontrado conteúdo líquido nem peso bruto verificável para a referência DIS20.",
+      "sources": [
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://lista.mercadolivre.com.br/fenzza-princess",
+          "evidence": "A busca confirma a linha Sombra Stick Disney Princesas Fenzza e suas variações de cor."
+        },
+        {
+          "label": "Imagem do produto RosaGiro",
+          "url": "https://jqphak399n3b6nli.public.blob.vercel-storage.com/products/sombra-stick-disney-princesas-fenzza-dis20/sku-01-dis20.jpg",
+          "evidence": "A foto identifica a marca Fenzza, a coleção Disney Princesas, o formato Sombra Stick e a referência usada no catálogo."
+        }
+      ]
+    },
+    {
+      "slug": "mascara-de-cilios-4d-ultra-volume-yoyo-maquiamor-yyc-0059-a",
+      "brand": "YOYO",
+      "model": "YYC-0059-A",
+      "confidence": "medium",
+      "descriptionPt": "A Máscara de Cílios 4D Ultra Volume Yoyo Maquiamor YYC-0059-A é apresentada em versões com aplicadores diferentes, identificados por cores no expositor. O formato permite escolher o tipo de escova de acordo com o efeito procurado e aplicar da raiz às pontas dos cílios.",
+      "volume": null,
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "A imagem não permite confirmar o conteúdo líquido e nenhuma fonte informou peso bruto unitário.",
+      "sources": [
+        {
+          "label": "Imagem da embalagem RosaGiro",
+          "url": "https://jqphak399n3b6nli.public.blob.vercel-storage.com/products/mascara-de-cilios-4d-ultra-volume-yoyo-maquiamor-yyc-0059-a/package-yyc_0059_a.jpg",
+          "evidence": "O expositor mostra a referência YYC-0059-A, o nome Máscara 4D, a indicação Ultra Volume e diferentes aplicadores."
+        },
+        {
+          "label": "Zhang Maquiagem",
+          "url": "https://www.zhangmaquiagem.com.br/t/produtos/olho/rimel",
+          "evidence": "Listagem de atacado confirma Máscara de Cílios Yoyo Maquiamor YYC-0059-A em expositor com 24 peças."
+        }
+      ]
+    },
+    {
+      "slug": "kit-labial-3-em-1-yoyomaquiamor-yyc-0209",
+      "brand": "YOYO",
+      "model": "YYC-0209",
+      "confidence": "high",
+      "descriptionPt": "O Kit Labial 3 em 1 Yoyomaquiamor YYC-0209 reúne gloss, batom ou balm e lápis labial em um estojo compacto em formato de coração. As três peças podem ser usadas separadamente ou combinadas para contornar, adicionar cor e finalizar com brilho.",
+      "volume": null,
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "As fontes não informaram conteúdo líquido total nem peso bruto do conjunto.",
+      "sources": [
+        {
+          "label": "Sousa VIP",
+          "url": "https://www.sousavip.com.br/maquiagem/labios/kit-de-labios-yoyo-maquiamor-kit-3",
+          "evidence": "Referência YYC-0209 e composição do kit com três itens para os lábios."
+        },
+        {
+          "label": "Amor Anjo Distribuidora",
+          "url": "https://www.amoranjodistribuidora.com.br/products/kit-de-labios-yoyo-maquiamor",
+          "evidence": "Correspondência da marca, formato do conjunto e código YYC-0209."
+        }
+      ]
+    },
+    {
+      "slug": "base-liquida-matte-safira-7898679310574-04",
+      "brand": "SAFIRA",
+      "model": "7898679310574-04",
+      "confidence": "medium",
+      "descriptionPt": "A Base Líquida Matte Safira Basic 04 vem em frasco de 35 ml e foi desenvolvida para uniformizar o tom da pele com acabamento sem brilho. A textura líquida pode ser espalhada com pincel, esponja ou dedos, começando com uma camada fina e reforçando onde necessário.",
+      "volume": "35 ml",
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Os 35 ml são o volume líquido da base e não permitem calcular o peso bruto do frasco.",
+      "sources": [
+        {
+          "label": "Imagem da embalagem RosaGiro",
+          "url": "https://jqphak399n3b6nli.public.blob.vercel-storage.com/products/base-liquida-matte-safira-7898679310574-04/package-7898679310574_04.jpg",
+          "evidence": "A embalagem mostra a marca Safira Basic, Base Líquida Matte, volume de 35 ml e identificação da cor 04."
+        }
+      ]
+    },
+    {
+      "slug": "body-splash-melancia-morango-maracuja-7908346904040",
+      "name": "Body Splash Body Juice Cereja Dermachem 200 ml",
+      "brand": "DERMA CHEM",
+      "model": "7908346904040",
+      "confidence": "high",
+      "descriptionPt": "O Body Splash Body Juice Cereja Dermachem vem em frasco spray de 200 ml e oferece uma fragrância frutada de cereja para perfumar o corpo de forma leve. Pode ser borrifado após o banho e reaplicado ao longo do dia conforme a preferência.",
+      "volume": "200 ml",
+      "shippingWeightGrams": null,
+      "shippingWeightStatus": "not_found",
+      "shippingWeightNote": "Os 200 ml correspondem ao volume líquido; não foi localizado peso bruto confiável do frasco cheio.",
+      "sources": [
+        {
+          "label": "Mercado Livre Brasil",
+          "url": "https://lista.mercadolivre.com.br/juice-perfume",
+          "evidence": "Resultado exato para Body Splash Cereja Body Juice Dermachem 200 ml."
+        },
+        {
+          "label": "Kiss Mania",
+          "url": "https://kissmania.pedidook.com.br/produto/49247149",
+          "evidence": "O GTIN 7908346904040 corresponde ao Body Splash Body Juice Cereja 200 ml."
+        },
+        {
+          "label": "Imagem do produto RosaGiro",
+          "url": "https://jqphak399n3b6nli.public.blob.vercel-storage.com/products/body-splash-melancia-morango-maracuja-7908346904040/sku-01-7908346904040.jpg",
+          "evidence": "O frasco mostra Dermachem, Body Juice, fragrância Cereja e volume de 200 ml."
+        }
+      ]
+    }
+  ]
+}

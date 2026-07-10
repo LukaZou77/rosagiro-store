@@ -49,6 +49,21 @@ if (built.ok) {
   assert.equal(built.baseBoxPriceCents, 29520);
   assert.equal(built.baseBoxPieces, 36);
   assert.equal(built.descriptionPt, "Preço unitário: 9,84; Embalagem para atacado: 354,24c/36pçs.");
+  assert.equal(built.wholesalePackage, "Caixa com 36 unidades: R$ 354,24.");
+}
+
+const editorial = buildAdjustedProductPricing({
+  basePriceCents: 820,
+  descriptionPt: "Batom líquido com acabamento matte e gloss incolor no mesmo produto.",
+  wholesalePackage: "Caixa com 36 unidades: R$ 295,20.",
+  baseBoxPriceCents: 29520,
+  baseBoxPieces: 36,
+  config: increasePercent
+});
+assert.equal(editorial.ok, true);
+if (editorial.ok) {
+  assert.equal(editorial.descriptionPt, "Batom líquido com acabamento matte e gloss incolor no mesmo produto.");
+  assert.equal(editorial.wholesalePackage, "Caixa com 36 unidades: R$ 354,24.");
 }
 
 console.log("price adjustment tests passed");

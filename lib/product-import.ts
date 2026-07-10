@@ -64,6 +64,7 @@ function productData(
   const adjustedPricing = buildAdjustedProductPricing({
     basePriceCents: row.priceCents,
     descriptionPt: row.descriptionPt,
+    wholesalePackage: row.wholesalePackage,
     config: priceAdjustment
   });
   if (!adjustedPricing.ok) {
@@ -92,7 +93,7 @@ function productData(
     weightGrams: row.weightGrams,
     suggestedQuantity: row.suggestedQuantity,
     kitRecommendation: row.kitRecommendation,
-    wholesalePackage: row.wholesalePackage,
+    wholesalePackage: adjustedPricing.wholesalePackage,
     validityNote: row.validityNote,
     purchaseNote: row.purchaseNote,
     rating: row.rating,

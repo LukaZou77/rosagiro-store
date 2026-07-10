@@ -116,6 +116,7 @@ function summarizeProductAdjustment(
   const pricing = buildAdjustedProductPricing({
     basePriceCents,
     descriptionPt: product.descriptionPt,
+    wholesalePackage: product.wholesalePackage,
     config,
     baseBoxPriceCents: product.baseBoxPriceCents,
     baseBoxPieces: product.baseBoxPieces
@@ -165,13 +166,14 @@ function summarizeProductAdjustment(
     ok: true as const,
     skippedProductCount: 0,
     skippedSkuCount,
-    descriptionWarningCount: pricing.descriptionMatched ? 0 : 1,
+    descriptionWarningCount: 0,
     productUpdate: {
       priceCents: pricing.priceCents,
       basePriceCents,
       baseBoxPriceCents: pricing.baseBoxPriceCents,
       baseBoxPieces: pricing.baseBoxPieces,
-      descriptionPt: pricing.descriptionPt
+      descriptionPt: pricing.descriptionPt,
+      wholesalePackage: pricing.wholesalePackage
     },
     skuUpdates
   };

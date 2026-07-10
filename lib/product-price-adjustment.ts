@@ -29,6 +29,7 @@ type DescriptionAdjustmentResult = {
 type BuildAdjustedProductPricingInput = {
   basePriceCents: number;
   descriptionPt: string;
+  wholesalePackage?: string | null;
   config: PriceAdjustmentConfig;
   baseBoxPriceCents?: number | null;
   baseBoxPieces?: number | null;
@@ -39,6 +40,7 @@ type BuildAdjustedProductPricingResult =
       ok: true;
       priceCents: number;
       descriptionPt: string;
+      wholesalePackage: string;
       baseBoxPriceCents: number | null;
       baseBoxPieces: number | null;
       descriptionMatched: boolean;
@@ -131,6 +133,40 @@ function formatBoxPrice(cents: number, pieces: number) {
   return `${formatPlainBrl(cents)}c/${pieces}pçs`;
 }
 
+export const wholesalePackageConsultText =
+  "Caixa fechada e volumes maiores: consulte pelo WhatsApp.";
+
+export function formatWholesalePackage(boxPriceCents: number, boxPieces: number) {
+  return `Caixa com ${boxPieces} unidades: R$ ${formatPlainBrl(boxPriceCents)}.`;
+}
+
+export function adjustedWholesalePackage(
+  baseBoxPriceCents: number | null | undefined,
+  baseBoxPieces: number | null | undefined,
+  config: PriceAdjustmentConfig,
+  fallback?: string | null,
+  forceConsult = false
+) {
+  if (forceConsult) return wholesalePackageConsultText;
+  if (!baseBoxPriceCents || !baseBoxPieces) {
+    return fallback?.trim() || wholesalePackageConsultText;
+  }
+
+  let adjustedBoxPriceCents: number | null;
+  if (isPriceAdjustmentEnabled(config) && config.type === "fixed") {
+    const delta = config.value * baseBoxPieces;
+    adjustedBoxPriceCents =
+      config.direction === "increase" ? baseBoxPriceCents + delta : baseBoxPriceCents - delta;
+    if (adjustedBoxPriceCents < 1) adjustedBoxPriceCents = null;
+  } else {
+    adjustedBoxPriceCents = adjustPriceCents(baseBoxPriceCents, config);
+  }
+
+  return adjustedBoxPriceCents
+    ? formatWholesalePackage(adjustedBoxPriceCents, baseBoxPieces)
+    : fallback?.trim() || wholesalePackageConsultText;
+}
+
 export function parseStandardWholesaleDescription(description: string) {
   const match = description.match(PRICE_DESCRIPTION_PATTERN);
   if (!match) {
@@ -196,6 +232,7 @@ export function adjustStandardWholesaleDescription(
 export function buildAdjustedProductPricing({
   basePriceCents,
   descriptionPt,
+  wholesalePackage,
   config,
   baseBoxPriceCents,
   baseBoxPieces
@@ -212,13 +249,23 @@ export function buildAdjustedProductPricing({
     baseBoxPriceCents,
     baseBoxPieces
   );
+  const parsedDescription = parseStandardWholesaleDescription(descriptionPt);
+  const resolvedBaseBoxPriceCents = adjustedDescription.boxPriceCents ?? baseBoxPriceCents ?? null;
+  const resolvedBaseBoxPieces = adjustedDescription.boxPieces ?? baseBoxPieces ?? null;
 
   return {
     ok: true,
     priceCents: adjustedPrice,
     descriptionPt: adjustedDescription.description,
-    baseBoxPriceCents: adjustedDescription.boxPriceCents ?? baseBoxPriceCents ?? null,
-    baseBoxPieces: adjustedDescription.boxPieces ?? baseBoxPieces ?? null,
+    wholesalePackage: adjustedWholesalePackage(
+      resolvedBaseBoxPriceCents,
+      resolvedBaseBoxPieces,
+      config,
+      wholesalePackage,
+      parsedDescription.whatsappBox
+    ),
+    baseBoxPriceCents: resolvedBaseBoxPriceCents,
+    baseBoxPieces: resolvedBaseBoxPieces,
     descriptionMatched: adjustedDescription.matched
   };
 }

@@ -290,6 +290,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const categoryId = field(formData, "categoryId");
   const subcategoryId = field(formData, "subcategoryId");
   const descriptionPt = field(formData, "descriptionPt");
+  const wholesalePackage = nullableField(formData, "wholesalePackage");
   const image = field(formData, "image");
   const trayImage = field(formData, "trayImage");
   const primaryImageInput = field(formData, "primaryImage");
@@ -326,6 +327,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const adjustedPricing = buildAdjustedProductPricing({
     basePriceCents: priceCents,
     descriptionPt,
+    wholesalePackage,
     config: priceAdjustment,
     baseBoxPriceCents: options.existingBaseBoxPriceCents,
     baseBoxPieces: options.existingBaseBoxPieces
@@ -401,7 +403,7 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
       weightGrams,
       suggestedQuantity: options.existingSuggestedQuantity ?? null,
       kitRecommendation: options.existingKitRecommendation ?? null,
-      wholesalePackage: nullableField(formData, "wholesalePackage"),
+      wholesalePackage: adjustedPricing.wholesalePackage,
       validityNote: nullableField(formData, "validityNote"),
       purchaseNote: nullableField(formData, "purchaseNote"),
       rating: ratingValue(formData),

@@ -19,7 +19,11 @@ import { effectiveSkuPriceCents, lowestEffectivePriceCents, hasSkuPriceRange } f
 import { productDetailGalleryState, productDetailServiceCards } from "@/lib/product-detail-standard";
 import { productHasActiveSkus, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
-import { productWholesaleLines } from "@/lib/product-wholesale";
+import {
+  productCommercialSummary,
+  productEditorialDescription,
+  productWholesaleLines
+} from "@/lib/product-wholesale";
 import { breadcrumbJsonLd, noIndexMetadata, productJsonLd, productMetaDescription, storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
@@ -70,6 +74,7 @@ export default async function ProductPage({ params }: PageProps) {
   const galleryState = productDetailGalleryState(gallery);
   const serviceCards = productDetailServiceCards();
   const wholesaleLines = productWholesaleLines(product);
+  const editorialDescription = productEditorialDescription(product.descriptionPt);
   const completionRecommendations = getCartCompletionRecommendations(recommendationProducts, [{ slug: product.slug, quantity: 1 }], {
     currentCategorySlug: product.category.slug,
     excludeSlug: product.slug,
@@ -108,7 +113,8 @@ export default async function ProductPage({ params }: PageProps) {
             / {product.subcategory}
           </p>
           <h1>{product.name}</h1>
-          <p className="description">{product.descriptionPt}</p>
+          <p className="description product-commercial-summary">{productCommercialSummary(product)}</p>
+          {editorialDescription ? <p className="description product-editorial-description">{editorialDescription}</p> : null}
           <div className="price-line">
             <strong>{showFromPrice ? `A partir de ${money(displayPrice)}` : money(displayPrice)}</strong>
           </div>
