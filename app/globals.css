@@ -7240,6 +7240,12 @@ a.readiness-signal:focus-visible {
     -webkit-line-clamp: 3;
   }
 
+  .product-info .product-editorial-description {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+  }
+
   .product-info .price-line {
     margin: 10px 0;
   }
