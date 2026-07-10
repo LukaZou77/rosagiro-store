@@ -6,6 +6,20 @@ export const siteConfig = {
   description: "Cosméticos no atacado para lojistas e revendedores, com pedido mínimo de R$ 300,00, estoque sinalizado, entrega no Brasil e atendimento pelo WhatsApp.",
   defaultUrl: "http://localhost:3000",
   supportEmail: "rosagiroatacado@gmail.com",
+  businessIdentity: {
+    legalName: "Silluna Variedades LTDA",
+    taxId: "62.288.085/0001-02",
+    relationship: "A RosaGiro é operada por Silluna Variedades LTDA.",
+    legalAddress: {
+      streetAddress: "Rua Conselheiro Dantas, 408, Loja 2088",
+      district: "Canindé",
+      city: "São Paulo",
+      state: "SP",
+      postalCode: "03032-020",
+      country: "BR"
+    },
+    operatingAddressLabel: "Endereço operacional e retirada"
+  },
   brandAssets: {
     avatar: "/brand/rosagiro-avatar.webp",
     headerImage: "/brand/rosagiro-logo-header.webp",

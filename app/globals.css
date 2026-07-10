@@ -4986,6 +4986,38 @@ legend {
   color: var(--muted);
 }
 
+.site-footer .footer-legal-identity {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(var(--line-rgb), 0.72);
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.about-principles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.about-principles article {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.about-principles h2 {
+  margin: 8px 0;
+  font-size: 1.1rem;
+}
+
+.about-principles p {
+  margin: 0;
+  color: var(--muted);
+}
+
 .site-footer .store-trust {
   margin-top: 8px;
   font-size: 0.86rem;
@@ -6916,6 +6948,10 @@ a.readiness-signal:focus-visible {
 }
 
 @media (max-width: 679px) {
+  .about-principles {
+    grid-template-columns: 1fr;
+  }
+
   .checkout-form,
   .summary-panel,
   .cart-panel,

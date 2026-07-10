@@ -44,16 +44,23 @@ export function storeProfileAddress(profile: StoreProfileView) {
 }
 
 export function storeSocialLinks(profile: StoreProfileView) {
-  return [
+  const links = [
     { label: "Instagram", href: profile.instagramUrl },
     { label: "Facebook", href: profile.facebookUrl },
     { label: "TikTok", href: profile.tiktokUrl }
   ].filter((link) => {
     try {
       const url = new URL(link.href);
-      return url.protocol === "http:" || url.protocol === "https:";
+      const validProtocol = url.protocol === "http:" || url.protocol === "https:";
+      const hostMatchesLabel =
+        (link.label === "Instagram" && url.hostname.includes("instagram.com")) ||
+        (link.label === "Facebook" && url.hostname.includes("facebook.com")) ||
+        (link.label === "TikTok" && url.hostname.includes("tiktok.com"));
+      return validProtocol && hostMatchesLabel;
     } catch {
       return false;
     }
   });
+
+  return links.filter((link, index) => links.findIndex((candidate) => candidate.href === link.href) === index);
 }

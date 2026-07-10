@@ -181,6 +181,8 @@ export function storeJsonLd(profile: StoreProfileView) {
     "@type": "Store",
     "@id": siteUrl("/#store"),
     name: profile.storeName || siteConfig.name,
+    legalName: siteConfig.businessIdentity.legalName,
+    taxID: siteConfig.businessIdentity.taxId,
     url: siteUrl(),
     description: siteConfig.description,
     email,
@@ -188,6 +190,21 @@ export function storeJsonLd(profile: StoreProfileView) {
     address,
     areaServed: "BR",
     hasMerchantReturnPolicy: merchantReturnPolicy(),
+    parentOrganization: {
+      "@type": "Organization",
+      "@id": siteUrl("/#organization"),
+      name: siteConfig.businessIdentity.legalName,
+      legalName: siteConfig.businessIdentity.legalName,
+      taxID: siteConfig.businessIdentity.taxId,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: siteConfig.businessIdentity.legalAddress.streetAddress,
+        addressLocality: siteConfig.businessIdentity.legalAddress.city,
+        addressRegion: siteConfig.businessIdentity.legalAddress.state,
+        postalCode: siteConfig.businessIdentity.legalAddress.postalCode,
+        addressCountry: siteConfig.businessIdentity.legalAddress.country
+      }
+    },
     sameAs: socials.length ? socials : undefined
   };
 }

@@ -73,6 +73,7 @@ export async function StoreShell({
             </Link>
           ))}
           <Link href="/guias">Guias</Link>
+          <Link href="/quem-somos">Quem somos</Link>
           <Link href="/contato">Contato</Link>
           <Link href="/informacoes-da-loja">Informações da loja</Link>
         </nav>
@@ -90,6 +91,9 @@ export async function StoreShell({
             ))}
           </nav>
         ) : null}
+        <p className="footer-legal-identity">
+          {siteConfig.businessIdentity.relationship} CNPJ {siteConfig.businessIdentity.taxId}.
+        </p>
       </footer>
       <QuickPurchaseDrawer />
       <MobileStoreNav whatsappHref={generalWhatsAppHref} />

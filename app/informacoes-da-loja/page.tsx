@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
+import { StructuredData } from "@/components/StructuredData";
 import { getCategories } from "@/lib/catalog";
-import { storefrontMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import {
   getStoreProfile,
@@ -30,6 +31,12 @@ export default async function StoreInformationPage() {
 
   return (
     <StoreShell categories={categories}>
+      <StructuredData
+        data={breadcrumbJsonLd([
+          { name: "Início", path: "/" },
+          { name: "Informações da loja", path: "/informacoes-da-loja" }
+        ])}
+      />
       <section className="info-hero store-info-hero">
         <div>
           <p className="eyebrow">Loja / Confiança</p>
@@ -90,10 +97,21 @@ export default async function StoreInformationPage() {
         </article>
 
         <article className="store-info-card wide">
-          <span>Endereço</span>
+          <span>{siteConfig.businessIdentity.operatingAddressLabel}</span>
           <h2>Retirada e conferência</h2>
           <p>{storeProfileAddress(profile)}</p>
           <p>{profile.pickupNote}</p>
+        </article>
+
+        <article className="store-info-card wide">
+          <span>Endereço legal</span>
+          <h2>Sede registrada</h2>
+          <p>
+            {siteConfig.businessIdentity.legalAddress.streetAddress}, {siteConfig.businessIdentity.legalAddress.district},{" "}
+            {siteConfig.businessIdentity.legalAddress.city} - {siteConfig.businessIdentity.legalAddress.state}, CEP{" "}
+            {siteConfig.businessIdentity.legalAddress.postalCode}.
+          </p>
+          <p>Este é o endereço cadastral da empresa. Retiradas são combinadas no endereço operacional informado acima.</p>
         </article>
 
         <article className="store-info-card">

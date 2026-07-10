@@ -5,6 +5,7 @@ import { cache } from "react";
 import { STORE_PROFILE_CACHE_TAG } from "@/lib/cache-tags";
 import { prisma } from "@/lib/db";
 import { defaultMercadoPagoInstallments, normalizeMercadoPagoInstallments } from "@/lib/payments";
+import { siteConfig } from "@/lib/site-config";
 import type { StoreProfileView } from "@/lib/store-profile-public";
 
 export type { StoreProfileView } from "@/lib/store-profile-public";
@@ -115,7 +116,7 @@ export function storeCnpjLabel(profile: StoreProfileView) {
 
 export function publicLegalName(profile: StoreProfileView) {
   const value = profile.legalName.trim();
-  if (!value) return "";
+  if (!value) return siteConfig.businessIdentity.legalName;
   if (/bela viva|rosa giro|rosagiro.*(com[eé]rcio|cosm[eé]tico|ltda|limitada)|化妆品贸易有限公司/i.test(value)) return "";
   return value;
 }
