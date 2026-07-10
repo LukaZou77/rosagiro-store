@@ -124,7 +124,15 @@ export default async function ProductPage({ params }: PageProps) {
 
   return (
     <StoreShell categories={categories}>
-      <ProductAnalyticsTracker slug={product.slug} />
+      <ProductAnalyticsTracker
+        slug={product.slug}
+        item={{
+          name: product.name,
+          brand: product.brand.name,
+          category: product.category.label,
+          priceCents: displayPrice
+        }}
+      />
       <StructuredData
         data={[
           productJsonLd(product),
@@ -183,7 +191,20 @@ export default async function ProductPage({ params }: PageProps) {
               />
             ) : null}
             <div className="purchase-panel-actions">
-              {hasSkuChoices ? null : <AddToCartButton slug={product.slug} label="Adicionar ao carrinho" disabled={!available} wide />}
+              {hasSkuChoices ? null : (
+                <AddToCartButton
+                  analyticsItem={{
+                    name: product.name,
+                    brand: product.brand.name,
+                    category: product.category.label,
+                    priceCents: displayPrice
+                  }}
+                  slug={product.slug}
+                  label="Adicionar ao carrinho"
+                  disabled={!available}
+                  wide
+                />
+              )}
               <WhatsAppLink href={whatsappHref} className="button whatsapp">
                 {siteConfig.whatsapp.productCta}
               </WhatsAppLink>

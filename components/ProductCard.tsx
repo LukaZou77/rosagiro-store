@@ -89,7 +89,17 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogProduc
                 Escolher
               </Link>
             ) : (
-              <AddToCartButton slug={product.slug} label="Comprar" disabled={!available} />
+              <AddToCartButton
+                analyticsItem={{
+                  name: product.name,
+                  brand: product.brand.name,
+                  category: product.category.label,
+                  priceCents: displayPrice
+                }}
+                slug={product.slug}
+                label="Comprar"
+                disabled={!available}
+              />
             )}
             <WhatsAppLink href={whatsappHref} className="whatsapp-inline" ariaLabel={`Consultar ${product.name} no WhatsApp`}>
               {siteConfig.whatsapp.productSecondaryCta}

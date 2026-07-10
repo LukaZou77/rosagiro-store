@@ -27,6 +27,11 @@ export default async function AdminOrdersPage() {
       <div className="admin-heading">
         <p className="eyebrow">Pedidos</p>
         <h1>Pedidos</h1>
+        <div className="admin-actions">
+          <Link className="button secondary" href="/admin/pedidos/exportar-conversoes" prefetch={false}>
+            Exportar conversões pagas
+          </Link>
+        </div>
       </div>
       <div className="admin-table">
         {orders.map((order) => (

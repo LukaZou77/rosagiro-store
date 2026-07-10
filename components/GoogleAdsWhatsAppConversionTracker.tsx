@@ -2,34 +2,13 @@
 
 import { useEffect } from "react";
 import { GOOGLE_ADS_WHATSAPP_CONVERSION_SEND_TO, isWhatsAppTrackingHref } from "@/lib/google-ads";
-
-type GoogleAdsConversionPayload = {
-  send_to: string;
-  event_category: string;
-  event_label?: string;
-};
-
-declare global {
-  interface Window {
-    dataLayer?: unknown[];
-    gtag?: (command: "event", eventName: "conversion", payload: GoogleAdsConversionPayload) => void;
-  }
-}
+import { trackCommerceOnce, trackGoogleAdsConversion } from "@/lib/commerce-analytics";
 
 function sendWhatsAppConversion(href: string) {
-  const payload: GoogleAdsConversionPayload = {
-    send_to: GOOGLE_ADS_WHATSAPP_CONVERSION_SEND_TO,
+  trackGoogleAdsConversion(GOOGLE_ADS_WHATSAPP_CONVERSION_SEND_TO, {
     event_category: "WhatsApp",
     event_label: href
-  };
-
-  if (typeof window.gtag === "function") {
-    window.gtag("event", "conversion", payload);
-    return;
-  }
-
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(["event", "conversion", payload]);
+  });
 }
 
 export function GoogleAdsWhatsAppConversionTracker() {
@@ -41,6 +20,18 @@ export function GoogleAdsWhatsAppConversionTracker() {
       if (!(link instanceof HTMLAnchorElement)) return;
       if (!isWhatsAppTrackingHref(link.href)) return;
 
+      const key = `whatsapp:${window.location.pathname}:${link.href}`;
+      trackCommerceOnce(key, "generate_lead", {
+        lead_source: "whatsapp",
+        link_url: link.href,
+        transport_type: "beacon"
+      });
+      try {
+        if (sessionStorage.getItem(`rosagiro:ads-conversion:${key}`)) return;
+        sessionStorage.setItem(`rosagiro:ads-conversion:${key}`, "1");
+      } catch {
+        // Fall through when storage is unavailable.
+      }
       sendWhatsAppConversion(link.href);
     }
 

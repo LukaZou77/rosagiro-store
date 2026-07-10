@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { AttributionTracker } from "@/components/AttributionTracker";
 import { GoogleAdsWhatsAppConversionTracker } from "@/components/GoogleAdsWhatsAppConversionTracker";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import "./globals.css";
 
 const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || "AW-17323505855";
+const ga4MeasurementId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -46,8 +48,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', '${googleAdsId}');
+            ${ga4MeasurementId ? `gtag('config', '${ga4MeasurementId}');` : ""}
           `}
         </Script>
+        <AttributionTracker />
         <GoogleAdsWhatsAppConversionTracker />
         {children}
       </body>

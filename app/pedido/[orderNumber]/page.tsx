@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PixPaymentInfo } from "@/components/PixPaymentInfo";
+import { OrderConversionTracker } from "@/components/OrderConversionTracker";
 import { StoreShell } from "@/components/StoreShell";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories } from "@/lib/catalog";
@@ -49,6 +50,20 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
 
   return (
     <StoreShell categories={categories}>
+      {order.status === "PAID" ? (
+        <OrderConversionTracker
+          orderNumber={order.orderNumber}
+          totalCents={order.totalCents}
+          items={order.items.map((item) => ({
+            productSlug: item.productSlug,
+            productName: item.productName,
+            productBrand: item.productBrand,
+            productSkuName: item.productSkuName,
+            unitPriceCents: item.unitPriceCents,
+            quantity: item.quantity
+          }))}
+        />
+      ) : null}
       <section className="confirmation order-confirmation">
         <p className="eyebrow">Pedido RosaGiro</p>
         <h1>{order.status === "PAID" ? "Compra confirmada." : "Pedido criado."}</h1>

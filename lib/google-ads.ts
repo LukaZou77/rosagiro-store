@@ -1,6 +1,8 @@
 export const GOOGLE_ADS_WHATSAPP_CONVERSION_SEND_TO =
   process.env.NEXT_PUBLIC_GOOGLE_ADS_WHATSAPP_CONVERSION_SEND_TO || "AW-17323505855/I2h6CKzc_cwcEL_xvsRA";
 
+export const GOOGLE_ADS_PURCHASE_CONVERSION_SEND_TO = process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_CONVERSION_SEND_TO || "";
+
 const whatsappHosts = new Set(["wa.me", "api.whatsapp.com", "web.whatsapp.com"]);
 
 export function isWhatsAppTrackingHref(href: string) {

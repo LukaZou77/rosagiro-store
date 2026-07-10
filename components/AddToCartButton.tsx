@@ -12,7 +12,8 @@ export function AddToCartButton({
   confirmationLabel = "Adicionado",
   unavailableLabel = "Sem estoque",
   wide = false,
-  disabled = false
+  disabled = false,
+  analyticsItem
 }: {
   slug: string;
   skuId?: string;
@@ -21,6 +22,7 @@ export function AddToCartButton({
   unavailableLabel?: string;
   wide?: boolean;
   disabled?: boolean;
+  analyticsItem?: { name?: string; brand?: string; category?: string; priceCents?: number };
 }) {
   const { requireCustomerSession } = useCustomerSession();
   const [added, setAdded] = useState(false);
@@ -38,7 +40,7 @@ export function AddToCartButton({
     if (existing) existing.quantity += 1;
     else cart.push({ slug, skuId, quantity: 1 });
     writeCart(cart);
-    trackProductEvent({ type: "ADD_TO_CART", slug, skuId: skuId || null, quantity: 1 });
+    trackProductEvent({ type: "ADD_TO_CART", slug, skuId: skuId || null, quantity: 1, item: analyticsItem });
     notifyQuickPurchaseOpen();
     setAdded(true);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

@@ -267,6 +267,14 @@ model Order {
   discountCents           Int
   shippingCents           Int
   totalCents              Int
+  gclid                   String?
+  gbraid                  String?
+  wbraid                  String?
+  utmSource               String?
+  utmMedium               String?
+  utmCampaign             String?
+  utmTerm                 String?
+  utmContent              String?
   customer                Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
   items                   OrderItem[]
   payment                 Payment?
@@ -277,6 +285,7 @@ model Order {
   @@index([customerEmail])
   @@index([customerId])
   @@index([addressMatchStatus])
+  @@index([gclid])
 }
 
 model ShippingRateImport {

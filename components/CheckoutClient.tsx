@@ -16,6 +16,7 @@ import { money } from "@/lib/money";
 import { paymentMethodsForCheckout, type PaymentMethodValue } from "@/lib/payments";
 import { siteConfig } from "@/lib/site-config";
 import { buildCartWhatsAppHref, buildGeneralWhatsAppHref } from "@/lib/whatsapp";
+import { readAttribution, trackCommerceOnce } from "@/lib/commerce-analytics";
 
 const states = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
 const manualCepMessage = "Preencha manualmente se o CEP não trouxer todos os dados.";
@@ -256,6 +257,22 @@ export function CheckoutClient({
     payment: paymentComplete
   };
   const paymentLabel = checkoutPaymentMethods.find((method) => method.value === paymentMethod)?.label || "Pagamento";
+
+  useEffect(() => {
+    if (!items.length || !summary) return;
+    trackCommerceOnce(`begin_checkout:${cartKey}`, "begin_checkout", {
+      currency: "BRL",
+      value: subtotal / 100,
+      items: items.map((item) => ({
+        item_id: item.slug,
+        item_name: item.name,
+        item_brand: item.brandName,
+        item_variant: item.skuName || undefined,
+        price: item.priceCents / 100,
+        quantity: item.quantity
+      }))
+    });
+  }, [cartKey, items, subtotal, summary]);
   const stepSummaries: Record<CheckoutStep, string> = {
     contact: contactComplete
       ? `${contactValue.name.trim()} · ${contactValue.phone.trim()}`
@@ -817,7 +834,8 @@ export function CheckoutClient({
         city: String(formData.get("city") || "")
       },
       shippingMethod,
-      paymentMethod
+      paymentMethod,
+      attribution: readAttribution()
     };
 
     const response = await fetch("/api/orders", {

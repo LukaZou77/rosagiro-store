@@ -12,6 +12,7 @@ import { effectiveSkuPriceCents } from "@/lib/product-pricing";
 import { resolveOrderShipping } from "@/lib/shipping";
 import { parseCheckoutShippingMethod, type CheckoutShippingMethod } from "@/lib/shipping-rules";
 import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
+import type { OrderAttribution } from "@/lib/commerce-analytics";
 import type { Prisma } from "@/src/generated/prisma/client";
 
 export type CartInput = {
@@ -39,6 +40,7 @@ export type CheckoutInput = {
   };
   shippingMethod: CheckoutShippingMethod;
   paymentMethod: PaymentMethodValue;
+  attribution?: OrderAttribution;
 };
 
 export class OrderError extends Error {
@@ -53,6 +55,25 @@ function digits(value: string) {
 
 function cleanText(value: unknown) {
   return String(value || "").trim();
+}
+
+function cleanAttributionValue(value: unknown) {
+  const normalized = cleanText(value).slice(0, 180);
+  return /^[a-zA-Z0-9._~%+=:@/-]+$/.test(normalized) ? normalized || null : null;
+}
+
+function parseAttribution(value: unknown): OrderAttribution {
+  const raw = value as Partial<OrderAttribution> | null;
+  return {
+    gclid: cleanAttributionValue(raw?.gclid) || undefined,
+    gbraid: cleanAttributionValue(raw?.gbraid) || undefined,
+    wbraid: cleanAttributionValue(raw?.wbraid) || undefined,
+    utmSource: cleanAttributionValue(raw?.utmSource) || undefined,
+    utmMedium: cleanAttributionValue(raw?.utmMedium) || undefined,
+    utmCampaign: cleanAttributionValue(raw?.utmCampaign) || undefined,
+    utmTerm: cleanAttributionValue(raw?.utmTerm) || undefined,
+    utmContent: cleanAttributionValue(raw?.utmContent) || undefined
+  };
 }
 
 export function parseCheckoutPayload(payload: unknown): CheckoutInput {
@@ -100,6 +121,7 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
     throw new OrderError("Escolha uma forma de pagamento válida.");
   }
   const paymentMethod = rawPaymentMethod;
+  const attribution = parseAttribution(data.attribution);
 
   if (!items.length) throw new OrderError("Seu carrinho está vazio.");
   if (!customer.name || !customer.email || !customer.phone || !customer.cpf) {
@@ -118,7 +140,7 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
     throw new OrderError("Pagamento temporariamente indisponível. Escolha Pix ou cartão pelo Mercado Pago.", 503);
   }
 
-  return { items, customer, address, shippingMethod, paymentMethod };
+  return { items, customer, address, shippingMethod, paymentMethod, attribution };
 }
 
 function makeOrderNumber() {
@@ -218,6 +240,14 @@ export async function createOrder(input: CheckoutInput) {
       discountCents: discount,
       shippingCents: shippingQuote.shippingCents,
       totalCents: total,
+      gclid: input.attribution?.gclid || null,
+      gbraid: input.attribution?.gbraid || null,
+      wbraid: input.attribution?.wbraid || null,
+      utmSource: input.attribution?.utmSource || null,
+      utmMedium: input.attribution?.utmMedium || null,
+      utmCampaign: input.attribution?.utmCampaign || null,
+      utmTerm: input.attribution?.utmTerm || null,
+      utmContent: input.attribution?.utmContent || null,
       items: {
         create: lines.map((line) => ({
           productId: line.product.id,
