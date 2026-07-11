@@ -7,7 +7,7 @@ import type { Prisma } from "@/src/generated/prisma/client";
 export const siteInfoPageKeys = ["privacy", "terms", "returns", "shipping", "contact"] as const;
 export type SiteInfoPageKey = (typeof siteInfoPageKeys)[number];
 
-export const SITE_INFO_PAGE_SECTION_LIMIT = 6;
+export const SITE_INFO_PAGE_SECTION_LIMIT = 8;
 
 export type SiteInfoPageSection = {
   title: string;
