@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Archive, LoaderCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Archive, Download, LoaderCircle } from "lucide-react";
 import type { TDocumentDefinitions } from "pdfmake/interfaces";
 import { getCustomerCatalogBrandDownloadData } from "@/app/admin/catalogo-clientes/actions";
 import { customerCatalogBrandFileName } from "@/lib/admin-customer-catalog-core";
@@ -34,6 +34,7 @@ type ZipClient = {
 };
 
 type ZipConstructor = new () => ZipClient;
+const BULK_CATALOG_FILE_NAME = "Catálogos RosaGiro - todas as marcas.zip";
 
 function moduleDefault<T>(module: T | { default: T }): T {
   return typeof module === "object" && module !== null && "default" in module ? module.default : module;
@@ -126,15 +127,13 @@ function createPdfBlob(pdfMake: PdfMakeClient, definition: TDocumentDefinitions)
   });
 }
 
-function downloadBlob(blob: Blob, fileName: string) {
-  const url = URL.createObjectURL(blob);
+function triggerDownload(url: string, fileName: string) {
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export function AdminCatalogBulkDownload({
@@ -152,12 +151,20 @@ export function AdminCatalogBulkDownload({
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Gera um PDF por marca e reúne tudo em um arquivo ZIP.");
   const [failed, setFailed] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+    };
+  }, [downloadUrl]);
 
   async function handleDownload() {
     if (running || !brands.length) return;
     setRunning(true);
     setFailed(false);
     setProgress(0);
+    setDownloadUrl(null);
 
     try {
       setStatus("Carregando o gerador de PDF...");
@@ -215,12 +222,14 @@ export function AdminCatalogBulkDownload({
         },
         (metadata) => setProgress(90 + Math.round(metadata.percent / 10))
       );
-      downloadBlob(zipBlob, "Catálogos RosaGiro - todas as marcas.zip");
+      const nextDownloadUrl = URL.createObjectURL(zipBlob);
+      setDownloadUrl(nextDownloadUrl);
+      triggerDownload(nextDownloadUrl, BULK_CATALOG_FILE_NAME);
       setProgress(100);
       setStatus(
         imageFailures
           ? `${brands.length} PDFs concluídos. ${imageFailures} imagens indisponíveis foram ignoradas.`
-          : `${brands.length} PDFs concluídos e baixados.`
+          : `${brands.length} PDFs prontos. Download iniciado; use o botão abaixo se necessário.`
       );
     } catch (error) {
       setFailed(true);
@@ -245,6 +254,12 @@ export function AdminCatalogBulkDownload({
           </span>
         ) : null}
       </div>
+      {downloadUrl && !running ? (
+        <a className={`button primary ${styles.button}`} href={downloadUrl} download={BULK_CATALOG_FILE_NAME}>
+          <Download size={17} />
+          Baixar ZIP pronto
+        </a>
+      ) : null}
     </div>
   );
 }
