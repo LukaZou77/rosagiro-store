@@ -65,7 +65,9 @@ const publicApiRateLimits: RateLimitRule[] = [
   { prefix: "/api/address/validate", methods: ["POST"], limit: 60, windowMs: 60_000 },
   { prefix: "/api/customers/session", methods: ["POST"], limit: 40, windowMs: 60_000 },
   { prefix: "/api/analytics/product-events", methods: ["POST"], limit: 180, windowMs: 60_000 },
-  { prefix: "/api/analytics/page-views", methods: ["POST"], limit: 240, windowMs: 60_000 }
+  { prefix: "/api/analytics/page-views", methods: ["POST"], limit: 240, windowMs: 60_000 },
+  { prefix: "/api/admin/search", methods: ["GET"], limit: 80, windowMs: 60_000 },
+  { prefix: "/api/admin/notifications", methods: ["GET", "POST"], limit: 120, windowMs: 60_000 }
 ];
 
 const jsonOnlyApiPaths = [
@@ -75,7 +77,8 @@ const jsonOnlyApiPaths = [
   "/api/address/validate",
   "/api/customers/session",
   "/api/analytics/product-events",
-  "/api/analytics/page-views"
+  "/api/analytics/page-views",
+  "/api/admin/notifications/read"
 ];
 
 function clientIp(request: NextRequest) {

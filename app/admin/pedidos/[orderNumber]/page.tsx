@@ -160,7 +160,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
               <input type="hidden" name="orderNumber" value={order.orderNumber} />
               <span>Pix manual</span>
               <strong>Confirme somente depois de conferir o comprovante no WhatsApp ou extrato.</strong>
-              <small>Esta ação marca o pedido como pago, atualiza o pagamento e reserva/baixa o estoque.</small>
+              <small>Esta ação marca o pedido e o pagamento como pagos. A disponibilidade continua sob controle manual no cadastro do produto.</small>
               <button className="button primary" type="submit">
                 Confirmar Pix recebido
               </button>

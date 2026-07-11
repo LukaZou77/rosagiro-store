@@ -1,8 +1,7 @@
 import "server-only";
 
-import { revalidateTag } from "next/cache";
-import { STOREFRONT_CATALOG_CACHE_TAG } from "@/lib/cache-tags";
 import { randomInt } from "node:crypto";
+import { createOrderNotificationSafely } from "@/lib/admin-notifications";
 import { normalizeBrazilWhatsapp, upsertCustomerFromContact } from "@/lib/customers";
 import { prisma } from "@/lib/db";
 import { validateCheckoutAddress } from "@/lib/google-address";
@@ -273,8 +272,10 @@ export async function createOrder(input: CheckoutInput) {
         }
       }
     },
-    select: { orderNumber: true }
+    select: { id: true, orderNumber: true, customerName: true, totalCents: true }
   });
+
+  await createOrderNotificationSafely("NEW_ORDER", order);
 
   return order;
 }
@@ -333,49 +334,6 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
       throw new OrderError("Este pedido não pode ser pago.");
     }
 
-    for (const item of order.items) {
-      if (!item.productId) throw new OrderError(`${item.productName} não está mais disponível.`);
-      if (item.productSkuName && !item.productSkuId) {
-        throw new OrderError(`${item.productName} não tem variação disponível.`);
-      }
-      if (item.productSkuId) {
-        const updatedSku = await tx.productSku.updateMany({
-          where: {
-            id: item.productSkuId,
-            productId: item.productId,
-            active: true,
-            quantity: { gte: item.quantity }
-          },
-          data: {
-            quantity: { decrement: item.quantity }
-          }
-        });
-        if (updatedSku.count !== 1) throw new OrderError(`${item.productName} n茫o tem estoque suficiente.`);
-
-        const aggregate = await tx.productSku.aggregate({
-          where: { productId: item.productId, active: true },
-          _sum: { quantity: true }
-        });
-        await tx.inventory.upsert({
-          where: { productId: item.productId },
-          update: { quantity: aggregate._sum.quantity || 0 },
-          create: { productId: item.productId, quantity: aggregate._sum.quantity || 0 }
-        });
-        continue;
-      }
-
-      const updated = await tx.inventory.updateMany({
-        where: {
-          productId: item.productId,
-          quantity: { gte: item.quantity }
-        },
-        data: {
-          quantity: { decrement: item.quantity }
-        }
-      });
-      if (updated.count !== 1) throw new OrderError(`${item.productName} não tem estoque suficiente.`);
-    }
-
     await tx.payment.update({
       where: { orderId: order.id },
       data: {
@@ -398,7 +356,7 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
     });
   });
 
-  revalidateTag(STOREFRONT_CATALOG_CACHE_TAG, { expire: 0 });
+  await createOrderNotificationSafely("ORDER_PAID", order);
   return order;
 }
 
