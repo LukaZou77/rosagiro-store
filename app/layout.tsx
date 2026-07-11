@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Suspense } from "react";
 import { AttributionTracker } from "@/components/AttributionTracker";
 import { GoogleAdsWhatsAppConversionTracker } from "@/components/GoogleAdsWhatsAppConversionTracker";
+import { SiteAnalyticsTracker } from "@/components/SiteAnalyticsTracker";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import "./globals.css";
 
@@ -60,6 +62,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </Script>
         <AttributionTracker />
         <GoogleAdsWhatsAppConversionTracker />
+        <Suspense fallback={null}>
+          <SiteAnalyticsTracker />
+        </Suspense>
         {children}
       </body>
     </html>

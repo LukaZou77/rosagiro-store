@@ -51,6 +51,18 @@ enum ProductAnalyticsEventType {
   ADD_TO_CART
 }
 
+enum AdminNotificationType {
+  NEW_ORDER
+  ORDER_PAID
+}
+
+enum NotificationDeliveryStatus {
+  NOT_CONFIGURED
+  PENDING
+  SENT
+  FAILED
+}
+
 model AdminUser {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -224,6 +236,53 @@ model ProductAnalyticsEvent {
   @@index([productId, eventType, eventDate])
   @@index([productSkuId, eventType, eventDate])
   @@index([productSlug, eventDate])
+}
+
+model SitePageView {
+  id           String   @id @default(cuid())
+  eventId      String   @unique
+  eventDate    DateTime @db.Date
+  visitorHash  String
+  sessionHash  String
+  ipHash       String?
+  path         String
+  referrerHost String?
+  countryCode  String?
+  regionCode   String?
+  city         String?
+  deviceType   String
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  utmTerm      String?
+  utmContent   String?
+  occurredAt   DateTime @default(now())
+
+  @@index([eventDate])
+  @@index([visitorHash, eventDate])
+  @@index([sessionHash, occurredAt])
+  @@index([path, eventDate])
+  @@index([countryCode, regionCode, city, eventDate])
+}
+
+model AdminNotification {
+  id                String                     @id @default(cuid())
+  notificationType  AdminNotificationType
+  dedupeKey         String                     @unique
+  title             String
+  message           String
+  actionHref        String
+  entityType        String
+  entityId          String
+  readAt            DateTime?
+  whatsappStatus    NotificationDeliveryStatus @default(NOT_CONFIGURED)
+  whatsappMessageId String?
+  whatsappError     String?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@index([readAt, createdAt])
+  @@index([notificationType, createdAt])
 }
 
 model Order {

@@ -288,6 +288,10 @@ export const infoPages = {
         body: "Os dados são usados para atendimento via WhatsApp, organização de clientes, processamento de pedidos e validação operacional. A primeira versão não cria senha nem área pública de cliente."
       },
       {
+        title: "Dados de navegação e métricas",
+        body: "Para entender o uso da loja e melhorar o atendimento, registramos páginas visitadas, origem da visita, tipo de dispositivo e localização aproximada por país, estado e cidade. O endereço IP não é armazenado: ele é transformado em um identificador irreversível usado apenas para estimativas e prevenção de duplicidade. Os detalhes de navegação são mantidos por até 90 dias e o rastreamento respeita sinais DNT e GPC do navegador."
+      },
+      {
         title: "Ajustes antes do lancamento",
         body: "Este texto deve ser mantido atualizado com os dados reais da empresa, canais de suporte e políticas LGPD aplicáveis."
       }
