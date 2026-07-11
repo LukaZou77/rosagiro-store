@@ -25,8 +25,7 @@ type ZipClient = {
   generateAsync: (
     options: {
       type: "blob";
-      compression: "DEFLATE";
-      compressionOptions: { level: number };
+      compression: "STORE";
       mimeType: string;
       streamFiles: boolean;
     },
@@ -210,8 +209,7 @@ export function AdminCatalogBulkDownload({
       const zipBlob = await zip.generateAsync(
         {
           type: "blob",
-          compression: "DEFLATE",
-          compressionOptions: { level: 6 },
+          compression: "STORE",
           mimeType: "application/zip",
           streamFiles: true
         },
