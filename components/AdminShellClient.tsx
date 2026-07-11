@@ -122,7 +122,13 @@ export function AdminShellClient({
         label: "Catálogo",
         icon: Boxes,
         moduleKey: "catalog",
-        matchPaths: ["/admin/produtos", "/admin/marcas", "/admin/categorias", "/admin/importar-produtos"],
+        matchPaths: [
+          "/admin/produtos",
+          "/admin/marcas",
+          "/admin/categorias",
+          "/admin/importar-produtos",
+          "/admin/catalogo-clientes"
+        ],
         badge: outOfStockCount
       },
       {

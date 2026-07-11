@@ -59,6 +59,11 @@ const sectionConfigs: Partial<Record<AdminModuleKey, SectionConfig>> = {
         label: "Ferramentas",
         items: [
           {
+            href: "/admin/catalogo-clientes",
+            label: "Catálogo para clientes",
+            matchPrefixes: ["/admin/catalogo-clientes"]
+          },
+          {
             href: "/admin/importar-produtos",
             label: "Importar e exportar",
             matchPrefixes: ["/admin/importar-produtos"]
@@ -86,6 +91,8 @@ const sectionConfigs: Partial<Record<AdminModuleKey, SectionConfig>> = {
 };
 
 const pageLabels: Array<{ prefix: string; label: string }> = [
+  { prefix: "/admin/catalogo-clientes/imprimir", label: "Imprimir catálogo" },
+  { prefix: "/admin/catalogo-clientes", label: "Catálogo para clientes" },
   { prefix: "/admin/produtos/qualidade", label: "Qualidade" },
   { prefix: "/admin/produtos/lixeira", label: "Lixeira" },
   { prefix: "/admin/produtos/novo", label: "Novo produto" },
