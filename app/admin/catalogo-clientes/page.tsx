@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FileDown, PackageSearch } from "lucide-react";
+import { AdminCatalogBulkDownload } from "@/components/AdminCatalogBulkDownload";
 import { AdminShell } from "@/components/AdminShell";
 import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import {
@@ -15,6 +16,8 @@ import {
 } from "@/lib/admin-customer-catalog-core";
 import { getCustomerCatalogOptions, getCustomerCatalogPreview } from "@/lib/admin-customer-catalog";
 import { requireAdmin } from "@/lib/auth";
+import { siteConfig } from "@/lib/site-config";
+import { getStoreProfile } from "@/lib/store-profile";
 import styles from "./catalog.module.css";
 
 export const metadata: Metadata = {
@@ -39,9 +42,10 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
   const categoryId = singleCatalogParam(params.category) || "all";
   const priceStatus = normalizeCatalogPriceStatus(params.price);
   const requestedPage = normalizeCatalogPage(params.page);
-  const [options, preview] = await Promise.all([
+  const [options, preview, storeProfile] = await Promise.all([
     getCustomerCatalogOptions(),
-    getCustomerCatalogPreview({ query, brandId, categoryId, priceStatus, page: requestedPage })
+    getCustomerCatalogPreview({ query, brandId, categoryId, priceStatus, page: requestedPage }),
+    getStoreProfile()
   ]);
 
   const selectedBrand = options.brands.find((brand) => brand.id === brandId) || null;
@@ -63,6 +67,12 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
         <h1>Catálogo para clientes</h1>
         <p>Filtre o catálogo ativo, revise modelos e gere um PDF por marca para enviar diretamente aos clientes.</p>
         <div className="admin-actions">
+          <AdminCatalogBulkDownload
+            brands={options.brands.map((brand) => ({ id: brand.id, name: brand.name }))}
+            headerImage={siteConfig.brandAssets.headerImage}
+            minimumOrderCents={siteConfig.wholesale.minimumOrderCents}
+            whatsapp={storeProfile.whatsapp}
+          />
           {printHref ? (
             <Link className="button primary" href={printHref} target="_blank" rel="noreferrer">
               <FileDown size={17} />

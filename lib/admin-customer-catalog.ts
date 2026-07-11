@@ -26,6 +26,7 @@ const productSelect = {
   wholesalePackage: true,
   image: true,
   mpn: true,
+  inventory: { select: { quantity: true } },
   brand: { select: { id: true, slug: true, name: true } },
   category: { select: { id: true, slug: true, label: true } },
   skus: {
@@ -36,7 +37,9 @@ const productSelect = {
       name: true,
       code: true,
       image: true,
-      priceCents: true
+      priceCents: true,
+      quantity: true,
+      active: true
     }
   }
 } satisfies Prisma.ProductSelect;

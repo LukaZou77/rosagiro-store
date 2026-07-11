@@ -54,6 +54,7 @@ const contentSecurityPolicy = [
     "https://ad.doubleclick.net",
     "https://stats.g.doubleclick.net",
     "https://googleads.g.doubleclick.net",
+    "https://*.public.blob.vercel-storage.com",
     "https://*.mercadopago.com",
     "https://*.mercadolivre.com",
     "https://api.mercadopago.com"

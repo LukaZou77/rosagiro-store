@@ -6,6 +6,7 @@ import { AdminCatalogPrintButton } from "@/components/AdminCatalogPrintButton";
 import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import {
   catalogSkuRows,
+  catalogStockLabel,
   catalogWholesaleLabel,
   customerCatalogDocumentTitle,
   hasCatalogWholesalePrice,
@@ -15,8 +16,8 @@ import {
 } from "@/lib/admin-customer-catalog-core";
 import { getCustomerCatalogPrintData } from "@/lib/admin-customer-catalog";
 import { requireAdmin } from "@/lib/auth";
-import { formatDatePtBr } from "@/lib/date-format";
 import { money } from "@/lib/money";
+import { productQuantity } from "@/lib/product-conversion";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile } from "@/lib/store-profile";
 import { buildWhatsAppBaseHref } from "@/lib/whatsapp";
@@ -46,9 +47,7 @@ export default async function AdminCustomerCatalogPrintPage({ searchParams }: Pa
   const catalog = await getCustomerCatalogPrintData({ brandId, categoryId, query, priceStatus });
   if (!catalog) notFound();
 
-  const generatedAt = new Date();
-  const generatedDateLabel = formatDatePtBr(generatedAt);
-  const documentTitle = customerCatalogDocumentTitle(catalog.brand.name, catalog.category?.label, generatedAt);
+  const documentTitle = customerCatalogDocumentTitle(catalog.brand.name);
   const whatsappHref = buildWhatsAppBaseHref(storeProfile.whatsapp);
 
   return (
@@ -99,8 +98,8 @@ export default async function AdminCustomerCatalogPrintPage({ searchParams }: Pa
             <strong>{storeProfile.whatsapp}</strong>
           </div>
           <div>
-            <span>Atualizado em</span>
-            <strong>{generatedDateLabel}</strong>
+            <span>Entrega</span>
+            <strong>Envio para todo o Brasil</strong>
           </div>
         </section>
 
@@ -135,7 +134,7 @@ export default async function AdminCustomerCatalogPrintPage({ searchParams }: Pa
                 <col className={styles.modelColumn} />
                 <col className={styles.unitColumn} />
                 <col className={styles.wholesaleColumn} />
-                <col className={styles.quantityColumn} />
+                <col className={styles.stockColumn} />
               </colgroup>
               <thead>
                 <tr>
@@ -145,7 +144,7 @@ export default async function AdminCustomerCatalogPrintPage({ searchParams }: Pa
                   <th>Modelo</th>
                   <th>Unitário</th>
                   <th>Embalagem fechada</th>
-                  <th>Qtd.</th>
+                  <th>Estoque</th>
                 </tr>
               </thead>
               {group.products.map((product) => {
@@ -156,6 +155,7 @@ export default async function AdminCustomerCatalogPrintPage({ searchParams }: Pa
                   skus: product.skus
                 });
                 const wholesalePriced = hasCatalogWholesalePrice(product.wholesalePackage);
+                const inStock = productQuantity(product) > 0;
 
                 return (
                   <tbody className={styles.productGroup} key={product.id}>
@@ -205,9 +205,14 @@ export default async function AdminCustomerCatalogPrintPage({ searchParams }: Pa
                             {catalogWholesaleLabel(product.wholesalePackage)}
                           </td>
                         ) : null}
-                        <td className={styles.quantityCell}>
-                          <span aria-hidden="true" />
-                        </td>
+                        {index === 0 ? (
+                          <td
+                            className={`${styles.stockCell}${inStock ? "" : ` ${styles.stockCheck}`}`}
+                            rowSpan={skus.length}
+                          >
+                            <span>{catalogStockLabel(inStock)}</span>
+                          </td>
+                        ) : null}
                       </tr>
                     ))}
                   </tbody>

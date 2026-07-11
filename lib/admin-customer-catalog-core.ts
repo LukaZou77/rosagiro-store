@@ -2,6 +2,37 @@ import { money } from "@/lib/money";
 
 export const CUSTOMER_CATALOG_PAGE_SIZE = 50;
 export const CATALOG_WHOLESALE_CONSULT_TEXT = "Condição de atacado: consulte no WhatsApp.";
+export const CATALOG_STOCK_AVAILABLE_TEXT = "Estoque disponível";
+export const CATALOG_STOCK_CHECK_TEXT = "Consulte disponibilidade";
+export const CATALOG_NATIONAL_SHIPPING_TEXT = "Envio para todo o Brasil";
+
+export type CustomerCatalogDownloadProduct = {
+  id: string;
+  name: string;
+  subcategory: string;
+  priceCents: number;
+  wholesalePackage: string | null;
+  image: string;
+  mpn: string | null;
+  inStock: boolean;
+  brandName: string;
+  categoryLabel: string;
+  skus: CustomerCatalogSkuInput[];
+};
+
+export type CustomerCatalogDownloadGroup = {
+  id: string;
+  slug: string;
+  label: string;
+  products: CustomerCatalogDownloadProduct[];
+};
+
+export type CustomerCatalogDownloadData = {
+  brand: { id: string; name: string };
+  productCount: number;
+  skuCount: number;
+  groups: CustomerCatalogDownloadGroup[];
+};
 
 export type CustomerCatalogPriceStatus = "all" | "priced" | "consult";
 
@@ -48,6 +79,10 @@ export function catalogWholesaleLabel(wholesalePackage: string | null | undefine
   if (!hasCatalogWholesalePrice(normalized)) return CATALOG_WHOLESALE_CONSULT_TEXT;
 
   return normalized.replace(/^caixa\s+com\s+/i, "Embalagem fechada com ");
+}
+
+export function catalogStockLabel(inStock: boolean) {
+  return inStock ? CATALOG_STOCK_AVAILABLE_TEXT : CATALOG_STOCK_CHECK_TEXT;
 }
 
 export function catalogSkuRows(input: {
@@ -97,24 +132,17 @@ export function catalogUnitPriceLabel(productPriceCents: number, skus: CustomerC
   return minimum === maximum ? money(minimum) : `${money(minimum)} a ${money(maximum)}`;
 }
 
-function fileSafeSlug(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
+export function customerCatalogBrandFileName(brandName: string) {
+  const normalized = brandName
+    .trim()
+    .replace(/[<>:"/\\|?*\u0000-\u001f]+/g, " - ")
+    .replace(/\s+/g, " ")
+    .replace(/[. ]+$/g, "")
+    .slice(0, 80);
+
+  return normalized || "RosaGiro";
 }
 
-export function customerCatalogDocumentTitle(brandName: string, categoryLabel?: string | null, date = new Date()) {
-  const dateLabel = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(date);
-  const parts = ["RosaGiro", "catalogo", fileSafeSlug(brandName) || "marca"];
-  if (categoryLabel) parts.push(fileSafeSlug(categoryLabel) || "categoria");
-  parts.push(dateLabel);
-  return parts.join("-");
+export function customerCatalogDocumentTitle(brandName: string) {
+  return customerCatalogBrandFileName(brandName);
 }

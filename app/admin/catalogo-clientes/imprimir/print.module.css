@@ -260,8 +260,8 @@
 .categoryColumn { width: 10%; }
 .modelColumn { width: 17%; }
 .unitColumn { width: 10%; }
-.wholesaleColumn { width: 21%; }
-.quantityColumn { width: 8%; }
+.wholesaleColumn { width: 19%; }
+.stockColumn { width: 10%; }
 
 .catalogTable th,
 .catalogTable td {
@@ -357,17 +357,29 @@
   font-weight: 700;
 }
 
-.quantityCell {
+.stockCell {
   text-align: center;
 }
 
-.quantityCell span {
-  display: inline-block;
-  width: 42px;
-  height: 26px;
-  border: 1px solid #3f7f5c;
+.stockCell span {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border: 1px solid #b9ddcc;
   border-radius: 4px;
-  background: #fff;
+  background: #edf8f2;
+  color: #216343;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.stockCheck span {
+  border-color: #efd6b7;
+  background: #fff7ed;
+  color: #9a5a12;
 }
 
 .emptyDocument {
@@ -539,9 +551,10 @@
     margin-right: 4px;
   }
 
-  .quantityCell span {
-    width: 11mm;
-    height: 7mm;
+  .stockCell span {
+    min-height: 7mm;
+    padding: 1mm;
+    font-size: 6pt;
   }
 
   .documentFooter {

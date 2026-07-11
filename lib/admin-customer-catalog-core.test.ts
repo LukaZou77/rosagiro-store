@@ -3,8 +3,10 @@ import test from "node:test";
 import {
   CATALOG_WHOLESALE_CONSULT_TEXT,
   catalogSkuRows,
+  catalogStockLabel,
   catalogUnitPriceLabel,
   catalogWholesaleLabel,
+  customerCatalogBrandFileName,
   customerCatalogDocumentTitle,
   hasCatalogWholesalePrice,
   normalizeCatalogPage,
@@ -27,6 +29,11 @@ test("keeps real wholesale-package pricing and uses consultation text when it is
   assert.equal(hasCatalogWholesalePrice("Consulte pelo WhatsApp"), false);
   assert.equal(catalogWholesaleLabel("Consulte pelo WhatsApp"), CATALOG_WHOLESALE_CONSULT_TEXT);
   assert.equal(catalogWholesaleLabel(null), CATALOG_WHOLESALE_CONSULT_TEXT);
+});
+
+test("uses truthful stock labels without exposing a quantity field", () => {
+  assert.equal(catalogStockLabel(true), "Estoque disponível");
+  assert.equal(catalogStockLabel(false), "Consulte disponibilidade");
 });
 
 test("groups unique SKU models and falls back to the public product image", () => {
@@ -64,10 +71,7 @@ test("shows a future SKU price range without changing current equal-price produc
   );
 });
 
-test("builds a stable PDF filename using the Sao Paulo calendar date", () => {
-  const lateUtc = new Date("2026-07-12T01:30:00.000Z");
-  assert.equal(
-    customerCatalogDocumentTitle("Ruby Rose", "Olhos e Sobrancelhas", lateUtc),
-    "RosaGiro-catalogo-ruby-rose-olhos-e-sobrancelhas-2026-07-11"
-  );
+test("uses only the safe brand name for PDF files", () => {
+  assert.equal(customerCatalogDocumentTitle("Ruby Rose"), "Ruby Rose");
+  assert.equal(customerCatalogBrandFileName('  Marca / Especial: 01  '), "Marca - Especial - 01");
 });
