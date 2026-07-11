@@ -188,6 +188,7 @@ export function AdminCatalogBulkDownload({
         const data = await getCustomerCatalogBrandDownloadData(brand.id);
         const sources = collectCustomerCatalogImageSources(data, headerImage);
         const loaded = await loadImages(sources, headerImage, (completed, total) => {
+          if (completed !== total && completed % 8 !== 0) return;
           const brandPercent = total ? (completed / total) * (90 / brands.length) : 0;
           setProgress(Math.min(90, Math.round(basePercent + brandPercent)));
           setStatus(`${index + 1}/${brands.length} · ${brand.name} · imagens ${completed}/${total}`);
@@ -232,7 +233,8 @@ export function AdminCatalogBulkDownload({
   }
 
   return (
-    <div className={styles.wrapper}>
+    // Browser translation rewrites text nodes and can break rapid React progress updates.
+    <div className={`${styles.wrapper} notranslate`} translate="no">
       <button className={`button secondary ${styles.button}`} type="button" onClick={handleDownload} disabled={running}>
         {running ? <LoaderCircle className="admin-spin" size={17} /> : <Archive size={17} />}
         {running ? "Gerando catálogos..." : "Baixar todas as marcas"}
