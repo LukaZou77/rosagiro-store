@@ -125,7 +125,6 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   };
 
   const totalProducts = await prisma.product.count({ where });
-  const trashCount = await prisma.product.count({ where: { deletedAt: { not: null } } });
   const activeCount = await prisma.product.count({ where: { AND: [where, { active: true }] } });
   const inStockCount = await prisma.product.count({ where: { AND: [where, { inventory: { quantity: { gt: 0 } } }] } });
   const outOfStockCount = await prisma.product.count({
@@ -180,18 +179,6 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         <div className="admin-actions">
           <Link className="button primary" href="/admin/produtos/novo">
             Novo produto
-          </Link>
-          <Link className="button secondary" href="/admin/produtos/qualidade">
-            Ver qualidade
-          </Link>
-          <Link className="button secondary" href="/admin/produtos/lixeira">
-            Lixeira {trashCount ? `(${trashCount})` : ""}
-          </Link>
-          <Link className="button secondary" href="/admin/importar-produtos">
-            Importar / modelos
-          </Link>
-          <Link className="button secondary" href="/admin/produtos/exportar" prefetch={false}>
-            Exportar CSV
           </Link>
         </div>
       </div>

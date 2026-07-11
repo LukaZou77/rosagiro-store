@@ -58,14 +58,6 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
           Veja quais fichas ainda usam imagem de protótipo, galeria curta, peso não informado ou conteúdo que precisa ser
           confirmado antes de publicar a loja.
         </p>
-        <div className="admin-actions">
-          <Link className="button secondary" href="/admin/produtos">
-            Voltar para produtos
-          </Link>
-          <Link className="button secondary" href="/admin/importar-produtos">
-            Importar CSV
-          </Link>
-        </div>
       </div>
 
       <div className="metric-grid compact quality-metrics">

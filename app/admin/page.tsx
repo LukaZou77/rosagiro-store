@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, Eye, PackageX, ReceiptText, ShoppingBag, Users } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CheckCircle2, Eye, PackageX, ReceiptText, ShoppingBag, Users } from "lucide-react";
 import { AdminDashboardCharts } from "@/components/AdminDashboardCharts";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
@@ -51,6 +51,10 @@ export default async function AdminPage({ searchParams }: PageProps) {
     getLaunchReadinessSnapshot(),
     getPaymentDiagnosticSnapshot()
   ]);
+  const hasOperationalTasks =
+    dashboard.operations.pendingOrders > 0 ||
+    dashboard.operations.outOfStockCount > 0 ||
+    launchSnapshot.actionRequiredCount > 0;
 
   return (
     <AdminShell adminName={admin.name}>
@@ -116,21 +120,33 @@ export default async function AdminPage({ searchParams }: PageProps) {
         <section className="admin-panel admin-task-panel">
           <div className="admin-panel-heading"><div><span>Atenção</span><h2>Fila operacional</h2></div></div>
           <div className="admin-task-list">
-            <Link href="/admin/pedidos?status=PENDING_PAYMENT">
-              <span className="is-orange"><ShoppingBag size={18} /></span>
-              <div><strong>{dashboard.operations.pendingOrders} pedidos</strong><small>Aguardando pagamento</small></div>
-              <ArrowUpRight size={16} />
-            </Link>
-            <Link href="/admin/produtos?stock=out">
-              <span className="is-red"><PackageX size={18} /></span>
-              <div><strong>{dashboard.operations.outOfStockCount} produtos</strong><small>Ativos e sem estoque</small></div>
-              <ArrowUpRight size={16} />
-            </Link>
-            <Link href="/admin/prontidao">
-              <span className="is-blue"><ReceiptText size={18} /></span>
-              <div><strong>{launchSnapshot.actionRequiredCount} verificações</strong><small>Ação necessária para venda</small></div>
-              <ArrowUpRight size={16} />
-            </Link>
+            {dashboard.operations.pendingOrders > 0 ? (
+              <Link href="/admin/pedidos?status=PENDING_PAYMENT">
+                <span className="is-orange"><ShoppingBag size={18} /></span>
+                <div><strong>{dashboard.operations.pendingOrders} pedidos</strong><small>Aguardando pagamento</small></div>
+                <ArrowUpRight size={16} />
+              </Link>
+            ) : null}
+            {dashboard.operations.outOfStockCount > 0 ? (
+              <Link href="/admin/produtos?stock=out">
+                <span className="is-red"><PackageX size={18} /></span>
+                <div><strong>{dashboard.operations.outOfStockCount} produtos</strong><small>Ativos e sem estoque</small></div>
+                <ArrowUpRight size={16} />
+              </Link>
+            ) : null}
+            {launchSnapshot.actionRequiredCount > 0 ? (
+              <Link href="/admin/prontidao">
+                <span className="is-blue"><ReceiptText size={18} /></span>
+                <div><strong>{launchSnapshot.actionRequiredCount} alertas</strong><small>Saúde do sistema</small></div>
+                <ArrowUpRight size={16} />
+              </Link>
+            ) : null}
+            {!hasOperationalTasks ? (
+              <div className="admin-task-empty">
+                <span><CheckCircle2 size={18} /></span>
+                <div><strong>Operação em dia</strong><small>Nenhuma ação imediata.</small></div>
+              </div>
+            ) : null}
           </div>
         </section>
       </div>
@@ -179,8 +195,8 @@ export default async function AdminPage({ searchParams }: PageProps) {
       <section className="admin-panel admin-system-strip">
         <div><span>Catálogo</span><strong>{dashboard.operations.productCount} produtos</strong></div>
         <div><span>Mercado Pago</span><strong className={`is-${paymentSnapshot.status.toLowerCase().replace("_", "-")}`}>{paymentSnapshot.statusLabel}</strong></div>
-        <div><span>Prontidão</span><strong>{launchSnapshot.readyCount}/{launchSnapshot.signals.length} verificações</strong></div>
-        <div className="admin-system-actions"><Link href="/admin/pagamentos">Pagamentos</Link><Link href="/admin/prontidao">Prontidão</Link></div>
+        <div><span>Sistema</span><strong>{launchSnapshot.readyCount}/{launchSnapshot.signals.length} verificações</strong></div>
+        <div className="admin-system-actions"><Link href="/admin/pagamentos">Pagamento</Link><Link href="/admin/prontidao">Saúde do sistema</Link></div>
       </section>
 
       {dashboard.operations.outOfStockProducts.length ? (

@@ -63,11 +63,11 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
-        <p className="eyebrow">Prontidão / Launch</p>
-        <h1>Central de lacunas antes da venda real</h1>
+        <p className="eyebrow">Configurações / Sistema</p>
+        <h1>Saúde do sistema</h1>
         <p>
-          Registre o que já foi implementado, mas ainda depende de dado real, credencial, conta externa,
-          fornecedor, política ou revisão operacional antes de publicar a loja.
+          Acompanhe pagamentos, dados da loja e integrações essenciais. O checklist usado no lançamento continua
+          disponível abaixo para consulta e atualização.
         </p>
       </div>
 
@@ -82,7 +82,52 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
         </div>
       ) : null}
 
-      <div className="metric-grid readiness-metrics">
+      <section className="import-panel readiness-auto-checks">
+        <div className="readiness-group-heading">
+          <div>
+            <span>Checks automáticos</span>
+            <h2>Leitura atual do sistema</h2>
+          </div>
+          <strong>
+            {launchSnapshot.readyCount}/{launchSnapshot.signals.length}
+          </strong>
+        </div>
+        <p className="table-note">
+          Estes sinais são calculados a partir de dados do banco e presença de variáveis de ambiente. Eles não alteram
+          os status manuais e nunca exibem valores secretos.
+        </p>
+        <div className="launch-summary-grid">
+          <div>
+            <span>Prontos</span>
+            <strong>{launchSnapshot.readyCount}</strong>
+          </div>
+          <div>
+            <span>Para revisar</span>
+            <strong>{launchSnapshot.warningCount}</strong>
+          </div>
+          <div>
+            <span>Ação necessária</span>
+            <strong>{launchSnapshot.actionRequiredCount}</strong>
+          </div>
+        </div>
+        <div className="readiness-signal-list">
+          {launchSnapshot.signals.map((signal) => (
+            <Link className={`readiness-signal ${signal.status.toLowerCase().replace("_", "-")}`} href={signal.actionHref} key={signal.key}>
+              <span>{launchReadinessSignalLabels[signal.status]}</span>
+              <strong>{signal.label}</strong>
+              <small>{signal.message}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <details className="admin-system-legacy" open={Boolean(saved || error)}>
+        <summary>
+          <span>Checklist operacional legado</span>
+          <small>{active} pendentes ou em andamento</small>
+        </summary>
+        <div className="admin-system-legacy-content">
+          <div className="metric-grid readiness-metrics">
         <div>
           <span>Progresso</span>
           <strong>{completion}%</strong>
@@ -105,12 +150,12 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
           <strong>Interno</strong>
           <small>Esta página não aparece para clientes</small>
         </div>
-      </div>
+          </div>
 
-      <div className="admin-notice">
-        Esta central não lê nem mostra valores de `.env.local`. Use os status para controlar a preparação; mantenha
-        senhas, tokens e chaves fora do código.
-      </div>
+          <div className="admin-notice">
+            Esta central não lê nem mostra valores de `.env.local`. Use os status para controlar a preparação; mantenha
+            senhas, tokens e chaves fora do código.
+          </div>
 
       <section className="import-panel prelaunch-sequence-panel">
         <div className="readiness-group-heading">
@@ -154,45 +199,6 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
               <strong>{gate.label}</strong>
               <p>{gate.detail}</p>
             </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="import-panel readiness-auto-checks">
-        <div className="readiness-group-heading">
-          <div>
-            <span>Checks automáticos</span>
-            <h2>Leitura atual do sistema</h2>
-          </div>
-          <strong>
-            {launchSnapshot.readyCount}/{launchSnapshot.signals.length}
-          </strong>
-        </div>
-        <p className="table-note">
-          Estes sinais são calculados a partir de dados do banco e presença de variáveis de ambiente. Eles não alteram
-          os status manuais abaixo e nunca exibem valores secretos.
-        </p>
-        <div className="launch-summary-grid">
-          <div>
-            <span>Prontos</span>
-            <strong>{launchSnapshot.readyCount}</strong>
-          </div>
-          <div>
-            <span>Para revisar</span>
-            <strong>{launchSnapshot.warningCount}</strong>
-          </div>
-          <div>
-            <span>Ação necessária</span>
-            <strong>{launchSnapshot.actionRequiredCount}</strong>
-          </div>
-        </div>
-        <div className="readiness-signal-list">
-          {launchSnapshot.signals.map((signal) => (
-            <Link className={`readiness-signal ${signal.status.toLowerCase().replace("_", "-")}`} href={signal.actionHref} key={signal.key}>
-              <span>{launchReadinessSignalLabels[signal.status]}</span>
-              <strong>{signal.label}</strong>
-              <small>{signal.message}</small>
-            </Link>
           ))}
         </div>
       </section>
@@ -253,6 +259,8 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
           </section>
         ))}
       </div>
+        </div>
+      </details>
     </AdminShell>
   );
 }

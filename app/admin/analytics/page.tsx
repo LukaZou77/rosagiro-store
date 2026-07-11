@@ -22,18 +22,18 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
-        <p className="eyebrow">Dados</p>
-        <h1>Dados de produtos</h1>
-        <p>Visualizacoes, carrinho e vendas pagas por produto.</p>
+        <p className="eyebrow">Relatórios</p>
+        <h1>Desempenho dos produtos</h1>
+        <p>Visualizações, carrinho e vendas pagas por produto.</p>
       </div>
 
       <form className="filters admin-filters analytics-range-filter" action="/admin/analytics">
         <label>
-          Periodo
+          Período
           <select name="range" defaultValue={range}>
-            <option value="7d">Ultimos 7 dias</option>
-            <option value="30d">Ultimos 30 dias</option>
-            <option value="90d">Ultimos 90 dias</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+            <option value="90d">Últimos 90 dias</option>
           </select>
         </label>
         <button className="button primary" type="submit">
@@ -43,11 +43,11 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
 
       <section className="metric-grid compact">
         <div>
-          <span>Visualizacoes</span>
+          <span>Visualizações</span>
           <strong>{dashboard.totals.views}</strong>
         </div>
         <div>
-          <span>Adicoes ao carrinho</span>
+          <span>Adições ao carrinho</span>
           <strong>{dashboard.totals.addToCartQuantity}</strong>
         </div>
         <div>
@@ -64,7 +64,7 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
         <div className="product-gallery-heading">
           <div>
             <strong>Desempenho por produto</strong>
-            <small>Vendas sao calculadas apenas por pedidos pagos; visualizacoes e carrinho sao eventos anonimos.</small>
+            <small>Vendas são calculadas apenas por pedidos pagos; visualizações e carrinho são eventos anônimos.</small>
           </div>
         </div>
 

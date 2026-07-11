@@ -6,45 +6,37 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
   Bell,
-  BookOpenText,
   Boxes,
-  Building2,
   CheckCheck,
   ChevronRight,
   CircleDollarSign,
-  ClipboardCheck,
-  FolderTree,
-  Gauge,
-  Import,
+  ExternalLink,
   LayoutDashboard,
   LoaderCircle,
   LogOut,
   Menu,
   MessageCircle,
-  PackageSearch,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
-  ShieldCheck,
+  Settings2,
   ShoppingBag,
   Store,
-  Tags,
-  Truck,
   UserRound,
-  Users,
   X
 } from "lucide-react";
 import { logoutAction } from "@/app/admin/actions";
+import { AdminSectionNav, getAdminPageLabel, type AdminModuleKey } from "@/components/AdminSectionNav";
 
 type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+  moduleKey: AdminModuleKey;
+  matchPaths: string[];
+  exact?: boolean;
   badge?: number;
-  external?: boolean;
 };
-
-type NavGroup = { label: string; items: NavItem[] };
 
 export type AdminNotificationItem = {
   id: string;
@@ -72,10 +64,8 @@ const notificationTime = new Intl.DateTimeFormat("pt-BR", {
   minute: "2-digit"
 });
 
-function isActivePath(pathname: string, href: string) {
-  if (href === "/admin") return pathname === href;
-  const pathOnly = href.split("?")[0];
-  return pathname === pathOnly || pathname.startsWith(`${pathOnly}/`);
+function isActivePath(pathname: string, item: NavItem) {
+  return item.matchPaths.some((path) => pathname === path || (!item.exact && pathname.startsWith(`${path}/`)));
 }
 
 function compactMoney(cents: number) {
@@ -110,51 +100,58 @@ export function AdminShellClient({
   const [notifications, setNotifications] = useState(initialNotifications);
   const [unreadCount, setUnreadCount] = useState(initialUnreadNotificationCount);
 
-  const groups = useMemo<NavGroup[]>(
+  const mainItems = useMemo<NavItem[]>(
     () => [
       {
+        href: "/admin",
         label: "Visão geral",
-        items: [
-          { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-          { href: "/admin/analytics", label: "Análises de produtos", icon: BarChart3 }
-        ]
+        icon: LayoutDashboard,
+        moduleKey: "overview",
+        matchPaths: ["/admin"],
+        exact: true
       },
       {
-        label: "Operação",
-        items: [
-          { href: "/admin/pedidos", label: "Pedidos", icon: ShoppingBag },
-          { href: "/admin/produtos", label: "Produtos", icon: Boxes },
-          { href: "/admin/produtos?stock=out", label: "Sem estoque", icon: PackageSearch, badge: outOfStockCount },
-          { href: "/admin/clientes", label: "Clientes", icon: Users },
-          { href: "/admin/frete", label: "Frete", icon: Truck },
-          { href: "/admin/pagamentos", label: "Pagamentos", icon: CircleDollarSign }
-        ]
+        href: "/admin/pedidos",
+        label: "Vendas",
+        icon: ShoppingBag,
+        moduleKey: "sales",
+        matchPaths: ["/admin/pedidos", "/admin/clientes"]
       },
       {
+        href: "/admin/produtos",
         label: "Catálogo",
-        items: [
-          { href: "/admin/marcas", label: "Marcas", icon: Tags },
-          { href: "/admin/categorias", label: "Categorias", icon: FolderTree },
-          { href: "/admin/produtos/qualidade", label: "Qualidade", icon: ClipboardCheck },
-          { href: "/admin/importar-produtos", label: "Importar e exportar", icon: Import },
-          { href: "/admin/produtos/lixeira", label: "Lixeira", icon: ShieldCheck }
-        ]
+        icon: Boxes,
+        moduleKey: "catalog",
+        matchPaths: ["/admin/produtos", "/admin/marcas", "/admin/categorias", "/admin/importar-produtos"],
+        badge: outOfStockCount
       },
       {
-        label: "Conteúdo e loja",
-        items: [
-          { href: "/admin/loja", label: "Dados da loja", icon: Building2 },
-          { href: "/admin/politicas", label: "Políticas", icon: BookOpenText },
-          { href: "/admin/guias", label: "Guias e artigos", icon: Store },
-          { href: "/admin/prontidao", label: "Prontidão", icon: Gauge },
-          { href: "/", label: "Abrir loja", icon: Store, external: true }
+        href: "/admin/analytics",
+        label: "Relatórios",
+        icon: BarChart3,
+        moduleKey: "reports",
+        matchPaths: ["/admin/analytics"]
+      },
+      {
+        href: "/admin/loja",
+        label: "Configurações",
+        icon: Settings2,
+        moduleKey: "settings",
+        matchPaths: [
+          "/admin/loja",
+          "/admin/frete",
+          "/admin/pagamentos",
+          "/admin/politicas",
+          "/admin/prontidao",
+          "/admin/guias"
         ]
       }
     ],
     [outOfStockCount]
   );
 
-  const currentItem = groups.flatMap((group) => group.items).find((item) => isActivePath(pathname, item.href));
+  const currentItem = mainItems.find((item) => isActivePath(pathname, item));
+  const currentPageLabel = getAdminPageLabel(pathname);
   const resultCount = searchResults.products.length + searchResults.orders.length + searchResults.customers.length;
 
   useEffect(() => {
@@ -290,23 +287,35 @@ export function AdminShellClient({
         </div>
 
         <nav className="admin-primary-nav">
-          {groups.map((group) => (
-            <div className="admin-nav-group" key={group.label}>
-              <span className="admin-nav-label">{group.label}</span>
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const active = isActivePath(pathname, item.href);
-                return (
-                  <Link className={`admin-nav-link${active ? " is-active" : ""}`} href={item.href} title={collapsed ? item.label : undefined} target={item.external ? "_blank" : undefined} rel={item.external ? "noreferrer" : undefined} onClick={() => setMobileOpen(false)} key={item.href}>
-                    <Icon size={18} strokeWidth={1.8} /><span>{item.label}</span>{item.badge ? <small>{item.badge}</small> : null}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+          <div className="admin-nav-group">
+            <span className="admin-nav-label">Menu principal</span>
+            {mainItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActivePath(pathname, item);
+              return (
+                <Link
+                  className={`admin-nav-link${active ? " is-active" : ""}`}
+                  href={item.href}
+                  title={collapsed ? item.label : undefined}
+                  aria-current={active ? "page" : undefined}
+                  onClick={() => setMobileOpen(false)}
+                  key={item.href}
+                >
+                  <Icon size={18} strokeWidth={1.8} />
+                  <span>{item.label}</span>
+                  {item.badge ? <small>{item.badge}</small> : null}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         <div className="admin-sidebar-footer">
+          <Link className="admin-sidebar-store-link" href="/" target="_blank" rel="noreferrer" title={collapsed ? "Abrir loja" : undefined}>
+            <Store size={17} />
+            <span>Abrir loja</span>
+            <ExternalLink size={14} />
+          </Link>
           <button className="admin-collapse-button" type="button" aria-label={collapsed ? "Expandir barra lateral" : "Recolher barra lateral"} title={collapsed ? "Expandir barra lateral" : "Recolher barra lateral"} onClick={() => setCollapsed((value) => !value)}>
             {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}<span>{collapsed ? "Expandir" : "Recolher menu"}</span>
           </button>
@@ -317,7 +326,19 @@ export function AdminShellClient({
         <header className="admin-topbar">
           <div className="admin-topbar-leading">
             <button className="admin-icon-button admin-menu-button" type="button" aria-label="Abrir menu" title="Abrir menu" onClick={() => setMobileOpen(true)}><Menu size={20} /></button>
-            <div className="admin-breadcrumb"><span>Admin</span><ChevronRight size={14} /><strong>{currentItem?.label || "Operações"}</strong></div>
+            <div className="admin-breadcrumb">
+              <span>Admin</span>
+              <ChevronRight size={14} />
+              {currentPageLabel ? (
+                <>
+                  <span>{currentItem?.label || "Operações"}</span>
+                  <ChevronRight size={14} />
+                  <strong>{currentPageLabel}</strong>
+                </>
+              ) : (
+                <strong>{currentItem?.label || "Operações"}</strong>
+              )}
+            </div>
           </div>
 
           <div className="admin-topbar-actions">
@@ -335,6 +356,7 @@ export function AdminShellClient({
           </div>
         </header>
 
+        {currentItem ? <AdminSectionNav moduleKey={currentItem.moduleKey} /> : null}
         <div className="admin-page-content">{children}</div>
       </section>
 
