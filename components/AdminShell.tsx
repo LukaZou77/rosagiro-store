@@ -8,30 +8,28 @@ export async function AdminShell({
   children: React.ReactNode;
   adminName: string;
 }) {
-  const [outOfStockCount, notifications, unreadNotificationCount] = await Promise.all([
-    prisma.product.count({
-      where: {
-        active: true,
-        deletedAt: null,
-        OR: [{ inventory: null }, { inventory: { quantity: 0 } }]
-      }
-    }),
-    prisma.adminNotification.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: {
-        id: true,
-        notificationType: true,
-        title: true,
-        message: true,
-        actionHref: true,
-        readAt: true,
-        whatsappStatus: true,
-        createdAt: true
-      }
-    }),
-    prisma.adminNotification.count({ where: { readAt: null } })
-  ]);
+  const outOfStockCount = await prisma.product.count({
+    where: {
+      active: true,
+      deletedAt: null,
+      OR: [{ inventory: null }, { inventory: { quantity: 0 } }]
+    }
+  });
+  const notifications = await prisma.adminNotification.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: {
+      id: true,
+      notificationType: true,
+      title: true,
+      message: true,
+      actionHref: true,
+      readAt: true,
+      whatsappStatus: true,
+      createdAt: true
+    }
+  });
+  const unreadNotificationCount = await prisma.adminNotification.count({ where: { readAt: null } });
 
   return (
     <AdminShellClient

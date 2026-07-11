@@ -17,6 +17,8 @@ type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+const pageSize = 50;
+
 function single(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -26,26 +28,31 @@ function numberParam(value: string | string[] | undefined) {
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
 }
 
+function productPageHref(params: URLSearchParams, page: number) {
+  const next = new URLSearchParams(params);
+  next.set("page", String(page));
+  return `/admin/produtos?${next.toString()}`;
+}
+
 export default async function AdminProductsPage({ searchParams }: PageProps) {
-  const [admin, params, brands, categories, priceProfile] = await Promise.all([
-    requireAdmin(),
-    searchParams,
-    prisma.brand.findMany({ orderBy: { name: "asc" } }),
-    prisma.category.findMany({ orderBy: { label: "asc" } }),
-    prisma.storeProfile.findUnique({
-      where: { id: "main" },
-      select: {
-        priceAdjustmentDirection: true,
-        priceAdjustmentType: true,
-        priceAdjustmentValue: true
-      }
-    })
-  ]);
+  const admin = await requireAdmin();
+  const params = await searchParams;
+  const brands = await prisma.brand.findMany({ orderBy: { name: "asc" } });
+  const categories = await prisma.category.findMany({ orderBy: { label: "asc" } });
+  const priceProfile = await prisma.storeProfile.findUnique({
+    where: { id: "main" },
+    select: {
+      priceAdjustmentDirection: true,
+      priceAdjustmentType: true,
+      priceAdjustmentValue: true
+    }
+  });
   const q = single(params.q)?.trim() || "";
   const brand = single(params.brand) || "all";
   const category = single(params.category) || "all";
   const status = single(params.status) || "all";
   const stock = single(params.stock) || "all";
+  const requestedPage = Math.max(1, numberParam(params.page) || 1);
   const trashed = single(params.trashed);
   const error = single(params.error);
   const priceAdjusted = single(params.priceAdjusted);
@@ -90,39 +97,50 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       : null;
 
   const where: Prisma.ProductWhereInput = {
-    deletedAt: null,
-    brandId: brand !== "all" ? brand : undefined,
-    categoryId: category !== "all" ? category : undefined,
-    active: status === "active" ? true : status === "inactive" ? false : undefined,
-    inventory:
+    AND: [
+      { deletedAt: null },
+      brand !== "all" ? { brandId: brand } : {},
+      category !== "all" ? { categoryId: category } : {},
+      status === "active" ? { active: true } : status === "inactive" ? { active: false } : {},
       stock === "in"
-        ? { quantity: { gt: 0 } }
+        ? { inventory: { quantity: { gt: 0 } } }
         : stock === "out"
-          ? { quantity: 0 }
-          : undefined,
-    OR: q
-      ? [
-          { slug: { contains: q, mode: "insensitive" } },
-          { name: { contains: q, mode: "insensitive" } },
-          { subcategory: { contains: q, mode: "insensitive" } },
-          { brand: { name: { contains: q, mode: "insensitive" } } },
-          { category: { label: { contains: q, mode: "insensitive" } } }
-        ]
-      : undefined
+          ? { OR: [{ inventory: null }, { inventory: { quantity: 0 } }] }
+          : {},
+      q
+        ? {
+            OR: [
+              { slug: { contains: q, mode: "insensitive" } },
+              { name: { contains: q, mode: "insensitive" } },
+              { subcategory: { contains: q, mode: "insensitive" } },
+              { brand: { name: { contains: q, mode: "insensitive" } } },
+              { category: { label: { contains: q, mode: "insensitive" } } },
+              { mpn: { contains: q, mode: "insensitive" } },
+              { gtin: { contains: q, mode: "insensitive" } },
+              { skus: { some: { code: { contains: q, mode: "insensitive" } } } }
+            ]
+          }
+        : {}
+    ]
   };
 
-  const [products, trashCount] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      include: { brand: true, category: true, inventory: true },
-      orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }]
-    }),
-    prisma.product.count({ where: { deletedAt: { not: null } } })
-  ]);
+  const totalProducts = await prisma.product.count({ where });
+  const trashCount = await prisma.product.count({ where: { deletedAt: { not: null } } });
+  const activeCount = await prisma.product.count({ where: { AND: [where, { active: true }] } });
+  const inStockCount = await prisma.product.count({ where: { AND: [where, { inventory: { quantity: { gt: 0 } } }] } });
+  const outOfStockCount = await prisma.product.count({
+    where: { AND: [where, { OR: [{ inventory: null }, { inventory: { quantity: 0 } }] }] }
+  });
+  const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
+  const page = Math.min(requestedPage, totalPages);
+  const products = await prisma.product.findMany({
+    where,
+    include: { brand: true, category: true, inventory: true },
+    orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }],
+    skip: (page - 1) * pageSize,
+    take: pageSize
+  });
 
-  const activeCount = products.filter((product) => product.active).length;
-  const inStockCount = products.filter((product) => (product.inventory?.quantity || 0) > 0).length;
-  const outOfStockCount = products.filter((product) => (product.inventory?.quantity || 0) === 0).length;
   const qualityItems = products.map(evaluateProductQuality);
   const qualityActionCount = qualityItems.filter((item) => item.status === "ACTION_REQUIRED").length;
   const qualityBySlug = new Map(qualityItems.map((item) => [item.slug, item]));
@@ -146,6 +164,12 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       qualityStatusClass: quality ? `quality-${quality.status.toLowerCase().replace("_", "-")}` : null
     };
   });
+  const preserved = new URLSearchParams();
+  if (q) preserved.set("q", q);
+  if (brand !== "all") preserved.set("brand", brand);
+  if (category !== "all") preserved.set("category", category);
+  if (status !== "all") preserved.set("status", status);
+  if (stock !== "all") preserved.set("stock", stock);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -289,7 +313,8 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       <div className="metric-grid compact">
         <div>
           <span>Resultado</span>
-          <strong>{products.length}</strong>
+          <strong>{totalProducts}</strong>
+          <small>Página {page} de {totalPages}</small>
         </div>
         <div>
           <span>Ativos</span>
@@ -304,7 +329,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           <strong>{outOfStockCount}</strong>
         </div>
         <Link href="/admin/produtos/qualidade">
-          <span>Qualidade crítica</span>
+          <span>Críticos nesta página</span>
           <strong>{qualityActionCount}</strong>
         </Link>
       </div>
@@ -377,6 +402,17 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           </div>
         ) : null}
       </div>
+      {totalPages > 1 ? (
+        <nav className="admin-pagination" aria-label="Paginação de produtos">
+          <Link className={page <= 1 ? "is-disabled" : ""} href={productPageHref(preserved, Math.max(1, page - 1))} aria-disabled={page <= 1}>
+            Anterior
+          </Link>
+          <span>Página {page} de {totalPages} · {totalProducts} produtos</span>
+          <Link className={page >= totalPages ? "is-disabled" : ""} href={productPageHref(preserved, Math.min(totalPages, page + 1))} aria-disabled={page >= totalPages}>
+            Próxima
+          </Link>
+        </nav>
+      ) : null}
     </AdminShell>
   );
 }
