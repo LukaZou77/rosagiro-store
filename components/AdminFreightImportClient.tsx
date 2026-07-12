@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { money } from "@/lib/money";
 import type { AnjunImportPreview } from "@/lib/shipping";
+import { useAdminLanguage } from "@/components/AdminLanguageProvider";
 
 type ImportResult = {
   batchId: string;
@@ -11,6 +12,7 @@ type ImportResult = {
 };
 
 export function AdminFreightImportClient() {
+  const { locale, t } = useAdminLanguage();
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<AnjunImportPreview | null>(null);
@@ -19,12 +21,12 @@ export function AdminFreightImportClient() {
   const [busy, setBusy] = useState<"idle" | "preview" | "import">("idle");
 
   async function submitFile(endpoint: string) {
-    if (!file) throw new Error("Escolha a planilha .xlsx antes de continuar.");
+    if (!file) throw new Error(t("Escolha a planilha .xlsx antes de continuar.", "请先选择 .xlsx 表格。"));
     const formData = new FormData();
     formData.append("file", file);
     const response = await fetch(endpoint, { method: "POST", body: formData });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Não foi possível processar a planilha.");
+    if (!response.ok) throw new Error(data.error || t("Não foi possível processar a planilha.", "无法处理表格。"));
     return data;
   }
 
@@ -35,10 +37,10 @@ export function AdminFreightImportClient() {
     try {
       const nextPreview = (await submitFile("/api/admin/frete/preview")) as AnjunImportPreview;
       setPreview(nextPreview);
-      setMessage(nextPreview.canImport ? "Pré-visualização pronta para confirmar." : "Revise os erros antes de importar.");
+      setMessage(nextPreview.canImport ? t("Pré-visualização pronta para confirmar.", "预览完成，可以确认导入。") : t("Revise os erros antes de importar.", "导入前请检查错误。"));
     } catch (error) {
       setPreview(null);
-      setMessage(error instanceof Error ? error.message : "Não foi possível pré-visualizar.");
+      setMessage(error instanceof Error ? error.message : t("Não foi possível pré-visualizar.", "无法生成预览。"));
     } finally {
       setBusy("idle");
     }
@@ -50,10 +52,10 @@ export function AdminFreightImportClient() {
     try {
       const nextResult = (await submitFile("/api/admin/frete/import")) as ImportResult;
       setResult(nextResult);
-      setMessage("Tabela de frete importada e ativada.");
+      setMessage(t("Tabela de frete importada e ativada.", "运费表已导入并启用。"));
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível importar.");
+      setMessage(error instanceof Error ? error.message : t("Não foi possível importar.", "无法导入。"));
     } finally {
       setBusy("idle");
     }
@@ -66,7 +68,7 @@ export function AdminFreightImportClient() {
     <div className="import-workspace">
       <section className="import-panel">
         <label>
-          Planilha Anjun XLSX
+          {t("Planilha Anjun XLSX", "Anjun XLSX 表格")}
           <input
             type="file"
             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -75,47 +77,47 @@ export function AdminFreightImportClient() {
               setFile(nextFile);
               setPreview(null);
               setResult(null);
-              setMessage(nextFile ? "Clique em pré-visualizar para validar D2D Pickup." : "");
+              setMessage(nextFile ? t("Clique em pré-visualizar para validar D2D Pickup.", "点击预览以验证 D2D Pickup 数据。") : "");
             }}
           />
         </label>
         <div className="field-helper">
-          <strong>Serviço</strong>
+          <strong>{t("Serviço", "服务")}</strong>
           <span>D2D Pickup</span>
-          <strong>Origem de cotação</strong>
+          <strong>{t("Origem de cotação", "报价发货地")}</strong>
           <span>SP-São Paulo</span>
-          <strong>Arquivo</strong>
-          <span>{file?.name || "Nenhum arquivo selecionado"}</span>
+          <strong>{t("Arquivo", "文件")}</strong>
+          <span>{file?.name || t("Nenhum arquivo selecionado", "未选择文件")}</span>
         </div>
         <button className="button secondary wide" type="button" disabled={!file || busy !== "idle"} onClick={() => void previewFile()}>
-          {busy === "preview" ? "Lendo planilha..." : "Pre-visualizar tabela"}
+          {busy === "preview" ? t("Lendo planilha...", "正在读取表格……") : t("Pre-visualizar tabela", "预览运费表")}
         </button>
         <button className="button primary wide" type="button" disabled={!canImport} onClick={() => void confirmImport()}>
-          {busy === "import" ? "Importando frete..." : "Confirmar importação"}
+          {busy === "import" ? t("Importando frete...", "正在导入运费……") : t("Confirmar importação", "确认导入")}
         </button>
         <p className="table-note">
-          O arquivo original fica no seu computador. O banco recebe somente linhas estruturadas de CEP, peso e preço.
+          {t("O arquivo original fica no seu computador. O banco recebe somente linhas estruturadas de CEP, peso e preço.", "原始文件保留在本机，数据库只接收结构化的 CEP、重量和价格数据。")}
         </p>
       </section>
 
       <section className="import-panel" aria-live="polite">
         <div className="import-summary">
           <span className={preview?.canImport || result ? "status-chip success" : "status-chip"}>
-            {result ? "Importado" : preview ? (preview.canImport ? "Pronto para importar" : "Com erros") : "Aguardando pré-visualização"}
+            {result ? t("Importado", "已导入") : preview ? (preview.canImport ? t("Pronto para importar", "可以导入") : t("Com erros", "存在错误")) : t("Aguardando pré-visualização", "等待预览")}
           </span>
-          <span>{message || "Envie a planilha para validar linhas, UFs, zonas e preço de amostra."}</span>
+          <span>{message || t("Envie a planilha para validar linhas, UFs, zonas e preço de amostra.", "上传表格后将验证行数、州、区域和示例价格。")}</span>
         </div>
 
         {summary ? (
           <>
             <div className="import-kpis">
               <div>
-                <span>Linhas D2D</span>
-                <strong>{summary.workbookRows.toLocaleString("pt-BR")}</strong>
+                <span>{t("Linhas D2D", "D2D 行数")}</span>
+                <strong>{summary.workbookRows.toLocaleString(locale)}</strong>
               </div>
               <div>
-                <span>Importaveis</span>
-                <strong>{summary.importableRows.toLocaleString("pt-BR")}</strong>
+                <span>{t("Importaveis", "可导入")}</span>
+                <strong>{summary.importableRows.toLocaleString(locale)}</strong>
               </div>
               <div>
                 <span>UFs</span>
@@ -127,26 +129,26 @@ export function AdminFreightImportClient() {
               </div>
             </div>
             <div className="freight-preview-card">
-              <span>Amostra de cotação</span>
+              <span>{t("Amostra de cotação", "报价示例")}</span>
               <strong>CEP {summary.sampleCep}</strong>
               <small>
-                0,1 kg em SP-São Paulo: {summary.sampleRateCents ? money(summary.sampleRateCents) : "sem linha de amostra"}
+                0,1 kg {t("em SP-São Paulo: ", "从 SP-São Paulo 发货：")}{summary.sampleRateCents ? money(summary.sampleRateCents) : t("sem linha de amostra", "无示例费率")}
               </small>
               <small>
-                Origens na planilha: {summary.originCount}. O checkout usa SP-São Paulo nesta primeira versão.
+                {t("Origens na planilha: ", "表格中的发货地数量：")}{summary.originCount}{t(". O checkout usa SP-São Paulo nesta primeira versão.", "。当前结账版本使用 SP-São Paulo 作为发货地。")}
               </small>
             </div>
           </>
         ) : (
           <div className="empty-state">
-            <strong>Importação segura</strong>
-            <p>Primeiro validamos a aba D2D Pickup, depois a confirmação grava uma nova tabela ativa.</p>
+            <strong>{t("Importação segura", "安全导入")}</strong>
+            <p>{t("Primeiro validamos a aba D2D Pickup, depois a confirmação grava uma nova tabela ativa.", "系统会先验证 D2D Pickup 工作表，确认后才写入并启用新的运费表。")}</p>
           </div>
         )}
 
         {preview?.errors.length ? (
           <div className="form-error" role="alert">
-            <strong>Erros encontrados</strong>
+            <strong>{t("Erros encontrados", "发现错误")}</strong>
             <ul>
               {preview.errors.map((error) => (
                 <li key={error}>{error}</li>

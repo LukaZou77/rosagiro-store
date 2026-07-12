@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useAdminLanguage } from "@/components/AdminLanguageProvider";
 
 type PriceAdjustmentJob = {
   id: string;
@@ -37,6 +38,7 @@ function resultUrl(pathname: string, job: PriceAdjustmentJob) {
 }
 
 export function AdminPriceAdjustmentJobProgress({ jobId }: AdminPriceAdjustmentJobProgressProps) {
+  const { t } = useAdminLanguage();
   const router = useRouter();
   const pathname = usePathname();
   const [job, setJob] = useState<PriceAdjustmentJob | null>(null);
@@ -62,7 +64,7 @@ export function AdminPriceAdjustmentJobProgress({ jobId }: AdminPriceAdjustmentJ
       });
       const payload = (await response.json()) as JobResponse;
       if (!response.ok || !payload.job) {
-        throw new Error(payload.error || "Não foi possível processar o ajuste.");
+        throw new Error(payload.error || t("Não foi possível processar o ajuste.", "无法处理价格调整。"));
       }
 
       setJob(payload.job);
@@ -74,17 +76,17 @@ export function AdminPriceAdjustmentJobProgress({ jobId }: AdminPriceAdjustmentJ
       }
       if (payload.job.status === "FAILED") {
         finishedRef.current = true;
-        setError(payload.job.error || "O ajuste foi interrompido.");
+        setError(payload.job.error || t("O ajuste foi interrompido.", "价格调整已中断。"));
         return;
       }
     } catch (caught) {
       finishedRef.current = true;
-      setError(caught instanceof Error ? caught.message : "Não foi possível processar o ajuste.");
+      setError(caught instanceof Error ? caught.message : t("Não foi possível processar o ajuste.", "无法处理价格调整。"));
     } finally {
       processingRef.current = false;
     }
 
-  }, [jobId, pathname, router]);
+  }, [jobId, pathname, router, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,7 +97,7 @@ export function AdminPriceAdjustmentJobProgress({ jobId }: AdminPriceAdjustmentJ
         const payload = (await response.json()) as JobResponse;
         if (cancelled) return;
         if (!response.ok || !payload.job) {
-          throw new Error(payload.error || "Não foi possível carregar o ajuste.");
+          throw new Error(payload.error || t("Não foi possível carregar o ajuste.", "无法加载价格调整任务。"));
         }
 
         setJob(payload.job);
@@ -107,11 +109,11 @@ export function AdminPriceAdjustmentJobProgress({ jobId }: AdminPriceAdjustmentJ
         }
         if (payload.job.status === "FAILED") {
           finishedRef.current = true;
-          setError(payload.job.error || "O ajuste foi interrompido.");
+          setError(payload.job.error || t("O ajuste foi interrompido.", "价格调整已中断。"));
           return;
         }
       } catch (caught) {
-        if (!cancelled) setError(caught instanceof Error ? caught.message : "Não foi possível carregar o ajuste.");
+        if (!cancelled) setError(caught instanceof Error ? caught.message : t("Não foi possível carregar o ajuste.", "无法加载价格调整任务。"));
       }
     }
 
@@ -119,7 +121,7 @@ export function AdminPriceAdjustmentJobProgress({ jobId }: AdminPriceAdjustmentJ
     return () => {
       cancelled = true;
     };
-  }, [jobId, pathname, router]);
+  }, [jobId, pathname, router, t]);
 
   useEffect(() => {
     if (!job || error || finishedRef.current) return undefined;
@@ -135,30 +137,30 @@ export function AdminPriceAdjustmentJobProgress({ jobId }: AdminPriceAdjustmentJ
     <section className={`admin-job-progress ${error ? "warning" : ""}`} aria-live="polite">
       <div className="admin-job-progress-heading">
         <div>
-          <strong>{error ? "Ajuste interrompido" : "Aplicando ajuste global de preços"}</strong>
+          <strong>{error ? t("Ajuste interrompido", "价格调整已中断") : t("Aplicando ajuste global de preços", "正在应用全局价格调整")}</strong>
           <small>
             {error
               ? error
-              : "Pode manter esta tela aberta. Se recarregar, o processamento continua a partir do progresso salvo."}
+              : t("Pode manter esta tela aberta. Se recarregar, o processamento continua a partir do progresso salvo.", "请保持此页面打开；即使刷新，也会从已保存的进度继续处理。")}
           </small>
         </div>
         <span>{percent}%</span>
       </div>
-      <div className="admin-job-progress-bar" aria-label={`Progresso ${percent}%`}>
+      <div className="admin-job-progress-bar" aria-label={t(`Progresso ${percent}%`, `进度 ${percent}%`)}>
         <span style={{ width: `${percent}%` }} />
       </div>
       <div className="admin-job-progress-grid">
         <span>
-          Processados <strong>{job?.processedProducts || 0}</strong> de <strong>{job?.totalProducts || 0}</strong>
+          {t("Processados", "已处理")} <strong>{job?.processedProducts || 0}</strong> / <strong>{job?.totalProducts || 0}</strong>
         </span>
         <span>
-          Produtos alterados <strong>{job?.adjustedProducts || 0}</strong>
+          {t("Produtos alterados", "已调整商品")} <strong>{job?.adjustedProducts || 0}</strong>
         </span>
         <span>
-          SKUs alterados <strong>{job?.adjustedSkus || 0}</strong>
+          {t("SKUs alterados", "已调整 SKU")} <strong>{job?.adjustedSkus || 0}</strong>
         </span>
         <span>
-          Ignorados <strong>{(job?.skippedProducts || 0) + (job?.skippedSkus || 0)}</strong>
+          {t("Ignorados", "已跳过")} <strong>{(job?.skippedProducts || 0) + (job?.skippedSkus || 0)}</strong>
         </span>
       </div>
     </section>

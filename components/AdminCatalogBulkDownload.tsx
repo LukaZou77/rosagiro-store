@@ -10,6 +10,7 @@ import {
   collectCustomerCatalogImageSources
 } from "@/lib/admin-customer-catalog-pdf";
 import styles from "./AdminCatalogBulkDownload.module.css";
+import { useAdminLanguage } from "@/components/AdminLanguageProvider";
 
 type BrandOption = { id: string; name: string };
 
@@ -147,9 +148,10 @@ export function AdminCatalogBulkDownload({
   minimumOrderCents: number;
   whatsapp: string;
 }) {
+  const { t } = useAdminLanguage();
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState("Gera um PDF por marca e reúne tudo em um arquivo ZIP.");
+  const [status, setStatus] = useState("");
   const [failed, setFailed] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
@@ -167,7 +169,7 @@ export function AdminCatalogBulkDownload({
     setDownloadUrl(null);
 
     try {
-      setStatus("Carregando o gerador de PDF...");
+      setStatus(t("Carregando o gerador de PDF...", "正在加载 PDF 生成器……"));
       const [zipModule, pdfMakeModule, pdfFontsModule] = await Promise.all([
         import("jszip"),
         import("pdfmake/build/pdfmake"),
@@ -189,7 +191,7 @@ export function AdminCatalogBulkDownload({
       for (let index = 0; index < brands.length; index += 1) {
         const brand = brands[index];
         const basePercent = (index / brands.length) * 90;
-        setStatus(`${index + 1}/${brands.length} · ${brand.name} · preparando dados`);
+        setStatus(`${index + 1}/${brands.length} · ${brand.name} · ${t("preparando dados", "正在准备数据")}`);
         setProgress(Math.round(basePercent));
         const data = await getCustomerCatalogBrandDownloadData(brand.id);
         const sources = collectCustomerCatalogImageSources(data, headerImage);
@@ -197,10 +199,10 @@ export function AdminCatalogBulkDownload({
           if (completed !== total && completed % 8 !== 0) return;
           const brandPercent = total ? (completed / total) * (90 / brands.length) : 0;
           setProgress(Math.min(90, Math.round(basePercent + brandPercent)));
-          setStatus(`${index + 1}/${brands.length} · ${brand.name} · imagens ${completed}/${total}`);
+          setStatus(`${index + 1}/${brands.length} · ${brand.name} · ${t("imagens", "图片")} ${completed}/${total}`);
         });
         imageFailures += loaded.failed;
-        setStatus(`${index + 1}/${brands.length} · ${brand.name} · gerando PDF`);
+        setStatus(`${index + 1}/${brands.length} · ${brand.name} · ${t("gerando PDF", "正在生成 PDF")}`);
         const definition = buildCustomerCatalogPdfDefinition(data, {
           headerImage,
           imageData: loaded.imageData,
@@ -212,7 +214,7 @@ export function AdminCatalogBulkDownload({
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       }
 
-      setStatus("Compactando os PDFs...");
+      setStatus(t("Compactando os PDFs...", "正在压缩 PDF……"));
       const zipBlob = await zip.generateAsync(
         {
           type: "blob",
@@ -228,12 +230,12 @@ export function AdminCatalogBulkDownload({
       setProgress(100);
       setStatus(
         imageFailures
-          ? `${brands.length} PDFs concluídos. ${imageFailures} imagens indisponíveis foram ignoradas.`
-          : `${brands.length} PDFs prontos. Download iniciado; use o botão abaixo se necessário.`
+          ? t(`${brands.length} PDFs concluídos. ${imageFailures} imagens indisponíveis foram ignoradas.`, `${brands.length} 份 PDF 已完成，${imageFailures} 张无法读取的图片已跳过。`)
+          : t(`${brands.length} PDFs prontos. Download iniciado; use o botão abaixo se necessário.`, `${brands.length} 份 PDF 已生成并开始下载；如有需要可使用下方按钮重新下载。`)
       );
     } catch (error) {
       setFailed(true);
-      setStatus(error instanceof Error ? error.message : "Não foi possível gerar todos os catálogos.");
+      setStatus(error instanceof Error ? error.message : t("Não foi possível gerar todos os catálogos.", "无法生成全部品牌目录。"));
     } finally {
       setRunning(false);
     }
@@ -244,10 +246,10 @@ export function AdminCatalogBulkDownload({
     <div className={`${styles.wrapper} notranslate`} translate="no">
       <button className={`button secondary ${styles.button}`} type="button" onClick={handleDownload} disabled={running}>
         {running ? <LoaderCircle className="admin-spin" size={17} /> : <Archive size={17} />}
-        {running ? "Gerando catálogos..." : "Baixar todas as marcas"}
+        {running ? t("Gerando catálogos...", "正在生成目录……") : t("Baixar todas as marcas", "一键下载全部品牌")}
       </button>
       <div className={`${styles.status}${failed ? ` ${styles.error}` : ""}`} aria-live="polite">
-        <span>{status}</span>
+        <span>{status || t("Gera um PDF por marca e reúne tudo em um arquivo ZIP.", "每个品牌生成一份 PDF，并汇总为一个 ZIP 文件。")}</span>
         {running || progress > 0 ? (
           <span className={styles.progressTrack} aria-hidden="true">
             <span className={styles.progressBar} style={{ width: `${progress}%` }} />
@@ -257,7 +259,7 @@ export function AdminCatalogBulkDownload({
       {downloadUrl && !running ? (
         <a className={`button primary ${styles.button}`} href={downloadUrl} download={BULK_CATALOG_FILE_NAME}>
           <Download size={17} />
-          Baixar ZIP pronto
+          {t("Baixar ZIP pronto", "下载已生成的 ZIP")}
         </a>
       ) : null}
     </div>

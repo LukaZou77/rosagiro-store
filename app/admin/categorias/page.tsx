@@ -8,6 +8,8 @@ import { AdminCategoryDeleteButton } from "@/components/AdminCategoryDeleteButto
 import { AdminShell } from "@/components/AdminShell";
 import { AdminSubcategoryDeleteButton } from "@/components/AdminSubcategoryDeleteButton";
 import { requireAdmin } from "@/lib/auth";
+import { createAdminTranslator } from "@/lib/admin-i18n";
+import { getAdminLocale } from "@/lib/admin-i18n-server";
 import { prisma } from "@/lib/db";
 
 type PageProps = {
@@ -19,7 +21,7 @@ function single(value: string | string[] | undefined) {
 }
 
 export default async function AdminCategoriesPage({ searchParams }: PageProps) {
-  const [admin, params, categories] = await Promise.all([
+  const [admin, params, categories, locale] = await Promise.all([
     requireAdmin(),
     searchParams,
     prisma.category.findMany({
@@ -31,8 +33,10 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
         }
       },
       orderBy: { label: "asc" }
-    })
+    }),
+    getAdminLocale()
   ]);
+  const t = createAdminTranslator(locale);
   const error = single(params.error);
   const saved = single(params.saved);
   const deleted = single(params.deleted);
@@ -42,29 +46,29 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
-        <p className="eyebrow">Categorias</p>
-        <h1>Categorias e prateleiras</h1>
-        <p>Organize as entradas principais de navegação e filtros do catálogo.</p>
+        <p className="eyebrow">{t("Categorias", "品类")}</p>
+        <h1>{t("Categorias e prateleiras", "品类与货架结构")}</h1>
+        <p>{t("Organize as entradas principais de navegação e filtros do catálogo.", "管理商品目录的主导航入口和筛选结构。")}</p>
       </div>
 
       {saved ? (
         <div className="admin-notice success" role="status">
-          Categoria salva com sucesso.
+          {t("Categoria salva com sucesso.", "品类保存成功。")}
         </div>
       ) : null}
       {deleted ? (
         <div className="admin-notice success" role="status">
-          Categoria excluída com sucesso.
+          {t("Categoria excluída com sucesso.", "品类删除成功。")}
         </div>
       ) : null}
       {savedSubcategory ? (
         <div className="admin-notice success" role="status">
-          Subcategoria salva com sucesso.
+          {t("Subcategoria salva com sucesso.", "子品类保存成功。")}
         </div>
       ) : null}
       {deletedSubcategory ? (
         <div className="admin-notice success" role="status">
-          Subcategoria excluída com sucesso.
+          {t("Subcategoria excluída com sucesso.", "子品类删除成功。")}
         </div>
       ) : null}
       {error ? (
@@ -74,31 +78,31 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
       ) : null}
 
       <section className="import-panel">
-        <h2>Nova categoria</h2>
+        <h2>{t("Nova categoria", "新建品类")}</h2>
         <form action={saveCategoryAction} className="admin-product-fields">
           <label>
-            Nome
+            {t("Nome", "品类名称")}
             <input name="label" required />
           </label>
           <label>
-            Nota da categoria
-            <textarea name="note" placeholder="Texto curto para cards e filtros." />
+            {t("Nota da categoria", "品类说明")}
+            <textarea name="note" placeholder={t("Texto curto para cards e filtros.", "用于卡片和筛选的简短说明。") } />
           </label>
           <button className="button primary" type="submit">
-            Criar categoria
+            {t("Criar categoria", "创建品类")}
           </button>
         </form>
       </section>
 
       <section className="import-panel">
-        <h2>Nova subcategoria</h2>
+        <h2>{t("Nova subcategoria", "新建子品类")}</h2>
         <p className="table-note">
-          Use termos naturais do varejo brasileiro, como Base líquida, Batom líquido ou Máscara de cílios.
+          {t("Use termos naturais do varejo brasileiro, como Base líquida, Batom líquido ou Máscara de cílios.", "前台葡语名称请使用巴西零售业自然用词，例如 Base líquida、Batom líquido 或 Máscara de cílios。")}
         </p>
         <form action={saveProductSubcategoryAction} className="admin-product-fields">
           <div className="form-grid">
             <label>
-              Categoria
+              {t("Categoria", "所属品类")}
               <select name="categoryId" required>
                 {categories.map((category) => (
                   <option value={category.id} key={category.id}>
@@ -108,16 +112,16 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
               </select>
             </label>
             <label>
-              Nome da subcategoria
+              {t("Nome da subcategoria", "子品类名称")}
               <input name="label" placeholder="Ex: Batom líquido" required />
             </label>
             <label>
-              Ordem
+              {t("Ordem", "排序")}
               <input name="sortOrder" type="number" min="0" defaultValue="1000" />
             </label>
           </div>
           <button className="button primary" type="submit">
-            Criar subcategoria
+            {t("Criar subcategoria", "创建子品类")}
           </button>
         </form>
       </section>
@@ -130,7 +134,7 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
                 <input type="hidden" name="categoryId" value={category.id} />
               <div className="form-grid">
                 <label>
-                  Nome
+                  {t("Nome", "品类名称")}
                   <input name="label" defaultValue={category.label} required />
                 </label>
                 <label>
@@ -139,16 +143,16 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
                 </label>
               </div>
               <label>
-                Nota da categoria
+                {t("Nota da categoria", "品类说明")}
                 <textarea name="note" defaultValue={category.note} />
               </label>
               <div className="admin-row-meta">
                 <span>{category.slug}</span>
-                <small>{category._count.products} produtos</small>
+                <small>{category._count.products} {t("produtos", "个商品")}</small>
               </div>
               <div className="admin-actions">
                 <button className="button secondary" type="submit">
-                  Salvar categoria
+                  {t("Salvar categoria", "保存品类")}
                 </button>
                 {category._count.products === 0 ? (
                   <AdminCategoryDeleteButton action={deleteCategoryAction} />
@@ -157,35 +161,35 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
                     className="button secondary"
                     type="button"
                     disabled
-                    title="Mova ou remova os produtos antes de excluir."
+                    title={t("Mova ou remova os produtos antes de excluir.", "删除品类前请先移动或删除其商品。")}
                   >
-                    Categoria com produtos
+                    {t("Categoria com produtos", "品类下有商品")}
                   </button>
                 )}
               </div>
               {category._count.products > 0 ? (
-                <p className="form-hint">Esta categoria tem produtos. Mova ou remova os produtos antes de excluir.</p>
+                <p className="form-hint">{t("Esta categoria tem produtos. Mova ou remova os produtos antes de excluir.", "该品类下仍有商品，删除前请先移动或删除这些商品。")}</p>
               ) : null}
               </form>
               <div className="subcategory-admin-list">
-                <strong>Subcategorias</strong>
+                <strong>{t("Subcategorias", "子品类")}</strong>
                 {category.subcategories.length ? (
                   category.subcategories.map((subcategory) => (
                     <form action={saveProductSubcategoryAction} className="subcategory-admin-row" key={subcategory.id}>
                       <input type="hidden" name="subcategoryId" value={subcategory.id} />
                       <input type="hidden" name="categoryId" value={category.id} />
                       <label>
-                        Nome
+                        {t("Nome", "名称")}
                         <input name="label" defaultValue={subcategory.label} required />
                       </label>
                       <label>
-                        Ordem
+                        {t("Ordem", "排序")}
                         <input name="sortOrder" type="number" min="0" defaultValue={subcategory.sortOrder} />
                       </label>
-                      <span>{subcategory._count.products} produtos</span>
+                      <span>{subcategory._count.products} {t("produtos", "个商品")}</span>
                       <div className="admin-actions">
                         <button className="button secondary" type="submit">
-                          Salvar subcategoria
+                          {t("Salvar subcategoria", "保存子品类")}
                         </button>
                         {subcategory._count.products === 0 ? (
                           <AdminSubcategoryDeleteButton action={deleteProductSubcategoryAction} />
@@ -194,16 +198,16 @@ export default async function AdminCategoriesPage({ searchParams }: PageProps) {
                             className="button secondary"
                             type="button"
                             disabled
-                            title="Ajuste os produtos antes de excluir."
+                            title={t("Ajuste os produtos antes de excluir.", "删除前请先调整关联商品。")}
                           >
-                            Subcategoria com produtos
+                            {t("Subcategoria com produtos", "子品类下有商品")}
                           </button>
                         )}
                       </div>
                     </form>
                   ))
                 ) : (
-                  <p className="form-hint">Nenhuma subcategoria cadastrada para esta categoria.</p>
+                  <p className="form-hint">{t("Nenhuma subcategoria cadastrada para esta categoria.", "该品类尚未创建子品类。")}</p>
                 )}
               </div>
             </div>

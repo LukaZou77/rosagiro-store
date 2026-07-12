@@ -1711,6 +1711,68 @@
   .admin-pagination span { padding-inline: 8px; }
 }
 
+/* Administrator-only language control. */
+.admin-language-switch {
+  display: inline-flex;
+  min-height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--admin-border, #e4dfdb);
+  border-radius: 4px;
+  background: #fffefc;
+  color: var(--admin-muted, #746d69);
+}
+
+.admin-language-switch > svg {
+  margin: 0 3px 0 4px;
+}
+
+.admin-language-switch button {
+  min-width: 34px;
+  min-height: 26px;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.admin-language-switch button.is-active {
+  background: var(--admin-primary, #982f50);
+  color: #fff;
+}
+
+.admin-language-switch.is-pending {
+  opacity: 0.72;
+}
+
+.admin-language-switch.is-compact {
+  min-height: 34px;
+}
+
+.admin-login-card > .admin-login-language {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px -4px 0 0;
+}
+
+[data-admin-locale="zh-CN"] .admin-app,
+[data-admin-locale="zh-CN"] .admin-login-screen {
+  font-family: "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", "Segoe UI", Arial, sans-serif;
+}
+
+@media (max-width: 620px) {
+  .admin-topbar .admin-language-switch > svg { display: none; }
+  .admin-topbar .admin-language-switch { gap: 0; padding: 3px; }
+  .admin-topbar .admin-language-switch button { min-width: 29px; padding-inline: 5px; }
+}
+
 /* RosaGiro operations system: contemporary commerce direction */
 .admin-app {
   --admin-bg: #f7f5f2;

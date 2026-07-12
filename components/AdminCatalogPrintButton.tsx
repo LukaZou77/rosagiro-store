@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { LoaderCircle, Printer } from "lucide-react";
+import { useAdminLanguage } from "@/components/AdminLanguageProvider";
 
 function waitForImage(image: HTMLImageElement) {
   if (image.complete) return Promise.resolve();
@@ -28,6 +29,7 @@ export function AdminCatalogPrintButton({
   className?: string;
   statusClassName?: string;
 }) {
+  const { t } = useAdminLanguage();
   const [preparing, setPreparing] = useState(false);
 
   useEffect(() => {
@@ -53,10 +55,10 @@ export function AdminCatalogPrintButton({
     <div>
       <button className={className} type="button" onClick={handlePrint} disabled={preparing}>
         {preparing ? <LoaderCircle size={17} /> : <Printer size={17} />}
-        {preparing ? "Preparando imagens..." : "Imprimir / salvar em PDF"}
+        {preparing ? t("Preparando imagens...", "正在准备图片……") : t("Imprimir / salvar em PDF", "打印 / 保存为 PDF")}
       </button>
       <span className={statusClassName} aria-live="polite">
-        {preparing ? "A impressão abrirá assim que as imagens estiverem prontas." : ""}
+        {preparing ? t("A impressão abrirá assim que as imagens estiverem prontas.", "图片准备完成后将自动打开打印窗口。") : ""}
       </span>
     </div>
   );

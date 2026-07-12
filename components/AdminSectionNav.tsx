@@ -3,23 +3,28 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
+import { useAdminLanguage } from "@/components/AdminLanguageProvider";
+import type { AdminLocale } from "@/lib/admin-i18n";
 
 export type AdminModuleKey = "overview" | "sales" | "catalog" | "reports" | "settings";
 
 type SectionLink = {
   href: string;
   label: string;
+  labelZh: string;
   matchPrefixes?: string[];
   excludePrefixes?: string[];
 };
 
 type SectionMenu = {
   label: string;
+  labelZh: string;
   items: SectionLink[];
 };
 
 type SectionConfig = {
   label: string;
+  labelZh: string;
   links: SectionLink[];
   menus?: SectionMenu[];
 };
@@ -27,51 +32,60 @@ type SectionConfig = {
 const sectionConfigs: Partial<Record<AdminModuleKey, SectionConfig>> = {
   sales: {
     label: "Vendas",
+    labelZh: "销售",
     links: [
-      { href: "/admin/pedidos", label: "Pedidos", matchPrefixes: ["/admin/pedidos"] },
-      { href: "/admin/clientes", label: "Clientes", matchPrefixes: ["/admin/clientes"] },
-      { href: "/admin/leads", label: "Leads", matchPrefixes: ["/admin/leads"] }
+      { href: "/admin/pedidos", label: "Pedidos", labelZh: "订单", matchPrefixes: ["/admin/pedidos"] },
+      { href: "/admin/clientes", label: "Clientes", labelZh: "客户", matchPrefixes: ["/admin/clientes"] },
+      { href: "/admin/leads", label: "Leads", labelZh: "WhatsApp 询盘", matchPrefixes: ["/admin/leads"] }
     ]
   },
   catalog: {
     label: "Catálogo",
+    labelZh: "商品目录",
     links: [
       {
         href: "/admin/produtos",
         label: "Produtos",
+        labelZh: "商品",
         matchPrefixes: ["/admin/produtos"],
         excludePrefixes: ["/admin/produtos/qualidade", "/admin/produtos/lixeira"]
       },
       {
         href: "/admin/produtos/qualidade",
         label: "Qualidade",
+        labelZh: "质量检查",
         matchPrefixes: ["/admin/produtos/qualidade"]
       }
     ],
     menus: [
       {
         label: "Estrutura",
+        labelZh: "目录管理",
         items: [
-          { href: "/admin/marcas", label: "Marcas", matchPrefixes: ["/admin/marcas"] },
-          { href: "/admin/categorias", label: "Categorias", matchPrefixes: ["/admin/categorias"] }
+          { href: "/admin/marcas", label: "Marcas", labelZh: "品牌", matchPrefixes: ["/admin/marcas"] },
+          { href: "/admin/categorias", label: "Categorias", labelZh: "品类", matchPrefixes: ["/admin/categorias"] }
         ]
       },
       {
         label: "Ferramentas",
+        labelZh: "更多工具",
         items: [
           {
             href: "/admin/catalogo-clientes",
             label: "Catálogo para clientes",
+            labelZh: "客户货盘目录",
             matchPrefixes: ["/admin/catalogo-clientes"]
           },
           {
             href: "/admin/importar-produtos",
             label: "Importar e exportar",
+            labelZh: "导入与导出",
             matchPrefixes: ["/admin/importar-produtos"]
           },
           {
             href: "/admin/produtos/lixeira",
             label: "Lixeira",
+            labelZh: "回收站",
             matchPrefixes: ["/admin/produtos/lixeira"]
           }
         ]
@@ -80,39 +94,40 @@ const sectionConfigs: Partial<Record<AdminModuleKey, SectionConfig>> = {
   },
   settings: {
     label: "Configurações",
+    labelZh: "设置",
     links: [
-      { href: "/admin/loja", label: "Loja", matchPrefixes: ["/admin/loja"] },
-      { href: "/admin/frete", label: "Frete", matchPrefixes: ["/admin/frete"] },
-      { href: "/admin/pagamentos", label: "Pagamentos", matchPrefixes: ["/admin/pagamentos"] },
-      { href: "/admin/politicas", label: "Políticas", matchPrefixes: ["/admin/politicas"] },
-      { href: "/admin/prontidao", label: "Sistema", matchPrefixes: ["/admin/prontidao"] },
-      { href: "/admin/guias", label: "Conteúdo", matchPrefixes: ["/admin/guias"] }
+      { href: "/admin/loja", label: "Loja", labelZh: "店铺资料", matchPrefixes: ["/admin/loja"] },
+      { href: "/admin/frete", label: "Frete", labelZh: "运费", matchPrefixes: ["/admin/frete"] },
+      { href: "/admin/pagamentos", label: "Pagamentos", labelZh: "支付", matchPrefixes: ["/admin/pagamentos"] },
+      { href: "/admin/politicas", label: "Políticas", labelZh: "政策", matchPrefixes: ["/admin/politicas"] },
+      { href: "/admin/prontidao", label: "Sistema", labelZh: "系统状态", matchPrefixes: ["/admin/prontidao"] },
+      { href: "/admin/guias", label: "Conteúdo", labelZh: "内容", matchPrefixes: ["/admin/guias"] }
     ]
   }
 };
 
-const pageLabels: Array<{ prefix: string; label: string }> = [
-  { prefix: "/admin/catalogo-clientes/imprimir", label: "Imprimir catálogo" },
-  { prefix: "/admin/catalogo-clientes", label: "Catálogo para clientes" },
-  { prefix: "/admin/produtos/qualidade", label: "Qualidade" },
-  { prefix: "/admin/produtos/lixeira", label: "Lixeira" },
-  { prefix: "/admin/produtos/novo", label: "Novo produto" },
-  { prefix: "/admin/produtos/", label: "Editar produto" },
-  { prefix: "/admin/produtos", label: "Produtos" },
-  { prefix: "/admin/importar-produtos", label: "Importar e exportar" },
-  { prefix: "/admin/marcas", label: "Marcas" },
-  { prefix: "/admin/categorias", label: "Categorias" },
-  { prefix: "/admin/pedidos/", label: "Detalhes do pedido" },
-  { prefix: "/admin/pedidos", label: "Pedidos" },
-  { prefix: "/admin/clientes", label: "Clientes" },
-  { prefix: "/admin/leads", label: "Leads do WhatsApp" },
-  { prefix: "/admin/analytics", label: "Relatórios" },
-  { prefix: "/admin/loja", label: "Loja" },
-  { prefix: "/admin/frete", label: "Frete" },
-  { prefix: "/admin/pagamentos", label: "Pagamentos" },
-  { prefix: "/admin/politicas", label: "Políticas" },
-  { prefix: "/admin/prontidao", label: "Sistema" },
-  { prefix: "/admin/guias", label: "Conteúdo" }
+const pageLabels: Array<{ prefix: string; label: string; labelZh: string }> = [
+  { prefix: "/admin/catalogo-clientes/imprimir", label: "Imprimir catálogo", labelZh: "打印目录" },
+  { prefix: "/admin/catalogo-clientes", label: "Catálogo para clientes", labelZh: "客户货盘目录" },
+  { prefix: "/admin/produtos/qualidade", label: "Qualidade", labelZh: "质量检查" },
+  { prefix: "/admin/produtos/lixeira", label: "Lixeira", labelZh: "回收站" },
+  { prefix: "/admin/produtos/novo", label: "Novo produto", labelZh: "新建商品" },
+  { prefix: "/admin/produtos/", label: "Editar produto", labelZh: "编辑商品" },
+  { prefix: "/admin/produtos", label: "Produtos", labelZh: "商品" },
+  { prefix: "/admin/importar-produtos", label: "Importar e exportar", labelZh: "导入与导出" },
+  { prefix: "/admin/marcas", label: "Marcas", labelZh: "品牌" },
+  { prefix: "/admin/categorias", label: "Categorias", labelZh: "品类" },
+  { prefix: "/admin/pedidos/", label: "Detalhes do pedido", labelZh: "订单详情" },
+  { prefix: "/admin/pedidos", label: "Pedidos", labelZh: "订单" },
+  { prefix: "/admin/clientes", label: "Clientes", labelZh: "客户" },
+  { prefix: "/admin/leads", label: "Leads do WhatsApp", labelZh: "WhatsApp 询盘" },
+  { prefix: "/admin/analytics", label: "Relatórios", labelZh: "经营报表" },
+  { prefix: "/admin/loja", label: "Loja", labelZh: "店铺资料" },
+  { prefix: "/admin/frete", label: "Frete", labelZh: "运费" },
+  { prefix: "/admin/pagamentos", label: "Pagamentos", labelZh: "支付" },
+  { prefix: "/admin/politicas", label: "Políticas", labelZh: "政策" },
+  { prefix: "/admin/prontidao", label: "Sistema", labelZh: "系统状态" },
+  { prefix: "/admin/guias", label: "Conteúdo", labelZh: "内容" }
 ];
 
 function matchesLink(pathname: string, item: SectionLink) {
@@ -121,18 +136,21 @@ function matchesLink(pathname: string, item: SectionLink) {
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-export function getAdminPageLabel(pathname: string) {
-  return pageLabels.find((item) => pathname === item.prefix || pathname.startsWith(item.prefix))?.label || null;
+export function getAdminPageLabel(pathname: string, locale: AdminLocale = "pt-BR") {
+  const item = pageLabels.find((entry) => pathname === entry.prefix || pathname.startsWith(entry.prefix));
+  if (!item) return null;
+  return locale === "zh-CN" ? item.labelZh : item.label;
 }
 
 export function AdminSectionNav({ moduleKey }: { moduleKey: AdminModuleKey }) {
+  const { t } = useAdminLanguage();
   const pathname = usePathname();
   const config = sectionConfigs[moduleKey];
   if (!config) return null;
 
   return (
     <div className="admin-section-nav-shell">
-      <nav className="admin-section-nav" aria-label={`Navegação de ${config.label}`} key={pathname}>
+      <nav className="admin-section-nav" aria-label={t(`Navegação de ${config.label}`, `${config.labelZh}导航`)} key={pathname}>
         <div className="admin-section-tabs">
           {config.links.map((item) => {
             const active = matchesLink(pathname, item);
@@ -144,7 +162,7 @@ export function AdminSectionNav({ moduleKey }: { moduleKey: AdminModuleKey }) {
                 aria-current={active ? "page" : undefined}
                 key={item.href}
               >
-                {item.label}
+                {t(item.label, item.labelZh)}
               </Link>
             );
           })}
@@ -157,7 +175,7 @@ export function AdminSectionNav({ moduleKey }: { moduleKey: AdminModuleKey }) {
               return (
                 <details className={`admin-section-menu${active ? " is-active" : ""}`} key={menu.label}>
                   <summary>
-                    <span>{menu.label}</span>
+                    <span>{t(menu.label, menu.labelZh)}</span>
                     <ChevronDown size={14} />
                   </summary>
                   <div className="admin-section-menu-popover">
@@ -171,7 +189,7 @@ export function AdminSectionNav({ moduleKey }: { moduleKey: AdminModuleKey }) {
                           aria-current={itemActive ? "page" : undefined}
                           key={item.href}
                         >
-                          {item.label}
+                          {t(item.label, item.labelZh)}
                         </Link>
                       );
                     })}

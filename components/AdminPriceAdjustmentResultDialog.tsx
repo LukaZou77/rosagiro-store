@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useAdminLanguage } from "@/components/AdminLanguageProvider";
 
 type AdminPriceAdjustmentResultDialogProps = {
   productCount: number;
@@ -30,14 +31,24 @@ export function AdminPriceAdjustmentResultDialog({
   skippedSkuCount,
   descriptionWarningCount
 }: AdminPriceAdjustmentResultDialogProps) {
+  const { locale, t } = useAdminLanguage();
   const [open, setOpen] = useState(true);
   const titleId = useId();
   const skippedTotal = skippedProductCount + skippedSkuCount;
   const isComplete = skippedTotal === 0 && descriptionWarningCount === 0;
-  const title = isComplete ? "Ajuste concluído em todos os itens." : "Ajuste concluído parcialmente.";
+  const title = isComplete ? t("Ajuste concluído em todos os itens.", "全部商品调整完成。") : t("Ajuste concluído parcialmente.", "价格调整部分完成。") ;
 
   const detailLines = useMemo(
-    () => [
+    () => locale === "zh-CN" ? [
+      `${productCount} 个商品已调整。`,
+      `${skuCount} 个 SKU 已调整。`,
+      skippedTotal > 0
+        ? `${skippedProductCount} 个商品和 ${skippedSkuCount} 个 SKU 因最低价格限制被跳过。`
+        : "没有商品或 SKU 因最低价格限制被跳过。",
+      descriptionWarningCount > 0
+        ? `${descriptionWarningCount} 条自定义描述未被修改。`
+        : "所有符合条件的标准描述均已更新。"
+    ] : [
       `${productCount} ${plural(productCount, "produto alterado", "produtos alterados")}.`,
       `${skuCount} ${plural(skuCount, "SKU alterado", "SKUs alterados")}.`,
       skippedTotal > 0
@@ -55,7 +66,7 @@ export function AdminPriceAdjustmentResultDialog({
           )}.`
         : "Todas as descrições padrão elegíveis foram atualizadas."
     ],
-    [descriptionWarningCount, productCount, skippedProductCount, skippedSkuCount, skippedTotal, skuCount]
+    [descriptionWarningCount, locale, productCount, skippedProductCount, skippedSkuCount, skippedTotal, skuCount]
   );
 
   const closeDialog = useCallback(() => {
@@ -90,7 +101,7 @@ export function AdminPriceAdjustmentResultDialog({
         className={`admin-result-dialog ${isComplete ? "success" : "warning"}`}
         role="dialog"
       >
-        <div className="admin-result-dialog-status">{isComplete ? "Concluído" : "Atenção"}</div>
+        <div className="admin-result-dialog-status">{isComplete ? t("Concluído", "已完成") : t("Atenção", "请注意")}</div>
         <h2 id={titleId}>{title}</h2>
         <ul>
           {detailLines.map((line) => (
@@ -98,7 +109,7 @@ export function AdminPriceAdjustmentResultDialog({
           ))}
         </ul>
         <button className="button primary" onClick={closeDialog} type="button">
-          Entendi
+          {t("Entendi", "知道了")}
         </button>
       </section>
     </div>

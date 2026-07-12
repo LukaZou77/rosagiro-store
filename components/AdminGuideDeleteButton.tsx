@@ -1,8 +1,11 @@
 "use client";
 
+import { useAdminLanguage } from "@/components/AdminLanguageProvider";
+
 type GuideDeleteAction = (formData: FormData) => void | Promise<void>;
 
 export function AdminGuideDeleteButton({ action }: { action: GuideDeleteAction }) {
+  const { t } = useAdminLanguage();
   return (
     <button
       className="button secondary danger"
@@ -10,12 +13,12 @@ export function AdminGuideDeleteButton({ action }: { action: GuideDeleteAction }
       formAction={action}
       formNoValidate
       onClick={(event) => {
-        if (!window.confirm("Excluir este guia? Esta acao nao pode ser desfeita.")) {
+        if (!window.confirm(t("Excluir este guia? Esta acao nao pode ser desfeita.", "删除这篇指南？此操作无法撤销。"))) {
           event.preventDefault();
         }
       }}
     >
-      Excluir guia
+      {t("Excluir guia", "删除指南")}
     </button>
   );
 }

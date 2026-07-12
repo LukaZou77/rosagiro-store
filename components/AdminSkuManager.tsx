@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { INTERNAL_AVAILABLE_STOCK_QUANTITY, stockAvailabilityValue } from "@/lib/product-stock";
 import { formatImportMoney, parseCents } from "@/lib/product-import-shared";
+import { useAdminLanguage } from "@/components/AdminLanguageProvider";
 
 type AdminSkuRow = {
   id?: string;
@@ -22,6 +23,7 @@ type EditableSkuRow = AdminSkuRow & {
 };
 
 export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
+  const { t } = useAdminLanguage();
   const [rows, setRows] = useState<EditableSkuRow[]>(
     skus.map((sku) => ({ ...sku, key: sku.id || `sku-${sku.sortOrder}` }))
   );
@@ -61,8 +63,8 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
     <div className="admin-form-block sku-manager">
       <div className="product-gallery-heading">
         <div>
-          <strong>SKU / variações</strong>
-          <small>Use para cor, tom, modelo ou tamanho. A disponibilidade do produto segue as variações ativas.</small>
+          <strong>{t("SKU / variações", "SKU / 商品规格")}</strong>
+          <small>{t("Use para cor, tom, modelo ou tamanho. A disponibilidade do produto segue as variações ativas.", "用于颜色、色号、型号或尺寸；商品库存状态由启用的规格决定。")}</small>
         </div>
         <span>{visibleRows.length}</span>
       </div>
@@ -80,16 +82,16 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
               <input name="skuRowKey" type="hidden" value={row.key} />
               <input name={`skuId:${row.key}`} type="hidden" value={row.id || ""} />
               <label>
-                Nome da variação
+                {t("Nome da variação", "规格名称")}
                 <input
                   name={`skuName:${row.key}`}
                   onChange={(event) => updateRow(row.key, { name: event.target.value })}
-                  placeholder="Ex: Cor 01, Rosa, 250 ml"
+                  placeholder={t("Ex: Cor 01, Rosa, 250 ml", "例如：01 色、粉色、250 ml")}
                   value={row.name}
                 />
               </label>
               <label>
-                Código SKU
+                {t("Código SKU", "SKU 编码")}
                 <input
                   name={`skuCode:${row.key}`}
                   onChange={(event) => updateRow(row.key, { code: event.target.value })}
@@ -98,37 +100,37 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
                 />
               </label>
               <label>
-                Preço do SKU
+                {t("Preço do SKU", "SKU 单价")}
                 <input
                   defaultValue={formatImportMoney(row.basePriceCents ?? row.priceCents)}
                   inputMode="decimal"
                   name={`skuPrice:${row.key}`}
                   onChange={(event) => updateRow(row.key, { priceCents: parseCents(event.target.value) || null })}
-                  placeholder="Em branco usa o preço principal"
+                  placeholder={t("Em branco usa o preço principal", "留空时使用商品主价格")}
                 />
               </label>
               <label className="sku-image-field">
-                Imagem do SKU
+                {t("Imagem do SKU", "SKU 图片")}
                 <input
                   name={`skuImage:${row.key}`}
                   onChange={(event) => updateRow(row.key, { image: event.target.value })}
-                  placeholder="URL da imagem desta variação"
+                  placeholder={t("URL da imagem desta variação", "该规格图片的 URL")}
                   value={row.image || ""}
                 />
               </label>
               <label>
-                Disponibilidade
+                {t("Disponibilidade", "库存状态")}
                 <select
                   name={`skuQuantity:${row.key}`}
                   onChange={(event) => updateRow(row.key, { quantity: event.target.value === "in" ? INTERNAL_AVAILABLE_STOCK_QUANTITY : 0 })}
                   value={stockAvailabilityValue(row.quantity)}
                 >
-                  <option value="in">Em estoque</option>
-                  <option value="out">Sem estoque</option>
+                  <option value="in">{t("Em estoque", "有货")}</option>
+                  <option value="out">{t("Sem estoque", "缺货")}</option>
                 </select>
               </label>
               <label>
-                Ordem
+                {t("Ordem", "排序")}
                 <input
                   min="0"
                   name={`skuSortOrder:${row.key}`}
@@ -145,27 +147,26 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
                   type="checkbox"
                   value="on"
                 />
-                Ativa
+                {t("Ativa", "启用")}
               </label>
               <button className="button secondary" onClick={() => removeRow(row.key)} type="button">
-                Remover
+                {t("Remover", "移除")}
               </button>
             </div>
           ))
         ) : (
           <div className="empty-state compact">
-            <strong>Sem variações cadastradas</strong>
-            <p>Produtos sem SKU continuam usando a disponibilidade geral. Adicione variações quando houver cor, tom ou modelo.</p>
+            <strong>{t("Sem variações cadastradas", "尚未创建商品规格")}</strong>
+            <p>{t("Produtos sem SKU continuam usando a disponibilidade geral. Adicione variações quando houver cor, tom ou modelo.", "没有 SKU 的商品继续使用总体库存状态；有颜色、色号或型号时再添加规格。")}</p>
           </div>
         )}
       </div>
 
       <button className="button secondary" onClick={addRow} type="button">
-        Adicionar SKU
+        {t("Adicionar SKU", "添加 SKU")}
       </button>
       <p className="table-note">
-        Se houver SKU ativo, o cliente escolherá as variações na página do produto. Preço em branco usa o preço principal;
-        peso segue o produto principal; imagem do SKU troca a foto principal quando cadastrada.
+        {t("Se houver SKU ativo, o cliente escolherá as variações na página do produto. Preço em branco usa o preço principal; peso segue o produto principal; imagem do SKU troca a foto principal quando cadastrada.", "存在启用的 SKU 时，客户将在商品页选择规格。SKU 价格留空时使用商品主价格；重量沿用主商品；填写 SKU 图片后，选中该规格会切换主图。")}
       </p>
     </div>
   );

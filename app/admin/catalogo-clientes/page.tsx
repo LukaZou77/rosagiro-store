@@ -16,6 +16,8 @@ import {
 } from "@/lib/admin-customer-catalog-core";
 import { getCustomerCatalogOptions, getCustomerCatalogPreview } from "@/lib/admin-customer-catalog";
 import { requireAdmin } from "@/lib/auth";
+import { createAdminTranslator } from "@/lib/admin-i18n";
+import { getAdminLocale } from "@/lib/admin-i18n-server";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile } from "@/lib/store-profile";
 import styles from "./catalog.module.css";
@@ -36,7 +38,8 @@ function catalogPageHref(params: URLSearchParams, page: number) {
 }
 
 export default async function AdminCustomerCatalogPage({ searchParams }: PageProps) {
-  const [admin, params] = await Promise.all([requireAdmin(), searchParams]);
+  const [admin, params, locale] = await Promise.all([requireAdmin(), searchParams, getAdminLocale()]);
+  const t = createAdminTranslator(locale);
   const query = normalizeCatalogQuery(params.q);
   const brandId = singleCatalogParam(params.brand) || "all";
   const categoryId = singleCatalogParam(params.category) || "all";
@@ -63,9 +66,9 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
-        <p className="eyebrow">Ferramenta interna</p>
-        <h1>Catálogo para clientes</h1>
-        <p>Filtre o catálogo ativo, revise modelos e gere um PDF por marca para enviar diretamente aos clientes.</p>
+        <p className="eyebrow">{t("Ferramenta interna", "内部工具")}</p>
+        <h1>{t("Catálogo para clientes", "客户货盘目录")}</h1>
+        <p>{t("Filtre o catálogo ativo, revise modelos e gere um PDF por marca para enviar diretamente aos clientes.", "筛选启用商品、核对型号，并按品牌生成可直接发送给客户的葡语 PDF。")}</p>
         <div className="admin-actions">
           <AdminCatalogBulkDownload
             brands={options.brands.map((brand) => ({ id: brand.id, name: brand.name }))}
@@ -76,34 +79,34 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
           {printHref ? (
             <Link className="button primary" href={printHref} prefetch={false} target="_blank" rel="noreferrer">
               <FileDown size={17} />
-              Gerar PDF da marca
+              {t("Gerar PDF da marca", "生成该品牌 PDF")}
             </Link>
           ) : (
-            <span className="button secondary" aria-disabled="true" title="Selecione uma marca para gerar o PDF">
+            <span className="button secondary" aria-disabled="true" title={t("Selecione uma marca para gerar o PDF", "请选择一个品牌后生成 PDF")}>
               <FileDown size={17} />
-              Selecione uma marca
+              {t("Selecione uma marca", "请选择品牌")}
             </span>
           )}
         </div>
       </div>
 
-      <section className={styles.filterPanel} aria-label="Filtros do catálogo para clientes">
+      <section className={styles.filterPanel} aria-label={t("Filtros do catálogo para clientes", "客户目录筛选")}>
         <div className={styles.filterIntro}>
           <PackageSearch size={20} />
           <div>
-            <strong>Monte o arquivo antes de enviar</strong>
-            <span>O PDF sempre usa uma única marca; a categoria e a busca são opcionais.</span>
+            <strong>{t("Monte o arquivo antes de enviar", "发送前先生成目录")}</strong>
+            <span>{t("O PDF sempre usa uma única marca; a categoria e a busca são opcionais.", "每份 PDF 只包含一个品牌；品类和搜索条件为选填。")}</span>
           </div>
         </div>
         <form className="filters admin-filters" action="/admin/catalogo-clientes">
           <label>
-            Buscar produto ou modelo
-            <input name="q" defaultValue={query} placeholder="Nome, código ou SKU" />
+            {t("Buscar produto ou modelo", "搜索商品或型号")}
+            <input name="q" defaultValue={query} placeholder={t("Nome, código ou SKU", "商品名、编码或 SKU")} />
           </label>
           <label>
-            Marca
+            {t("Marca", "品牌")}
             <select name="brand" defaultValue={brandId}>
-              <option value="all">Todas as marcas</option>
+              <option value="all">{t("Todas as marcas", "全部品牌")}</option>
               {options.brands.map((brand) => (
                 <option value={brand.id} key={brand.id}>
                   {brand.name} ({brand._count.products})
@@ -112,9 +115,9 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
             </select>
           </label>
           <label>
-            Categoria
+            {t("Categoria", "品类")}
             <select name="category" defaultValue={categoryId}>
-              <option value="all">Todas as categorias</option>
+              <option value="all">{t("Todas as categorias", "全部品类")}</option>
               {options.categories.map((category) => (
                 <option value={category.id} key={category.id}>
                   {category.label} ({category._count.products})
@@ -123,63 +126,63 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
             </select>
           </label>
           <label>
-            Condição de atacado
+            {t("Condição de atacado", "批发条件")}
             <select name="price" defaultValue={priceStatus}>
-              <option value="all">Todos</option>
-              <option value="priced">Com preço da embalagem fechada</option>
-              <option value="consult">Consultar no WhatsApp</option>
+              <option value="all">{t("Todos", "全部")}</option>
+              <option value="priced">{t("Com preço da embalagem fechada", "已有整件价格")}</option>
+              <option value="consult">{t("Consultar no WhatsApp", "需通过 WhatsApp 咨询")}</option>
             </select>
           </label>
           <button className="button primary" type="submit">
-            Aplicar filtros
+            {t("Aplicar filtros", "应用筛选")}
           </button>
           <Link className="button secondary" href="/admin/catalogo-clientes" prefetch={false}>
-            Limpar
+            {t("Limpar", "清除")}
           </Link>
         </form>
       </section>
 
-      <div className={styles.metrics} aria-label="Resumo dos resultados">
+      <div className={styles.metrics} aria-label={t("Resumo dos resultados", "结果摘要")}>
         <div>
-          <span>Produtos encontrados</span>
+          <span>{t("Produtos encontrados", "找到的商品")}</span>
           <strong>{preview.total}</strong>
-          <small>Página {preview.page} de {preview.totalPages}</small>
+          <small>{t("Página", "第")} {preview.page} {t("de", "页，共")} {preview.totalPages} {locale === "zh-CN" ? "页" : ""}</small>
         </div>
         <div>
-          <span>Modelos / SKU</span>
+          <span>{t("Modelos / SKU", "型号 / SKU")}</span>
           <strong>{preview.skuCount}</strong>
-          <small>Todos os modelos ativos</small>
+          <small>{t("Todos os modelos ativos", "全部启用型号")}</small>
         </div>
         <div>
-          <span>Embalagem fechada</span>
+          <span>{t("Embalagem fechada", "整件包装")}</span>
           <strong>{preview.pricedCount}</strong>
-          <small>Condição pronta para o PDF</small>
+          <small>{t("Condição pronta para o PDF", "批发条件可直接生成 PDF")}</small>
         </div>
         <div>
-          <span>Sob consulta</span>
+          <span>{t("Sob consulta", "需要咨询")}</span>
           <strong>{preview.consultCount}</strong>
-          <small>Sem preço inventado</small>
+          <small>{t("Sem preço inventado", "不会虚构价格")}</small>
         </div>
       </div>
 
       <section className={styles.previewPanel}>
         <div className={styles.previewHeading}>
           <div>
-            <span>Pré-visualização</span>
+            <span>{t("Pré-visualização", "预览")}</span>
             <strong>
-              {selectedBrand?.name || "Todas as marcas"}
+              {selectedBrand?.name || t("Todas as marcas", "全部品牌")}
               {selectedCategory ? ` · ${selectedCategory.label}` : ""}
             </strong>
           </div>
-          <small>50 produtos por página</small>
+          <small>{t("50 produtos por página", "每页 50 个商品")}</small>
         </div>
 
         <div className={styles.columnHeader} aria-hidden="true">
-          <span>Produto</span>
-          <span>Marca / categoria</span>
-          <span>Modelo</span>
-          <span>Unitário</span>
-          <span>Embalagem fechada</span>
+          <span>{t("Produto", "商品")}</span>
+          <span>{t("Marca / categoria", "品牌 / 品类")}</span>
+          <span>{t("Modelo", "型号")}</span>
+          <span>{t("Unitário", "单价")}</span>
+          <span>{t("Embalagem fechada", "整件包装")}</span>
         </div>
 
         <div className={styles.productList}>
@@ -216,7 +219,7 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
                   {visibleCodes.map((sku) => (
                     <code key={sku.id}>{sku.code}</code>
                   ))}
-                  {skus.length > visibleCodes.length ? <small>+{skus.length - visibleCodes.length} variações</small> : null}
+                  {skus.length > visibleCodes.length ? <small>+{skus.length - visibleCodes.length} {t("variações", "个规格")}</small> : null}
                 </div>
                 <strong className={styles.unitPrice} data-label="Unitário">
                   {catalogUnitPriceLabel(product.priceCents, product.skus)}
@@ -233,31 +236,31 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
 
           {!preview.products.length ? (
             <div className={styles.emptyState}>
-              <strong>Nenhum produto encontrado</strong>
-              <p>Limpe a busca ou altere marca, categoria e condição de atacado.</p>
+              <strong>{t("Nenhum produto encontrado", "未找到商品")}</strong>
+              <p>{t("Limpe a busca ou altere marca, categoria e condição de atacado.", "请清除搜索或调整品牌、品类和批发条件。")}</p>
             </div>
           ) : null}
         </div>
       </section>
 
       {preview.totalPages > 1 ? (
-        <nav className="admin-pagination" aria-label="Paginação do catálogo para clientes">
+        <nav className="admin-pagination" aria-label={t("Paginação do catálogo para clientes", "客户目录分页")}>
           <Link
             className={preview.page <= 1 ? "is-disabled" : ""}
             href={catalogPageHref(preserved, Math.max(1, preview.page - 1))}
             prefetch={false}
             aria-disabled={preview.page <= 1}
           >
-            Anterior
+            {t("Anterior", "上一页")}
           </Link>
-          <span>Página {preview.page} de {preview.totalPages} · {preview.total} produtos</span>
+          <span>{t("Página", "第")} {preview.page} {t("de", "页，共")} {preview.totalPages} {locale === "zh-CN" ? `页 · ${preview.total} 个商品` : `· ${preview.total} produtos`}</span>
           <Link
             className={preview.page >= preview.totalPages ? "is-disabled" : ""}
             href={catalogPageHref(preserved, Math.min(preview.totalPages, preview.page + 1))}
             prefetch={false}
             aria-disabled={preview.page >= preview.totalPages}
           >
-            Próxima
+            {t("Próxima", "下一页")}
           </Link>
         </nav>
       ) : null}

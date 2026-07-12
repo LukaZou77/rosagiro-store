@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useAdminLanguage } from "@/components/AdminLanguageProvider";
 
 type AdminSubcategoryOption = {
   id: string;
@@ -22,6 +23,7 @@ export function AdminCategorySubcategorySelect({
   defaultCategoryId?: string | null;
   defaultSubcategoryId?: string | null;
 }) {
+  const { t } = useAdminLanguage();
   const initialCategoryId = defaultCategoryId || categories[0]?.id || "";
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const selectedCategory = useMemo(
@@ -36,9 +38,9 @@ export function AdminCategorySubcategorySelect({
   return (
     <>
       <label>
-        Categoria
+        {t("Categoria", "品类")}
         <select name="categoryId" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} required>
-          {!categories.length ? <option value="">Cadastre uma categoria primeiro</option> : null}
+          {!categories.length ? <option value="">{t("Cadastre uma categoria primeiro", "请先创建品类")}</option> : null}
           {categories.map((category) => (
             <option value={category.id} key={category.id}>
               {category.label}
@@ -47,7 +49,7 @@ export function AdminCategorySubcategorySelect({
         </select>
       </label>
       <label>
-        Subcategoria
+        {t("Subcategoria", "子品类")}
         <select
           key={categoryId}
           name="subcategoryId"
@@ -55,7 +57,7 @@ export function AdminCategorySubcategorySelect({
           required
           disabled={!options.length}
         >
-          {!options.length ? <option value="">Cadastre subcategorias para esta categoria</option> : null}
+          {!options.length ? <option value="">{t("Cadastre subcategorias para esta categoria", "请先为该品类创建子品类")}</option> : null}
           {options.map((option) => (
             <option value={option.id} key={option.id}>
               {option.label}

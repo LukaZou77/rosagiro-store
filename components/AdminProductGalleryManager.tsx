@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PRODUCT_GALLERY_LIMIT } from "@/lib/product-import-shared";
+import { useAdminLanguage } from "@/components/AdminLanguageProvider";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -45,6 +46,7 @@ function updateInputFiles(input: HTMLInputElement | null, images: PendingImage[]
 }
 
 export function AdminProductGalleryManager({ currentImage, gallery, isEdit }: AdminProductGalleryManagerProps) {
+  const { t } = useAdminLanguage();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingImagesRef = useRef<PendingImage[]>([]);
   const [existingImages, setExistingImages] = useState<ExistingImage[]>(() => gallery.map((path) => ({ path, removed: false })));
@@ -92,11 +94,11 @@ export function AdminProductGalleryManager({ currentImage, gallery, isEdit }: Ad
       const key = fileKey(file);
       if (existingKeys.has(key) || accepted.some((image) => image.key === key)) continue;
       if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-        errors.push(`${file.name}: use JPG, PNG ou WebP.`);
+        errors.push(`${file.name}: ${t("use JPG, PNG ou WebP.", "请使用 JPG、PNG 或 WebP。")}`);
         continue;
       }
       if (file.size > MAX_IMAGE_BYTES) {
-        errors.push(`${file.name}: máximo 5MB.`);
+        errors.push(`${file.name}: ${t("máximo 5MB.", "最大 5MB。")}`);
         continue;
       }
       accepted.push({ key, file, previewUrl: URL.createObjectURL(file) });
@@ -106,7 +108,7 @@ export function AdminProductGalleryManager({ currentImage, gallery, isEdit }: Ad
     if (accepted.length > availableSlots) {
       for (const image of accepted.slice(availableSlots)) URL.revokeObjectURL(image.previewUrl);
       accepted.length = Math.max(0, availableSlots);
-      errors.push(`A galeria aceita no máximo ${PRODUCT_GALLERY_LIMIT} imagens.`);
+      errors.push(t(`A galeria aceita no máximo ${PRODUCT_GALLERY_LIMIT} imagens.`, `商品图库最多支持 ${PRODUCT_GALLERY_LIMIT} 张图片。`));
     }
 
     const nextImages = [...pendingImages, ...accepted];
@@ -137,8 +139,8 @@ export function AdminProductGalleryManager({ currentImage, gallery, isEdit }: Ad
     <div className="product-gallery-manager">
       <div className="product-gallery-heading">
         <div>
-          <strong>Galeria do produto</strong>
-          <small>Escolha várias imagens e salve junto com os dados do produto.</small>
+          <strong>{t("Galeria do produto", "商品图库")}</strong>
+          <small>{t("Escolha várias imagens e salve junto com os dados do produto.", "可选择多张图片，并与商品资料一起保存。")}</small>
         </div>
         <span>{activeCount}/{PRODUCT_GALLERY_LIMIT}</span>
       </div>
@@ -165,13 +167,13 @@ export function AdminProductGalleryManager({ currentImage, gallery, isEdit }: Ad
                 disabled={image.removed}
                 onChange={() => setPrimary({ type: "existing", value: image.path })}
               />
-              Principal
+              {t("Principal", "设为主图")}
             </label>
             <label className="checkbox-label compact">
               <input checked={image.removed} type="checkbox" onChange={() => toggleExistingRemoved(image.path)} />
-              Remover
+              {t("Remover", "移除")}
             </label>
-            {image.removed ? <small className="product-gallery-warning">Será removida ao salvar.</small> : null}
+            {image.removed ? <small className="product-gallery-warning">{t("Será removida ao salvar.", "保存后将被删除。")}</small> : null}
           </div>
         ))}
 
@@ -185,25 +187,25 @@ export function AdminProductGalleryManager({ currentImage, gallery, isEdit }: Ad
                 checked={primary.type === "upload" && primary.value === image.key}
                 onChange={() => setPrimary({ type: "upload", value: image.key })}
               />
-              Principal
+              {t("Principal", "设为主图")}
             </label>
             <small>{image.file.name}</small>
             <small>{bytesLabel(image.file.size)}</small>
             <button className="button subtle compact-button" type="button" onClick={() => removePending(image.key)}>
-              Remover
+              {t("Remover", "移除")}
             </button>
           </div>
         ))}
 
         {Array.from({ length: remainingSlots }).map((_, index) => (
           <div className="product-gallery-slot empty" key={`empty-${index}`}>
-            <span>Vazio</span>
+            <span>{t("Vazio", "空位")}</span>
           </div>
         ))}
       </div>
 
       <label className="product-upload-field">
-        Enviar novas imagens
+        {t("Enviar novas imagens", "上传新图片")}
         <input
           ref={fileInputRef}
           name="galleryFiles"
@@ -214,10 +216,9 @@ export function AdminProductGalleryManager({ currentImage, gallery, isEdit }: Ad
         />
       </label>
       <p className="table-note">
-        As imagens escolhidas ainda não foram enviadas. Clique em {isEdit ? "Salvar ficha completa" : "Criar produto"} para salvar
-        imagens e dados juntos.
+        {t("As imagens escolhidas ainda não foram enviadas. Clique em", "所选图片尚未上传。请点击")} {isEdit ? t("Salvar ficha completa", "保存完整商品资料") : t("Criar produto", "创建商品")} {t("para salvar imagens e dados juntos.", "，同时保存图片和商品资料。")}
       </p>
-      <p className="table-note">JPG, PNG ou WebP. Máximo 5MB por imagem. Restam {remainingSlots} vaga(s).</p>
+      <p className="table-note">{t("JPG, PNG ou WebP. Máximo 5MB por imagem. Restam", "支持 JPG、PNG 或 WebP，每张最大 5MB。还剩")} {remainingSlots} {t("vaga(s).", "个空位。")}</p>
       {message ? <p className="form-error">{message}</p> : null}
     </div>
   );
