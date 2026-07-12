@@ -43,7 +43,7 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
         <h1>Dados da loja</h1>
         <p>Edite as informações que aparecem na vitrine, no checkout e na página de confiança da RosaGiro.</p>
         <div className="admin-actions">
-          <Link className="button secondary" href="/informacoes-da-loja">
+          <Link className="button secondary" href="/informacoes-da-loja" prefetch={false}>
             Ver página pública
           </Link>
         </div>

@@ -47,13 +47,15 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
           <h1>Desempenho da operação</h1>
           <p>Audiência, pedidos, receita paga, WhatsApp e produtos em uma única leitura.</p>
         </div>
-        <div className="admin-heading-actions"><Link className="button secondary" href="/admin/leads">Leads</Link><Link className="button primary" href="/admin/pedidos">Pedidos</Link></div>
+        <div className="admin-heading-actions"><Link className="button secondary" href="/admin/leads" prefetch={false}>Leads</Link><Link className="button primary" href="/admin/pedidos" prefetch={false}>Pedidos</Link></div>
       </div>
+
+      {!analytics.available ? <div className="admin-notice warning" role="status">Os relatórios estão temporariamente indisponíveis. Tente novamente em instantes.</div> : null}
 
       <div className="admin-analytics-toolbar">
         <nav className="admin-period-tabs" aria-label="Período do relatório">
           {([['today', 'Hoje'], ['week', 'Semana'], ['month', 'Mês'], ['year', 'Ano']] as const).map(([value, label]) => (
-            <Link className={analytics.period === value ? "is-active" : ""} href={`/admin/analytics?period=${value}&compare=${analytics.comparison}`} key={value}>{label}</Link>
+            <Link className={analytics.period === value ? "is-active" : ""} href={`/admin/analytics?period=${value}&compare=${analytics.comparison}`} prefetch={false} key={value}>{label}</Link>
           ))}
         </nav>
         <form action="/admin/analytics" className="admin-comparison-control">

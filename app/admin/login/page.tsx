@@ -25,7 +25,7 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
           <label>Senha<input name="password" type="password" autoComplete="current-password" required /></label>
           {error ? <div className="admin-login-error" role="alert">E-mail ou senha inválidos.</div> : null}
           <button type="submit">Acessar admin</button>
-          <Link href="/">Voltar para a loja</Link>
+          <Link href="/" prefetch={false}>Voltar para a loja</Link>
         </form>
       </section>
     </main>

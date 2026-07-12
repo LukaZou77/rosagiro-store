@@ -101,10 +101,10 @@ export function AdminProductBulkList({
               </div>
             </div>
             <div className="admin-row-actions">
-              <Link className="button secondary" href={`/produto/${product.slug}`}>
+              <Link className="button secondary" href={`/produto/${product.slug}`} prefetch={false}>
                 Ver loja
               </Link>
-              <Link className="button primary" href={`/admin/produtos/${product.slug}`}>
+              <Link className="button primary" href={`/admin/produtos/${product.slug}`} prefetch={false}>
                 Editar ficha
               </Link>
             </div>

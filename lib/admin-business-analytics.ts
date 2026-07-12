@@ -12,6 +12,7 @@ import {
 } from "@/lib/admin-analytics-core";
 import { prisma } from "@/lib/db-client";
 import { rankProductMetricRows } from "@/lib/admin-product-rankings";
+import { unstable_cache } from "next/cache";
 
 export const BUSINESS_METRIC_KEYS = [
   "visitors",
@@ -187,11 +188,11 @@ async function collectWindowMetrics(start: Date, end: Date): Promise<WindowMetri
 }
 
 async function collectTrendWindow(start: Date, end: Date, bucket: AdminAnalyticsBucket) {
-  if (end <= start) return [];
+  if (end <= start) return { metrics: emptyMetrics(), trend: [] };
   const startEventDate = analyticsEventDate(saoPauloDateKey(start));
   const endEventDate = analyticsEventDate(endDateKey(end, start));
   const usePageViewDetails = bucket === "hour";
-  const [visitorRows, orders, payments, clicks, sessions, leads] = await Promise.all([
+  const [visitorRows, visitorSummaryRows, orders, payments, clicks, sessions, leads] = await Promise.all([
     usePageViewDetails
       ? prisma.sitePageView.findMany({
           where: { occurredAt: { gte: start, lt: end } },
@@ -201,6 +202,12 @@ async function collectTrendWindow(start: Date, end: Date, bucket: AdminAnalytics
           where: { eventDate: { gte: startEventDate, lte: endEventDate } },
           select: { eventDate: true, visitorHash: true, pageViews: true, whatsappClicks: true }
         }),
+    usePageViewDetails
+      ? prisma.analyticsVisitorDay.findMany({
+          where: { eventDate: { gte: startEventDate, lte: endEventDate } },
+          select: { visitorHash: true, pageViews: true, whatsappClicks: true }
+        })
+      : Promise.resolve([]),
     prisma.order.findMany({ where: { createdAt: { gte: start, lt: end } }, select: { createdAt: true, status: true } }),
     prisma.payment.findMany({
       where: { status: "PAID", paidAt: { gte: start, lt: end } },
@@ -215,12 +222,20 @@ async function collectTrendWindow(start: Date, end: Date, bucket: AdminAnalytics
       select: { firstSeenAt: true, sessionHash: true }
     }),
     prisma.whatsAppLead.findMany({
-      where: { qualifiedAt: { gte: start, lt: end } },
+      where: {
+        OR: [
+          { qualifiedAt: { gte: start, lt: end } },
+          { wonAt: { gte: start, lt: end } }
+        ]
+      },
       select: { qualifiedAt: true, wonAt: true }
     })
   ]);
 
   const rows = new Map(bucketKeys(start, end, bucket).map((key) => [key, emptyTrendAccumulator()]));
+  const visitorHashes = new Set<string>();
+  let pageViewTotal = 0;
+  let accumulatedClicks = 0;
 
   if (usePageViewDetails) {
     for (const view of visitorRows as Array<{ occurredAt: Date; visitorHash: string }>) {
@@ -229,6 +244,15 @@ async function collectTrendWindow(start: Date, end: Date, bucket: AdminAnalytics
       row.visitorHashes.add(view.visitorHash);
       row.pageViews += 1;
     }
+    for (const view of visitorSummaryRows) {
+      visitorHashes.add(view.visitorHash);
+      pageViewTotal += view.pageViews;
+      accumulatedClicks += view.whatsappClicks;
+    }
+    if (!visitorSummaryRows.length) {
+      for (const view of visitorRows as Array<{ occurredAt: Date; visitorHash: string }>) visitorHashes.add(view.visitorHash);
+      pageViewTotal = visitorRows.length;
+    }
   } else {
     for (const view of visitorRows as Array<{ eventDate: Date; visitorHash: string; pageViews: number; whatsappClicks: number }>) {
       const row = rows.get(eventDateBucket(view.eventDate, bucket));
@@ -236,6 +260,9 @@ async function collectTrendWindow(start: Date, end: Date, bucket: AdminAnalytics
       row.visitorHashes.add(view.visitorHash);
       row.pageViews += view.pageViews;
       row.whatsappClicks += view.whatsappClicks;
+      visitorHashes.add(view.visitorHash);
+      pageViewTotal += view.pageViews;
+      accumulatedClicks += view.whatsappClicks;
     }
   }
 
@@ -263,13 +290,17 @@ async function collectTrendWindow(start: Date, end: Date, bucket: AdminAnalytics
     row.whatsappSessionHashes.add(session.sessionHash);
   }
   for (const lead of leads) {
-    const row = rows.get(bucketKey(lead.qualifiedAt, bucket));
-    if (!row) continue;
-    row.qualifiedLeads += 1;
-    if (lead.wonAt && lead.wonAt >= start && lead.wonAt < end) row.wonLeads += 1;
+    if (lead.qualifiedAt >= start && lead.qualifiedAt < end) {
+      const row = rows.get(bucketKey(lead.qualifiedAt, bucket));
+      if (row) row.qualifiedLeads += 1;
+    }
+    if (lead.wonAt && lead.wonAt >= start && lead.wonAt < end) {
+      const row = rows.get(bucketKey(lead.wonAt, bucket));
+      if (row) row.wonLeads += 1;
+    }
   }
 
-  return Array.from(rows.entries()).map(([key, row]) => ({
+  const trend = Array.from(rows.entries()).map(([key, row]) => ({
     key,
     label: bucketLabel(key, bucket),
     visitors: row.visitorHashes.size,
@@ -283,6 +314,22 @@ async function collectTrendWindow(start: Date, end: Date, bucket: AdminAnalytics
     qualifiedLeads: row.qualifiedLeads,
     wonLeads: row.wonLeads
   }));
+
+  return {
+    metrics: {
+      visitors: visitorHashes.size,
+      pageViews: pageViewTotal,
+      createdOrders: orders.length,
+      canceledOrders: orders.filter((order) => order.status === "CANCELED").length,
+      paidOrders: payments.length,
+      paidRevenueCents: payments.reduce((sum, payment) => sum + payment.amountCents, 0),
+      whatsappClicks: Math.max(clicks.length, accumulatedClicks),
+      whatsappSessions: new Set(sessions.map((session) => session.sessionHash)).size,
+      qualifiedLeads: leads.filter((lead) => lead.qualifiedAt >= start && lead.qualifiedAt < end).length,
+      wonLeads: leads.filter((lead) => lead.wonAt && lead.wonAt >= start && lead.wonAt < end).length
+    },
+    trend
+  };
 }
 
 const PRODUCT_LEADERBOARD_KEYS: ProductLeaderboardKey[] = [
@@ -397,24 +444,29 @@ function comparisonLabel(comparison: AdminAnalyticsComparison) {
   return comparison === "previous_year" ? "Mesmo periodo do ano anterior" : "Periodo anterior";
 }
 
-export async function getAdminBusinessAnalytics(rawPeriod: unknown, rawComparison: unknown, now = new Date()) {
-  const period = parseAdminAnalyticsPeriod(rawPeriod);
-  const comparison = parseAdminAnalyticsComparison(rawComparison);
+async function calculateAdminBusinessAnalytics(
+  period: AdminAnalyticsPeriod,
+  comparison: AdminAnalyticsComparison,
+  now: Date
+) {
   const window = adminAnalyticsWindow(period, comparison, now);
-  const [current, previous, currentTrend, previousTrend, starts, leaderboards] = await Promise.all([
-    collectWindowMetrics(window.currentStart, window.currentEnd),
-    collectWindowMetrics(window.comparisonStart, window.comparisonEnd),
+  const [currentWindow, previousWindow, starts, leaderboards] = await Promise.all([
     collectTrendWindow(window.currentStart, window.currentEnd, window.bucket),
     collectTrendWindow(window.comparisonStart, window.comparisonEnd, window.bucket),
     metricStartDates(),
     productLeaderboards(window.currentStart, window.currentEnd, window.comparisonStart, window.comparisonEnd)
   ]);
+  const current = currentWindow.metrics;
+  const previous = previousWindow.metrics;
+  const currentTrend = currentWindow.trend;
+  const previousTrend = previousWindow.trend;
 
   const kpis = Object.fromEntries(
     BUSINESS_METRIC_KEYS.map((key) => [key, analyticsChange(current[key], previous[key], Boolean(starts[key] && starts[key]! < window.comparisonEnd))])
   ) as Record<BusinessMetricKey, ReturnType<typeof analyticsChange>>;
 
   return {
+    available: true as const,
     period,
     comparison,
     periodLabel: periodLabel(period),
@@ -438,6 +490,79 @@ export async function getAdminBusinessAnalytics(rawPeriod: unknown, rawCompariso
     },
     leaderboards
   };
+}
+
+function unavailableAdminBusinessAnalytics(
+  period: AdminAnalyticsPeriod,
+  comparison: AdminAnalyticsComparison,
+  now: Date
+) {
+  const window = adminAnalyticsWindow(period, comparison, now);
+  const current = emptyMetrics();
+  const previous = emptyMetrics();
+  const kpis = Object.fromEntries(
+    BUSINESS_METRIC_KEYS.map((key) => [key, analyticsChange(0, 0, false)])
+  ) as Record<BusinessMetricKey, ReturnType<typeof analyticsChange>>;
+  const leaderboards: Awaited<ReturnType<typeof productLeaderboards>> = {
+    views: [],
+    addToCartQuantity: [],
+    orderedUnits: [],
+    orderCount: [],
+    paidUnits: [],
+    paidRevenueCents: []
+  };
+
+  return {
+    available: false as const,
+    period,
+    comparison,
+    periodLabel: periodLabel(period),
+    comparisonLabel: comparisonLabel(comparison),
+    window: {
+      currentStart: window.currentStart.toISOString(),
+      currentEnd: window.currentEnd.toISOString(),
+      comparisonStart: window.comparisonStart.toISOString(),
+      comparisonEnd: window.comparisonEnd.toISOString()
+    },
+    current,
+    previous,
+    kpis,
+    trend: bucketKeys(window.currentStart, window.currentEnd, window.bucket).map((key) => ({
+      key,
+      label: bucketLabel(key, window.bucket),
+      ...emptyMetrics(),
+      previous: null
+    })),
+    funnel: {
+      whatsappClickToLeadRate: null,
+      orderToPaidRate: null
+    },
+    leaderboards
+  };
+}
+
+const getCachedAdminBusinessAnalytics = unstable_cache(
+  async (period: AdminAnalyticsPeriod, comparison: AdminAnalyticsComparison) =>
+    calculateAdminBusinessAnalytics(period, comparison, new Date()),
+  ["admin-business-analytics-v2"],
+  { revalidate: 30 }
+);
+
+export async function getAdminBusinessAnalytics(rawPeriod: unknown, rawComparison: unknown, now?: Date) {
+  const period = parseAdminAnalyticsPeriod(rawPeriod);
+  const comparison = parseAdminAnalyticsComparison(rawComparison);
+  try {
+    return now
+      ? await calculateAdminBusinessAnalytics(period, comparison, now)
+      : await getCachedAdminBusinessAnalytics(period, comparison);
+  } catch (error) {
+    console.error("[admin-analytics] analytics unavailable", {
+      period,
+      comparison,
+      message: error instanceof Error ? error.message : String(error)
+    });
+    return unavailableAdminBusinessAnalytics(period, comparison, now || new Date());
+  }
 }
 
 export async function rebuildAnalyticsPeriodAggregate(

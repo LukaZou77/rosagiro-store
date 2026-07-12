@@ -35,18 +35,19 @@ function productPageHref(params: URLSearchParams, page: number) {
 }
 
 export default async function AdminProductsPage({ searchParams }: PageProps) {
-  const admin = await requireAdmin();
-  const params = await searchParams;
-  const brands = await prisma.brand.findMany({ orderBy: { name: "asc" } });
-  const categories = await prisma.category.findMany({ orderBy: { label: "asc" } });
-  const priceProfile = await prisma.storeProfile.findUnique({
-    where: { id: "main" },
-    select: {
-      priceAdjustmentDirection: true,
-      priceAdjustmentType: true,
-      priceAdjustmentValue: true
-    }
-  });
+  const [admin, params] = await Promise.all([requireAdmin(), searchParams]);
+  const [brands, categories, priceProfile] = await Promise.all([
+    prisma.brand.findMany({ orderBy: { name: "asc" } }),
+    prisma.category.findMany({ orderBy: { label: "asc" } }),
+    prisma.storeProfile.findUnique({
+      where: { id: "main" },
+      select: {
+        priceAdjustmentDirection: true,
+        priceAdjustmentType: true,
+        priceAdjustmentValue: true
+      }
+    })
+  ]);
   const q = single(params.q)?.trim() || "";
   const brand = single(params.brand) || "all";
   const category = single(params.category) || "all";
@@ -125,20 +126,20 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   };
 
   const totalProducts = await prisma.product.count({ where });
-  const activeCount = await prisma.product.count({ where: { AND: [where, { active: true }] } });
-  const inStockCount = await prisma.product.count({ where: { AND: [where, { inventory: { quantity: { gt: 0 } } }] } });
-  const outOfStockCount = await prisma.product.count({
-    where: { AND: [where, { OR: [{ inventory: null }, { inventory: { quantity: 0 } }] }] }
-  });
   const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
   const page = Math.min(requestedPage, totalPages);
-  const products = await prisma.product.findMany({
-    where,
-    include: { brand: true, category: true, inventory: true },
-    orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }],
-    skip: (page - 1) * pageSize,
-    take: pageSize
-  });
+  const [activeCount, inStockCount, outOfStockCount, products] = await Promise.all([
+    prisma.product.count({ where: { AND: [where, { active: true }] } }),
+    prisma.product.count({ where: { AND: [where, { inventory: { quantity: { gt: 0 } } }] } }),
+    prisma.product.count({ where: { AND: [where, { OR: [{ inventory: null }, { inventory: { quantity: 0 } }] }] } }),
+    prisma.product.findMany({
+      where,
+      include: { brand: true, category: true, inventory: true },
+      orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize
+    })
+  ]);
 
   const qualityItems = products.map(evaluateProductQuality);
   const qualityActionCount = qualityItems.filter((item) => item.status === "ACTION_REQUIRED").length;
@@ -177,7 +178,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         <h1>Central de produtos</h1>
         <p>Filtre, revise e abra cada item para editar a ficha completa do catálogo.</p>
         <div className="admin-actions">
-          <Link className="button primary" href="/admin/produtos/novo">
+          <Link className="button primary" href="/admin/produtos/novo" prefetch={false}>
             Novo produto
           </Link>
         </div>
@@ -272,7 +273,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                         {money(example.oldPriceCents)} → {money(example.newPriceCents)} · {example.note}
                       </p>
                     </div>
-                    <Link className="button secondary" href={`/admin/produtos/${example.slug}`}>
+                    <Link className="button secondary" href={`/admin/produtos/${example.slug}`} prefetch={false}>
                       Ver ficha
                     </Link>
                   </div>
@@ -315,7 +316,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           <span>Sem estoque</span>
           <strong>{outOfStockCount}</strong>
         </div>
-        <Link href="/admin/produtos/qualidade">
+        <Link href="/admin/produtos/qualidade" prefetch={false}>
           <span>Críticos nesta página</span>
           <strong>{qualityActionCount}</strong>
         </Link>
@@ -367,7 +368,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         <button className="button primary" type="submit">
           Aplicar
         </button>
-        <Link className="button secondary" href="/admin/produtos">
+        <Link className="button secondary" href="/admin/produtos" prefetch={false}>
           Limpar
         </Link>
       </form>
@@ -379,10 +380,10 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
             <strong>Nenhum produto encontrado</strong>
             <p>Limpe os filtros, importe uma planilha ou cadastre um produto manualmente.</p>
             <div className="admin-actions">
-              <Link className="button primary" href="/admin/produtos/novo">
+              <Link className="button primary" href="/admin/produtos/novo" prefetch={false}>
                 Novo produto
               </Link>
-              <Link className="button secondary" href="/admin/importar-produtos">
+              <Link className="button secondary" href="/admin/importar-produtos" prefetch={false}>
                 Importar CSV
               </Link>
             </div>
@@ -391,11 +392,11 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       </div>
       {totalPages > 1 ? (
         <nav className="admin-pagination" aria-label="Paginação de produtos">
-          <Link className={page <= 1 ? "is-disabled" : ""} href={productPageHref(preserved, Math.max(1, page - 1))} aria-disabled={page <= 1}>
+          <Link className={page <= 1 ? "is-disabled" : ""} href={productPageHref(preserved, Math.max(1, page - 1))} prefetch={false} aria-disabled={page <= 1}>
             Anterior
           </Link>
           <span>Página {page} de {totalPages} · {totalProducts} produtos</span>
-          <Link className={page >= totalPages ? "is-disabled" : ""} href={productPageHref(preserved, Math.min(totalPages, page + 1))} aria-disabled={page >= totalPages}>
+          <Link className={page >= totalPages ? "is-disabled" : ""} href={productPageHref(preserved, Math.min(totalPages, page + 1))} prefetch={false} aria-disabled={page >= totalPages}>
             Próxima
           </Link>
         </nav>

@@ -123,6 +123,7 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
             <Link
               className={`quality-issue ${issue.severity}`}
               href={`/admin/produtos/qualidade?group=${issue.group}`}
+              prefetch={false}
               key={issue.key}
             >
               <span>{productQualityGroupLabels[issue.group]}</span>
@@ -164,7 +165,7 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
         <button className="button primary" type="submit">
           Filtrar
         </button>
-        <Link className="button secondary" href="/admin/produtos/qualidade">
+        <Link className="button secondary" href="/admin/produtos/qualidade" prefetch={false}>
           Limpar
         </Link>
       </form>
@@ -193,10 +194,10 @@ export default async function AdminProductQualityPage({ searchParams }: PageProp
               </div>
             </div>
             <div className="admin-row-actions">
-              <Link className="button secondary" href={`/produto/${item.slug}`}>
+              <Link className="button secondary" href={`/produto/${item.slug}`} prefetch={false}>
                 Ver loja
               </Link>
-              <Link className="button primary" href={`/admin/produtos/${item.slug}`}>
+              <Link className="button primary" href={`/admin/produtos/${item.slug}`} prefetch={false}>
                 Corrigir ficha
               </Link>
             </div>

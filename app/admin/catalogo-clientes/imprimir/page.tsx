@@ -53,7 +53,7 @@ export default async function AdminCustomerCatalogPrintPage({ searchParams }: Pa
   return (
     <main className={styles.shell}>
       <div className={styles.screenToolbar}>
-        <Link href="/admin/catalogo-clientes">
+        <Link href="/admin/catalogo-clientes" prefetch={false}>
           <ArrowLeft size={17} />
           Voltar ao gerador
         </Link>

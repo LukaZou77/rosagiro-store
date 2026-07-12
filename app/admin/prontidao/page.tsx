@@ -112,7 +112,7 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
         </div>
         <div className="readiness-signal-list">
           {launchSnapshot.signals.map((signal) => (
-            <Link className={`readiness-signal ${signal.status.toLowerCase().replace("_", "-")}`} href={signal.actionHref} key={signal.key}>
+            <Link className={`readiness-signal ${signal.status.toLowerCase().replace("_", "-")}`} href={signal.actionHref} prefetch={false} key={signal.key}>
               <span>{launchReadinessSignalLabels[signal.status]}</span>
               <strong>{signal.label}</strong>
               <small>{signal.message}</small>
@@ -177,7 +177,7 @@ export default async function AdminLaunchReadinessPage({ searchParams }: PagePro
                 <h3>{step.title}</h3>
                 <p>{step.summary}</p>
               </div>
-              <Link className="button secondary" href={step.actionHref}>
+              <Link className="button secondary" href={step.actionHref} prefetch={false}>
                 {step.actionLabel}
               </Link>
             </article>

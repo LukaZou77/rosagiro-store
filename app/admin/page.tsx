@@ -7,7 +7,7 @@ import { getAdminBusinessAnalytics, type BusinessMetricKey } from "@/lib/admin-b
 import { requireAdmin } from "@/lib/auth";
 import { getLaunchReadinessSnapshot } from "@/lib/launch-readiness";
 import { money } from "@/lib/money";
-import { getPaymentDiagnosticSnapshot } from "@/lib/payment-diagnostics";
+import { buildPaymentConfigDiagnostics } from "@/lib/payment-diagnostics";
 import { getAdminOperationsDashboard } from "@/lib/site-analytics";
 
 type PageProps = {
@@ -63,12 +63,23 @@ export default async function AdminPage({ searchParams }: PageProps) {
   const [admin, params] = await Promise.all([requireAdmin(), searchParams]);
   const period = single(params.period);
   const compare = single(params.compare);
-  const [analytics, operations, launchSnapshot, paymentSnapshot] = await Promise.all([
+  const paymentSnapshot = buildPaymentConfigDiagnostics();
+  const [analytics, operations, launchSnapshotResult] = await Promise.all([
     getAdminBusinessAnalytics(period, compare),
     getAdminOperationsDashboard(7),
-    getLaunchReadinessSnapshot(),
-    getPaymentDiagnosticSnapshot()
+    getLaunchReadinessSnapshot().catch((error) => {
+      console.error("[admin-dashboard] readiness unavailable", {
+        message: error instanceof Error ? error.message : String(error)
+      });
+      return null;
+    })
   ]);
+  const launchSnapshot = launchSnapshotResult || {
+    actionRequiredCount: 0,
+    readyCount: 0,
+    signals: []
+  };
+  const dashboardPartiallyUnavailable = !analytics.available || !operations.available || !launchSnapshotResult;
   const hasOperationalTasks =
     operations.operations.pendingOrders > 0 ||
     operations.operations.outOfStockCount > 0 ||
@@ -82,13 +93,15 @@ export default async function AdminPage({ searchParams }: PageProps) {
           <h1>Operação de hoje</h1>
           <p>Pedidos, pagamentos, audiência e consultas no horário de São Paulo.</p>
         </div>
-        <div className="admin-heading-actions"><Link className="button secondary" href="/admin/leads">Registrar lead</Link><Link className="button primary" href="/admin/pedidos">Ver pedidos</Link></div>
+        <div className="admin-heading-actions"><Link className="button secondary" href="/admin/leads" prefetch={false}>Registrar lead</Link><Link className="button primary" href="/admin/pedidos" prefetch={false}>Ver pedidos</Link></div>
       </div>
+
+      {dashboardPartiallyUnavailable ? <div className="admin-notice warning" role="status">Alguns indicadores estão temporariamente indisponíveis. Pedidos e demais operações continuam acessíveis.</div> : null}
 
       <div className="admin-analytics-toolbar">
         <nav className="admin-period-tabs" aria-label="Período do dashboard">
           {([['today', 'Hoje'], ['week', 'Semana'], ['month', 'Mês'], ['year', 'Ano']] as const).map(([value, label]) => (
-            <Link className={analytics.period === value ? "is-active" : ""} href={`/admin?period=${value}&compare=${analytics.comparison}`} key={value}>{label}</Link>
+            <Link className={analytics.period === value ? "is-active" : ""} href={`/admin?period=${value}&compare=${analytics.comparison}`} prefetch={false} key={value}>{label}</Link>
           ))}
         </nav>
         <form action="/admin" className="admin-comparison-control">
@@ -114,14 +127,14 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
       <div className="admin-operations-layout">
         <section className="admin-work-surface admin-orders-worklist">
-          <div className="admin-section-heading"><div><span>Comercial</span><h2>Pedidos para tratar</h2></div><Link href="/admin/pedidos">Ver todos</Link></div>
+          <div className="admin-section-heading"><div><span>Comercial</span><h2>Pedidos para tratar</h2></div><Link href="/admin/pedidos" prefetch={false}>Ver todos</Link></div>
           <div className="admin-compact-table-wrap">
             <table className="admin-data-table">
               <thead><tr><th>Pedido</th><th>Cliente</th><th>Status</th><th>Itens</th><th>Total</th></tr></thead>
               <tbody>
                 {operations.operations.recentOrders.map((order) => (
                   <tr key={order.id}>
-                    <td><Link href={`/admin/pedidos/${order.orderNumber}`}>{order.orderNumber}</Link><small>{dateTimeFormatter.format(new Date(order.createdAt))}</small></td>
+                    <td><Link href={`/admin/pedidos/${order.orderNumber}`} prefetch={false}>{order.orderNumber}</Link><small>{dateTimeFormatter.format(new Date(order.createdAt))}</small></td>
                     <td>{order.customerName}</td>
                     <td><span className={`admin-status-dot status-${order.status.toLowerCase()}`}>{orderStatusLabels[order.status]}</span></td>
                     <td>{order._count.items}</td>
@@ -136,10 +149,10 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
         <section className="admin-work-surface admin-attention-list">
           <div className="admin-section-heading"><div><span>Prioridades</span><h2>Precisa de atenção</h2></div></div>
-          {operations.operations.pendingOrders > 0 ? <Link href="/admin/pedidos?status=PENDING_PAYMENT"><span className="is-orange"><ShoppingBag size={18} /></span><div><strong>{operations.operations.pendingOrders} pedidos aguardando</strong><small>Revisar pagamento</small></div><ArrowUpRight size={15} /></Link> : null}
-          {operations.operations.outOfStockCount > 0 ? <Link href="/admin/produtos?stock=out"><span className="is-red"><PackageX size={18} /></span><div><strong>{operations.operations.outOfStockCount} produtos sem estoque</strong><small>Atualizar catálogo</small></div><ArrowUpRight size={15} /></Link> : null}
-          {launchSnapshot.actionRequiredCount > 0 ? <Link href="/admin/prontidao"><span className="is-neutral"><ReceiptText size={18} /></span><div><strong>{launchSnapshot.actionRequiredCount} alertas do sistema</strong><small>Verificar configuração</small></div><ArrowUpRight size={15} /></Link> : null}
-          {analytics.current.qualifiedLeads > 0 ? <Link href="/admin/leads"><span className="is-green"><MessageCircleMore size={18} /></span><div><strong>{analytics.current.qualifiedLeads} leads qualificados</strong><small>Acompanhar conversas</small></div><ArrowUpRight size={15} /></Link> : null}
+          {operations.operations.pendingOrders > 0 ? <Link href="/admin/pedidos?status=PENDING_PAYMENT" prefetch={false}><span className="is-orange"><ShoppingBag size={18} /></span><div><strong>{operations.operations.pendingOrders} pedidos aguardando</strong><small>Revisar pagamento</small></div><ArrowUpRight size={15} /></Link> : null}
+          {operations.operations.outOfStockCount > 0 ? <Link href="/admin/produtos?stock=out" prefetch={false}><span className="is-red"><PackageX size={18} /></span><div><strong>{operations.operations.outOfStockCount} produtos sem estoque</strong><small>Atualizar catálogo</small></div><ArrowUpRight size={15} /></Link> : null}
+          {launchSnapshot.actionRequiredCount > 0 ? <Link href="/admin/prontidao" prefetch={false}><span className="is-neutral"><ReceiptText size={18} /></span><div><strong>{launchSnapshot.actionRequiredCount} alertas do sistema</strong><small>Verificar configuração</small></div><ArrowUpRight size={15} /></Link> : null}
+          {analytics.current.qualifiedLeads > 0 ? <Link href="/admin/leads" prefetch={false}><span className="is-green"><MessageCircleMore size={18} /></span><div><strong>{analytics.current.qualifiedLeads} leads qualificados</strong><small>Acompanhar conversas</small></div><ArrowUpRight size={15} /></Link> : null}
           {!hasOperationalTasks && analytics.current.qualifiedLeads === 0 ? <div className="admin-task-empty"><span><CheckCircle2 size={18} /></span><div><strong>Operação em dia</strong><small>Nenhuma ação imediata.</small></div></div> : null}
         </section>
       </div>
@@ -148,7 +161,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
       <div className="admin-insight-grid">
         <section className="admin-work-surface admin-funnel-summary">
-          <div className="admin-section-heading"><div><span>Conversão</span><h2>Do interesse ao pagamento</h2></div><Link href="/admin/analytics">Abrir relatório</Link></div>
+          <div className="admin-section-heading"><div><span>Conversão</span><h2>Do interesse ao pagamento</h2></div><Link href="/admin/analytics" prefetch={false}>Abrir relatório</Link></div>
           <div><span>Cliques no WhatsApp</span><strong>{analytics.current.whatsappSessions}</strong><small>{analytics.current.whatsappClicks} cliques totais</small></div>
           <div><span>Leads qualificados</span><strong>{analytics.current.qualifiedLeads}</strong><small>{analytics.funnel.whatsappClickToLeadRate === null ? "Sem base" : `${analytics.funnel.whatsappClickToLeadRate}% dos cliques`}</small></div>
           <div><span>Pedidos pagos</span><strong>{analytics.current.paidOrders}</strong><small>{analytics.funnel.orderToPaidRate === null ? "Sem base" : `${analytics.funnel.orderToPaidRate}% dos pedidos criados`}</small></div>
@@ -167,7 +180,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
         <div><span>Catálogo</span><strong>{operations.operations.productCount} produtos</strong></div>
         <div><span>Mercado Pago</span><strong className={`is-${paymentSnapshot.status.toLowerCase().replace("_", "-")}`}>{paymentSnapshot.statusLabel}</strong></div>
         <div><span>Sistema</span><strong>{launchSnapshot.readyCount}/{launchSnapshot.signals.length} verificações</strong></div>
-        <div className="admin-system-actions"><Link href="/admin/pagamentos">Pagamento</Link><Link href="/admin/prontidao">Saúde do sistema</Link></div>
+        <div className="admin-system-actions"><Link href="/admin/pagamentos" prefetch={false}>Pagamento</Link><Link href="/admin/prontidao" prefetch={false}>Saúde do sistema</Link></div>
       </section>
     </AdminShell>
   );

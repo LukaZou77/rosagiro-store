@@ -33,13 +33,13 @@ export default async function AdminNewProductPage({ searchParams }: PageProps) {
         <h1>Cadastrar produto manualmente</h1>
         <p>Crie uma ficha completa para publicar um novo item sem importar CSV.</p>
         <div className="admin-actions">
-          <Link className="button secondary" href="/admin/produtos">
+          <Link className="button secondary" href="/admin/produtos" prefetch={false}>
             Voltar para produtos
           </Link>
-          <Link className="button secondary" href="/admin/marcas">
+          <Link className="button secondary" href="/admin/marcas" prefetch={false}>
             Marcas
           </Link>
-          <Link className="button secondary" href="/admin/categorias">
+          <Link className="button secondary" href="/admin/categorias" prefetch={false}>
             Categorias
           </Link>
         </div>

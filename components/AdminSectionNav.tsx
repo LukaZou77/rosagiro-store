@@ -140,6 +140,7 @@ export function AdminSectionNav({ moduleKey }: { moduleKey: AdminModuleKey }) {
               <Link
                 className={`admin-section-link${active ? " is-active" : ""}`}
                 href={item.href}
+                prefetch={false}
                 aria-current={active ? "page" : undefined}
                 key={item.href}
               >
@@ -166,6 +167,7 @@ export function AdminSectionNav({ moduleKey }: { moduleKey: AdminModuleKey }) {
                         <Link
                           className={itemActive ? "is-active" : ""}
                           href={item.href}
+                          prefetch={false}
                           aria-current={itemActive ? "page" : undefined}
                           key={item.href}
                         >

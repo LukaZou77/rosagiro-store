@@ -30,7 +30,7 @@ function GuideEditor({ article }: { article?: GuideArticle }) {
         </div>
         <div className="admin-actions">
           {article?.active ? (
-            <Link className="button secondary" href={`/guias/${article.slug}`}>
+            <Link className="button secondary" href={`/guias/${article.slug}`} prefetch={false}>
               Ver guia
             </Link>
           ) : null}
@@ -165,7 +165,7 @@ export default async function AdminGuidesPage({ searchParams }: PageProps) {
 
       {saved ? (
         <div className="admin-notice success" role="status">
-          Guia salvo. {saved ? <Link href={`/guias/${saved}`}>Ver pagina publicada</Link> : null}
+          Guia salvo. {saved ? <Link href={`/guias/${saved}`} prefetch={false}>Ver pagina publicada</Link> : null}
         </div>
       ) : null}
       {deleted ? (

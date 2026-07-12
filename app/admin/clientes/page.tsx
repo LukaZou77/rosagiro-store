@@ -79,7 +79,7 @@ export default async function AdminCustomersPage() {
                 <span>{customer._count.orders} pedidos</span>
                 {lastOrder ? (
                   <>
-                    <Link href={`/admin/pedidos/${lastOrder.orderNumber}`}>
+                    <Link href={`/admin/pedidos/${lastOrder.orderNumber}`} prefetch={false}>
                       <strong>{lastOrder.orderNumber}</strong>
                     </Link>
                     <small>

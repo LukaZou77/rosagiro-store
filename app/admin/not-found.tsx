@@ -8,7 +8,7 @@ export default function AdminNotFound() {
         <span><SearchX size={24} /></span>
         <p>Área administrativa</p>
         <h1>Página não encontrada</h1>
-        <Link href="/admin">Voltar ao dashboard</Link>
+        <Link href="/admin" prefetch={false}>Voltar ao dashboard</Link>
       </section>
     </main>
   );

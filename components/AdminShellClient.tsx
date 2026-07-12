@@ -56,6 +56,7 @@ type SearchResults = {
 };
 
 const emptySearchResults: SearchResults = { products: [], orders: [], customers: [] };
+type NotificationPayload = { notifications?: AdminNotificationItem[]; unreadCount: number };
 const notificationTime = new Intl.DateTimeFormat("pt-BR", {
   timeZone: "America/Sao_Paulo",
   day: "2-digit",
@@ -179,23 +180,46 @@ export function AdminShellClient({
 
   useEffect(() => {
     let active = true;
-    const interval = window.setInterval(async () => {
+    async function refreshNotificationSummary() {
       try {
-        const response = await fetch("/api/admin/notifications", { cache: "no-store" });
+        const response = await fetch("/api/admin/notifications?summary=1", { cache: "no-store" });
         if (!response.ok) return;
-        const data = (await response.json()) as { notifications: AdminNotificationItem[]; unreadCount: number };
+        const data = (await response.json()) as NotificationPayload;
         if (!active) return;
-        setNotifications(data.notifications);
         setUnreadCount(data.unreadCount);
       } catch {
-        // Keep the last successful notification snapshot.
+        // Keep the last successful unread count.
       }
-    }, 30_000);
+    }
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") void refreshNotificationSummary();
+    }
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshNotificationSummary();
+    }, 120_000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       active = false;
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (!notificationOpen) return;
+    let active = true;
+    fetch("/api/admin/notifications", { cache: "no-store" })
+      .then(async (response) => response.ok ? await response.json() as NotificationPayload : null)
+      .then((data) => {
+        if (!active || !data) return;
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [notificationOpen]);
 
   useEffect(() => () => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -281,11 +305,11 @@ export function AdminShellClient({
   }
 
   return (
-    <main className={`admin-app${collapsed ? " is-collapsed" : ""}${mobileOpen ? " is-mobile-open" : ""}`}>
+    <main className={`admin-app notranslate${collapsed ? " is-collapsed" : ""}${mobileOpen ? " is-mobile-open" : ""}`} translate="no">
       <button className="admin-mobile-backdrop" type="button" aria-label="Fechar navegação" onClick={() => setMobileOpen(false)} />
       <aside className="admin-app-sidebar" aria-label="Navegação administrativa">
         <div className="admin-sidebar-brand-row">
-          <Link className="admin-sidebar-brand" href="/admin" aria-label="RosaGiro Admin">
+          <Link className="admin-sidebar-brand" href="/admin" prefetch={false} aria-label="RosaGiro Admin">
             <span className="admin-sidebar-logo">RG</span>
             <span className="admin-sidebar-brand-copy"><strong>RosaGiro</strong><small>Operações</small></span>
           </Link>
@@ -302,6 +326,7 @@ export function AdminShellClient({
                 <Link
                   className={`admin-nav-link${active ? " is-active" : ""}`}
                   href={item.href}
+                  prefetch={false}
                   title={collapsed ? item.label : undefined}
                   aria-current={active ? "page" : undefined}
                   onClick={() => setMobileOpen(false)}
@@ -317,7 +342,7 @@ export function AdminShellClient({
         </nav>
 
         <div className="admin-sidebar-footer">
-          <Link className="admin-sidebar-store-link" href="/" target="_blank" rel="noreferrer" title={collapsed ? "Abrir loja" : undefined}>
+          <Link className="admin-sidebar-store-link" href="/" prefetch={false} target="_blank" rel="noreferrer" title={collapsed ? "Abrir loja" : undefined}>
             <Store size={17} />
             <span>Abrir loja</span>
             <ExternalLink size={14} />
@@ -378,9 +403,9 @@ export function AdminShellClient({
             <div className="admin-command-results">
               {searchQuery.trim().length < 2 ? <div className="admin-command-empty">Digite pelo menos 2 caracteres.</div> : null}
               {!searchLoading && searchQuery.trim().length >= 2 && resultCount === 0 ? <div className="admin-command-empty">Nenhum resultado encontrado.</div> : null}
-              {searchResults.products.length ? <div className="admin-command-group"><span>Produtos</span>{searchResults.products.map((item) => <Link href={`/admin/produtos/${item.slug}`} onClick={closeSearch} key={item.id}><img src={item.image} alt="" /><div><strong>{item.name}</strong><small>{item.brand.name} · {item.active ? "Ativo" : "Inativo"}</small></div><ChevronRight size={16} /></Link>)}</div> : null}
-              {searchResults.orders.length ? <div className="admin-command-group"><span>Pedidos</span>{searchResults.orders.map((item) => <Link href={`/admin/pedidos/${item.orderNumber}`} onClick={closeSearch} key={item.id}><span className="admin-command-icon"><ShoppingBag size={17} /></span><div><strong>{item.orderNumber} · {item.customerName}</strong><small>{item.customerPhone} · {compactMoney(item.totalCents)}</small></div><ChevronRight size={16} /></Link>)}</div> : null}
-              {searchResults.customers.length ? <div className="admin-command-group"><span>Clientes</span>{searchResults.customers.map((item) => <Link href={`/admin/pedidos?q=${encodeURIComponent(item.whatsapp)}`} onClick={closeSearch} key={item.id}><span className="admin-command-icon"><UserRound size={17} /></span><div><strong>{item.name}</strong><small>{item.whatsapp} · {item._count.orders} pedidos</small></div><ChevronRight size={16} /></Link>)}</div> : null}
+              {searchResults.products.length ? <div className="admin-command-group"><span>Produtos</span>{searchResults.products.map((item) => <Link href={`/admin/produtos/${item.slug}`} prefetch={false} onClick={closeSearch} key={item.id}><img src={item.image} alt="" /><div><strong>{item.name}</strong><small>{item.brand.name} · {item.active ? "Ativo" : "Inativo"}</small></div><ChevronRight size={16} /></Link>)}</div> : null}
+              {searchResults.orders.length ? <div className="admin-command-group"><span>Pedidos</span>{searchResults.orders.map((item) => <Link href={`/admin/pedidos/${item.orderNumber}`} prefetch={false} onClick={closeSearch} key={item.id}><span className="admin-command-icon"><ShoppingBag size={17} /></span><div><strong>{item.orderNumber} · {item.customerName}</strong><small>{item.customerPhone} · {compactMoney(item.totalCents)}</small></div><ChevronRight size={16} /></Link>)}</div> : null}
+              {searchResults.customers.length ? <div className="admin-command-group"><span>Clientes</span>{searchResults.customers.map((item) => <Link href={`/admin/pedidos?q=${encodeURIComponent(item.whatsapp)}`} prefetch={false} onClick={closeSearch} key={item.id}><span className="admin-command-icon"><UserRound size={17} /></span><div><strong>{item.name}</strong><small>{item.whatsapp} · {item._count.orders} pedidos</small></div><ChevronRight size={16} /></Link>)}</div> : null}
             </div>
           </section>
         </div>
@@ -394,7 +419,7 @@ export function AdminShellClient({
             {unreadCount ? <button className="admin-mark-all" type="button" onClick={() => markNotificationsRead()}><CheckCheck size={16} />Marcar todas como lidas</button> : null}
             <div className="admin-notification-list">
               {notifications.map((notification) => (
-                <Link className={notification.readAt ? "" : "is-unread"} href={notification.actionHref} onClick={() => markNotificationsRead(notification.id)} key={notification.id}>
+                <Link className={notification.readAt ? "" : "is-unread"} href={notification.actionHref} prefetch={false} onClick={() => markNotificationsRead(notification.id)} key={notification.id}>
                   <span className={notification.notificationType === "ORDER_PAID" ? "is-paid" : "is-order"}>{notification.notificationType === "ORDER_PAID" ? <CircleDollarSign size={18} /> : <ShoppingBag size={18} />}</span>
                   <div><strong>{notification.title}</strong><p>{notification.message}</p><small>{notificationTime.format(new Date(notification.createdAt))}</small></div>
                 </Link>

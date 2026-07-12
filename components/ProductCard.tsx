@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
-import type { CatalogProduct } from "@/lib/catalog";
+import type { CatalogCardProduct } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import { lowestEffectivePriceCents, hasSkuPriceRange } from "@/lib/product-pricing";
@@ -29,7 +29,7 @@ function isSpecialCardBadge(badge: string) {
   return /^(destaque|novo|mais vendido|favorito|lancamento|lançamento|top)$/i.test(normalized);
 }
 
-function productCardTags(product: CatalogProduct) {
+function productCardTags(product: CatalogCardProduct) {
   const tags = [product.category.label, product.subcategory].map(customerDisplayText).filter(Boolean);
   const seen = new Set<string>();
 
@@ -41,7 +41,7 @@ function productCardTags(product: CatalogProduct) {
   }).slice(0, 2);
 }
 
-export function ProductCard({ product, whatsappPhone }: { product: CatalogProduct; whatsappPhone?: string | null }) {
+export function ProductCard({ product, whatsappPhone }: { product: CatalogCardProduct; whatsappPhone?: string | null }) {
   const quantity = productQuantity(product);
   const available = quantity > 0;
   const hasSkuChoices = productHasActiveSkus(product);

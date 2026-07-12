@@ -74,7 +74,7 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
             whatsapp={storeProfile.whatsapp}
           />
           {printHref ? (
-            <Link className="button primary" href={printHref} target="_blank" rel="noreferrer">
+            <Link className="button primary" href={printHref} prefetch={false} target="_blank" rel="noreferrer">
               <FileDown size={17} />
               Gerar PDF da marca
             </Link>
@@ -133,7 +133,7 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
           <button className="button primary" type="submit">
             Aplicar filtros
           </button>
-          <Link className="button secondary" href="/admin/catalogo-clientes">
+          <Link className="button secondary" href="/admin/catalogo-clientes" prefetch={false}>
             Limpar
           </Link>
         </form>
@@ -245,6 +245,7 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
           <Link
             className={preview.page <= 1 ? "is-disabled" : ""}
             href={catalogPageHref(preserved, Math.max(1, preview.page - 1))}
+            prefetch={false}
             aria-disabled={preview.page <= 1}
           >
             Anterior
@@ -253,6 +254,7 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
           <Link
             className={preview.page >= preview.totalPages ? "is-disabled" : ""}
             href={catalogPageHref(preserved, Math.min(preview.totalPages, preview.page + 1))}
+            prefetch={false}
             aria-disabled={preview.page >= preview.totalPages}
           >
             Próxima

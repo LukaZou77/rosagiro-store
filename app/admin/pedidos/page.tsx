@@ -116,7 +116,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
         <label><span>De</span><input name="dateFrom" type="date" defaultValue={dateFrom} /></label>
         <label><span>Até</span><input name="dateTo" type="date" defaultValue={dateTo} /></label>
         <button className="button primary" type="submit"><Filter size={15} />Aplicar</button>
-        <Link className="button secondary" href="/admin/pedidos">Limpar</Link>
+        <Link className="button secondary" href="/admin/pedidos" prefetch={false}>Limpar</Link>
       </form>
 
       <section className="admin-panel admin-orders-table-panel">
@@ -126,7 +126,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
             <tbody>
               {orders.map((order) => (
                 <tr key={order.id}>
-                  <td><Link href={`/admin/pedidos/${order.orderNumber}`}>{order.orderNumber}</Link><small>{formatAdminDateTime(order.createdAt)}</small></td>
+                  <td><Link href={`/admin/pedidos/${order.orderNumber}`} prefetch={false}>{order.orderNumber}</Link><small>{formatAdminDateTime(order.createdAt)}</small></td>
                   <td><strong>{order.customerName}</strong><small>{order.customerPhone}</small></td>
                   <td><span>{paymentProviderLabel(order.payment?.provider)} / {paymentMethodLabel(order.payment?.method)}</span><small>{paymentStatusLabel(order.payment?.status)}</small></td>
                   <td><span className={`admin-status-dot status-${order.status.toLowerCase()}`}>{statusLabels[order.status]}</span></td>
@@ -149,9 +149,9 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
 
       {totalPages > 1 ? (
         <nav className="admin-pagination" aria-label="Paginação de pedidos">
-          <Link className={page <= 1 ? "is-disabled" : ""} href={pageHref(preserved, Math.max(1, page - 1))} aria-disabled={page <= 1}>Anterior</Link>
+          <Link className={page <= 1 ? "is-disabled" : ""} href={pageHref(preserved, Math.max(1, page - 1))} prefetch={false} aria-disabled={page <= 1}>Anterior</Link>
           <span>Página {page} de {totalPages}</span>
-          <Link className={page >= totalPages ? "is-disabled" : ""} href={pageHref(preserved, Math.min(totalPages, page + 1))} aria-disabled={page >= totalPages}>Próxima</Link>
+          <Link className={page >= totalPages ? "is-disabled" : ""} href={pageHref(preserved, Math.min(totalPages, page + 1))} prefetch={false} aria-disabled={page >= totalPages}>Próxima</Link>
         </nav>
       ) : null}
     </AdminShell>

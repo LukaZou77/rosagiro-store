@@ -48,7 +48,7 @@ export default async function AdminProductTrashPage({ searchParams }: PageProps)
         <h1>Lixeira de produtos</h1>
         <p>Produtos nesta área ficam fora da loja e podem ser restaurados ou excluídos definitivamente.</p>
         <div className="admin-actions">
-          <Link className="button secondary" href="/admin/produtos">
+          <Link className="button secondary" href="/admin/produtos" prefetch={false}>
             Voltar para produtos
           </Link>
         </div>
@@ -80,7 +80,7 @@ export default async function AdminProductTrashPage({ searchParams }: PageProps)
         <div className="empty-state">
           <strong>Lixeira vazia</strong>
           <p>Nenhum produto foi removido. Use a central de produtos para mover itens para a lixeira.</p>
-          <Link className="button primary" href="/admin/produtos">
+          <Link className="button primary" href="/admin/produtos" prefetch={false}>
             Ver produtos
           </Link>
         </div>

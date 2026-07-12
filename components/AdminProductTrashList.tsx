@@ -99,7 +99,7 @@ export function AdminProductTrashList({
               {product.deleteNote ? <p className="table-note">{product.deleteNote}</p> : null}
             </div>
             <div className="admin-row-actions">
-              <Link className="button secondary" href={`/admin/produtos/${product.slug}`}>
+              <Link className="button secondary" href={`/admin/produtos/${product.slug}`} prefetch={false}>
                 Ver ficha
               </Link>
             </div>

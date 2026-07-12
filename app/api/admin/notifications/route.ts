@@ -3,9 +3,18 @@ import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   const admin = await getAdmin();
   if (!admin) return Response.json({ error: "Não autorizado." }, { status: 401 });
+
+  const summaryOnly = new URL(request.url).searchParams.get("summary") === "1";
+  if (summaryOnly) {
+    const unreadCount = await prisma.adminNotification.count({ where: { readAt: null } });
+    return Response.json(
+      { unreadCount },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  }
 
   const [notifications, unreadCount] = await Promise.all([
     prisma.adminNotification.findMany({

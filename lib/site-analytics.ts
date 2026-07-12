@@ -1,10 +1,10 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 import {
   analyticsDateKeys,
   analyticsDeviceType,
-  analyticsPercentChange,
   analyticsRetentionCutoff,
   brazilDateKey,
   eventDateFromKey,
@@ -15,7 +15,6 @@ import {
   normalizeAnalyticsPath,
   normalizeReferrerHost,
   parseSiteAnalyticsRange,
-  previousBrazilDateKey,
   type SiteAnalyticsRange
 } from "@/lib/site-analytics-core";
 import { analyticsVisitorRetentionCutoff } from "@/lib/admin-analytics-core";
@@ -60,10 +59,6 @@ function requestIp(headers: Headers) {
 function countryCode(headers: Headers) {
   const value = safeHeaderText(headers.get("x-vercel-ip-country"), 2)?.toUpperCase() || null;
   return value && /^[A-Z]{2}$/.test(value) ? value : null;
-}
-
-function compactLabel(value: string | null | undefined, fallback: string) {
-  return value?.trim() || fallback;
 }
 
 export async function recordSitePageView(payload: PageViewPayload, context: RequestContext) {
@@ -126,57 +121,17 @@ export async function recordSitePageView(payload: PageViewPayload, context: Requ
   }
 }
 
-function trendLabel(key: string) {
-  const [, month, day] = key.split("-");
-  return `${day}/${month}`;
-}
-
-type SessionSummary = {
-  sessionHash: string;
-  visitorHash: string;
-  countryCode: string | null;
-  regionCode: string | null;
-  city: string | null;
-  deviceType: string;
-  referrerHost: string | null;
-  pages: Set<string>;
-  firstSeenAt: Date;
-  lastSeenAt: Date;
-};
-
-export async function getAdminOperationsDashboard(rawRange: unknown) {
-  const range = parseSiteAnalyticsRange(rawRange);
+async function calculateAdminOperationsDashboard(range: SiteAnalyticsRange) {
   const now = new Date();
   const dateKeys = analyticsDateKeys(range, now);
-  const dateKeySet = new Set(dateKeys);
   const firstEventDate = eventDateFromKey(dateKeys[0]);
   const lastEventDate = eventDateFromKey(dateKeys[dateKeys.length - 1]);
-  const approximateStart = new Date(now.getTime() - (range + 2) * 86_400_000);
 
-  const [pageViews, orders, paidPayments, recentOrders, productCount, outOfStockCount, outOfStockProducts, pendingOrders] = await Promise.all([
-    prisma.sitePageView.findMany({
+  const [locationRows, recentOrders, productCount, outOfStockCount, outOfStockProducts, pendingOrders] = await Promise.all([
+    prisma.sitePageView.groupBy({
+      by: ["countryCode", "regionCode", "city", "visitorHash"],
       where: { eventDate: { gte: firstEventDate, lte: lastEventDate } },
-      select: {
-        eventDate: true,
-        visitorHash: true,
-        sessionHash: true,
-        path: true,
-        referrerHost: true,
-        countryCode: true,
-        regionCode: true,
-        city: true,
-        deviceType: true,
-        occurredAt: true
-      },
-      orderBy: { occurredAt: "desc" }
-    }),
-    prisma.order.findMany({
-      where: { createdAt: { gte: approximateStart } },
-      select: { id: true, createdAt: true }
-    }),
-    prisma.payment.findMany({
-      where: { status: "PAID", paidAt: { gte: approximateStart } },
-      select: { amountCents: true, paidAt: true }
+      _count: { id: true }
     }),
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
@@ -205,42 +160,9 @@ export async function getAdminOperationsDashboard(rawRange: unknown) {
     prisma.order.count({ where: { status: "PENDING_PAYMENT" } })
   ]);
 
-  const daily = new Map(
-    dateKeys.map((key) => [key, { date: key, label: trendLabel(key), visitors: new Set<string>(), pageViews: 0, orders: 0, revenueCents: 0 }])
-  );
-  const sessions = new Map<string, SessionSummary>();
   const locations = new Map<string, { countryCode: string | null; regionCode: string | null; city: string | null; views: number; visitors: Set<string> }>();
 
-  for (const view of pageViews) {
-    const key = view.eventDate.toISOString().slice(0, 10);
-    const day = daily.get(key);
-    if (!day) continue;
-    day.pageViews += 1;
-    day.visitors.add(view.visitorHash);
-
-    const session = sessions.get(view.sessionHash);
-    if (session) {
-      session.pages.add(view.path);
-      if (view.occurredAt < session.firstSeenAt) session.firstSeenAt = view.occurredAt;
-      if (view.occurredAt > session.lastSeenAt) session.lastSeenAt = view.occurredAt;
-      if (!session.city && view.city) session.city = view.city;
-      if (!session.regionCode && view.regionCode) session.regionCode = view.regionCode;
-      if (!session.countryCode && view.countryCode) session.countryCode = view.countryCode;
-    } else {
-      sessions.set(view.sessionHash, {
-        sessionHash: view.sessionHash,
-        visitorHash: view.visitorHash,
-        countryCode: view.countryCode,
-        regionCode: view.regionCode,
-        city: view.city,
-        deviceType: view.deviceType,
-        referrerHost: view.referrerHost,
-        pages: new Set([view.path]),
-        firstSeenAt: view.occurredAt,
-        lastSeenAt: view.occurredAt
-      });
-    }
-
+  for (const view of locationRows) {
     const locationKey = `${view.countryCode || "--"}|${view.regionCode || "--"}|${view.city || "--"}`;
     const location = locations.get(locationKey) || {
       countryCode: view.countryCode,
@@ -249,43 +171,14 @@ export async function getAdminOperationsDashboard(rawRange: unknown) {
       views: 0,
       visitors: new Set<string>()
     };
-    location.views += 1;
+    location.views += view._count.id;
     location.visitors.add(view.visitorHash);
     locations.set(locationKey, location);
   }
 
-  for (const order of orders) {
-    const key = brazilDateKey(order.createdAt);
-    if (dateKeySet.has(key)) daily.get(key)!.orders += 1;
-  }
-  for (const payment of paidPayments) {
-    if (!payment.paidAt) continue;
-    const key = brazilDateKey(payment.paidAt);
-    if (dateKeySet.has(key)) daily.get(key)!.revenueCents += payment.amountCents;
-  }
-
-  const todayKey = brazilDateKey(now);
-  const yesterdayKey = previousBrazilDateKey(now);
-  const today = daily.get(todayKey)!;
-  const yesterday = daily.get(yesterdayKey) || { visitors: new Set<string>(), pageViews: 0, orders: 0, revenueCents: 0 };
-  const trend = Array.from(daily.values()).map((day) => ({
-    date: day.date,
-    label: day.label,
-    visitors: day.visitors.size,
-    pageViews: day.pageViews,
-    orders: day.orders,
-    revenueCents: day.revenueCents
-  }));
-
   return {
-    range: range as SiteAnalyticsRange,
-    kpis: {
-      visitors: { value: today.visitors.size, change: analyticsPercentChange(today.visitors.size, yesterday.visitors.size) },
-      pageViews: { value: today.pageViews, change: analyticsPercentChange(today.pageViews, yesterday.pageViews) },
-      orders: { value: today.orders, change: analyticsPercentChange(today.orders, yesterday.orders) },
-      revenueCents: { value: today.revenueCents, change: analyticsPercentChange(today.revenueCents, yesterday.revenueCents) }
-    },
-    trend,
+    available: true as const,
+    range,
     locations: Array.from(locations.values())
       .sort((a, b) => b.visitors.size - a.visitors.size || b.views - a.views)
       .slice(0, 8)
@@ -293,20 +186,6 @@ export async function getAdminOperationsDashboard(rawRange: unknown) {
         label: [location.city, location.regionCode, location.countryCode].filter(Boolean).join(", ") || "Local não identificado",
         visitors: location.visitors.size,
         pageViews: location.views
-      })),
-    recentSessions: Array.from(sessions.values())
-      .sort((a, b) => b.lastSeenAt.getTime() - a.lastSeenAt.getTime())
-      .slice(0, 10)
-      .map((session) => ({
-        id: `VIS-${session.visitorHash.slice(0, 8).toUpperCase()}`,
-        country: compactLabel(session.countryCode, "--"),
-        region: compactLabel(session.regionCode, "--"),
-        city: compactLabel(session.city, "Não identificada"),
-        deviceType: session.deviceType,
-        source: session.referrerHost || "Direto",
-        pageCount: session.pages.size,
-        firstSeenAt: session.firstSeenAt.toISOString(),
-        lastSeenAt: session.lastSeenAt.toISOString()
       })),
     operations: {
       pendingOrders,
@@ -319,6 +198,36 @@ export async function getAdminOperationsDashboard(rawRange: unknown) {
       }))
     }
   };
+}
+
+const getCachedAdminOperationsDashboard = unstable_cache(
+  async (range: SiteAnalyticsRange) => calculateAdminOperationsDashboard(range),
+  ["admin-operations-dashboard-v2"],
+  { revalidate: 15 }
+);
+
+export async function getAdminOperationsDashboard(rawRange: unknown) {
+  const range = parseSiteAnalyticsRange(rawRange);
+  try {
+    return await getCachedAdminOperationsDashboard(range);
+  } catch (error) {
+    console.error("[admin-operations] dashboard snapshot unavailable", {
+      range,
+      message: error instanceof Error ? error.message : String(error)
+    });
+    return {
+      available: false as const,
+      range,
+      locations: [],
+      operations: {
+        pendingOrders: 0,
+        productCount: 0,
+        outOfStockCount: 0,
+        outOfStockProducts: [],
+        recentOrders: []
+      }
+    };
+  }
 }
 
 export async function deleteExpiredSiteAnalytics(now = new Date()) {

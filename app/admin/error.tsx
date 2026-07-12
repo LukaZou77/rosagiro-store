@@ -4,7 +4,7 @@ import { AlertTriangle, RotateCcw } from "lucide-react";
 
 export default function AdminError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <main className="admin-error-screen">
+    <main className="admin-error-screen notranslate" translate="no">
       <section>
         <span><AlertTriangle size={24} /></span>
         <p>Não foi possível carregar esta área.</p>

@@ -34,7 +34,7 @@ function PolicyEditor({ page }: { page: SiteInfoPageEditable }) {
           <span>{siteInfoPageLabel(page.pageKey)}</span>
           <h2>{page.title}</h2>
         </div>
-        <Link className="button secondary" href={page.href}>
+        <Link className="button secondary" href={page.href} prefetch={false}>
           Ver página
         </Link>
       </div>
@@ -113,6 +113,7 @@ export default async function AdminPoliciesPage({ searchParams }: PageProps) {
           <Link
             className={activePage === page.pageKey ? "button primary" : "button secondary"}
             href={`/admin/politicas?pagina=${page.pageKey}#${pageAnchor(page.pageKey)}`}
+            prefetch={false}
             key={page.pageKey}
           >
             {siteInfoPageLabel(page.pageKey)}

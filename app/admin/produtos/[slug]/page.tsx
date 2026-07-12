@@ -44,7 +44,7 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
           <h1>{product.name}</h1>
           <p>Este produto está fora da loja. Restaure para publicar e editar novamente.</p>
           <div className="admin-actions">
-            <Link className="button secondary" href="/admin/produtos/lixeira">
+            <Link className="button secondary" href="/admin/produtos/lixeira" prefetch={false}>
               Voltar para lixeira
             </Link>
             <form action={restoreProductsFromTrashAction}>
@@ -86,10 +86,10 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
         <h1>{product.name}</h1>
         <p>Edite a ficha completa que alimenta a vitrine, filtros, importação e checkout.</p>
         <div className="admin-actions">
-          <Link className="button secondary" href="/admin/produtos">
+          <Link className="button secondary" href="/admin/produtos" prefetch={false}>
             Voltar para produtos
           </Link>
-          <Link className="button secondary" href={`/produto/${product.slug}`}>
+          <Link className="button secondary" href={`/produto/${product.slug}`} prefetch={false}>
             Ver na loja
           </Link>
         </div>
@@ -127,7 +127,7 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
           <div className="admin-notice success">Nenhum alerta automático encontrado para este produto.</div>
         )}
         <div className="admin-actions">
-          <Link className="button secondary" href="/admin/produtos/qualidade">
+          <Link className="button secondary" href="/admin/produtos/qualidade" prefetch={false}>
             Ver central de qualidade
           </Link>
         </div>

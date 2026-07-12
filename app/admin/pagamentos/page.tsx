@@ -28,10 +28,10 @@ export default async function AdminPaymentsPage() {
           token, secret, database URL nem payload completo.
         </p>
         <div className="admin-actions">
-          <Link className="button secondary" href="/admin/pedidos">
+          <Link className="button secondary" href="/admin/pedidos" prefetch={false}>
             Ver pedidos
           </Link>
-          <Link className="button secondary" href="/admin/prontidao">
+          <Link className="button secondary" href="/admin/prontidao" prefetch={false}>
             Ver prontidão
           </Link>
         </div>
@@ -141,7 +141,7 @@ export default async function AdminPaymentsPage() {
               {snapshot.recentPayments.map((payment) => (
                 <tr key={payment.id} className={payment.syncError ? "has-error" : ""}>
                   <td>
-                    <Link href={`/admin/pedidos/${payment.orderNumber}`}>
+                    <Link href={`/admin/pedidos/${payment.orderNumber}`} prefetch={false}>
                       <strong>{payment.orderNumber}</strong>
                     </Link>
                     <small>{payment.orderStatus}</small>

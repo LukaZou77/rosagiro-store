@@ -42,7 +42,7 @@ export type CatalogProduct = {
   skus: Array<{ id: string; name: string; code: string; image: string | null; priceCents: number | null; quantity: number; active: boolean; sortOrder: number }>;
 };
 
-export const CATALOG_PAGE_SIZE = 48;
+export const CATALOG_PAGE_SIZE = 24;
 
 const productInclude = {
   brand: true,
@@ -50,6 +50,44 @@ const productInclude = {
   inventory: true,
   skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }
 } satisfies Prisma.ProductInclude;
+
+const productCardSelect = {
+  id: true,
+  slug: true,
+  name: true,
+  subcategory: true,
+  priceCents: true,
+  suggestedQuantity: true,
+  kitRecommendation: true,
+  wholesalePackage: true,
+  validityNote: true,
+  purchaseNote: true,
+  image: true,
+  volume: true,
+  rating: true,
+  reviewCount: true,
+  stockStatus: true,
+  badges: true,
+  active: true,
+  brand: { select: { slug: true, name: true } },
+  category: { select: { slug: true, label: true } },
+  inventory: { select: { quantity: true } },
+  skus: {
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      image: true,
+      priceCents: true,
+      quantity: true,
+      active: true,
+      sortOrder: true
+    }
+  }
+} satisfies Prisma.ProductSelect;
+
+export type CatalogCardProduct = Prisma.ProductGetPayload<{ select: typeof productCardSelect }>;
 
 type ProductQueryOptions = {
   categorySlug?: string;
@@ -111,6 +149,18 @@ function withProductDisplayText(product: CatalogProduct): CatalogProduct {
       ...product.category,
       label: customerDisplayText(product.category.label),
       note: customerDisplayText(product.category.note)
+    }
+  };
+}
+
+function withProductCardDisplayText(product: CatalogCardProduct): CatalogCardProduct {
+  return {
+    ...product,
+    subcategory: customerDisplayText(product.subcategory),
+    badges: product.badges.map(customerDisplayText),
+    category: {
+      ...product.category,
+      label: customerDisplayText(product.category.label)
     }
   };
 }
@@ -239,13 +289,13 @@ export async function getProducts(options: ProductListOptions = {}) {
   const { sort = "featured", take, skip } = options;
   const products = await prisma.product.findMany({
     where: productWhere(options),
-    include: productInclude,
+    select: productCardSelect,
     orderBy: productOrderBy(sort),
     take,
     skip
   });
 
-  return products.map(withProductDisplayText);
+  return products.map(withProductCardDisplayText);
 }
 
 export async function getProductCount(options: ProductQueryOptions = {}) {
@@ -256,19 +306,21 @@ export async function getProductPage(options: ProductQueryOptions & { page?: num
   const pageSize = Math.max(1, Math.min(96, Math.floor(options.pageSize || CATALOG_PAGE_SIZE)));
   const requestedPage = Math.max(1, Math.floor(options.page || 1));
   const where = productWhere(options);
-  const total = await prisma.product.count({ where });
+  const [total, products] = await Promise.all([
+    prisma.product.count({ where }),
+    prisma.product.findMany({
+      where,
+      select: productCardSelect,
+      orderBy: productOrderBy(options.sort),
+      take: pageSize,
+      skip: (requestedPage - 1) * pageSize
+    })
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const page = Math.min(requestedPage, totalPages);
-  const products = await prisma.product.findMany({
-    where,
-    include: productInclude,
-    orderBy: productOrderBy(options.sort),
-    take: pageSize,
-    skip: (page - 1) * pageSize
-  });
 
   return {
-    products: products.map(withProductDisplayText),
+    products: products.map(withProductCardDisplayText),
     total,
     page,
     pageSize,
@@ -307,12 +359,12 @@ const getRecommendationPoolCached = unstable_cache(async function getRecommendat
       ...productWhere({ categorySlug }),
       OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
     },
-    include: productInclude,
+    select: productCardSelect,
     orderBy: { featuredRank: "asc" },
     take: 64
   });
 
-  return products.map(withProductDisplayText);
+  return products.map(withProductCardDisplayText);
 }, ["recommendation-product-pool"], {
   revalidate: 300,
   tags: [STOREFRONT_CATALOG_CACHE_TAG]
@@ -338,25 +390,25 @@ export async function getPromotionCollections() {
     prisma.product.count({ where: stockWhere }),
     prisma.product.findMany({
       where: stockWhere,
-      include: productInclude,
+      select: productCardSelect,
       orderBy: { priceCents: "asc" },
       take: 4
     }),
     prisma.product.findMany({
       where: stockWhere,
-      include: productInclude,
+      select: productCardSelect,
       orderBy: [{ featuredRank: "asc" }, { updatedAt: "desc" }],
       take: 4
     }),
     prisma.product.findMany({
       where: stockWhere,
-      include: productInclude,
+      select: productCardSelect,
       orderBy: { featuredRank: "asc" },
       take: 32
     })
   ]);
-  const displayProducts = products.map(withProductDisplayText);
-  const withStock = (product: CatalogProduct) => (product.inventory?.quantity || 0) > 0;
+  const displayProducts = products.map(withProductCardDisplayText);
+  const withStock = (product: CatalogCardProduct) => (product.inventory?.quantity || 0) > 0;
   const hotProducts = [...displayProducts]
     .filter(withStock)
     .sort((a, b) => {
@@ -368,9 +420,9 @@ export async function getPromotionCollections() {
 
   return {
     products: displayProducts,
-    lowPriceProducts: lowPriceProducts.map(withProductDisplayText),
+    lowPriceProducts: lowPriceProducts.map(withProductCardDisplayText),
     hotProducts,
-    stockReadyProducts: stockReadyProducts.map(withProductDisplayText),
+    stockReadyProducts: stockReadyProducts.map(withProductCardDisplayText),
     readyStockCount
   };
 }
@@ -397,10 +449,10 @@ export async function getRelatedProducts(categorySlug: string, currentSlug: stri
       category: { slug: categorySlug },
       slug: { not: currentSlug }
     },
-    include: productInclude,
+    select: productCardSelect,
     take: 4,
     orderBy: { featuredRank: "asc" }
   });
 
-  return products.map(withProductDisplayText);
+  return products.map(withProductCardDisplayText);
 }

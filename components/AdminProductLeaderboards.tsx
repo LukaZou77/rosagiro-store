@@ -62,7 +62,7 @@ export function AdminProductLeaderboards({ leaderboards, compact = false }: { le
               <strong className="admin-leaderboard-rank">{String(row.rank).padStart(2, "0")}</strong>
               <Image alt="" src={row.image} width={44} height={44} />
               <div className="admin-leaderboard-product">
-                <Link href={`/admin/produtos/${row.productSlug}`}>{row.productName}</Link>
+                <Link href={`/admin/produtos/${row.productSlug}`} prefetch={false}>{row.productName}</Link>
                 <small>{row.brandName} · {row.categoryName}</small>
               </div>
               {row.rank === 1 ? <span className="admin-leader-badge">{metric === "views" ? "Mais visto" : metric === "orderCount" || metric === "orderedUnits" ? "Mais pedido" : "Líder"}</span> : null}
