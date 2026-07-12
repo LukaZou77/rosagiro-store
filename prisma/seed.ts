@@ -509,6 +509,10 @@ const legacyInfoPageDefaults = {
         body: "Os dados sao usados para atendimento via WhatsApp, organizacao de clientes, processamento de pedidos e validacao operacional. Esta fase nao cria senha nem area publica de cliente."
       },
       {
+        title: "Dados de navegacao e metricas",
+        body: "Registramos paginas visitadas, origem, tipo de dispositivo, localizacao aproximada e cliques para o WhatsApp. O IP nao e armazenado em formato bruto. Detalhes ficam por ate 90 dias, registros diarios pseudonimizados por ate 25 meses e totais sem identificadores podem ser preservados para relatorios historicos."
+      },
+      {
         title: "Ajustes antes do lancamento",
         body: "Este texto e um ponto de partida. Antes de publicar, revise com os dados reais da empresa, canais de suporte e politicas LGPD aplicaveis."
       }

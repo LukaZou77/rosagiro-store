@@ -289,7 +289,7 @@ export const infoPages = {
       },
       {
         title: "Dados de navegação e métricas",
-        body: "Para entender o uso da loja e melhorar o atendimento, registramos páginas visitadas, origem da visita, tipo de dispositivo e localização aproximada por país, estado e cidade. O endereço IP não é armazenado: ele é transformado em um identificador irreversível usado apenas para estimativas e prevenção de duplicidade. Os detalhes de navegação são mantidos por até 90 dias e o rastreamento respeita sinais DNT e GPC do navegador."
+        body: "Para entender o uso da loja e melhorar o atendimento, registramos páginas visitadas, origem, tipo de dispositivo, localização aproximada e cliques de saída para o WhatsApp. O endereço IP não é armazenado: ele é transformado em identificador irreversível. Detalhes de navegação e cliques são mantidos por até 90 dias; registros diários pseudonimizados são mantidos por até 25 meses para comparações, e totais sem identificadores podem ser preservados para relatórios históricos. O rastreamento respeita sinais DNT e GPC."
       },
       {
         title: "Ajustes antes do lancamento",

@@ -1,16 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { getAnalyticsVisitorId } from "@/lib/browser-analytics";
 import { commerceItem, trackCommerceEvent } from "@/lib/commerce-analytics";
 
-const VISITOR_KEY = "rosagiro-visitor-id";
 const VIEW_KEY_PREFIX = "rosagiro-product-view:";
-
-function makeVisitorId() {
-  const cryptoObject = globalThis.crypto;
-  if (cryptoObject?.randomUUID) return cryptoObject.randomUUID().replace(/-/g, "");
-  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
-}
 
 function storageGet(storage: Storage, key: string) {
   try {
@@ -27,15 +21,6 @@ function storageSet(storage: Storage, key: string, value: string) {
   } catch {
     return false;
   }
-}
-
-export function getAnalyticsVisitorId() {
-  if (typeof window === "undefined") return "";
-  const existing = storageGet(localStorage, VISITOR_KEY);
-  if (existing) return existing;
-  const next = makeVisitorId();
-  storageSet(localStorage, VISITOR_KEY, next);
-  return next;
 }
 
 export function trackProductEvent(input: {

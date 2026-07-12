@@ -29,7 +29,8 @@ const sectionConfigs: Partial<Record<AdminModuleKey, SectionConfig>> = {
     label: "Vendas",
     links: [
       { href: "/admin/pedidos", label: "Pedidos", matchPrefixes: ["/admin/pedidos"] },
-      { href: "/admin/clientes", label: "Clientes", matchPrefixes: ["/admin/clientes"] }
+      { href: "/admin/clientes", label: "Clientes", matchPrefixes: ["/admin/clientes"] },
+      { href: "/admin/leads", label: "Leads", matchPrefixes: ["/admin/leads"] }
     ]
   },
   catalog: {
@@ -104,7 +105,8 @@ const pageLabels: Array<{ prefix: string; label: string }> = [
   { prefix: "/admin/pedidos/", label: "Detalhes do pedido" },
   { prefix: "/admin/pedidos", label: "Pedidos" },
   { prefix: "/admin/clientes", label: "Clientes" },
-  { prefix: "/admin/analytics", label: "Produtos" },
+  { prefix: "/admin/leads", label: "Leads do WhatsApp" },
+  { prefix: "/admin/analytics", label: "Relatórios" },
   { prefix: "/admin/loja", label: "Loja" },
   { prefix: "/admin/frete", label: "Frete" },
   { prefix: "/admin/pagamentos", label: "Pagamentos" },

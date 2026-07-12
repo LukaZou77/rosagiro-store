@@ -1,4 +1,5 @@
 import { deleteExpiredSiteAnalytics } from "@/lib/site-analytics";
+import { runAnalyticsRollup } from "@/lib/analytics-rollup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,9 +11,10 @@ export async function GET(request: Request) {
     return Response.json({ ok: false }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
 
-  const result = await deleteExpiredSiteAnalytics();
+  const rollup = await runAnalyticsRollup();
+  const deleted = await deleteExpiredSiteAnalytics();
   return Response.json(
-    { ok: true, deleted: result.count },
+    { ok: true, rollup, deleted },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

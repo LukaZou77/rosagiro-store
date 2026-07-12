@@ -16,6 +16,7 @@
     "db:seed": "prisma db seed",
     "db:body-categories": "tsx scripts/apply-body-area-categories.ts",
     "db:product-subcategories": "tsx scripts/apply-product-subcategories.ts",
+    "analytics:backfill": "tsx scripts/backfill-admin-analytics.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {

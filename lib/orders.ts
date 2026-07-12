@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { validateCheckoutAddress } from "@/lib/google-address";
 import { discountCents, subtotalCents, totalCents } from "@/lib/money";
 import { isPaymentMethod, paymentModeAllowsSimulated, type PaymentMethodValue } from "@/lib/payments";
+import { recordCreatedOrderProductMetrics, recordPaidOrderProductMetrics } from "@/lib/product-daily-metrics";
 import { effectiveSkuPriceCents } from "@/lib/product-pricing";
 import { resolveOrderShipping } from "@/lib/shipping";
 import { parseCheckoutShippingMethod, type CheckoutShippingMethod } from "@/lib/shipping-rules";
@@ -276,6 +277,7 @@ export async function createOrder(input: CheckoutInput) {
   });
 
   await createOrderNotificationSafely("NEW_ORDER", order);
+  await recordCreatedOrderProductMetrics(order.id).catch(() => undefined);
 
   return order;
 }
@@ -292,6 +294,7 @@ type PaidOrderPaymentUpdate = {
 };
 
 export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrderPaymentUpdate = {}) {
+  let newlyPaid = false;
   const order = await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { orderNumber },
@@ -333,6 +336,7 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
       if (currentOrder?.status === "PAID") return currentOrder;
       throw new OrderError("Este pedido não pode ser pago.");
     }
+    newlyPaid = true;
 
     await tx.payment.update({
       where: { orderId: order.id },
@@ -357,6 +361,7 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
   });
 
   await createOrderNotificationSafely("ORDER_PAID", order);
+  if (newlyPaid) await recordPaidOrderProductMetrics(order.id).catch(() => undefined);
   return order;
 }
 

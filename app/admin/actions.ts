@@ -8,10 +8,14 @@ import {
   recordAdminLoginFailure
 } from "@/lib/admin-login-rate-limit";
 import { clearAdminSession, hashPassword, requireAdmin, setAdminSession, verifyPassword } from "@/lib/auth";
+import { saoPauloDateTime } from "@/lib/admin-analytics-core";
 import { STOREFRONT_CATALOG_CACHE_TAG, STORE_PROFILE_CACHE_TAG } from "@/lib/cache-tags";
+import { cleanCustomerName, normalizeBrazilWhatsapp } from "@/lib/customers";
 import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
 import { markOrderPaid, OrderError } from "@/lib/orders";
+import { recordCreatedOrderProductMetrics } from "@/lib/product-daily-metrics";
+import { whatsAppLeadDedupeKey } from "@/lib/whatsapp-leads";
 import { isMercadoPagoInstallments } from "@/lib/payments";
 import { extractGuideCoverUpload, saveGuideCoverUpload, deleteGuideImages } from "@/lib/guide-images";
 import { GuideArticleValidationError, validateGuideArticleInput } from "@/lib/guide-articles";
@@ -39,6 +43,7 @@ import { SiteInfoPageValidationError, validateSiteInfoPageInput } from "@/lib/si
 import type { Prisma } from "@/src/generated/prisma/client";
 
 const statuses = ["PENDING_PAYMENT", "PAID", "FULFILLING", "SHIPPED", "CANCELED"] as const;
+const whatsAppLeadStatuses = ["QUALIFIED", "WON", "LOST"] as const;
 const launchReadinessStatuses = ["PENDING", "IN_PROGRESS", "DONE", "BLOCKED"] as const;
 
 function field(formData: FormData, name: string) {
@@ -52,6 +57,12 @@ function positiveInt(formData: FormData, name: string, fallback = 0) {
 
 function nullableField(formData: FormData, name: string) {
   return field(formData, name) || null;
+}
+
+function leadOccurredAt(value: string) {
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return new Date();
+  return saoPauloDateTime(match[1], Number(match[2]), Number(match[3]));
 }
 
 function ratingValue(formData: FormData) {
@@ -938,6 +949,81 @@ export async function deleteProductSubcategoryAction(formData: FormData) {
   redirect("/admin/categorias?deletedSubcategory=1");
 }
 
+export async function createWhatsAppLeadAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const contactName = cleanCustomerName(field(formData, "contactName"));
+  const normalized = normalizeBrazilWhatsapp(field(formData, "whatsapp"));
+  if (contactName.length < 2 || contactName.length > 80 || !normalized) {
+    redirectError("/admin/leads", "Informe nome e WhatsApp do Brasil com DDD.");
+  }
+
+  const occurredAt = leadOccurredAt(field(formData, "occurredAt"));
+  const productId = nullableField(formData, "productId");
+  const orderNumber = nullableField(formData, "orderNumber");
+  const [customer, product, order] = await Promise.all([
+    prisma.customer.findUnique({ where: { whatsappDigits: normalized.whatsappDigits }, select: { id: true } }),
+    productId
+      ? prisma.product.findUnique({ where: { id: productId }, select: { id: true, name: true } })
+      : Promise.resolve(null),
+    orderNumber
+      ? prisma.order.findUnique({ where: { orderNumber }, select: { id: true, orderNumber: true } })
+      : Promise.resolve(null)
+  ]);
+
+  try {
+    await prisma.whatsAppLead.create({
+      data: {
+        dedupeKey: whatsAppLeadDedupeKey(normalized.whatsappDigits, occurredAt),
+        contactName,
+        whatsapp: normalized.whatsapp,
+        whatsappDigits: normalized.whatsappDigits,
+        sourceLabel: field(formData, "sourceLabel").slice(0, 80) || "WhatsApp",
+        sourcePath: nullableField(formData, "sourcePath")?.slice(0, 220) || null,
+        customerId: customer?.id || null,
+        productId: product?.id || null,
+        productNameSnapshot: product?.name || null,
+        orderId: order?.id || null,
+        orderNumberSnapshot: order?.orderNumber || null,
+        notes: nullableField(formData, "notes")?.slice(0, 1200) || null,
+        occurredAt,
+        qualifiedAt: occurredAt,
+        createdByAdminEmail: admin.email
+      }
+    });
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && error.code === "P2002") {
+      redirectError("/admin/leads", "Este contato já foi registrado neste minuto.");
+    }
+    throw error;
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/analytics");
+  revalidatePath("/admin/leads");
+  redirect("/admin/leads?saved=1");
+}
+
+export async function updateWhatsAppLeadStatusAction(formData: FormData) {
+  await requireAdmin();
+  const id = field(formData, "id");
+  const status = field(formData, "status");
+  if (!id || !whatsAppLeadStatuses.includes(status as (typeof whatsAppLeadStatuses)[number])) {
+    redirectError("/admin/leads", "Status de lead invalido.");
+  }
+
+  await prisma.whatsAppLead.update({
+    where: { id },
+    data: {
+      status: status as (typeof whatsAppLeadStatuses)[number],
+      wonAt: status === "WON" ? new Date() : null,
+      lostAt: status === "LOST" ? new Date() : null
+    }
+  });
+  revalidatePath("/admin");
+  revalidatePath("/admin/analytics");
+  revalidatePath("/admin/leads");
+}
+
 export async function updateOrderStatusAction(formData: FormData) {
   await requireAdmin();
 
@@ -947,10 +1033,19 @@ export async function updateOrderStatusAction(formData: FormData) {
     redirect("/admin/pedidos?error=1");
   }
 
+  const currentOrder = await prisma.order.findUnique({ where: { orderNumber }, select: { id: true, status: true } });
+  if (!currentOrder) redirect("/admin/pedidos?error=1");
+
   await prisma.order.update({
     where: { orderNumber },
     data: { status: status as (typeof statuses)[number] }
   });
+
+  const nextCanceled = status === "CANCELED";
+  const wasCanceled = currentOrder.status === "CANCELED";
+  if (nextCanceled !== wasCanceled) {
+    await recordCreatedOrderProductMetrics(currentOrder.id, nextCanceled ? -1 : 1).catch(() => undefined);
+  }
 
   revalidatePath("/admin");
   revalidatePath("/admin/pedidos");

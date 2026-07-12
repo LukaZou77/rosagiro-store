@@ -18,6 +18,7 @@ import {
   previousBrazilDateKey,
   type SiteAnalyticsRange
 } from "@/lib/site-analytics-core";
+import { analyticsVisitorRetentionCutoff } from "@/lib/admin-analytics-core";
 
 type PageViewPayload = {
   eventId?: unknown;
@@ -46,7 +47,7 @@ function safeHeaderText(value: string | null, maxLength: number) {
   }
 }
 
-function analyticsSecret() {
+export function analyticsHashSecret() {
   const secret = process.env.ANALYTICS_HASH_SECRET || (process.env.NODE_ENV !== "production" ? process.env.SESSION_SECRET : null);
   if (!secret) throw new Error("ANALYTICS_HASH_SECRET nao configurado.");
   return secret;
@@ -80,32 +81,42 @@ export async function recordSitePageView(payload: PageViewPayload, context: Requ
   if (!eventId || !anonymousId || !sessionId || !path) return { ok: false, ignored: false } as const;
 
   const now = context.now || new Date();
-  const secret = analyticsSecret();
+  const secret = analyticsHashSecret();
   const ip = requestIp(context.headers);
   const ownHost = context.headers.get("x-forwarded-host") || context.headers.get("host");
+  const eventDate = eventDateFromKey(brazilDateKey(now));
+  const visitorHash = hmacAnalyticsValue(secret, anonymousId);
+  const sessionHash = hmacAnalyticsValue(secret, sessionId);
 
   try {
-    await prisma.sitePageView.create({
-      data: {
-        eventId,
-        eventDate: eventDateFromKey(brazilDateKey(now)),
-        visitorHash: hmacAnalyticsValue(secret, anonymousId),
-        sessionHash: hmacAnalyticsValue(secret, sessionId),
-        ipHash: ip ? hmacAnalyticsValue(secret, ip) : null,
-        path,
-        referrerHost: normalizeReferrerHost(payload.referrer, ownHost),
-        countryCode: countryCode(context.headers),
-        regionCode: safeHeaderText(context.headers.get("x-vercel-ip-country-region"), 12)?.toUpperCase() || null,
-        city: safeHeaderText(context.headers.get("x-vercel-ip-city"), 80),
-        deviceType: analyticsDeviceType(userAgent),
-        utmSource: normalizeAnalyticsAttribution(payload.utmSource),
-        utmMedium: normalizeAnalyticsAttribution(payload.utmMedium),
-        utmCampaign: normalizeAnalyticsAttribution(payload.utmCampaign),
-        utmTerm: normalizeAnalyticsAttribution(payload.utmTerm),
-        utmContent: normalizeAnalyticsAttribution(payload.utmContent),
-        occurredAt: now
-      }
-    });
+    await prisma.$transaction([
+      prisma.sitePageView.create({
+        data: {
+          eventId,
+          eventDate,
+          visitorHash,
+          sessionHash,
+          ipHash: ip ? hmacAnalyticsValue(secret, ip) : null,
+          path,
+          referrerHost: normalizeReferrerHost(payload.referrer, ownHost),
+          countryCode: countryCode(context.headers),
+          regionCode: safeHeaderText(context.headers.get("x-vercel-ip-country-region"), 12)?.toUpperCase() || null,
+          city: safeHeaderText(context.headers.get("x-vercel-ip-city"), 80),
+          deviceType: analyticsDeviceType(userAgent),
+          utmSource: normalizeAnalyticsAttribution(payload.utmSource),
+          utmMedium: normalizeAnalyticsAttribution(payload.utmMedium),
+          utmCampaign: normalizeAnalyticsAttribution(payload.utmCampaign),
+          utmTerm: normalizeAnalyticsAttribution(payload.utmTerm),
+          utmContent: normalizeAnalyticsAttribution(payload.utmContent),
+          occurredAt: now
+        }
+      }),
+      prisma.analyticsVisitorDay.upsert({
+        where: { eventDate_visitorHash: { eventDate, visitorHash } },
+        create: { eventDate, visitorHash, pageViews: 1, firstSeenAt: now, lastSeenAt: now },
+        update: { pageViews: { increment: 1 }, lastSeenAt: now }
+      })
+    ]);
     return { ok: true, ignored: false } as const;
   } catch (error) {
     if (typeof error === "object" && error && "code" in error && error.code === "P2002") {
@@ -311,6 +322,20 @@ export async function getAdminOperationsDashboard(rawRange: unknown) {
 }
 
 export async function deleteExpiredSiteAnalytics(now = new Date()) {
-  const cutoff = analyticsRetentionCutoff(now);
-  return prisma.sitePageView.deleteMany({ where: { occurredAt: { lt: cutoff } } });
+  const rawCutoff = analyticsRetentionCutoff(now);
+  const visitorCutoff = analyticsVisitorRetentionCutoff(now);
+  const [pageViews, whatsappClicks, productEvents, visitorDays, whatsappSessionDays] = await prisma.$transaction([
+    prisma.sitePageView.deleteMany({ where: { occurredAt: { lt: rawCutoff } } }),
+    prisma.whatsAppClickEvent.deleteMany({ where: { occurredAt: { lt: rawCutoff } } }),
+    prisma.productAnalyticsEvent.deleteMany({ where: { createdAt: { lt: rawCutoff } } }),
+    prisma.analyticsVisitorDay.deleteMany({ where: { eventDate: { lt: visitorCutoff } } }),
+    prisma.whatsAppSessionDay.deleteMany({ where: { eventDate: { lt: visitorCutoff } } })
+  ]);
+  return {
+    pageViews: pageViews.count,
+    whatsappClicks: whatsappClicks.count,
+    productEvents: productEvents.count,
+    visitorDays: visitorDays.count,
+    whatsappSessionDays: whatsappSessionDays.count
+  };
 }

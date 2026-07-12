@@ -115,7 +115,7 @@ export function AdminShellClient({
         label: "Vendas",
         icon: ShoppingBag,
         moduleKey: "sales",
-        matchPaths: ["/admin/pedidos", "/admin/clientes"]
+        matchPaths: ["/admin/pedidos", "/admin/clientes", "/admin/leads"]
       },
       {
         href: "/admin/produtos",

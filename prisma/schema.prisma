@@ -63,6 +63,19 @@ enum NotificationDeliveryStatus {
   FAILED
 }
 
+enum AnalyticsPeriodType {
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
+enum WhatsAppLeadStatus {
+  QUALIFIED
+  WON
+  LOST
+}
+
 model AdminUser {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -263,6 +276,136 @@ model SitePageView {
   @@index([sessionHash, occurredAt])
   @@index([path, eventDate])
   @@index([countryCode, regionCode, city, eventDate])
+}
+
+model AnalyticsVisitorDay {
+  id             String   @id @default(cuid())
+  eventDate      DateTime @db.Date
+  visitorHash    String
+  pageViews      Int      @default(0)
+  whatsappClicks Int      @default(0)
+  firstSeenAt    DateTime
+  lastSeenAt     DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([eventDate, visitorHash])
+  @@index([visitorHash, eventDate])
+}
+
+model WhatsAppClickEvent {
+  id           String   @id @default(cuid())
+  eventId      String   @unique
+  eventDate    DateTime @db.Date
+  visitorHash  String
+  sessionHash  String
+  path         String
+  linkKind     String
+  productId    String?
+  productSlug  String?
+  referrerHost String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  occurredAt   DateTime @default(now())
+
+  @@index([eventDate])
+  @@index([sessionHash, eventDate])
+  @@index([productId, eventDate])
+  @@index([path, eventDate])
+}
+
+model WhatsAppSessionDay {
+  id          String   @id @default(cuid())
+  eventDate   DateTime @db.Date
+  visitorHash String
+  sessionHash String
+  firstSeenAt DateTime
+  createdAt   DateTime @default(now())
+
+  @@unique([eventDate, sessionHash])
+  @@index([visitorHash, eventDate])
+  @@index([firstSeenAt])
+}
+
+model WhatsAppLead {
+  id                  String                @id @default(cuid())
+  dedupeKey           String                @unique
+  status              WhatsAppLeadStatus    @default(QUALIFIED)
+  contactName         String
+  whatsapp            String
+  whatsappDigits      String
+  sourceLabel         String                @default("WhatsApp")
+  sourcePath          String?
+  customerId          String?
+  productId           String?
+  productNameSnapshot String?
+  orderId             String?
+  orderNumberSnapshot String?
+  notes               String?
+  occurredAt          DateTime
+  qualifiedAt         DateTime
+  wonAt               DateTime?
+  lostAt              DateTime?
+  createdByAdminEmail String
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@index([status, qualifiedAt])
+  @@index([whatsappDigits, qualifiedAt])
+  @@index([customerId])
+  @@index([productId])
+  @@index([orderId])
+}
+
+model AnalyticsPeriodAggregate {
+  id               String              @id @default(cuid())
+  periodType       AnalyticsPeriodType
+  periodStart      DateTime            @db.Date
+  periodEnd        DateTime            @db.Date
+  visitors         Int                 @default(0)
+  pageViews        Int                 @default(0)
+  whatsappClicks   Int                 @default(0)
+  whatsappSessions Int                 @default(0)
+  createdOrders    Int                 @default(0)
+  canceledOrders   Int                 @default(0)
+  paidOrders       Int                 @default(0)
+  paidRevenueCents Int                 @default(0)
+  qualifiedLeads   Int                 @default(0)
+  wonLeads         Int                 @default(0)
+  calculatedAt     DateTime            @default(now())
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@unique([periodType, periodStart])
+  @@index([periodStart, periodEnd])
+}
+
+model ProductDailyMetric {
+  id                String   @id @default(cuid())
+  eventDate         DateTime @db.Date
+  productKey        String
+  productId         String?
+  productSlug       String
+  productName       String
+  brandName         String
+  categoryName      String
+  image             String
+  views             Int      @default(0)
+  addToCartQuantity Int      @default(0)
+  orderedUnits      Int      @default(0)
+  orderCount        Int      @default(0)
+  paidUnits         Int      @default(0)
+  paidOrderCount    Int      @default(0)
+  paidRevenueCents  Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([eventDate, productKey])
+  @@index([productId, eventDate])
+  @@index([eventDate, views])
+  @@index([eventDate, orderedUnits])
+  @@index([eventDate, paidRevenueCents])
 }
 
 model AdminNotification {
