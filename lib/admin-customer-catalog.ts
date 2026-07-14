@@ -46,6 +46,13 @@ const productSelect = {
 
 export type CustomerCatalogProduct = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
 
+type CustomerCatalogProductGroup = {
+  id: string;
+  slug: string;
+  label: string;
+  products: CustomerCatalogProduct[];
+};
+
 const pricedCondition = {
   AND: [
     { baseBoxPriceCents: { not: null } },
@@ -89,6 +96,24 @@ function customerCatalogWhere(filters: CustomerCatalogFilters = {}): Prisma.Prod
         : {}
     ]
   };
+}
+
+function groupCustomerCatalogProducts(products: CustomerCatalogProduct[]) {
+  const groups = new Map<string, CustomerCatalogProductGroup>();
+  for (const product of products) {
+    const existing = groups.get(product.category.id);
+    if (existing) {
+      existing.products.push(product);
+    } else {
+      groups.set(product.category.id, {
+        id: product.category.id,
+        slug: product.category.slug,
+        label: product.category.label,
+        products: [product]
+      });
+    }
+  }
+  return Array.from(groups.values());
 }
 
 export async function getCustomerCatalogOptions() {
@@ -168,26 +193,42 @@ export async function getCustomerCatalogPrintData(filters: CustomerCatalogFilter
         })
       : null;
 
-  const groups = new Map<string, { id: string; slug: string; label: string; products: CustomerCatalogProduct[] }>();
-  for (const product of products) {
-    const existing = groups.get(product.category.id);
-    if (existing) {
-      existing.products.push(product);
-    } else {
-      groups.set(product.category.id, {
-        id: product.category.id,
-        slug: product.category.slug,
-        label: product.category.label,
-        products: [product]
-      });
-    }
-  }
-
   return {
     brand,
     category,
     products,
-    groups: Array.from(groups.values()),
+    groups: groupCustomerCatalogProducts(products),
     skuCount: products.reduce((sum, product) => sum + product.skus.length, 0)
   };
+}
+
+export async function getCustomerCatalogCompletePrintData() {
+  const products = await prisma.product.findMany({
+    where: customerCatalogWhere(),
+    select: productSelect,
+    orderBy: [{ brand: { name: "asc" } }, { category: { label: "asc" } }, { name: "asc" }]
+  });
+  const brandMap = new Map<
+    string,
+    {
+      brand: CustomerCatalogProduct["brand"];
+      products: CustomerCatalogProduct[];
+    }
+  >();
+
+  for (const product of products) {
+    const existing = brandMap.get(product.brand.id);
+    if (existing) {
+      existing.products.push(product);
+    } else {
+      brandMap.set(product.brand.id, { brand: product.brand, products: [product] });
+    }
+  }
+
+  return Array.from(brandMap.values()).map((entry) => ({
+    brand: entry.brand,
+    products: entry.products,
+    groups: groupCustomerCatalogProducts(entry.products),
+    skuCount: entry.products.reduce((sum, product) => sum + product.skus.length, 0)
+  }));
 }

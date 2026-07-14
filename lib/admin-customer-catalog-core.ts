@@ -34,6 +34,12 @@ export type CustomerCatalogDownloadData = {
   groups: CustomerCatalogDownloadGroup[];
 };
 
+export type CustomerCatalogCompleteDownloadData = {
+  productCount: number;
+  skuCount: number;
+  brands: CustomerCatalogDownloadData[];
+};
+
 export type CustomerCatalogPriceStatus = "all" | "priced" | "consult";
 
 export type CustomerCatalogSkuInput = {
@@ -145,4 +151,8 @@ export function customerCatalogBrandFileName(brandName: string) {
 
 export function customerCatalogDocumentTitle(brandName: string) {
   return customerCatalogBrandFileName(brandName);
+}
+
+export function customerCatalogCompleteFileName() {
+  return "Catalogo completo RosaGiro.pdf";
 }

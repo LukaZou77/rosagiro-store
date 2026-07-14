@@ -7,6 +7,7 @@ import {
   catalogUnitPriceLabel,
   catalogWholesaleLabel,
   customerCatalogBrandFileName,
+  customerCatalogCompleteFileName,
   customerCatalogDocumentTitle,
   hasCatalogWholesalePrice,
   normalizeCatalogPage,
@@ -74,4 +75,5 @@ test("shows a future SKU price range without changing current equal-price produc
 test("uses only the safe brand name for PDF files", () => {
   assert.equal(customerCatalogDocumentTitle("Ruby Rose"), "Ruby Rose");
   assert.equal(customerCatalogBrandFileName('  Marca / Especial: 01  '), "Marca - Especial - 01");
+  assert.equal(customerCatalogCompleteFileName(), "Catalogo completo RosaGiro.pdf");
 });

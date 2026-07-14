@@ -1,18 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Archive, Download, LoaderCircle } from "lucide-react";
+import { BookOpenText, Download, LoaderCircle } from "lucide-react";
 import type { TDocumentDefinitions } from "pdfmake/interfaces";
-import { getCustomerCatalogBrandDownloadData } from "@/app/admin/catalogo-clientes/actions";
-import { customerCatalogBrandFileName } from "@/lib/admin-customer-catalog-core";
+import { getCustomerCatalogCompleteDownloadData } from "@/app/admin/catalogo-clientes/actions";
+import { customerCatalogCompleteFileName } from "@/lib/admin-customer-catalog-core";
 import {
-  buildCustomerCatalogPdfDefinition,
-  collectCustomerCatalogImageSources
+  buildCustomerCatalogCompletePdfDefinition,
+  collectCustomerCatalogCompleteImageSources
 } from "@/lib/admin-customer-catalog-pdf";
 import styles from "./AdminCatalogBulkDownload.module.css";
 import { useAdminLanguage } from "@/components/AdminLanguageProvider";
-
-type BrandOption = { id: string; name: string };
 
 type PdfMakeClient = {
   addVirtualFileSystem: (vfs: Record<string, string>) => void;
@@ -20,22 +18,6 @@ type PdfMakeClient = {
     getBlob: (callback: (blob: Blob) => void) => void;
   };
 };
-
-type ZipClient = {
-  file: (name: string, data: Blob) => void;
-  generateAsync: (
-    options: {
-      type: "blob";
-      compression: "STORE";
-      mimeType: string;
-      streamFiles: boolean;
-    },
-    onUpdate: (metadata: { percent: number; currentFile: string | null }) => void
-  ) => Promise<Blob>;
-};
-
-type ZipConstructor = new () => ZipClient;
-const BULK_CATALOG_FILE_NAME = "Catálogos RosaGiro - todas as marcas.zip";
 
 function moduleDefault<T>(module: T | { default: T }): T {
   return typeof module === "object" && module !== null && "default" in module ? module.default : module;
@@ -58,7 +40,7 @@ async function fetchImageBlob(source: string, width: number) {
   return fallback.blob();
 }
 
-async function imageBlobToJpeg(blob: Blob, maxDimension: number) {
+async function imageBlobToJpeg(blob: Blob, maxDimension: number, quality: number) {
   const bitmap = await createImageBitmap(blob);
   const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
   const width = Math.max(1, Math.round(bitmap.width * scale));
@@ -78,15 +60,15 @@ async function imageBlobToJpeg(blob: Blob, maxDimension: number) {
   context.imageSmoothingQuality = "high";
   context.drawImage(bitmap, 0, 0, width, height);
   bitmap.close();
-  return canvas.toDataURL("image/jpeg", 0.74);
+  return canvas.toDataURL("image/jpeg", quality);
 }
 
 async function loadImageData(source: string, isHeader: boolean) {
-  const maxDimension = isHeader ? 640 : 160;
+  const maxDimension = isHeader ? 640 : 144;
   // Next/Image only accepts configured optimizer widths. 256 is the nearest
-  // standard size above the 160 px PDF thumbnail target.
+  // standard size above the PDF thumbnail target.
   const blob = await fetchImageBlob(source, isHeader ? 640 : 256);
-  return imageBlobToJpeg(blob, maxDimension);
+  return imageBlobToJpeg(blob, maxDimension, isHeader ? 0.82 : 0.68);
 }
 
 async function loadImages(
@@ -138,12 +120,12 @@ function triggerDownload(url: string, fileName: string) {
 }
 
 export function AdminCatalogBulkDownload({
-  brands,
+  brandCount,
   headerImage,
   minimumOrderCents,
   whatsapp
 }: {
-  brands: BrandOption[];
+  brandCount: number;
   headerImage: string;
   minimumOrderCents: number;
   whatsapp: string;
@@ -162,7 +144,7 @@ export function AdminCatalogBulkDownload({
   }, [downloadUrl]);
 
   async function handleDownload() {
-    if (running || !brands.length) return;
+    if (running || !brandCount) return;
     setRunning(true);
     setFailed(false);
     setProgress(0);
@@ -170,14 +152,10 @@ export function AdminCatalogBulkDownload({
 
     try {
       setStatus(t("Carregando o gerador de PDF...", "正在加载 PDF 生成器……"));
-      const [zipModule, pdfMakeModule, pdfFontsModule] = await Promise.all([
-        import("jszip"),
+      const [pdfMakeModule, pdfFontsModule] = await Promise.all([
         import("pdfmake/build/pdfmake"),
         import("pdfmake/build/vfs_fonts")
       ]);
-      const JSZip = moduleDefault(
-        zipModule as unknown as ZipConstructor | { default: ZipConstructor }
-      );
       const pdfMake = moduleDefault(
         pdfMakeModule as unknown as PdfMakeClient | { default: PdfMakeClient }
       );
@@ -185,57 +163,36 @@ export function AdminCatalogBulkDownload({
         pdfFontsModule as unknown as Record<string, string> | { default: Record<string, string> }
       );
       pdfMake.addVirtualFileSystem(fontVfs);
-      const zip = new JSZip();
-      let imageFailures = 0;
-
-      for (let index = 0; index < brands.length; index += 1) {
-        const brand = brands[index];
-        const basePercent = (index / brands.length) * 90;
-        setStatus(`${index + 1}/${brands.length} · ${brand.name} · ${t("preparando dados", "正在准备数据")}`);
-        setProgress(Math.round(basePercent));
-        const data = await getCustomerCatalogBrandDownloadData(brand.id);
-        const sources = collectCustomerCatalogImageSources(data, headerImage);
-        const loaded = await loadImages(sources, headerImage, (completed, total) => {
-          if (completed !== total && completed % 8 !== 0) return;
-          const brandPercent = total ? (completed / total) * (90 / brands.length) : 0;
-          setProgress(Math.min(90, Math.round(basePercent + brandPercent)));
-          setStatus(`${index + 1}/${brands.length} · ${brand.name} · ${t("imagens", "图片")} ${completed}/${total}`);
-        });
-        imageFailures += loaded.failed;
-        setStatus(`${index + 1}/${brands.length} · ${brand.name} · ${t("gerando PDF", "正在生成 PDF")}`);
-        const definition = buildCustomerCatalogPdfDefinition(data, {
-          headerImage,
-          imageData: loaded.imageData,
-          minimumOrderCents,
-          whatsapp
-        });
-        const pdfBlob = await createPdfBlob(pdfMake, definition);
-        zip.file(`${customerCatalogBrandFileName(brand.name)}.pdf`, pdfBlob);
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      }
-
-      setStatus(t("Compactando os PDFs...", "正在压缩 PDF……"));
-      const zipBlob = await zip.generateAsync(
-        {
-          type: "blob",
-          compression: "STORE",
-          mimeType: "application/zip",
-          streamFiles: true
-        },
-        (metadata) => setProgress(90 + Math.round(metadata.percent / 10))
-      );
-      const nextDownloadUrl = URL.createObjectURL(zipBlob);
+      setProgress(4);
+      setStatus(t("Carregando todos os produtos ativos...", "正在读取全部启用商品……"));
+      const completeData = await getCustomerCatalogCompleteDownloadData();
+      const sources = collectCustomerCatalogCompleteImageSources(completeData, headerImage);
+      const loaded = await loadImages(sources, headerImage, (completed, total) => {
+        if (completed !== total && completed % 12 !== 0) return;
+        setProgress(4 + Math.round((completed / Math.max(1, total)) * 84));
+        setStatus(`${t("Preparando imagens", "正在处理图片")} · ${completed}/${total}`);
+      });
+      setProgress(92);
+      setStatus(t("Montando um único PDF pesquisável...", "正在合并为一份可搜索的 PDF……"));
+      const definition = buildCustomerCatalogCompletePdfDefinition(completeData, {
+        headerImage,
+        imageData: loaded.imageData,
+        minimumOrderCents,
+        whatsapp
+      });
+      const pdfBlob = await createPdfBlob(pdfMake, definition);
+      const nextDownloadUrl = URL.createObjectURL(pdfBlob);
       setDownloadUrl(nextDownloadUrl);
-      triggerDownload(nextDownloadUrl, BULK_CATALOG_FILE_NAME);
+      triggerDownload(nextDownloadUrl, customerCatalogCompleteFileName());
       setProgress(100);
       setStatus(
-        imageFailures
-          ? t(`${brands.length} PDFs concluídos. ${imageFailures} imagens indisponíveis foram ignoradas.`, `${brands.length} 份 PDF 已完成，${imageFailures} 张无法读取的图片已跳过。`)
-          : t(`${brands.length} PDFs prontos. Download iniciado; use o botão abaixo se necessário.`, `${brands.length} 份 PDF 已生成并开始下载；如有需要可使用下方按钮重新下载。`)
+        loaded.failed
+          ? t(`PDF completo concluído. ${loaded.failed} imagens indisponíveis foram ignoradas.`, `完整 PDF 已生成，${loaded.failed} 张无法读取的图片已跳过。`)
+          : t(`PDF completo com ${completeData.brands.length} marcas pronto. Download iniciado.`, `包含 ${completeData.brands.length} 个品牌的完整 PDF 已生成并开始下载。`)
       );
     } catch (error) {
       setFailed(true);
-      setStatus(error instanceof Error ? error.message : t("Não foi possível gerar todos os catálogos.", "无法生成全部品牌目录。"));
+      setStatus(error instanceof Error ? error.message : t("Não foi possível gerar o catálogo completo.", "无法生成完整目录。"));
     } finally {
       setRunning(false);
     }
@@ -245,11 +202,11 @@ export function AdminCatalogBulkDownload({
     // Browser translation rewrites text nodes and can break rapid React progress updates.
     <div className={`${styles.wrapper} notranslate`} translate="no">
       <button className={`button secondary ${styles.button}`} type="button" onClick={handleDownload} disabled={running}>
-        {running ? <LoaderCircle className="admin-spin" size={17} /> : <Archive size={17} />}
-        {running ? t("Gerando catálogos...", "正在生成目录……") : t("Baixar todas as marcas", "一键下载全部品牌")}
+        {running ? <LoaderCircle className="admin-spin" size={17} /> : <BookOpenText size={17} />}
+        {running ? t("Gerando catálogo completo...", "正在生成完整目录……") : t("Baixar catálogo completo", "下载完整总目录")}
       </button>
       <div className={`${styles.status}${failed ? ` ${styles.error}` : ""}`} aria-live="polite">
-        <span>{status || t("Gera um PDF por marca e reúne tudo em um arquivo ZIP.", "每个品牌生成一份 PDF，并汇总为一个 ZIP 文件。")}</span>
+        <span>{status || t("Reúne todas as marcas em um único PDF pesquisável.", "把全部品牌合并为一份可搜索的 PDF。")}</span>
         {running || progress > 0 ? (
           <span className={styles.progressTrack} aria-hidden="true">
             <span className={styles.progressBar} style={{ width: `${progress}%` }} />
@@ -257,9 +214,9 @@ export function AdminCatalogBulkDownload({
         ) : null}
       </div>
       {downloadUrl && !running ? (
-        <a className={`button primary ${styles.button}`} href={downloadUrl} download={BULK_CATALOG_FILE_NAME}>
+        <a className={`button primary ${styles.button}`} href={downloadUrl} download={customerCatalogCompleteFileName()}>
           <Download size={17} />
-          {t("Baixar ZIP pronto", "下载已生成的 ZIP")}
+          {t("Baixar PDF completo", "下载完整 PDF")}
         </a>
       ) : null}
     </div>

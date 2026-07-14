@@ -68,10 +68,10 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
       <div className="admin-heading">
         <p className="eyebrow">{t("Ferramenta interna", "内部工具")}</p>
         <h1>{t("Catálogo para clientes", "客户货盘目录")}</h1>
-        <p>{t("Filtre o catálogo ativo, revise modelos e gere um PDF por marca para enviar diretamente aos clientes.", "筛选启用商品、核对型号，并按品牌生成可直接发送给客户的葡语 PDF。")}</p>
+        <p>{t("Baixe um único PDF com todas as marcas ou filtre o catálogo para gerar um arquivo específico.", "可下载包含全部品牌的一份总目录，也可筛选后生成指定品牌的 PDF。")}</p>
         <div className="admin-actions">
           <AdminCatalogBulkDownload
-            brands={options.brands.map((brand) => ({ id: brand.id, name: brand.name }))}
+            brandCount={options.brands.length}
             headerImage={siteConfig.brandAssets.headerImage}
             minimumOrderCents={siteConfig.wholesale.minimumOrderCents}
             whatsapp={storeProfile.whatsapp}
@@ -95,7 +95,7 @@ export default async function AdminCustomerCatalogPage({ searchParams }: PagePro
           <PackageSearch size={20} />
           <div>
             <strong>{t("Monte o arquivo antes de enviar", "发送前先生成目录")}</strong>
-            <span>{t("O PDF sempre usa uma única marca; a categoria e a busca são opcionais.", "每份 PDF 只包含一个品牌；品类和搜索条件为选填。")}</span>
+            <span>{t("O catálogo completo reúne todas as marcas; para um arquivo menor, selecione uma marca abaixo.", "完整总目录包含全部品牌；如需更小文件，可在下方选择单个品牌。")}</span>
           </div>
         </div>
         <form className="filters admin-filters" action="/admin/catalogo-clientes">
