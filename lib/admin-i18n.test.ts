@@ -33,14 +33,14 @@ test("traduz estados dinamicos do painel sem alterar a versao em portugues", () 
   const signal = {
     key: "shipping-rates",
     group: "Logística",
-    label: "Tabela Anjun ativa",
+    label: "Melhor Envio",
     status: "READY",
     severity: "high",
-    message: "Existe tabela Anjun ativa para estimar frete por CEP e peso.",
+    message: "Cotação de produção configurada para calcular transportadoras por CEP antes do pagamento.",
     actionHref: "/admin/frete"
   };
   assert.equal(localizeLaunchSignal(signal, "pt-BR"), signal);
-  assert.equal(localizeLaunchSignal(signal, "zh-CN").label, "已启用 Anjun 运费表");
+  assert.equal(localizeLaunchSignal(signal, "zh-CN").label, "Melhor Envio 实时运费");
   assert.equal(adminPaymentStatusLabel("WARNING", "simulated", "zh-CN"), "当前为模拟模式");
 });
 

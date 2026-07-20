@@ -18,7 +18,7 @@ const launchLabelsZh: Record<string, string> = {
   "catalog-media-weight": "图片与重量",
   "payment-live": "Mercado Pago 正式付款",
   "payment-pix-account": "Pix 收款账户",
-  "shipping-rates": "已启用 Anjun 运费表",
+  "shipping-rates": "Melhor Envio 实时运费",
   "address-validation": "地址与邮编",
   "deploy-env": "生产环境",
   "policies-seo": "政策与 SEO",
@@ -73,9 +73,9 @@ function launchMessageZh(signal: StatusText) {
       if (signal.status === "WARNING") return "当前使用个人 Pix 临时收款，扩大销售前应更换企业账户。";
       return "尚未配置可用 Pix 收款账户，请在店铺资料中完成设置。";
     case "shipping-rates":
-      return signal.status === "READY"
-        ? "已启用 Anjun 运费表，可按邮编和重量估算运费。"
-        : "尚未启用 Anjun 运费表，结账只能使用自提或人工询价。";
+      if (signal.status === "READY") return "Melhor Envio 正式报价已启用，可在付款前按邮编计算运费。";
+      if (signal.status === "WARNING") return "Melhor Envio 已有令牌，但尚未切换到正式环境。";
+      return "尚未配置 Melhor Envio 令牌；没有有效报价时，配送订单不能进入付款。";
     case "address-validation":
       return signal.status === "READY"
         ? "已配置 Google Maps，可辅助验证地址；ViaCEP 继续作为备用。"
@@ -281,7 +281,7 @@ const readinessItemsZh: Record<string, { group: string; title: string; descripti
   "catalog-media-quality": { group: "商品目录", title: "商品图片与媒体", description: "确认最终商品图、视觉规范、外部链接和占位图，并在部署前把本地图片迁移到持久存储。" },
   "payment-mercado-pago-sandbox": { group: "支付", title: "Mercado Pago 沙盒验证", description: "配置测试账户、沙盒访问令牌和 Webhook 密钥，并通过 HTTPS 验证 Checkout Pro。" },
   "payment-live-cutover": { group: "支付", title: "切换真实付款", description: "正式收费前复核正式凭证、公开 Webhook、到账金额、库存、拒付、退款和监控。" },
-  "shipping-anjun-rates": { group: "物流", title: "Anjun 运费表与规则", description: "确认 D2D Pickup 运费表有效期、发货地、覆盖邮编、商品重量和包装。" },
+  "shipping-melhor-envio": { group: "物流", title: "Melhor Envio 与运费规则", description: "确认正式令牌、发货邮编、商品重量、技术包装参数和结账报价。" },
   "shipping-manual-fees": { group: "物流", title: "费用与人工复核", description: "明确保险、税费、风险地区、偏远地区、承运商和例外情况的处理方式。" },
   "address-google-maps": { group: "地址", title: "可选 Google Maps", description: "如启用 Google 地址验证，请配置受限 API 密钥，并检查自动补全、详情和地址验证。" },
   "address-manual-review": { group: "地址", title: "地址人工复核", description: "制定 ViaCEP 资料不完整、Google 未启用或需要复核地址的处理流程。" },

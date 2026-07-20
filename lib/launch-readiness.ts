@@ -1,4 +1,5 @@
 import type { StoreProfile } from "@/src/generated/prisma/client";
+import { getMelhorEnvioConfigStatus } from "@/lib/melhor-envio";
 import { buildPaymentConfigDiagnostics } from "@/lib/payment-config-diagnostics";
 import type { ProductQualitySummary } from "@/lib/product-quality";
 
@@ -26,7 +27,6 @@ export type LaunchReadinessSnapshot = {
 type BuildSnapshotInput = {
   profile: StoreProfile | null;
   productQuality: ProductQualitySummary;
-  activeShippingImportCount: number;
   policyPageCount: number;
   readinessDoneCount: number;
   readinessTotalCount: number;
@@ -61,6 +61,8 @@ function signal(input: LaunchReadinessSignal): LaunchReadinessSignal {
 }
 
 export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchReadinessSnapshot {
+  const melhorEnvio = getMelhorEnvioConfigStatus(input.env);
+  const melhorEnvioProductionReady = melhorEnvio.configured && melhorEnvio.environment === "production";
   const env = input.env || process.env;
   const profile = input.profile;
   const profileHasRealIdentity = Boolean(profile && hasRealCnpj(profile.cnpj) && !placeholderAddressPattern.test(profile.street));
@@ -166,13 +168,15 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
     signal({
       key: "shipping-rates",
       group: "Logística",
-      label: "Tabela Anjun ativa",
-      status: input.activeShippingImportCount > 0 ? "READY" : "ACTION_REQUIRED",
+      label: "Melhor Envio",
+      status: melhorEnvioProductionReady ? "READY" : melhorEnvio.tokenConfigured ? "WARNING" : "ACTION_REQUIRED",
       severity: "high",
       message:
-        input.activeShippingImportCount > 0
-          ? "Existe tabela Anjun ativa para estimar frete por CEP e peso."
-          : "Nenhuma tabela Anjun ativa; checkout ficará limitado a retirada/consulta manual.",
+        melhorEnvioProductionReady
+          ? "Cotação de produção configurada para calcular transportadoras por CEP antes do pagamento."
+          : melhorEnvio.tokenConfigured
+            ? "A integração possui token, mas ainda não está marcada como ambiente de produção."
+            : "Token da Melhor Envio ausente; entregas não podem ser finalizadas sem uma cotação válida.",
       actionHref: "/admin/frete"
     }),
     signal({
@@ -258,14 +262,12 @@ export async function getLaunchReadinessSnapshot() {
   const [
     profile,
     productQuality,
-    activeShippingImportCount,
     policyPageCount,
     readinessDoneCount,
     readinessTotalCount
   ] = await Promise.all([
     prisma.storeProfile.findUnique({ where: { id: "main" } }),
     getProductQualitySummary(),
-    prisma.shippingRateImport.count({ where: { active: true } }),
     prisma.siteInfoPage.count({ where: { active: true } }),
     prisma.launchReadinessItem.count({ where: { status: "DONE" } }),
     prisma.launchReadinessItem.count()
@@ -274,7 +276,6 @@ export async function getLaunchReadinessSnapshot() {
   return buildLaunchReadinessSnapshot({
     profile,
     productQuality,
-    activeShippingImportCount,
     policyPageCount: policyPageCount + 1,
     readinessDoneCount,
     readinessTotalCount

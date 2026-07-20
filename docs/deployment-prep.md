@@ -65,6 +65,6 @@ npm run db:seed
 - Use Mercado Pago test seller/buyer accounts for sandbox. Never put sandbox or live tokens in `.env.example` or source files.
 - Run CSV imports only from the admin area.
 - Product images uploaded locally are written to `public/uploads/products` and ignored by git. Production uploads should use Vercel Blob so product photos survive deploys and rebuilds.
-- Import Anjun freight tables only through `/admin/frete`; keep original XLSX files local and out of git.
-- Freight is simulated from imported D2D Pickup rates. No real carrier API, label purchase, insurance, or tax automation runs in this phase.
+- Configure Melhor Envio credentials only through protected environment variables; never commit access tokens.
+- Checkout freight is quoted by CEP before payment. Label purchase, insurance, and tax automation are not enabled in this phase.
 - Use the simulated payment page only for local/test validation. It must not be exposed as the official customer payment method when `PAYMENT_MODE=mercado_pago_live`.

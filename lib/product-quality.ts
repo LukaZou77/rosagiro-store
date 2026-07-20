@@ -245,7 +245,7 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
         group: "operation",
         severity: "low",
         label: "Peso não informado",
-        message: "Peso vazio é permitido; o frete usa peso técnico interno até a conferência real."
+        message: "Peso vazio é permitido; a Melhor Envio usa o perfil técnico da categoria até a conferência real."
       })
     );
   }

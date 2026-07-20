@@ -162,10 +162,10 @@ const launchReadinessItems = [
     sortOrder: 60
   },
   {
-    itemKey: "shipping-anjun-rates",
+    itemKey: "shipping-melhor-envio",
     group: "Logística",
-    title: "Tabela Anjun e regras de frete",
-    description: "Confirmar validade da tabela D2D Pickup, origem de envio, CEPs cobertos, peso de produtos e embalagem.",
+    title: "Melhor Envio e regras de frete",
+    description: "Confirmar token de produção, origem de envio, CEPs, peso dos produtos e perfis técnicos de embalagem.",
     priority: 1,
     sortOrder: 70
   },
@@ -563,11 +563,11 @@ const legacyInfoPageDefaults = {
       },
       {
         title: "Cotacao por CEP",
-        body: "A primeira regra usa tabela Anjun D2D Pickup importada no admin, com origem Sao Paulo e calculo por CEP e peso. Seguro, impostos e areas especiais podem exigir confirmacao manual."
+        body: "O checkout consulta a Melhor Envio em tempo real, com origem em Sao Paulo, e inclui o frete escolhido no total antes do pagamento."
       },
       {
-        title: "Integracoes futuras",
-        body: "Algumas regiões podem exigir confirmação de cobertura, prazo, seguro, imposto ou taxa adicional pelo WhatsApp antes do envio."
+        title: "Cobertura e prazo",
+        body: "As opcoes dependem do CEP, peso, dimensoes e servicos habilitados. Sem cotacao valida, o pedido de entrega nao segue para pagamento."
       }
     ]
   }
@@ -602,8 +602,10 @@ const legacyLaunchReadinessCopy: Record<string, Partial<{ group: string; title: 
     title: "Imagens e midia de produto",
     description: "Confirmar imagens finais dos produtos, padrao visual, links externos, ausencia de placeholders e migracao de uploads locais para armazenamento persistente antes da Vercel."
   },
-  "shipping-anjun-rates": {
-    group: "Logistica"
+  "shipping-melhor-envio": {
+    group: "Logistica",
+    title: "Melhor Envio e regras de frete",
+    description: "Confirmar token de producao, origem, CEPs, peso dos produtos e perfis tecnicos de embalagem."
   },
   "shipping-manual-fees": {
     group: "Logistica",

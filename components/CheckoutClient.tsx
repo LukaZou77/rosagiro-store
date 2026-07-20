@@ -67,9 +67,10 @@ type AddressDetailsResponse = {
   message?: string;
 };
 
-type CheckoutShippingMethod = "ANJUN_D2D_PICKUP" | "RETIRADA_LOCAL";
+type CheckoutShippingMethod = "MELHOR_ENVIO" | "RETIRADA_LOCAL";
 
 type ShippingQuoteOption = {
+  selectionKey: string;
   method: CheckoutShippingMethod;
   carrier: string;
   service: string;
@@ -86,7 +87,7 @@ type ShippingQuoteOption = {
 };
 
 type ShippingQuoteResponse = {
-  status: "OK" | "NO_RATE" | "INVALID_CEP" | "EMPTY_CART" | "ERROR";
+  status: "OK" | "NO_RATE" | "INVALID_CEP" | "EMPTY_CART" | "CONFIGURATION_REQUIRED" | "ERROR";
   message: string;
   options: ShippingQuoteOption[];
   productWeightGrams: number;
@@ -139,7 +140,7 @@ export function CheckoutClient({
   const [contactTouched, setContactTouched] = useState({ name: false, phone: false });
   const [activeStep, setActiveStep] = useState<CheckoutStep>("contact");
   const [stepError, setStepError] = useState("");
-  const [shippingMethod, setShippingMethod] = useState<CheckoutShippingMethod>("RETIRADA_LOCAL");
+  const [shippingSelectionKey, setShippingSelectionKey] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("PIX");
   const [address, setAddress] = useState<AddressState>({
     cep: "",
@@ -159,7 +160,7 @@ export function CheckoutClient({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [shippingQuote, setShippingQuote] = useState<ShippingQuoteResponse | null>(null);
   const [shippingStatus, setShippingStatus] = useState<ShippingStatus>("idle");
-  const [shippingMessage, setShippingMessage] = useState("Informe o CEP para estimar Anjun D2D Pickup.");
+  const [shippingMessage, setShippingMessage] = useState("Informe o CEP para calcular as opções de entrega.");
   const [mobileFieldFocused, setMobileFieldFocused] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -209,7 +210,7 @@ export function CheckoutClient({
     () => paymentMethodsForCheckout(mercadoPagoMaxInstallments, { includeSimulated: includeSimulatedPayment }),
     [includeSimulatedPayment, mercadoPagoMaxInstallments]
   );
-  const selectedShipping = shippingQuote?.options.find((option) => option.method === shippingMethod) || null;
+  const selectedShipping = shippingQuote?.options.find((option) => option.selectionKey === shippingSelectionKey) || null;
   const shipping = selectedShipping?.priceCents || 0;
   const total = subtotal + shipping;
   const emptyCheckoutWhatsAppHref = useMemo(() => buildGeneralWhatsAppHref("checkout sem itens", whatsappPhone), [whatsappPhone]);
@@ -243,13 +244,14 @@ export function CheckoutClient({
     emailLooksValid(contactValue.email) &&
     cleanDigits(contactValue.phone).length >= 10 &&
     cleanDigits(contactValue.cpf).length >= 11;
-  const addressComplete =
+  const addressFieldsComplete =
     cepDigits(address.cep).length === 8 &&
     Boolean(address.state) &&
     address.city.trim().length > 0 &&
     address.street.trim().length > 0 &&
     address.number.trim().length > 0 &&
     address.district.trim().length > 0;
+  const addressComplete = addressFieldsComplete && Boolean(selectedShipping);
   const paymentComplete = contactComplete && addressComplete && Boolean(paymentMethod);
   const stepComplete: Record<CheckoutStep, boolean> = {
     contact: contactComplete,
@@ -280,7 +282,7 @@ export function CheckoutClient({
     address: addressComplete
       ? `${address.city.trim()}/${address.state} · ${address.cep}`
       : siteConfig.checkout.steps.address.summary,
-    payment: `${paymentLabel} · ${selectedShipping?.label || "Retirada local ou consulta"}`
+    payment: `${paymentLabel} · ${selectedShipping?.label || "Entrega ainda não selecionada"}`
   };
   const currentStepIndex = stepIndex(activeStep);
   const checkoutStepCards = checkoutStepOrder.map((step, index) => ({
@@ -385,6 +387,8 @@ export function CheckoutClient({
       if (!address.street.trim()) return failStep("address", siteConfig.checkout.validation.street, "street");
       if (!address.number.trim()) return failStep("address", siteConfig.checkout.validation.number, "number");
       if (!address.district.trim()) return failStep("address", siteConfig.checkout.validation.district, "district");
+      if (shippingStatus === "loading") return failStep("address", "Aguarde o cálculo do frete.");
+      if (!selectedShipping) return failStep("address", "Calcule o frete e escolha uma opção de entrega.");
     }
 
     if (step === "payment" && !paymentMethod) {
@@ -461,16 +465,16 @@ export function CheckoutClient({
         setCepStatus("idle");
         setCepMessage(manualCepMessage);
         setShippingQuote(null);
-        setShippingMethod("RETIRADA_LOCAL");
+        setShippingSelectionKey("");
         setShippingStatus("idle");
-        setShippingMessage("Informe o CEP para estimar Anjun D2D Pickup.");
+        setShippingMessage("Informe o CEP para calcular as opções de entrega.");
       } else if (digits.length < 8) {
         setCepStatus("idle");
         setCepMessage("Digite os 8 números do CEP para buscar o endereço.");
         setShippingQuote(null);
-        setShippingMethod("RETIRADA_LOCAL");
+        setShippingSelectionKey("");
         setShippingStatus("idle");
-        setShippingMessage("Informe o CEP com 8 dígitos para estimar Anjun D2D Pickup.");
+        setShippingMessage("Informe o CEP com 8 dígitos para calcular as opções de entrega.");
       } else {
         setCepStatus("loading");
         setCepMessage("Buscando CEP...");
@@ -766,30 +770,30 @@ export function CheckoutClient({
         window.clearTimeout(loadingId);
 
         if (!response.ok || result.status === "ERROR") {
-          setShippingQuote(null);
-          setShippingMethod("RETIRADA_LOCAL");
+          setShippingQuote(result);
+          setShippingSelectionKey("");
           setShippingStatus("error");
           setShippingMessage(result.message || "Não foi possível calcular o frete agora.");
           return;
         }
 
-        const anjunOption = result.options.find((option) => option.method === "ANJUN_D2D_PICKUP");
+        const deliveryOptions = result.options.filter((option) => option.method === "MELHOR_ENVIO");
         setShippingQuote(result);
-        setShippingMethod((current) => {
-          if (current === "ANJUN_D2D_PICKUP" && anjunOption) return current;
-          return anjunOption ? "ANJUN_D2D_PICKUP" : "RETIRADA_LOCAL";
+        setShippingSelectionKey((current) => {
+          if (result.options.some((option) => option.selectionKey === current)) return current;
+          return deliveryOptions[0]?.selectionKey || "";
         });
         setShippingStatus(result.status === "OK" ? "ready" : "warning");
-        setShippingMessage(anjunOption || result.options.length ? result.message : "Escolha retirada local ou consulte o atendimento.");
+        setShippingMessage(result.message);
       })
       .catch((quoteError: unknown) => {
         if (!active) return;
         window.clearTimeout(loadingId);
         if (quoteError instanceof DOMException && quoteError.name === "AbortError") return;
         setShippingQuote(null);
-        setShippingMethod("RETIRADA_LOCAL");
+        setShippingSelectionKey("");
         setShippingStatus("error");
-        setShippingMessage("Não foi possível calcular o frete agora. Retirada local segue disponível.");
+        setShippingMessage("Não foi possível calcular o frete agora. Tente novamente antes de finalizar.");
       });
 
     return () => {
@@ -833,7 +837,8 @@ export function CheckoutClient({
         district: String(formData.get("district") || ""),
         city: String(formData.get("city") || "")
       },
-      shippingMethod,
+      shippingMethod: selectedShipping?.method,
+      shippingRateId: selectedShipping?.rateId || undefined,
       paymentMethod,
       attribution: readAttribution()
     };
@@ -1135,36 +1140,24 @@ export function CheckoutClient({
               </p>
               {shippingQuote?.options.length ? (
                 shippingQuote.options.map((option) => (
-                  <label className="radio-card" key={option.method}>
+                  <label className="radio-card" key={option.selectionKey}>
                     <input
                       type="radio"
                       name="shipping"
-                      checked={shippingMethod === option.method}
-                      onChange={() => setShippingMethod(option.method)}
+                      checked={shippingSelectionKey === option.selectionKey}
+                      onChange={() => setShippingSelectionKey(option.selectionKey)}
                     />
                     <span>
                       <strong>{option.label}</strong>
                       <small>
-                        {option.priceCents === 0 ? "R$ 0,00" : money(option.priceCents)} / peso cobrado{" "}
-                        {(option.billableWeightGrams / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg
+                        {option.priceCents === 0 ? "R$ 0,00" : money(option.priceCents)} · {option.estimate}
                       </small>
-                      <small>{option.zone ? `${option.city}/${option.state} - ${option.zone}` : option.estimate}</small>
+                      <small>{option.note}</small>
                     </span>
                   </label>
                 ))
               ) : (
-                <label className="radio-card">
-                  <input
-                    type="radio"
-                    name="shipping"
-                    checked={shippingMethod === "RETIRADA_LOCAL"}
-                    onChange={() => setShippingMethod("RETIRADA_LOCAL")}
-                  />
-                  <span>
-                    <strong>Retirada local</strong>
-                    <small>R$ 0,00 / combine pelo atendimento</small>
-                  </span>
-                </label>
+                <p className="table-note">As opções aparecem aqui após informar um CEP válido.</p>
               )}
               <div className="delivery-note inline">
                 {siteConfig.wholesale.deliveryModes.map((mode) => (
@@ -1253,8 +1246,8 @@ export function CheckoutClient({
             <strong>{money(subtotal)}</strong>
           </div>
           <div>
-            <span>Frete base</span>
-            <strong>{shipping === 0 ? "R$ 0,00" : money(shipping)}</strong>
+            <span>Frete</span>
+            <strong>{selectedShipping ? (shipping === 0 ? "R$ 0,00" : money(shipping)) : "A calcular"}</strong>
           </div>
           {selectedShipping ? (
             <p>

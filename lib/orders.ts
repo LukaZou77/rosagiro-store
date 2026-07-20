@@ -39,6 +39,7 @@ export type CheckoutInput = {
     complement?: string;
   };
   shippingMethod: CheckoutShippingMethod;
+  shippingRateId?: string;
   paymentMethod: PaymentMethodValue;
   attribution?: OrderAttribution;
 };
@@ -114,7 +115,11 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
 
   const shippingMethod = parseCheckoutShippingMethod(data.shippingMethod);
   if (!shippingMethod) {
-    throw new OrderError("Escolha Anjun D2D Pickup ou retirada local.");
+    throw new OrderError("Escolha uma opção de entrega ou retirada local.");
+  }
+  const shippingRateId = cleanText(data.shippingRateId).slice(0, 80) || undefined;
+  if (shippingMethod === "MELHOR_ENVIO" && !shippingRateId) {
+    throw new OrderError("Calcule o frete e escolha uma transportadora antes de continuar.");
   }
   const rawPaymentMethod = cleanText((data as Partial<CheckoutInput>).paymentMethod).toUpperCase();
   if (!isPaymentMethod(rawPaymentMethod)) {
@@ -140,7 +145,7 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
     throw new OrderError("Pagamento temporariamente indisponível. Escolha Pix ou cartão pelo Mercado Pago.", 503);
   }
 
-  return { items, customer, address, shippingMethod, paymentMethod, attribution };
+  return { items, customer, address, shippingMethod, shippingRateId, paymentMethod, attribution };
 }
 
 function makeOrderNumber() {
@@ -153,7 +158,12 @@ export async function createOrder(input: CheckoutInput) {
   const slugs = input.items.map((item) => item.slug);
   const products = await prisma.product.findMany({
     where: { slug: { in: slugs }, active: true, deletedAt: null },
-    include: { brand: true, inventory: true, skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } }
+    include: {
+      brand: true,
+      category: true,
+      inventory: true,
+      skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }
+    }
   });
   const productBySlug = new Map(products.map((product) => [product.slug, product]));
 
@@ -175,7 +185,8 @@ export async function createOrder(input: CheckoutInput) {
       sku: selectedSku || null,
       quantity: item.quantity,
       priceCents: effectiveSkuPriceCents(product, selectedSku),
-      weightGrams: product.weightGrams
+      weightGrams: product.weightGrams,
+      categorySlug: product.category.slug
     };
   });
 
@@ -185,14 +196,22 @@ export async function createOrder(input: CheckoutInput) {
   try {
     shippingQuote = await resolveOrderShipping({
       method: input.shippingMethod,
+      rateId: input.shippingRateId,
       cep: input.address.cep,
-      lines
+      lines: lines.map((line) => ({
+        productSlug: line.sku ? `${line.product.slug}:${line.sku.id}` : line.product.slug,
+        productName: line.product.name,
+        categorySlug: line.categorySlug,
+        weightGrams: line.weightGrams,
+        unitPriceCents: line.priceCents,
+        quantity: line.quantity
+      }))
     });
   } catch (error) {
     throw new OrderError(
       error instanceof Error
         ? error.message
-        : "Não foi possível recalcular o frete. Revise o CEP ou escolha retirada local."
+        : "Não foi possível recalcular o frete. Revise o CEP e escolha novamente a entrega."
     );
   }
   const total = totalCents(subtotal, discount, shippingQuote.shippingCents);

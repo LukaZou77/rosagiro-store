@@ -56,11 +56,11 @@ Use `gallery` with up to 6 image paths separated by `|`. Use the wholesale field
 
 Use `docs/product-import-template.csv` as a starting template. The importer previews and validates rows before writing to the database, then creates or updates products by `slug`.
 
-## Freight simulation
+## Freight quotes
 
-Admins can import the Anjun 2026 workbook at `/admin/frete`. The first version reads only the `D2D Pickup` sheet, stores structured CEP and weight-rate rows in PostgreSQL, and quotes checkout freight from `SP-Sao Paulo`.
+Admins configure the Melhor Envio production token and origin at `/admin/frete`. Checkout requests carrier options by destination CEP and recalculates the selected service on the server before order creation.
 
-No carrier API is called and no shipping label is purchased. Insurance, ICMS/ISS, risk-area fees, transportadora, and excursao remain manual confirmation notes.
+The current integration only quotes freight. It does not purchase shipping labels. Insurance, ICMS/ISS, risk-area fees, transportadora, and excursao remain manual confirmation notes.
 
 ## Payment sandbox
 

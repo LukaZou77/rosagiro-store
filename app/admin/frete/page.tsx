@@ -1,79 +1,76 @@
-import { AdminFreightImportClient } from "@/components/AdminFreightImportClient";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
+import { formatCep } from "@/lib/cep";
 import { createAdminTranslator } from "@/lib/admin-i18n";
 import { getAdminLocale } from "@/lib/admin-i18n-server";
-import { formatAdminDateTime } from "@/lib/date-format";
-import { prisma } from "@/lib/db";
-import { money } from "@/lib/money";
-import { shippingConfig } from "@/lib/shipping";
+import { getMelhorEnvioConfigStatus } from "@/lib/melhor-envio";
 
 export default async function AdminFreightPage() {
-  const [admin, latestBatch, locale] = await Promise.all([
-    requireAdmin(),
-    prisma.shippingRateImport.findFirst({
-      where: { carrier: shippingConfig.carrier, service: shippingConfig.service },
-      orderBy: { createdAt: "desc" }
-    }),
-    getAdminLocale()
-  ]);
+  const [admin, locale] = await Promise.all([requireAdmin(), getAdminLocale()]);
   const t = createAdminTranslator(locale);
-  const activeRates = latestBatch
-    ? await prisma.shippingRate.count({ where: { importId: latestBatch.id, active: true } })
-    : 0;
-  const sampleRate = latestBatch
-    ? await prisma.shippingRate.findFirst({
-        where: {
-          importId: latestBatch.id,
-          originKey: shippingConfig.originKey,
-          cepStart: { lte: 1001000 },
-          cepEnd: { gte: 1001000 },
-          active: true
-        }
-      })
-    : null;
+  const status = getMelhorEnvioConfigStatus();
+  const productionReady = status.configured && status.environment === "production";
 
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
         <p className="eyebrow">{t("Frete", "运费")}</p>
-        <h1>{t("Tabela Anjun D2D Pickup", "Anjun D2D Pickup 运费表")}</h1>
+        <h1>{t("Melhor Envio", "Melhor Envio 实时运费")}</h1>
         <p>
-          {t("Importe a planilha XLSX para simular frete por CEP e peso. Esta fase não compra etiqueta, não chama API real e não cobra seguro ou impostos automaticamente.", "导入 XLSX 表格，根据 CEP 和重量计算运费。当前阶段不会购买运单、调用真实承运商 API，也不会自动收取保险或税费。")}
+          {t(
+            "O checkout consulta transportadoras em tempo real e recalcula a opção escolhida antes de criar o pedido. Nenhuma etiqueta é comprada nesta etapa.",
+            "结账页会实时查询承运商，并在创建订单前重新计算所选运费。当前阶段不会自动购买运单。"
+          )}
         </p>
       </div>
 
       <section className="metric-grid compact">
         <div>
-          <span>{t("Status", "状态")}</span>
-          <strong>{latestBatch?.active ? t("Ativa", "已启用") : t("Sem tabela", "无运费表")}</strong>
+          <span>{t("Integração", "接口状态")}</span>
+          <strong>{status.configured ? t("Configurada", "已配置") : t("Aguardando token", "等待令牌")}</strong>
         </div>
         <div>
-          <span>{t("Linhas", "费率行数")}</span>
-          <strong>{activeRates.toLocaleString(locale)}</strong>
+          <span>{t("Ambiente", "环境")}</span>
+          <strong>{status.environment === "production" ? t("Produção", "正式") : "Sandbox"}</strong>
         </div>
         <div>
-          <span>UFs</span>
-          <strong>{latestBatch?.stateCount || 0}</strong>
+          <span>{t("Origem", "发货邮编")}</span>
+          <strong>{status.originConfigured ? formatCep(status.originCep) : "-"}</strong>
         </div>
         <div>
-          <span>Amostra 01001-000</span>
-          <strong>{sampleRate ? money(sampleRate.ratesCents[0] || 0) : "-"}</strong>
+          <span>User-Agent</span>
+          <strong>{status.userAgentConfigured ? t("Válido", "有效") : t("Revisar", "需检查")}</strong>
         </div>
       </section>
 
-      {latestBatch ? (
-        <div className="admin-notice success" role="status">
-          {t("Última importação: ", "最近导入：")}{latestBatch.sourceName} / {latestBatch.sourceSheet} /{" "}
-          {formatAdminDateTime(latestBatch.createdAt, t("Sem registro", "未记录"), locale)}{t(". Origem de checkout: ", "。结账发货地：")}{shippingConfig.originDisplay}{t(".", "。")}
-        </div>
-      ) : (
-        <div className="admin-notice error" role="alert">
-          {t("Nenhuma tabela Anjun ativa. O checkout exibirá retirada local e orientará consulta manual até a importação.", "当前没有启用的 Anjun 运费表。导入前，结账页会显示到店自取并提示人工咨询运费。")}
-        </div>
-      )}
+      <div className={productionReady ? "admin-notice success" : "admin-notice error"} role="status">
+        {productionReady
+          ? t(
+              "A cotação de produção está pronta. Faça um pedido de teste antes de liberar campanhas para o checkout.",
+              "正式运费报价已就绪。投放广告导向结账前，请先完成一笔测试订单。"
+            )
+          : t(
+              "Para ativar no site, configure MELHOR_ENVIO_TOKEN e MELHOR_ENVIO_ENVIRONMENT=production na Vercel. Enquanto faltar configuração, o checkout não permite finalizar uma entrega sem preço.",
+              "要在正式网站启用，请在 Vercel 配置 MELHOR_ENVIO_TOKEN 和 MELHOR_ENVIO_ENVIRONMENT=production。配置缺失时，结账不会允许客户以未计算运费的方式完成配送订单。"
+            )}
+      </div>
 
-      <AdminFreightImportClient />
+      <section className="admin-form-section">
+        <div className="admin-heading compact">
+          <p className="eyebrow">{t("Fluxo ativo", "当前流程")}</p>
+          <h2>{t("Cotação antes do pagamento", "付款前确定运费")}</h2>
+        </div>
+        <div className="field-helper">
+          <strong>1.</strong>
+          <span>{t("Cliente informa o CEP e escolhe uma transportadora.", "客户填写邮编并选择承运商。")}</span>
+          <strong>2.</strong>
+          <span>{t("O servidor recalcula o serviço e inclui o frete no total.", "服务器重新报价，并把运费计入订单总额。")}</span>
+          <strong>3.</strong>
+          <span>{t("Mercado Pago recebe o total de produtos e frete.", "Mercado Pago 接收商品与运费合计金额。")}</span>
+          <strong>4.</strong>
+          <span>{t("A compra de etiqueta continua manual no painel da Melhor Envio.", "运单仍需在 Melhor Envio 后台手动购买。")}</span>
+        </div>
+      </section>
     </AdminShell>
   );
 }

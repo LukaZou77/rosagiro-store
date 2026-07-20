@@ -59,9 +59,9 @@ export const siteConfig = {
     nationalDeliveryText: "Enviamos para todo o Brasil com cotação por CEP.",
     nationalDeliveryNote: "Algumas regiões podem exigir confirmação de cobertura, prazo, seguro ou taxa adicional pelo WhatsApp.",
     deliveryModes: [
-      "Entrega para todo o Brasil com cotação por CEP",
+      "Frete calculado pela Melhor Envio no checkout",
       "Retirada local mediante confirmação",
-      "Anjun, transportadora ou excursão sob consulta"
+      "Transportadora própria ou excursão sob consulta"
     ],
     shelfSignals: ["Pedido mínimo R$ 300", "Envio para todo o Brasil", "Produtos em estoque", "Atendimento no WhatsApp"]
   },
@@ -222,7 +222,7 @@ export const siteConfig = {
       },
       address: {
         title: "Endereço e frete",
-        summary: "CEP, entrega nacional, retirada ou frete por consulta."
+        summary: "CEP, cotação online de entrega ou retirada confirmada."
       },
       payment: {
         title: "Pagamento",
@@ -352,11 +352,11 @@ export const infoPages = {
       },
       {
         title: "Cotação por CEP",
-        body: "A primeira regra usa tabela Anjun D2D Pickup importada no admin, com origem São Paulo e cálculo por CEP e peso. Seguro, impostos e áreas especiais podem exigir confirmação manual."
+        body: "O checkout consulta a Melhor Envio em tempo real com origem em São Paulo e inclui o frete escolhido no total antes do pagamento. Produtos sem peso confirmado usam um perfil técnico conservador até a conferência."
       },
       {
-        title: "Integrações futuras",
-        body: "Algumas regiões podem exigir confirmação de cobertura, prazo, seguro, imposto ou taxa adicional pelo WhatsApp antes do envio."
+        title: "Cobertura e prazo",
+        body: "As opções dependem do CEP, peso, dimensões e serviços habilitados. Quando nenhuma transportadora retornar preço, o pedido de entrega não segue para pagamento sem nova cotação."
       }
     ]
   },

@@ -54,9 +54,7 @@ export default async function HomePage() {
   const wholesaleBandTrustPoints = siteConfig.homePromotions.trustPoints.filter(
     (point) => !point.toLowerCase().includes("entrega para todo o brasil")
   );
-  const wholesaleBandDeliveryModes = siteConfig.wholesale.deliveryModes.filter(
-    (mode) => !mode.toLowerCase().includes("anjun")
-  );
+  const wholesaleBandDeliveryModes = siteConfig.wholesale.deliveryModes;
 
   return (
     <StoreShell categories={categories}>

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         status: "ERROR",
-        message: "Não foi possível calcular o frete agora. Preencha o endereço e fale no WhatsApp se necessário.",
+        message: "Não foi possível calcular o frete agora. Tente novamente antes de finalizar o pedido.",
         options: [],
         productWeightGrams: 0,
         billableWeightGrams: 0
