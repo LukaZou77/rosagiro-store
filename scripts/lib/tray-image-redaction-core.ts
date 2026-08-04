@@ -25,6 +25,9 @@ export type SensitiveRegion = OcrBox & {
 
 const PRICE_MARKERS = /^(?:[uj]ni(?:dade)?|unit|unitario|unitaria|box|caixa)$/i;
 const PACKAGE_MARKERS = /^(?:box|caixa)$/i;
+const TOTAL_COST_PATTERN = /(?:^|\s)(?:total|pre[cç]o|valor)\s*:?\s*(?:r\$\s*)?\d+[.,]\d{2}(?:\s|$)/i;
+const INLINE_UNIT_COST_PATTERN = /^(?:[uj]ni(?:dade)?|unit(?:ario|aria)?)(?:r\$)?\d+[.,]\d{2}/i;
+const INLINE_PACKAGE_COST_PATTERN = /^(?:box|caixa)(?:r\$)?\d+[.,]\d{2}/i;
 const CJK_PATTERN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g;
 
 function normalizedWord(value: string) {
@@ -40,6 +43,17 @@ function includesPriceDetails(value: string) {
 
 function includesStrongPackageCost(value: string) {
   return /\d+[.,]\d+|r\$|reais|pcs|\/\s*\d/i.test(value);
+}
+
+function totalCostWords(line: OcrLine) {
+  const start = line.words.findIndex((word) => /^(?:total|preco|valor)/i.test(normalizedWord(word.text)));
+  if (start < 0) return [];
+  const selected: OcrWord[] = [];
+  for (const word of line.words.slice(start, start + 4)) {
+    selected.push(word);
+    if (includesStrongPackageCost(word.text)) break;
+  }
+  return selected;
 }
 
 function boxWidth(box: OcrBox) {
@@ -95,11 +109,36 @@ export function collectSensitiveRegions(lines: OcrLine[]) {
   const regions: SensitiveRegion[] = [];
 
   for (const line of lines) {
+    if (TOTAL_COST_PATTERN.test(line.text)) {
+      const selected = totalCostWords(line);
+      regions.push({
+        ...(selected.length ? unionBox(selected.map((word) => word.bbox)) : line.bbox),
+        reasons: ["package-cost"],
+        evidence: [line.text.trim()]
+      });
+    }
+
     for (let index = 0; index < line.words.length; index += 1) {
       const word = line.words[index];
       const marker = normalizedWord(word.text);
 
+      if (INLINE_UNIT_COST_PATTERN.test(marker) || INLINE_PACKAGE_COST_PATTERN.test(marker)) {
+        const isPackageCost = INLINE_PACKAGE_COST_PATTERN.test(marker);
+        regions.push({
+          ...word.bbox,
+          reasons: [isPackageCost ? "package-cost" : "unit-cost"],
+          evidence: [word.text]
+        });
+      }
+
       if (PRICE_MARKERS.test(marker)) {
+        const previousWord = line.words[index - 1];
+        const describesPackageQuantity =
+          /^(?:[uj]ni(?:dade)?|unit)$/i.test(marker) &&
+          Boolean(previousWord && /^\d+$/.test(normalizedWord(previousWord.text))) &&
+          line.words.slice(0, index).some((candidate) => PACKAGE_MARKERS.test(normalizedWord(candidate.text)));
+        if (describesPackageQuantity) continue;
+
         const selected = [word];
         for (const candidate of line.words.slice(index + 1, index + 4)) {
           if (!includesPriceDetails(candidate.text)) break;

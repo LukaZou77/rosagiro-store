@@ -52,6 +52,30 @@ function tesseractLines(data: Awaited<ReturnType<Worker["recognize"]>>["data"], 
   return lines;
 }
 
+async function recognizeTopCostBand(worker: Worker, image: Buffer | string) {
+  const source = typeof image === "string" ? await fs.readFile(image) : image;
+  const normalized = await sharp(source).autoOrient().toBuffer();
+  const metadata = await sharp(normalized).metadata();
+  const width = metadata.width || 0;
+  const height = metadata.height || 0;
+  if (!width || !height) return [];
+
+  const bandHeight = Math.max(1, Math.round(height * 0.25));
+  const targetWidth = Math.max(width, 1800);
+  const scale = targetWidth / width;
+  const prepared = await sharp(normalized)
+    .extract({ left: 0, top: 0, width, height: bandHeight })
+    .resize({ width: targetWidth })
+    .grayscale()
+    .normalize()
+    .threshold(165)
+    .negate()
+    .png()
+    .toBuffer();
+  const result = await worker.recognize(prepared, {}, { text: true, blocks: true });
+  return tesseractLines(result.data, scale);
+}
+
 async function recognize(worker: Worker, image: Buffer | string) {
   const source = typeof image === "string" ? await fs.readFile(image) : image;
   const normalized = await sharp(source).autoOrient().toBuffer();
@@ -128,7 +152,9 @@ function rectangleSvg(width: number, height: number, color: RgbColor) {
 
 async function recognizeWithWorkers(workers: Worker | Worker[], image: Buffer | string) {
   const workerList = Array.isArray(workers) ? workers : [workers];
-  return (await Promise.all(workerList.map((worker) => recognize(worker, image)))).flat();
+  const regularLines = (await Promise.all(workerList.map((worker) => recognize(worker, image)))).flat();
+  const topCostLines = await recognizeTopCostBand(workerList[0], image);
+  return [...regularLines, ...topCostLines];
 }
 
 export async function inspectImageForSensitiveText(workers: Worker | Worker[], imagePath: string) {

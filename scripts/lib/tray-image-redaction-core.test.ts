@@ -91,3 +91,56 @@ test("extends cost redactions across trailing package-count text", () => {
     { x0: 12, y0: 2, x1: 200, y1: 48, reasons: ["package-cost"], evidence: ["Box 280.80"] }
   );
 });
+
+test("detects total cost lines without removing package quantity lines", () => {
+  const findings = collectSensitiveRegions([
+    {
+      text: "Box com: 24 uni.",
+      confidence: 90,
+      bbox: { x0: 10, y0: 10, x1: 165, y1: 30 },
+      words: [
+        { text: "Box", confidence: 90, bbox: { x0: 10, y0: 10, x1: 50, y1: 30 } },
+        { text: "com:", confidence: 90, bbox: { x0: 55, y0: 10, x1: 95, y1: 30 } },
+        { text: "24", confidence: 90, bbox: { x0: 100, y0: 10, x1: 125, y1: 30 } },
+        { text: "uni.", confidence: 90, bbox: { x0: 130, y0: 10, x1: 165, y1: 30 } }
+      ]
+    },
+    {
+      text: "Box com: 24 uni. Total:R$95,76",
+      confidence: 90,
+      bbox: { x0: 10, y0: 40, x1: 390, y1: 62 },
+      words: [
+        { text: "Box", confidence: 90, bbox: { x0: 10, y0: 40, x1: 50, y1: 62 } },
+        { text: "com:", confidence: 90, bbox: { x0: 55, y0: 40, x1: 95, y1: 62 } },
+        { text: "24", confidence: 90, bbox: { x0: 100, y0: 40, x1: 125, y1: 62 } },
+        { text: "uni.", confidence: 90, bbox: { x0: 130, y0: 40, x1: 165, y1: 62 } },
+        { text: "Total:R$95,76", confidence: 90, bbox: { x0: 250, y0: 40, x1: 390, y1: 62 } }
+      ]
+    }
+  ]);
+
+  assert.equal(findings.length, 1);
+  assert.deepEqual(findings[0].reasons, ["package-cost"]);
+  assert.match(findings[0].evidence[0], /95,76/);
+  assert.equal(findings[0].x0, 250);
+});
+
+test("detects price markers joined to their amount", () => {
+  const findings = collectSensitiveRegions([
+    {
+      text: "TS5505004 | Uni3.80",
+      confidence: 90,
+      bbox: { x0: 10, y0: 10, x1: 280, y1: 42 },
+      words: [
+        { text: "TS5505004", confidence: 92, bbox: { x0: 10, y0: 10, x1: 140, y1: 42 } },
+        { text: "|", confidence: 80, bbox: { x0: 150, y0: 10, x1: 156, y1: 42 } },
+        { text: "Uni3.80", confidence: 94, bbox: { x0: 180, y0: 10, x1: 280, y1: 42 } }
+      ]
+    }
+  ]);
+
+  assert.equal(findings.length, 1);
+  assert.deepEqual(findings[0].reasons, ["unit-cost"]);
+  assert.equal(findings[0].x0, 180);
+  assert.equal(findings[0].x1, 280);
+});
