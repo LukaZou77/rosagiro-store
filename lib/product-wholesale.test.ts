@@ -81,7 +81,7 @@ test("uses product-level stock for closed mixed packages", () => {
 test("uses the authoritative package price instead of multiplying a rounded unit price", () => {
   const product = {
     priceCents: 913,
-    baseBoxPriceCents: 32850,
+    baseBoxPriceCents: 26280,
     baseBoxPieces: 36,
     wholesalePackage: "Embalagem fechada com 36 unidades: R$ 328,50."
   };

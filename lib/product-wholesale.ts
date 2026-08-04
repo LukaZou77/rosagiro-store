@@ -1,6 +1,7 @@
 import {
   formatPlainBrl,
   formatWholesalePackage,
+  parseDecimalCents,
   parseStandardWholesaleDescription,
   wholesalePackageConsultText
 } from "@/lib/product-price-adjustment";
@@ -66,13 +67,17 @@ export function productWholesalePackagePriceCents(product: WholesalePackagePrice
   const pieces = productWholesalePackagePieces(product);
   if (!pieces) return null;
 
-  const storedPrice = Math.floor(Number(product.baseBoxPriceCents) || 0);
-  if (storedPrice > 0) return storedPrice;
-
   const legacyPricing = parseStandardWholesaleDescription(product.descriptionPt || "");
   if (legacyPricing.boxPriceCents && legacyPricing.boxPieces === pieces) {
     return legacyPricing.boxPriceCents;
   }
+
+  const currentPackagePriceMatch = clean(product.wholesalePackage).match(/R\$\s*([0-9.]+(?:,[0-9]{1,2})?)/i);
+  const currentPackagePrice = currentPackagePriceMatch ? parseDecimalCents(currentPackagePriceMatch[1]) : 0;
+  if (currentPackagePrice > 0) return currentPackagePrice;
+
+  const storedPrice = Math.floor(Number(product.baseBoxPriceCents) || 0);
+  if (storedPrice > 0) return storedPrice;
 
   return Math.max(0, Math.floor(Number(product.priceCents) || 0)) * pieces;
 }
