@@ -15,6 +15,7 @@ type ProductContact = {
 type CartContactItem = {
   quantity: number;
   packagePieces?: number | null;
+  lineTotalCents?: number | null;
   product: {
     name: string;
     priceCents: number;
@@ -121,7 +122,8 @@ export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: n
       ? `${packageCount} ${packageCount === 1 ? "embalagem fechada" : "embalagens fechadas"} (${item.quantity} unidades)`
       : `${item.quantity} unidades`;
 
-    return `- ${quantityLabel}: ${item.product.name} (${item.product.brand.name}) = ${money(item.product.priceCents * item.quantity)}`;
+    const lineTotalCents = Math.max(0, Math.floor(Number(item.lineTotalCents) || 0)) || item.product.priceCents * item.quantity;
+    return `- ${quantityLabel}: ${item.product.name} (${item.product.brand.name}) = ${money(lineTotalCents)}`;
   });
 
   return buildHref(

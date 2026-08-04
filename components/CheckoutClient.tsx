@@ -223,6 +223,7 @@ export function CheckoutClient({
       items.map((item) => ({
         quantity: item.quantity,
         packagePieces: item.packagePieces,
+        lineTotalCents: item.lineTotalCents,
         product: {
           name: item.name,
           priceCents: item.priceCents,
@@ -274,7 +275,7 @@ export function CheckoutClient({
         item_id: item.slug,
         item_name: item.name,
         item_brand: item.brandName,
-        price: item.priceCents / 100,
+        price: item.quantity > 0 ? item.lineTotalCents / item.quantity / 100 : item.priceCents / 100,
         quantity: item.quantity
       }))
     });

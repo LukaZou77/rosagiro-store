@@ -74,6 +74,7 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
         .map((line) => ({
           quantity: line.quantity,
           packagePieces: line.packagePieces,
+          lineTotalCents: line.lineTotalCents,
           product: {
             name: line.name,
             priceCents: line.priceCents,

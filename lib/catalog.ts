@@ -59,6 +59,7 @@ const productCardSelect = {
   name: true,
   subcategory: true,
   priceCents: true,
+  baseBoxPriceCents: true,
   baseBoxPieces: true,
   suggestedQuantity: true,
   kitRecommendation: true,

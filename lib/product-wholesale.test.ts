@@ -4,7 +4,9 @@ import {
   productCommercialSummary,
   productEditorialDescription,
   productWholesalePackageLabel,
+  productWholesaleLineTotalCents,
   productWholesalePackagePieces,
+  productWholesalePackagePriceCents,
   productWholesaleStockQuantity,
   wholesalePackageFromLegacyDescription
 } from "./product-wholesale";
@@ -74,4 +76,18 @@ test("uses product-level stock for closed mixed packages", () => {
     }),
     12
   );
+});
+
+test("uses the authoritative package price instead of multiplying a rounded unit price", () => {
+  const product = {
+    priceCents: 913,
+    baseBoxPriceCents: 32850,
+    baseBoxPieces: 36,
+    wholesalePackage: "Embalagem fechada com 36 unidades: R$ 328,50."
+  };
+
+  assert.equal(productWholesalePackagePriceCents(product), 32850);
+  assert.equal(productWholesaleLineTotalCents(product, 36), 32850);
+  assert.equal(productWholesaleLineTotalCents(product, 72), 65700);
+  assert.equal(productWholesaleLineTotalCents(product, 1), 0);
 });

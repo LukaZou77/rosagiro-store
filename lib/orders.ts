@@ -5,10 +5,14 @@ import { createOrderNotificationSafely } from "@/lib/admin-notifications";
 import { normalizeBrazilWhatsapp, upsertCustomerFromContact } from "@/lib/customers";
 import { prisma } from "@/lib/db";
 import { validateCheckoutAddress } from "@/lib/google-address";
-import { discountCents, money, subtotalCents, totalCents } from "@/lib/money";
+import { discountCents, money, totalCents } from "@/lib/money";
 import { isPaymentMethod, paymentModeAllowsSimulated, type PaymentMethodValue } from "@/lib/payments";
 import { recordCreatedOrderProductMetrics, recordPaidOrderProductMetrics } from "@/lib/product-daily-metrics";
-import { productWholesalePackagePieces, productWholesaleStockQuantity } from "@/lib/product-wholesale";
+import {
+  productWholesaleLineTotalCents,
+  productWholesalePackagePieces,
+  productWholesaleStockQuantity
+} from "@/lib/product-wholesale";
 import { resolveOrderShipping } from "@/lib/shipping";
 import { parseCheckoutShippingMethod, type CheckoutShippingMethod } from "@/lib/shipping-rules";
 import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
@@ -180,6 +184,7 @@ export async function createOrder(input: CheckoutInput) {
       product,
       quantity: item.quantity,
       priceCents: product.priceCents,
+      lineTotalCents: productWholesaleLineTotalCents(product, item.quantity),
       weightGrams: product.weightGrams,
       categorySlug: product.category.slug
     };
@@ -201,7 +206,7 @@ export async function createOrder(input: CheckoutInput) {
     }
   }
 
-  const subtotal = subtotalCents(lines);
+  const subtotal = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
   const remainingToMinimum = wholesaleMinimumRemainingCents(subtotal, siteConfig.wholesale.minimumOrderCents);
   if (remainingToMinimum > 0) {
     throw new OrderError(
@@ -296,7 +301,7 @@ export async function createOrder(input: CheckoutInput) {
           productSkuCode: null,
           unitPriceCents: line.priceCents,
           quantity: line.quantity,
-          lineTotalCents: line.priceCents * line.quantity
+          lineTotalCents: line.lineTotalCents
         }))
       },
       payment: {

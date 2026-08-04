@@ -1,4 +1,8 @@
-import { productWholesalePackagePieces, productWholesaleStockQuantity } from "@/lib/product-wholesale";
+import {
+  productWholesalePackagePieces,
+  productWholesalePackagePriceCents,
+  productWholesaleStockQuantity
+} from "@/lib/product-wholesale";
 import { siteConfig } from "@/lib/site-config";
 
 export type CartCompletionProduct = {
@@ -6,6 +10,7 @@ export type CartCompletionProduct = {
   name: string;
   image: string;
   priceCents: number;
+  baseBoxPriceCents?: number | null;
   baseBoxPieces?: number | null;
   wholesalePackage?: string | null;
   badges: string[];
@@ -49,7 +54,7 @@ function productStock(product: Pick<CartCompletionProduct, "inventory"> & { skus
 
 function recommendationReason(product: CartCompletionProduct, remainingCents: number, preferredCategories: Set<string>) {
   const packagePieces = productWholesalePackagePieces(product) || 1;
-  const packagePrice = product.priceCents * packagePieces;
+  const packagePrice = productWholesalePackagePriceCents(product) || product.priceCents * packagePieces;
   if (remainingCents > 0 && packagePrice <= remainingCents) return "Ajuda a fechar o mínimo";
   if (preferredCategories.has(product.category.slug)) return "Combina com sua lista";
   if (/mais vendido|favorito|destaque|novo/i.test(product.badges.join(" "))) return "Boa saída para reposição";
@@ -96,7 +101,7 @@ export function getCartCompletionRecommendations(
       const badgeBoost = /mais vendido|favorito|destaque|novo/i.test(product.badges.join(" ")) ? 1 : 0;
       const effectivePrice = product.priceCents;
       const packagePieces = productWholesalePackagePieces(product) || 1;
-      const packagePrice = effectivePrice * packagePieces;
+      const packagePrice = productWholesalePackagePriceCents(product) || effectivePrice * packagePieces;
       const fitsGap = remainingCents > 0 && packagePrice <= remainingCents;
       const nearGap = remainingCents > 0 ? Math.max(0, 30 - Math.floor(Math.abs(packagePrice - remainingCents) / 1000)) : 0;
       const score =

@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import type { CartSummary } from "@/lib/cart-summary";
 import { prisma } from "@/lib/db";
-import { discountCents, subtotalCents, totalCents } from "@/lib/money";
-import { productWholesalePackagePieces, productWholesaleStockQuantity } from "@/lib/product-wholesale";
+import { discountCents, totalCents } from "@/lib/money";
+import {
+  productWholesaleLineTotalCents,
+  productWholesalePackagePieces,
+  productWholesalePackagePriceCents,
+  productWholesaleStockQuantity
+} from "@/lib/product-wholesale";
 import { siteConfig } from "@/lib/site-config";
 import { normalizeWholesaleLineQuantity } from "@/lib/wholesale-order";
 
@@ -61,6 +66,7 @@ export async function POST(request: Request) {
       const product = productMap.get(item.slug);
       const stockQuantity = product ? productWholesaleStockQuantity(product) : 0;
       const packagePieces = product ? productWholesalePackagePieces(product) : null;
+      const packagePriceCents = product ? productWholesalePackagePriceCents(product) : null;
       const requestedProductQuantity = requestedQuantityBySlug.get(item.slug) || item.quantity;
       const packageValid = Boolean(packagePieces && requestedProductQuantity % packagePieces === 0);
       const packageCount = packagePieces ? Math.floor(requestedProductQuantity / packagePieces) : 0;
@@ -68,7 +74,7 @@ export async function POST(request: Request) {
       const available = active && stockQuantity >= item.quantity && Boolean(packagePieces);
       const acceptedQuantity = product ? item.quantity : 0;
       const priceCents = product?.priceCents || 0;
-      const lineTotalCents = priceCents * acceptedQuantity;
+      const lineTotalCents = product ? productWholesaleLineTotalCents(product, acceptedQuantity) : 0;
       const warning = !product
         ? "Produto não encontrado."
         : !active
@@ -93,6 +99,7 @@ export async function POST(request: Request) {
         quantity: acceptedQuantity,
         stockQuantity,
         packagePieces,
+        packagePriceCents,
         packageValid,
         packageCount,
         active,
@@ -103,7 +110,7 @@ export async function POST(request: Request) {
     });
     const validLines = lines.filter((line) => line.quantity > 0 && line.available && line.packageValid);
     const packageReady = lines.length > 0 && lines.every((line) => line.available && line.packageValid);
-    const subtotal = subtotalCents(validLines.map((line) => ({ priceCents: line.priceCents, quantity: line.quantity })));
+    const subtotal = validLines.reduce((sum, line) => sum + line.lineTotalCents, 0);
     const discount = discountCents();
     const total = totalCents(subtotal, discount, 0);
     const minimumOrderCents = siteConfig.wholesale.minimumOrderCents;

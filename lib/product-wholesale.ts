@@ -18,6 +18,11 @@ type WholesalePackageInput = Pick<WholesaleProductDetails, "baseBoxPieces" | "wh
   descriptionPt?: string | null;
 };
 
+type WholesalePackagePriceInput = WholesalePackageInput & {
+  priceCents: number;
+  baseBoxPriceCents?: number | null;
+};
+
 type WholesaleStockInput = {
   inventory?: { quantity: number } | null;
   skus?: Array<{ quantity: number; active: boolean }>;
@@ -55,6 +60,29 @@ export function productWholesalePackagePieces(product: WholesalePackageInput) {
 export function productWholesalePackageLabel(product: WholesalePackageInput) {
   const pieces = productWholesalePackagePieces(product);
   return pieces ? `Embalagem fechada com ${pieces} unidades` : "Embalagem fechada sob consulta";
+}
+
+export function productWholesalePackagePriceCents(product: WholesalePackagePriceInput) {
+  const pieces = productWholesalePackagePieces(product);
+  if (!pieces) return null;
+
+  const storedPrice = Math.floor(Number(product.baseBoxPriceCents) || 0);
+  if (storedPrice > 0) return storedPrice;
+
+  const legacyPricing = parseStandardWholesaleDescription(product.descriptionPt || "");
+  if (legacyPricing.boxPriceCents && legacyPricing.boxPieces === pieces) {
+    return legacyPricing.boxPriceCents;
+  }
+
+  return Math.max(0, Math.floor(Number(product.priceCents) || 0)) * pieces;
+}
+
+export function productWholesaleLineTotalCents(product: WholesalePackagePriceInput, quantity: number) {
+  const pieces = productWholesalePackagePieces(product);
+  const packagePriceCents = productWholesalePackagePriceCents(product);
+  const normalizedQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+  if (!pieces || !packagePriceCents || normalizedQuantity % pieces !== 0) return 0;
+  return packagePriceCents * (normalizedQuantity / pieces);
 }
 
 export function productWholesaleStockQuantity(product: WholesaleStockInput) {

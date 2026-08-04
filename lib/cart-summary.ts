@@ -10,6 +10,7 @@ export type CartSummaryLine = {
   quantity: number;
   stockQuantity: number;
   packagePieces: number | null;
+  packagePriceCents: number | null;
   packageValid: boolean;
   packageCount: number;
   active: boolean;
