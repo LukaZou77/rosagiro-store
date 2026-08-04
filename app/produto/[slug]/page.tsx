@@ -17,7 +17,7 @@ import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import { productDetailGalleryState, productDetailServiceCards } from "@/lib/product-detail-standard";
 import { productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
-import { normalizeProductGallery } from "@/lib/product-import-shared";
+import { orderProductDetailImages } from "@/lib/product-package-images";
 import {
   productCommercialSummary,
   productEditorialDescription,
@@ -113,7 +113,7 @@ export default async function ProductPage({ params }: PageProps) {
   const whatsappHref = buildProductWhatsAppHref(product, storeProfile.whatsapp);
   const trustSignals = storeTrustSignals(storeProfile);
   const skuImages = activeSkus.map((sku) => sku.image).filter((image): image is string => Boolean(image));
-  const gallery = Array.from(new Set([...normalizeProductGallery(product.image, product.gallery), ...skuImages]));
+  const gallery = orderProductDetailImages(product.image, product.gallery, skuImages);
   const galleryState = productDetailGalleryState(gallery);
   const serviceCards = productDetailServiceCards();
   const wholesaleLines = productWholesaleLines(product);

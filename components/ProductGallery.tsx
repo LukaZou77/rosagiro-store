@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { PackageCheck } from "lucide-react";
 import { OptimizedProductImage } from "@/components/OptimizedProductImage";
+import { isProductPackageImage } from "@/lib/product-package-images";
 
 const PRODUCT_IMAGE_SELECT_EVENT = "rosagiro:select-product-image";
 
@@ -32,6 +34,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
 
   const activeIndex = gallery[selectedIndex] ? selectedIndex : 0;
   const activeImage = gallery[activeIndex] || "";
+  const activeIsPackageImage = isProductPackageImage(activeImage);
   const hasCarousel = gallery.length > 1;
 
   useEffect(() => {
@@ -185,7 +188,11 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
         <div className="product-gallery-thumbs" aria-label="Imagens do produto">
           {gallery.map((image, index) => (
             <button
-              aria-label={`Ver imagem ${index + 1} de ${productName}`}
+              aria-label={
+                isProductPackageImage(image)
+                  ? `Ver embalagem fechada de ${productName}`
+                  : `Ver imagem ${index + 1} de ${productName}`
+              }
               aria-pressed={index === activeIndex}
               className={index === activeIndex ? "active" : ""}
               key={image}
@@ -193,6 +200,11 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
               type="button"
             >
               <OptimizedProductImage src={image} alt="" width={72} height={72} sizes="72px" loading="lazy" />
+              {isProductPackageImage(image) ? (
+                <span className="product-gallery-thumb-package" aria-hidden="true">
+                  <PackageCheck size={13} strokeWidth={2.2} />
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -230,6 +242,12 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
             src={activeImage}
           />
           <span className="product-gallery-zoom-hint">Ver maior</span>
+          {activeIsPackageImage ? (
+            <span className="product-gallery-package-badge">
+              <PackageCheck size={15} strokeWidth={2.2} aria-hidden="true" />
+              Embalagem fechada
+            </span>
+          ) : null}
           {hasCarousel ? <span className="product-gallery-count">{activeIndex + 1}/{gallery.length}</span> : null}
         </div>
         {hasCarousel ? (
@@ -255,6 +273,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
             <div className="product-lightbox-header">
               <div>
                 <strong>{productName}</strong>
+                {activeIsPackageImage ? <span>Embalagem fechada do fabricante</span> : null}
                 {hasCarousel ? <span>Imagem {activeIndex + 1} de {gallery.length}</span> : null}
               </div>
               <button
@@ -302,7 +321,11 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
               <div className="product-lightbox-thumbs" aria-label="Imagens ampliadas do produto">
                 {gallery.map((image, index) => (
                   <button
-                    aria-label={`Ver imagem ampliada ${index + 1} de ${productName}`}
+                    aria-label={
+                      isProductPackageImage(image)
+                        ? `Ver embalagem fechada ampliada de ${productName}`
+                        : `Ver imagem ampliada ${index + 1} de ${productName}`
+                    }
                     aria-pressed={index === activeIndex}
                     className={index === activeIndex ? "active" : ""}
                     key={image}
@@ -310,6 +333,11 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
                     type="button"
                   >
                     <OptimizedProductImage src={image} alt="" width={72} height={72} sizes="72px" loading="lazy" />
+                    {isProductPackageImage(image) ? (
+                      <span className="product-gallery-thumb-package" aria-hidden="true">
+                        <PackageCheck size={13} strokeWidth={2.2} />
+                      </span>
+                    ) : null}
                   </button>
                 ))}
               </div>

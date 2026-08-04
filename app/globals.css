@@ -2591,6 +2591,7 @@ textarea {
 }
 
 .product-gallery-thumbs button {
+  position: relative;
   flex: 0 0 74px;
   overflow: hidden;
   padding: 0;
@@ -2600,6 +2601,22 @@ textarea {
   cursor: pointer;
   scroll-snap-align: start;
   transition: border-color 160ms var(--ease-out), transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.product-gallery-thumb-package {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(var(--promo-deep-rgb), 0.9);
+  color: white;
+  pointer-events: none;
 }
 
 .product-gallery-thumbs button:hover,
@@ -2660,13 +2677,27 @@ textarea {
 }
 
 .product-gallery-count,
-.product-gallery-zoom-hint {
+.product-gallery-zoom-hint,
+.product-gallery-package-badge {
   position: absolute;
   z-index: 2;
   border-radius: 999px;
   font-size: 0.74rem;
   font-weight: 900;
   pointer-events: none;
+}
+
+.product-gallery-package-badge {
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(var(--promo-deep-rgb), 0.9);
+  color: white;
+  box-shadow: 0 8px 18px rgba(var(--ink-rgb), 0.12);
 }
 
 .product-gallery-count {
@@ -2773,6 +2804,7 @@ textarea {
 .product-lightbox-close,
 .product-lightbox-arrow,
 .product-lightbox-thumbs button {
+  position: relative;
   transition: background 160ms var(--ease-out), border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out), transform 160ms var(--ease-out);
 }
 

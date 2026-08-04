@@ -17,6 +17,7 @@
     "db:body-categories": "tsx scripts/apply-body-area-categories.ts",
     "db:product-subcategories": "tsx scripts/apply-product-subcategories.ts",
     "analytics:backfill": "tsx scripts/backfill-admin-analytics.ts",
+    "images:package-sync": "tsx scripts/sync-feishu-package-images.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {
@@ -43,6 +44,8 @@
     "eslint-config-next": "^16.2.6",
     "playwright": "^1.60.0",
     "prisma": "^7.8.0",
+    "sharp": "^0.34.5",
+    "tesseract.js": "^7.0.0",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
   },
