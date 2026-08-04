@@ -1,4 +1,4 @@
-import { lowestEffectivePriceCents } from "@/lib/product-pricing";
+import { productWholesalePackagePieces, productWholesaleStockQuantity } from "@/lib/product-wholesale";
 import { siteConfig } from "@/lib/site-config";
 
 export type CartCompletionProduct = {
@@ -6,6 +6,8 @@ export type CartCompletionProduct = {
   name: string;
   image: string;
   priceCents: number;
+  baseBoxPieces?: number | null;
+  wholesalePackage?: string | null;
   badges: string[];
   active: boolean;
   rating?: number;
@@ -18,7 +20,6 @@ export type CartCompletionProduct = {
 
 export type CartCompletionLine = {
   slug: string;
-  skuId?: string;
   quantity: number;
 };
 
@@ -29,7 +30,7 @@ export type CartCompletionRecommendation = {
   image: string;
   priceCents: number;
   stockQuantity: number;
-  hasSkuChoices: boolean;
+  packagePieces: number;
   reason: string;
 };
 
@@ -43,15 +44,13 @@ type RecommendationOptions = {
 };
 
 function productStock(product: Pick<CartCompletionProduct, "inventory"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
-  if ("skus" in product && product.skus?.some((sku) => sku.active)) {
-    return product.skus.reduce((total, sku) => (sku.active ? total + Math.max(0, sku.quantity) : total), 0);
-  }
-  return product.inventory?.quantity || 0;
+  return productWholesaleStockQuantity(product);
 }
 
 function recommendationReason(product: CartCompletionProduct, remainingCents: number, preferredCategories: Set<string>) {
-  const effectivePrice = lowestEffectivePriceCents(product);
-  if (remainingCents > 0 && effectivePrice <= remainingCents) return "Ajuda a fechar o mínimo";
+  const packagePieces = productWholesalePackagePieces(product) || 1;
+  const packagePrice = product.priceCents * packagePieces;
+  if (remainingCents > 0 && packagePrice <= remainingCents) return "Ajuda a fechar o mínimo";
   if (preferredCategories.has(product.category.slug)) return "Combina com sua lista";
   if (/mais vendido|favorito|destaque|novo/i.test(product.badges.join(" "))) return "Boa saída para reposição";
   return "Em estoque para adicionar";
@@ -70,7 +69,7 @@ export function getCartCompletionRecommendations(
     options.cartSubtotalCents ??
     cart.reduce((sum, item) => {
       const product = productBySlug.get(item.slug);
-      return product ? sum + lowestEffectivePriceCents(product) * Math.max(0, Math.floor(item.quantity || 0)) : sum;
+      return product ? sum + product.priceCents * Math.max(0, Math.floor(item.quantity || 0)) : sum;
     }, 0);
   const remainingCents = Math.max(0, minimumOrderCents - cartSubtotal);
   const preferredCategories = new Set<string>();
@@ -88,15 +87,18 @@ export function getCartCompletionRecommendations(
     .filter((product) => {
       if (!product.active || product.slug === options.excludeSlug) return false;
       if (cartQuantityBySlug.has(product.slug)) return false;
-      return productStock(product) > 0;
+      const packagePieces = productWholesalePackagePieces(product);
+      return Boolean(packagePieces && productStock(product) >= packagePieces);
     })
     .map((product) => {
       const stock = productStock(product);
       const sameCategory = preferredCategories.has(product.category.slug);
       const badgeBoost = /mais vendido|favorito|destaque|novo/i.test(product.badges.join(" ")) ? 1 : 0;
-      const effectivePrice = lowestEffectivePriceCents(product);
-      const fitsGap = remainingCents > 0 && effectivePrice <= remainingCents;
-      const nearGap = remainingCents > 0 ? Math.max(0, 30 - Math.floor(Math.abs(effectivePrice - remainingCents) / 1000)) : 0;
+      const effectivePrice = product.priceCents;
+      const packagePieces = productWholesalePackagePieces(product) || 1;
+      const packagePrice = effectivePrice * packagePieces;
+      const fitsGap = remainingCents > 0 && packagePrice <= remainingCents;
+      const nearGap = remainingCents > 0 ? Math.max(0, 30 - Math.floor(Math.abs(packagePrice - remainingCents) / 1000)) : 0;
       const score =
         (fitsGap ? 90 : 0) +
         nearGap +
@@ -111,16 +113,16 @@ export function getCartCompletionRecommendations(
         stock
       };
     })
-    .sort((a, b) => b.score - a.score || lowestEffectivePriceCents(a.product) - lowestEffectivePriceCents(b.product) || a.product.name.localeCompare(b.product.name))
+    .sort((a, b) => b.score - a.score || a.product.priceCents - b.product.priceCents || a.product.name.localeCompare(b.product.name))
     .slice(0, limit)
     .map(({ product, stock }) => ({
       slug: product.slug,
       name: product.name,
       brandName: product.brand.name,
       image: product.image,
-      priceCents: lowestEffectivePriceCents(product),
+      priceCents: product.priceCents,
       stockQuantity: stock,
-      hasSkuChoices: Boolean(product.skus?.some((sku) => sku.active)),
+      packagePieces: productWholesalePackagePieces(product) || 1,
       reason: recommendationReason(product, remainingCents, preferredCategories)
     }));
 }

@@ -5,19 +5,23 @@ import { createOrderNotificationSafely } from "@/lib/admin-notifications";
 import { normalizeBrazilWhatsapp, upsertCustomerFromContact } from "@/lib/customers";
 import { prisma } from "@/lib/db";
 import { validateCheckoutAddress } from "@/lib/google-address";
-import { discountCents, subtotalCents, totalCents } from "@/lib/money";
+import { discountCents, money, subtotalCents, totalCents } from "@/lib/money";
 import { isPaymentMethod, paymentModeAllowsSimulated, type PaymentMethodValue } from "@/lib/payments";
 import { recordCreatedOrderProductMetrics, recordPaidOrderProductMetrics } from "@/lib/product-daily-metrics";
-import { effectiveSkuPriceCents } from "@/lib/product-pricing";
+import { productWholesalePackagePieces, productWholesaleStockQuantity } from "@/lib/product-wholesale";
 import { resolveOrderShipping } from "@/lib/shipping";
 import { parseCheckoutShippingMethod, type CheckoutShippingMethod } from "@/lib/shipping-rules";
 import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
+import { siteConfig } from "@/lib/site-config";
+import {
+  normalizeWholesaleLineQuantity,
+  wholesaleMinimumRemainingCents
+} from "@/lib/wholesale-order";
 import type { OrderAttribution } from "@/lib/commerce-analytics";
 import type { Prisma } from "@/src/generated/prisma/client";
 
 export type CartInput = {
   slug: string;
-  skuId?: string;
   quantity: number;
 };
 
@@ -79,20 +83,18 @@ function parseAttribution(value: unknown): OrderAttribution {
 
 export function parseCheckoutPayload(payload: unknown): CheckoutInput {
   const data = payload as Partial<CheckoutInput>;
-  const itemsByKey = new Map<string, CartInput>();
+  const itemsBySlug = new Map<string, CartInput>();
   if (Array.isArray(data.items)) {
     for (const item of data.items) {
       const slug = cleanText(item.slug);
-      const skuId = cleanText(item.skuId) || undefined;
-      const quantity = Math.max(1, Math.min(20, Number(item.quantity) || 0));
+      const quantity = normalizeWholesaleLineQuantity(item.quantity);
       if (!slug || quantity <= 0) continue;
-      const key = `${slug}::${skuId || ""}`;
-      const existing = itemsByKey.get(key);
-      if (existing) existing.quantity = Math.min(20, existing.quantity + quantity);
-      else itemsByKey.set(key, { slug, skuId, quantity });
+      const existing = itemsBySlug.get(slug);
+      if (existing) existing.quantity = normalizeWholesaleLineQuantity(existing.quantity + quantity);
+      else itemsBySlug.set(slug, { slug, quantity });
     }
   }
-  const items = Array.from(itemsByKey.values());
+  const items = Array.from(itemsBySlug.values());
 
   const phone = cleanText(data.customer?.phone);
   const normalizedPhone = normalizeBrazilWhatsapp(phone);
@@ -170,27 +172,42 @@ export async function createOrder(input: CheckoutInput) {
   const lines = input.items.map((item) => {
     const product = productBySlug.get(item.slug);
     if (!product) throw new OrderError("Um produto do carrinho não está mais disponível.");
-    const activeSkus = product.skus.filter((sku) => sku.active);
-    const selectedSku = item.skuId ? activeSkus.find((sku) => sku.id === item.skuId) : null;
-    const requiresSku = activeSkus.length > 0;
-    if (requiresSku && !selectedSku) {
-      throw new OrderError(`Escolha uma variação disponível para ${product.name}.`);
-    }
-    const availableQuantity = requiresSku ? selectedSku?.quantity ?? 0 : product.inventory?.quantity || 0;
+    const availableQuantity = productWholesaleStockQuantity(product);
     if (availableQuantity < item.quantity) {
       throw new OrderError(`${product.name} não tem estoque suficiente.`);
     }
     return {
       product,
-      sku: selectedSku || null,
       quantity: item.quantity,
-      priceCents: effectiveSkuPriceCents(product, selectedSku),
+      priceCents: product.priceCents,
       weightGrams: product.weightGrams,
       categorySlug: product.category.slug
     };
   });
 
+  const quantityByProductId = new Map<string, number>();
+  for (const line of lines) {
+    quantityByProductId.set(line.product.id, (quantityByProductId.get(line.product.id) || 0) + line.quantity);
+  }
+  for (const product of products) {
+    const orderedQuantity = quantityByProductId.get(product.id) || 0;
+    if (!orderedQuantity) continue;
+    const packagePieces = productWholesalePackagePieces(product);
+    if (!packagePieces) {
+      throw new OrderError(`${product.name}: confirme a embalagem fechada pelo WhatsApp antes de finalizar.`);
+    }
+    if (orderedQuantity % packagePieces !== 0) {
+      throw new OrderError(`${product.name} é vendido em embalagem fechada com ${packagePieces} unidades.`);
+    }
+  }
+
   const subtotal = subtotalCents(lines);
+  const remainingToMinimum = wholesaleMinimumRemainingCents(subtotal, siteConfig.wholesale.minimumOrderCents);
+  if (remainingToMinimum > 0) {
+    throw new OrderError(
+      `O pedido mínimo para atacado é ${money(siteConfig.wholesale.minimumOrderCents)}. Adicione mais ${money(remainingToMinimum)} para continuar.`
+    );
+  }
   const discount = discountCents();
   let shippingQuote;
   try {
@@ -199,7 +216,7 @@ export async function createOrder(input: CheckoutInput) {
       rateId: input.shippingRateId,
       cep: input.address.cep,
       lines: lines.map((line) => ({
-        productSlug: line.sku ? `${line.product.slug}:${line.sku.id}` : line.product.slug,
+        productSlug: line.product.slug,
         productName: line.product.name,
         categorySlug: line.categorySlug,
         weightGrams: line.weightGrams,
@@ -270,13 +287,13 @@ export async function createOrder(input: CheckoutInput) {
       items: {
         create: lines.map((line) => ({
           productId: line.product.id,
-          productSkuId: line.sku?.id || null,
+          productSkuId: null,
           productSlug: line.product.slug,
           productName: line.product.name,
           productBrand: line.product.brand.name,
-          productImage: line.sku?.image || line.product.image,
-          productSkuName: line.sku?.name || null,
-          productSkuCode: line.sku?.code || null,
+          productImage: line.product.image,
+          productSkuName: null,
+          productSkuCode: null,
           unitPriceCents: line.priceCents,
           quantity: line.quantity,
           lineTotalCents: line.priceCents * line.quantity

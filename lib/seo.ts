@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
-import { lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { productQuantity } from "@/lib/product-conversion";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import type { StoreProfileView } from "@/lib/store-profile-public";
@@ -170,14 +169,14 @@ export function brandMetadataTitle(name: string, page = 1) {
 export function brandMetaDescription(name: string, count: number, page = 1) {
   const opening = page > 1 ? `Página ${page}: ` : "";
   return compactText(
-    `${opening}${name} no atacado para revenda: ${count} ${count === 1 ? "produto" : "produtos"} com estoque sinalizado, pedido mínimo de R$ 300,00 e entrega no Brasil.`,
+    `${opening}${name} no atacado para revenda: ${count} ${count === 1 ? "produto" : "produtos"} por embalagem fechada, pedido mínimo de R$ 500,00 e entrega no Brasil.`,
     META_DESCRIPTION_MAX_LENGTH
   );
 }
 
 export function brandIntroText(name: string, count: number) {
   return compactText(
-    `${count} ${count === 1 ? "produto" : "produtos"} ${name} no atacado para lojistas e revendedores. Combine marcas no pedido mínimo de R$ 300,00 e consulte a entrega por CEP.`
+    `${count} ${count === 1 ? "produto" : "produtos"} ${name} no atacado para lojistas e revendedores. Combine embalagens fechadas no pedido mínimo de R$ 500,00 e consulte a entrega por CEP.`
   );
 }
 
@@ -348,7 +347,7 @@ export function productJsonLd(product: CatalogProduct) {
       "@type": "Offer",
       url,
       priceCurrency: "BRL",
-      price: (lowestEffectivePriceCents(product) / 100).toFixed(2),
+      price: (product.priceCents / 100).toFixed(2),
       availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
       hasMerchantReturnPolicy: {
@@ -371,7 +370,7 @@ export function productMetaDescription(product: CatalogProduct) {
   const nameIncludesBrand = product.name.toLocaleLowerCase("pt-BR").includes(product.brand.name.toLocaleLowerCase("pt-BR"));
   const productName = nameIncludesBrand ? product.name : `${product.name} da ${product.brand.name}`;
   return compactText(
-    `${productName} no atacado: preço ${money(lowestEffectivePriceCents(product))}, ${stock}. Pedido mínimo R$ 300,00; entrega ou retirada.`,
+    `${productName} no atacado. Pedido mínimo R$ 500,00; preço unitário ${money(product.priceCents)}; embalagem fechada; ${stock}.`,
     META_DESCRIPTION_MAX_LENGTH
   );
 }
@@ -389,7 +388,7 @@ export function categoryIntroText(label: string, count: number, isAllCategory = 
     );
   }
   return compactText(
-    `${label} no atacado para lojistas e revendedores: ${productText} com estoque sinalizado, pedido mínimo R$ 300,00 e suporte para montar reposição.`
+    `${label} no atacado para lojistas e revendedores: ${productText} por embalagem fechada, pedido mínimo R$ 500,00 e suporte para montar reposição.`
   );
 }
 
@@ -397,12 +396,12 @@ export function categoryMetaDescription(label: string, count: number, isAllCateg
   const pageText = page > 1 ? `Página ${page}: ` : "";
   if (isAllCategory) {
     return compactText(
-      `${pageText}cosméticos no atacado para revenda: ${count} produtos com estoque sinalizado, pedido mínimo R$ 300,00 e entrega no Brasil.`,
+      `${pageText}cosméticos no atacado para revenda: ${count} produtos por embalagem fechada, pedido mínimo R$ 500,00 e entrega no Brasil.`,
       META_DESCRIPTION_MAX_LENGTH
     );
   }
   return compactText(
-    `${pageText}${label} no atacado: ${count} produtos para lojistas e revendedores, com estoque sinalizado, pedido mínimo R$ 300,00 e entrega no Brasil.`,
+    `${pageText}${label} no atacado: ${count} produtos para lojistas e revendedores, vendidos por embalagem fechada, pedido mínimo R$ 500,00 e entrega no Brasil.`,
     META_DESCRIPTION_MAX_LENGTH
   );
 }

@@ -1,4 +1,5 @@
 import type { CatalogProduct } from "@/lib/catalog";
+import { productWholesaleStockQuantity } from "@/lib/product-wholesale";
 
 export type ProductStockTone = "ready" | "low" | "out";
 
@@ -6,15 +7,8 @@ type StockSource = Pick<CatalogProduct, "inventory"> & {
   skus?: Array<{ quantity: number; active: boolean }>;
 };
 
-export function productHasActiveSkus(product: StockSource) {
-  return Boolean(product.skus?.some((sku) => sku.active));
-}
-
 export function productQuantity(product: StockSource) {
-  if (productHasActiveSkus(product)) {
-    return (product.skus || []).reduce((total, sku) => (sku.active ? total + Math.max(0, sku.quantity) : total), 0);
-  }
-  return product.inventory?.quantity || 0;
+  return productWholesaleStockQuantity(product);
 }
 
 export function productStockTone(product: StockSource): ProductStockTone {

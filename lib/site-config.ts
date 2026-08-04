@@ -3,7 +3,7 @@ const whatsappPhone = "5511970792390";
 export const siteConfig = {
   name: "RosaGiro",
   tagline: "Atacado de cosméticos em São Paulo",
-  description: "Cosméticos no atacado para lojistas e revendedores, com pedido mínimo de R$ 300,00, entrega no Brasil e atendimento pelo WhatsApp.",
+  description: "Cosméticos no atacado para lojistas e revendedores, com venda por embalagem fechada, pedido mínimo de R$ 500,00, entrega no Brasil e atendimento pelo WhatsApp.",
   defaultUrl: "http://localhost:3000",
   supportEmail: "rosagiroatacado@gmail.com",
   businessIdentity: {
@@ -50,10 +50,10 @@ export const siteConfig = {
   },
   marketplace: "Brasil",
   wholesale: {
-    minimumOrderCents: 30000,
+    minimumOrderCents: 50000,
     minimumOrderTitle: "Pedido mínimo",
-    minimumOrderText: "Pedido mínimo R$ 300,00 para compras no atacado. Se precisar completar a lista, fale com o atendimento.",
-    headerStrip: "PEDIDO MÍNIMO R$ 300,00 - ENTREGA PARA TODO O BRASIL - PIX E WHATSAPP",
+    minimumOrderText: "Pedido mínimo R$ 500,00 para compras no atacado. Produtos vendidos somente na embalagem fechada original, sem escolha de cores.",
+    headerStrip: "PEDIDO MÍNIMO R$ 500,00 - EMBALAGEM FECHADA - ENTREGA PARA TODO O BRASIL",
     storeTrust: "Dados comerciais, atendimento e políticas reunidos para uma compra mais segura.",
     nationalDeliveryLabel: "Entrega para todo o Brasil",
     nationalDeliveryText: "Enviamos para todo o Brasil com cotação por CEP.",
@@ -63,12 +63,12 @@ export const siteConfig = {
       "Retirada local mediante confirmação",
       "Transportadora própria ou excursão sob consulta"
     ],
-    shelfSignals: ["Pedido mínimo R$ 300", "Envio para todo o Brasil", "Produtos em estoque", "Atendimento no WhatsApp"]
+    shelfSignals: ["Pedido mínimo R$ 500", "Venda por embalagem fechada", "Envio para todo o Brasil", "Atendimento no WhatsApp"]
   },
   hero: {
     eyebrow: "Atacado de cosméticos em São Paulo",
     title: "Cosméticos no atacado para revenda",
-    body: "Maquiagens, skincare, perfumes, produtos para cabelo e acessórios no atacado para lojistas e revendedores, com estoque sinalizado, pedido mínimo de R$ 300,00 e atendimento pelo WhatsApp.",
+    body: "Maquiagens, skincare, perfumes, produtos para cabelo e acessórios no atacado para lojistas e revendedores, vendidos por embalagem fechada, com pedido mínimo de R$ 500,00 e atendimento pelo WhatsApp.",
     primaryCta: "Ver catálogo",
     secondaryCta: "Comprar destaque"
   },
@@ -83,7 +83,7 @@ export const siteConfig = {
   homePromotions: {
     promoBar: {
       label: "Destaques no atacado",
-      text: "Pedido mínimo R$ 300,00, Pix, entrega para todo o Brasil com cotação por CEP e WhatsApp para revisar estoque.",
+      text: "Pedido mínimo R$ 500,00, venda por embalagem fechada, Pix, entrega para todo o Brasil e suporte no WhatsApp.",
       cta: "Ver destaques",
       href: "/promocoes"
     },
@@ -94,7 +94,7 @@ export const siteConfig = {
       brandsLabel: "marcas no catálogo"
     },
     trustPoints: [
-      "Pedido mínimo R$ 300,00 sinalizado em toda compra",
+      "Pedido mínimo R$ 500,00 e embalagem fechada sinalizados em toda compra",
       "Pedido multimarcas em um carrinho",
       "Pix e cartão pelo checkout seguro",
       "Entrega para todo o Brasil com cotação por CEP",
@@ -149,7 +149,7 @@ export const siteConfig = {
     stockShelfTitle: "Em estoque para reposição",
     shelfNote: "Os destaques usam campos atuais do produto: tags, estoque, marca, categoria e organização da vitrine.",
     signals: [
-      "Pedido mínimo R$ 300",
+      "Pedido mínimo R$ 500",
       "Produtos selecionados para reposição",
       "Produtos multimarcas para revenda",
       "Entrega para todo o Brasil",
@@ -171,19 +171,19 @@ export const siteConfig = {
     ]
   },
   productConversion: {
-    priceLabel: "Preço para pedido",
+    priceLabel: "Preço unitário no atacado",
     minimumLabel: "Pedido mínimo",
-    minimumNote: "Pode combinar produtos diferentes no mesmo pedido.",
+    minimumNote: "Pode combinar produtos diferentes; cada item é vendido em embalagem fechada.",
     stockLabel: "Disponibilidade",
     freightLabel: "Entrega",
     freightText: "Frete nacional por CEP",
-    cardMinimumHint: "R$ 300 mínimo",
+    cardMinimumHint: "R$ 500 mínimo",
     detailPanelTitle: "Compra no atacado",
-    detailPanelNote: "Antes de finalizar, você pode confirmar lote, validade, frete ou volume maior pelo WhatsApp.",
+    detailPanelNote: "O preço exibido é unitário, mas a venda é feita somente pela embalagem fechada original. As cores e variações não podem ser escolhidas separadamente.",
     bundlePrompt: "Quer comprar em volume? Envie este item pelo WhatsApp e informe sua cidade/UF.",
     wholesaleInfoEyebrow: "Compra para revenda",
     wholesaleInfoTitle: "Detalhes para atacado",
-    wholesaleInfoNote: "Use estas informações para conferir caixa, lote e condição de atacado. Se for comprar volume maior, confirme validade/lote e cotação de entrega nacional pelo WhatsApp.",
+    wholesaleInfoNote: "Use estas informações para conferir embalagem fechada, lote e condição de atacado. Para volume maior, confirme validade/lote e entrega pelo WhatsApp.",
     unavailableCta: "Consultar disponibilidade",
     completionEyebrow: "Completar pedido",
     completionTitle: "Combine para fechar pedido mínimo",
@@ -200,7 +200,7 @@ export const siteConfig = {
   mobilePurchase: {
     filterTitle: "Filtrar e ordenar",
     filterHint: "Ajuste busca, marca e prioridade.",
-    productCta: "Comprar",
+    productCta: "Adicionar ao pedido",
     productWhatsAppCta: "WhatsApp",
     checkoutBarLabel: "Total do pedido",
     checkoutSubmit: "Finalizar"
@@ -211,7 +211,7 @@ export const siteConfig = {
     editCta: "Editar",
     nextCta: "Continuar",
     backCta: "Voltar",
-    finalCta: "Finalizar pedido",
+    finalCta: "Finalizar pedido de atacado",
     mobile: {
       editingLabel: "Preenchendo dados"
     },

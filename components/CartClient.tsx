@@ -13,6 +13,7 @@ import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
 import type { CartSummary } from "@/lib/cart-summary";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
+import { addWholesalePackageQuantity, roundUpToWholesalePackage } from "@/lib/wholesale-order";
 import { buildCartWhatsAppHref } from "@/lib/whatsapp";
 
 type CartSummaryState = {
@@ -20,7 +21,7 @@ type CartSummaryState = {
   data: CartSummary;
 };
 
-function cleanCart(next: Array<{ slug: string; skuId?: string; quantity: number }>) {
+function cleanCart(next: Array<{ slug: string; quantity: number }>) {
   return next.filter((item) => item.quantity > 0);
 }
 
@@ -65,14 +66,16 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
   const total = summary?.totalCents || subtotal;
   const recommendations = summary?.recommendations || [];
   const minimumReached = summary?.minimumReached ?? subtotal >= siteConfig.wholesale.minimumOrderCents;
+  const packageReady = summary?.packageReady ?? false;
   const whatsappItems = useMemo(
     () =>
       lines
-        .filter((line) => line.available && line.quantity > 0)
+        .filter((line) => line.available && line.packageValid && line.quantity > 0)
         .map((line) => ({
           quantity: line.quantity,
+          packagePieces: line.packagePieces,
           product: {
-            name: line.skuName ? `${line.name} - ${line.skuName}` : line.name,
+            name: line.name,
             priceCents: line.priceCents,
             brand: { name: line.brandName }
           }
@@ -82,19 +85,19 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
   const whatsappHref = useMemo(() => buildCartWhatsAppHref(whatsappItems, subtotal, whatsappPhone), [whatsappItems, subtotal, whatsappPhone]);
   const hasValidLines = whatsappItems.length > 0;
 
-  function update(next: Array<{ slug: string; skuId?: string; quantity: number }>) {
+  function update(next: Array<{ slug: string; quantity: number }>) {
     writeCart(cleanCart(next));
   }
 
   return (
     <section className="checkout-shell">
       <div className="cart-panel">
-        <p className="eyebrow">Carrinho</p>
-        <h1>Sua seleção</h1>
+        <p className="eyebrow">Pedido de atacado</p>
+        <h1>Monte seu pedido</h1>
         <MinimumOrderNotice subtotalCents={subtotal} />
         {!cart.length ? (
           <div className="empty-state">
-            <strong>Seu carrinho está vazio</strong>
+            <strong>Seu pedido está vazio</strong>
             <p>Escolha produtos do catálogo ou veja os destaques para montar seu pedido mínimo de atacado.</p>
             <div className="empty-actions">
               <Link className="button primary" href="/categoria/all">
@@ -108,7 +111,7 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
         ) : loading ? (
           <div className="empty-state">
             <strong>Carregando resumo</strong>
-            <p>Estamos conferindo preços, SKU e disponibilidade dos itens do seu carrinho.</p>
+            <p>Estamos conferindo preços, embalagens e disponibilidade dos itens do seu pedido.</p>
           </div>
         ) : error ? (
           <div className="empty-state">
@@ -122,7 +125,7 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
           </div>
         ) : lines.length ? (
           lines.map((line) => (
-            <article className={line.available ? "cart-row" : "cart-row muted"} key={cartLineKey({ slug: line.slug, skuId: line.skuId || undefined })}>
+            <article className={line.available ? "cart-row" : "cart-row muted"} key={cartLineKey({ slug: line.slug })}>
               {line.image ? (
                 <OptimizedProductImage src={line.image} alt={line.name} width={80} height={96} sizes="80px" />
               ) : (
@@ -131,33 +134,73 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
               <div>
                 <span>{line.brandName}</span>
                 <strong>{line.name}</strong>
-                {line.skuName ? <small>{line.skuName} #{line.skuCode}</small> : null}
-                <small>{money(line.priceCents)}</small>
+                <small>{money(line.priceCents)} por unidade</small>
+                {line.packagePieces ? (
+                  <small>
+                    {line.packageValid
+                      ? `${line.packageCount} ${line.packageCount === 1 ? "embalagem" : "embalagens"} fechada${line.packageCount === 1 ? "" : "s"} · ${line.requestedQuantity} unidades`
+                      : `Embalagem fechada: ${line.packagePieces} unidades`}
+                  </small>
+                ) : null}
+                {line.packagePieces ? <small>Cores e variações conforme a composição original da embalagem.</small> : null}
                 {line.warning ? <em>{line.warning}</em> : null}
               </div>
-              <div className="qty-control">
+              {line.packagePieces && !line.packageValid ? (
                 <button
                   type="button"
-                  aria-label="Diminuir quantidade"
+                  className="button secondary"
                   onClick={() =>
-                    update(cart.map((item) => (sameCartLine(item, line.slug, line.skuId) ? { ...item, quantity: item.quantity - 1 } : item)))
+                    update(
+                      cart.map((item) =>
+                        sameCartLine(item, line.slug)
+                          ? { ...item, quantity: roundUpToWholesalePackage(item.quantity, line.packagePieces) }
+                          : item
+                      )
+                    )
                   }
                 >
-                  -
+                  Ajustar para embalagem fechada
                 </button>
-                <span>{line.requestedQuantity}</span>
-                <button
-                  type="button"
-                  aria-label="Aumentar quantidade"
-                  onClick={() =>
-                    update(cart.map((item) => (sameCartLine(item, line.slug, line.skuId) ? { ...item, quantity: item.quantity + 1 } : item)))
-                  }
-                  disabled={!line.available || line.requestedQuantity >= line.stockQuantity}
-                >
-                  +
-                </button>
-              </div>
-              <button type="button" className="remove-button" onClick={() => update(cart.filter((item) => !sameCartLine(item, line.slug, line.skuId)))}>
+              ) : (
+                <div className="qty-control">
+                  <button
+                    type="button"
+                    aria-label="Diminuir uma embalagem"
+                    onClick={() =>
+                      update(cart.map((item) =>
+                        sameCartLine(item, line.slug)
+                          ? { ...item, quantity: item.quantity - (line.packagePieces || 1) }
+                          : item
+                      ))
+                    }
+                  >
+                    -
+                  </button>
+                  <span>{line.packageCount} emb.</span>
+                  <button
+                    type="button"
+                    aria-label="Aumentar uma embalagem"
+                    onClick={() =>
+                      update(cart.map((item) =>
+                        sameCartLine(item, line.slug)
+                          ? {
+                              ...item,
+                              quantity: addWholesalePackageQuantity(
+                                item.quantity,
+                                line.packagePieces || 1,
+                                line.stockQuantity
+                              )
+                            }
+                          : item
+                      ))
+                    }
+                    disabled={!line.available || line.requestedQuantity + (line.packagePieces || 1) > line.stockQuantity}
+                  >
+                    +
+                  </button>
+                </div>
+              )}
+              <button type="button" className="remove-button" onClick={() => update(cart.filter((item) => !sameCartLine(item, line.slug)))}>
                 Remover
               </button>
             </article>
@@ -171,14 +214,14 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
       </div>
       <aside className="summary-panel">
         <div className="summary-block">
-          <h2>Resumo</h2>
+          <h2>Resumo do pedido</h2>
           <div>
             <span>Subtotal</span>
             <strong>{money(subtotal)}</strong>
           </div>
           <div>
             <span>Frete</span>
-            <strong>No checkout</strong>
+            <strong>Calculado no checkout</strong>
           </div>
           <div className="summary-total">
             <span>Total sem frete</span>
@@ -208,7 +251,9 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
           </WhatsAppLink>
         ) : null}
         {hasValidLines ? (
-          <CustomerCheckoutButton className="button primary wide">Continuar para checkout</CustomerCheckoutButton>
+          <CustomerCheckoutButton className="button primary wide" disabled={!minimumReached || !packageReady}>
+            {!packageReady ? "Ajuste as embalagens" : minimumReached ? "Continuar pedido" : "Complete o pedido mínimo"}
+          </CustomerCheckoutButton>
         ) : (
           <Link className="button primary wide disabled" href="/categoria/all">
             Montar pedido

@@ -7,7 +7,6 @@ import { CartCompletionRecommendations } from "@/components/CartCompletionRecomm
 import { ProductCard } from "@/components/ProductCard";
 import { ProductAnalyticsTracker } from "@/components/ProductAnalyticsTracker";
 import { ProductGallery } from "@/components/ProductGallery";
-import { ProductSkuSelector } from "@/components/ProductSkuSelector";
 import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { StructuredData } from "@/components/StructuredData";
@@ -16,13 +15,13 @@ import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { getCategories, getProduct, getRecommendationProducts, getRelatedProducts } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
-import { effectiveSkuPriceCents, lowestEffectivePriceCents, hasSkuPriceRange } from "@/lib/product-pricing";
 import { productDetailGalleryState, productDetailServiceCards } from "@/lib/product-detail-standard";
-import { productHasActiveSkus, productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
+import { productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
 import {
   productCommercialSummary,
   productEditorialDescription,
+  productWholesalePackagePieces,
   productWholesaleLines
 } from "@/lib/product-wholesale";
 import { breadcrumbJsonLd, noIndexMetadata, productJsonLd, productMetaDescription, storefrontMetadata } from "@/lib/seo";
@@ -110,9 +109,7 @@ export default async function ProductPage({ params }: PageProps) {
   const stockLabel = productStockLabel(product);
   const stockTone = productStockTone(product);
   const activeSkus = product.skus.filter((sku) => sku.active).sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
-  const hasSkuChoices = productHasActiveSkus(product);
-  const displayPrice = lowestEffectivePriceCents(product);
-  const showFromPrice = hasSkuPriceRange(product);
+  const displayPrice = product.priceCents;
   const whatsappHref = buildProductWhatsAppHref(product, storeProfile.whatsapp);
   const trustSignals = storeTrustSignals(storeProfile);
   const skuImages = activeSkus.map((sku) => sku.image).filter((image): image is string => Boolean(image));
@@ -120,6 +117,8 @@ export default async function ProductPage({ params }: PageProps) {
   const galleryState = productDetailGalleryState(gallery);
   const serviceCards = productDetailServiceCards();
   const wholesaleLines = productWholesaleLines(product);
+  const packagePieces = productWholesalePackagePieces(product);
+  const packageOrderable = Boolean(packagePieces && quantity >= packagePieces);
   const editorialDescription = productEditorialDescription(product.descriptionPt);
 
   return (
@@ -164,8 +163,9 @@ export default async function ProductPage({ params }: PageProps) {
           <h1>{product.name}</h1>
           <p className="description product-commercial-summary">{productCommercialSummary(product)}</p>
           {editorialDescription ? <p className="description product-editorial-description">{editorialDescription}</p> : null}
-          <div className="price-line">
-            <strong>{showFromPrice ? `A partir de ${money(displayPrice)}` : money(displayPrice)}</strong>
+          <div className="price-line wholesale-price-line">
+            <span>{siteConfig.productConversion.priceLabel}</span>
+            <strong>{money(displayPrice)}</strong>
           </div>
           <div className={`purchase-panel ${available ? "" : "is-unavailable"}`}>
             <div className="purchase-panel-heading">
@@ -184,14 +184,12 @@ export default async function ProductPage({ params }: PageProps) {
               </div>
             </div>
             <p>{siteConfig.productConversion.detailPanelNote}</p>
-            {hasSkuChoices ? (
-              <ProductSkuSelector
-                productSlug={product.slug}
-                skus={activeSkus.map((sku) => ({ ...sku, priceCents: effectiveSkuPriceCents(product, sku) }))}
-              />
-            ) : null}
+            <div className="fixed-package-note">
+              <strong>Embalagem fechada do fabricante</strong>
+              <span>As cores e variações vêm na composição original da embalagem. Não é possível escolher cores nem fracionar unidades.</span>
+            </div>
             <div className="purchase-panel-actions">
-              {hasSkuChoices ? null : (
+              {packageOrderable && packagePieces ? (
                 <AddToCartButton
                   analyticsItem={{
                     name: product.name,
@@ -200,10 +198,15 @@ export default async function ProductPage({ params }: PageProps) {
                     priceCents: displayPrice
                   }}
                   slug={product.slug}
-                  label="Adicionar ao carrinho"
+                  quantity={packagePieces}
+                  label={`Adicionar 1 embalagem (${packagePieces} un.)`}
                   disabled={!available}
                   wide
                 />
+              ) : (
+                <span className="button primary wide disabled" aria-disabled="true">
+                  Embalagem sob consulta
+                </span>
               )}
               <WhatsAppLink href={whatsappHref} className="button whatsapp">
                 {siteConfig.whatsapp.productCta}

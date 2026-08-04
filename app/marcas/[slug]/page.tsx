@@ -157,7 +157,7 @@ export default async function BrandPage({ params, searchParams }: PageProps) {
             Produtos
           </span>
           <span>
-            <strong>R$ 300</strong>
+            <strong>R$ 500</strong>
             Pedido mínimo
           </span>
           <span>

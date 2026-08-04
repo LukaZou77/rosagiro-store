@@ -12,21 +12,18 @@ import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
 import type { CartSummary, CartSummaryLine } from "@/lib/cart-summary";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
+import { addWholesalePackageQuantity, roundUpToWholesalePackage } from "@/lib/wholesale-order";
 import { buildCartWhatsAppHref } from "@/lib/whatsapp";
 
-function cartQuantity(cart: Array<{ quantity: number }>) {
-  return cart.reduce((sum, item) => sum + item.quantity, 0);
-}
-
-function syncQuantity(slug: string, skuId: string | null | undefined, quantity: number) {
+function syncQuantity(slug: string, quantity: number) {
   const next = readCart()
-    .map((item) => (sameCartLine(item, slug, skuId) ? { ...item, quantity } : item))
+    .map((item) => (sameCartLine(item, slug) ? { ...item, quantity } : item))
     .filter((item) => item.quantity > 0);
   writeCart(next);
 }
 
-function removeLine(slug: string, skuId?: string | null) {
-  writeCart(readCart().filter((item) => !sameCartLine(item, slug, skuId)));
+function removeLine(slug: string) {
+  writeCart(readCart().filter((item) => !sameCartLine(item, slug)));
 }
 
 function lineSummaryLabel(line: Pick<CartSummaryLine, "available" | "warning" | "priceCents">) {
@@ -42,7 +39,7 @@ export function QuickPurchaseDrawer() {
   const [open, setOpen] = useState(false);
   const [summaryState, setSummaryState] = useState<{ key: string; data: CartSummary } | null>(null);
   const [errorState, setErrorState] = useState<{ key: string; message: string } | null>(null);
-  const count = cartQuantity(cart);
+  const count = cart.length;
   const cartKey = useMemo(() => JSON.stringify(cart), [cart]);
   const drawerDisabled = pathname === "/checkout";
   const drawerOpen = open && !drawerDisabled;
@@ -96,11 +93,12 @@ export function QuickPurchaseDrawer() {
   const whatsappItems = useMemo(
     () =>
       (summary?.lines || [])
-        .filter((line) => line.available && line.quantity > 0)
+        .filter((line) => line.available && line.packageValid && line.quantity > 0)
         .map((line) => ({
           quantity: line.quantity,
+          packagePieces: line.packagePieces,
           product: {
-            name: line.skuName ? `${line.name} - ${line.skuName}` : line.name,
+            name: line.name,
             priceCents: line.priceCents,
             brand: { name: line.brandName }
           }
@@ -150,7 +148,7 @@ export function QuickPurchaseDrawer() {
           <div className="quick-drawer-body" aria-live="polite">
             {!cart.length ? (
               <div className="quick-empty">
-                <strong>Carrinho vazio</strong>
+                <strong>Pedido vazio</strong>
                 <p>Adicione produtos para montar sua compra de atacado.</p>
                 <Link className="button secondary wide" href="/categoria/all" onClick={() => setOpen(false)}>
                   Ver catálogo
@@ -172,8 +170,8 @@ export function QuickPurchaseDrawer() {
                   </div>
                   <p>
                     {summary.minimumReached
-                      ? "Lista acima do mínimo sugerido para atacado."
-                      : `Faltam ${money(summary.remainingToMinimumCents)} para atingir o mínimo sugerido.`}
+                      ? "Pedido mínimo para atacado atingido."
+                      : `Faltam ${money(summary.remainingToMinimumCents)} para liberar o checkout de atacado.`}
                   </p>
                   <div className="minimum-order-meter" aria-hidden="true">
                     <span style={{ width: `${progress}%` }} />
@@ -182,7 +180,7 @@ export function QuickPurchaseDrawer() {
 
                 <div className="quick-lines">
                     {summary.lines.map((line) => (
-                      <article className={line.available ? "quick-line" : "quick-line muted"} key={cartLineKey({ slug: line.slug, skuId: line.skuId || undefined })}>
+                      <article className={line.available ? "quick-line" : "quick-line muted"} key={cartLineKey({ slug: line.slug })}>
                         {line.image ? (
                           <OptimizedProductImage src={line.image} alt={line.name} width={72} height={86} sizes="72px" />
                         ) : (
@@ -191,27 +189,56 @@ export function QuickPurchaseDrawer() {
                         <div className="quick-line-info">
                           <span>{line.brandName || "Produto"}</span>
                           <strong>{line.name}</strong>
-                          {line.skuName ? <small>{line.skuName} #{line.skuCode}</small> : null}
                           <small>{lineSummaryLabel(line)}</small>
+                          {line.packagePieces ? (
+                            <small>
+                              {line.packageValid
+                                ? `${line.packageCount} ${line.packageCount === 1 ? "embalagem" : "embalagens"} · ${line.requestedQuantity} unidades`
+                                : `Embalagem fechada: ${line.packagePieces} unidades`}
+                            </small>
+                          ) : null}
                         {line.warning ? <em>{line.warning}</em> : null}
                       </div>
                       <div className="quick-line-actions">
-                        <div className="qty-control compact">
-                            <button type="button" onClick={() => syncQuantity(line.slug, line.skuId, line.requestedQuantity - 1)} aria-label={`Diminuir ${line.name}`}>
-                            -
-                          </button>
-                          <span>{line.requestedQuantity}</span>
+                        {line.packagePieces && !line.packageValid ? (
                           <button
+                            className="button secondary"
                             type="button"
-                              onClick={() => syncQuantity(line.slug, line.skuId, line.requestedQuantity + 1)}
-                            disabled={!line.available || line.requestedQuantity >= line.stockQuantity}
-                            aria-label={`Aumentar ${line.name}`}
+                            onClick={() => syncQuantity(line.slug, roundUpToWholesalePackage(line.requestedQuantity, line.packagePieces))}
                           >
-                            +
+                            Ajustar embalagem
                           </button>
-                        </div>
+                        ) : (
+                          <div className="qty-control compact">
+                              <button
+                                type="button"
+                                onClick={() => syncQuantity(line.slug, line.requestedQuantity - (line.packagePieces || 1))}
+                                aria-label={`Diminuir uma embalagem de ${line.name}`}
+                              >
+                              -
+                            </button>
+                            <span>{line.packageCount} emb.</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                syncQuantity(
+                                  line.slug,
+                                  addWholesalePackageQuantity(
+                                    line.requestedQuantity,
+                                    line.packagePieces || 1,
+                                    line.stockQuantity
+                                  )
+                                )
+                              }
+                              disabled={!line.available || line.requestedQuantity + (line.packagePieces || 1) > line.stockQuantity}
+                              aria-label={`Aumentar uma embalagem de ${line.name}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
                         <strong>{money(line.lineTotalCents)}</strong>
-                          <button className="remove-button compact" type="button" onClick={() => removeLine(line.slug, line.skuId)}>
+                          <button className="remove-button compact" type="button" onClick={() => removeLine(line.slug)}>
                           Remover
                         </button>
                       </div>
@@ -230,7 +257,7 @@ export function QuickPurchaseDrawer() {
                   body={
                     summary.minimumReached
                       ? siteConfig.productConversion.completionReachedBody
-                      : `Faltam ${money(summary.remainingToMinimumCents)} para o mínimo sugerido.`
+                      : `Faltam ${money(summary.remainingToMinimumCents)} para o pedido mínimo.`
                   }
                 />
 
@@ -259,16 +286,20 @@ export function QuickPurchaseDrawer() {
               </span>
             )}
             {hasValidLines ? (
-              <CustomerCheckoutButton className="button primary wide" onProceed={() => setOpen(false)}>
-                Continuar para checkout
+              <CustomerCheckoutButton
+                className="button primary wide"
+                disabled={!summary?.minimumReached || !summary?.packageReady}
+                onProceed={() => setOpen(false)}
+              >
+                {!summary?.packageReady ? "Ajuste as embalagens" : summary.minimumReached ? "Continuar pedido" : "Complete o pedido mínimo"}
               </CustomerCheckoutButton>
             ) : (
               <span className="button primary wide disabled" aria-disabled="true">
-                Continuar para checkout
+                Continuar pedido
               </span>
             )}
             <Link className="button secondary wide" href="/carrinho" onClick={() => setOpen(false)}>
-              Ver carrinho completo
+              Ver pedido completo
             </Link>
           </footer>
         </aside>

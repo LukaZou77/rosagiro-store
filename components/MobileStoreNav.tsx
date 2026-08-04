@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, LayoutGrid, MessageCircle, ShoppingBag, Sparkles } from "lucide-react";
+import { ClipboardList, House, LayoutGrid, MessageCircle, Sparkles } from "lucide-react";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 
 const navItems = [
@@ -26,8 +26,8 @@ const navItems = [
   },
   {
     href: "/carrinho",
-    label: "Carrinho",
-    icon: ShoppingBag,
+    label: "Pedido",
+    icon: ClipboardList,
     isActive: (pathname: string) =>
       pathname.startsWith("/carrinho") ||
       pathname.startsWith("/checkout") ||

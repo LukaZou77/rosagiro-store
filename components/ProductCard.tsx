@@ -5,9 +5,8 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import type { CatalogCardProduct } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
-import { lowestEffectivePriceCents, hasSkuPriceRange } from "@/lib/product-pricing";
+import { productWholesalePackageLabel, productWholesalePackagePieces } from "@/lib/product-wholesale";
 import {
-  productHasActiveSkus,
   productQuantity,
   productShortStockLabel,
   productStockTone
@@ -44,14 +43,14 @@ function productCardTags(product: CatalogCardProduct) {
 export function ProductCard({ product, whatsappPhone }: { product: CatalogCardProduct; whatsappPhone?: string | null }) {
   const quantity = productQuantity(product);
   const available = quantity > 0;
-  const hasSkuChoices = productHasActiveSkus(product);
   const heroBadge = product.badges.map(customerDisplayText).find(isSpecialCardBadge) || "";
   const stockTone = productStockTone(product);
   const shortStockLabel = productShortStockLabel(product);
   const whatsappHref = buildProductWhatsAppHref(product, whatsappPhone);
-  const displayPrice = lowestEffectivePriceCents(product);
-  const showFromPrice = hasSkuPriceRange(product);
+  const displayPrice = product.priceCents;
   const infoTags = productCardTags(product);
+  const packagePieces = productWholesalePackagePieces(product);
+  const packageOrderable = Boolean(packagePieces && quantity >= packagePieces);
 
   return (
     <article className={available ? "product-card" : "product-card is-unavailable"}>
@@ -81,13 +80,19 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
         ) : null}
         <div className="product-card-bottom">
           <div className="price-stack">
-            <strong>{showFromPrice ? `A partir de ${money(displayPrice)}` : money(displayPrice)}</strong>
+            <small>{siteConfig.productConversion.priceLabel}</small>
+            <strong>{money(displayPrice)}</strong>
+            <small className="wholesale-package-hint">{productWholesalePackageLabel(product)}</small>
           </div>
           <div className="product-card-actions">
-            {hasSkuChoices ? (
-              <Link className={available ? "button primary" : "button primary disabled"} href={`/produto/${product.slug}`}>
-                Escolher
+            {!packagePieces ? (
+              <Link className="button secondary" href={`/produto/${product.slug}`}>
+                Consultar embalagem
               </Link>
+            ) : !packageOrderable ? (
+              <button type="button" disabled>
+                Sem embalagem completa
+              </button>
             ) : (
               <AddToCartButton
                 analyticsItem={{
@@ -97,7 +102,8 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
                   priceCents: displayPrice
                 }}
                 slug={product.slug}
-                label="Comprar"
+                quantity={packagePieces}
+                label="Adicionar 1 embalagem"
                 disabled={!available}
               />
             )}

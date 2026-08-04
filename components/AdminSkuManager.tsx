@@ -157,7 +157,7 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
         ) : (
           <div className="empty-state compact">
             <strong>{t("Sem variações cadastradas", "尚未创建商品规格")}</strong>
-            <p>{t("Produtos sem SKU continuam usando a disponibilidade geral. Adicione variações quando houver cor, tom ou modelo.", "没有 SKU 的商品继续使用总体库存状态；有颜色、色号或型号时再添加规格。")}</p>
+            <p>{t("Use as variações apenas como referência interna de cor, modelo, imagem e estoque. A venda ao cliente continua sendo pela embalagem fechada original.", "规格仅用于内部核对颜色、型号、图片和库存；客户仍按原厂整盒购买。")}</p>
           </div>
         )}
       </div>
@@ -166,7 +166,7 @@ export function AdminSkuManager({ skus }: { skus: AdminSkuRow[] }) {
         {t("Adicionar SKU", "添加 SKU")}
       </button>
       <p className="table-note">
-        {t("Se houver SKU ativo, o cliente escolherá as variações na página do produto. Preço em branco usa o preço principal; peso segue o produto principal; imagem do SKU troca a foto principal quando cadastrada.", "存在启用的 SKU 时，客户将在商品页选择规格。SKU 价格留空时使用商品主价格；重量沿用主商品；填写 SKU 图片后，选中该规格会切换主图。")}
+        {t("O cliente não escolhe cor ou variação. Os SKUs permanecem apenas para conferência interna e para compor a galeria; preço e peso em branco seguem os dados principais do produto.", "客户不能选择颜色或规格。SKU 仅用于内部核对和组成商品图库；价格或重量留空时沿用商品主资料。")}
       </p>
     </div>
   );

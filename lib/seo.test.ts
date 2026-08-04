@@ -45,7 +45,7 @@ test("builds useful brand landing copy from real catalog facts", () => {
   const description = brandMetaDescription("Ruby Rose", 72);
   const intro = brandIntroText("Ruby Rose", 72);
   assert.match(description, /72 produtos/i);
-  assert.match(description, /pedido mínimo de R\$ 300,00/i);
+  assert.match(description, /pedido mínimo de R\$ 500,00/i);
   assert.match(intro, /lojistas e revendedores/i);
   assert.match(intro, /entrega por CEP/i);
   assert.match(brandMetaDescription("Ruby Rose", 72, 2), /^Página 2:/i);
@@ -64,7 +64,7 @@ test("builds local Portuguese category metadata without mechanical wording", () 
   const description = categoryMetaDescription("Rosto", 326, false);
   assert.match(description, /Rosto no atacado/i);
   assert.match(description, /326 produtos/i);
-  assert.match(description, /pedido mínimo R\$ 300,00/i);
+  assert.match(description, /pedido mínimo R\$ 500,00/i);
   assert.doesNotMatch(description, /produto\(s\)|catálogo RosaGiro:/i);
   assert.doesNotMatch(description, mojibakePattern);
   assert.match(categoryMetaDescription("Rosto", 326, false, 2), /^Página 2:/i);
@@ -84,7 +84,7 @@ test("builds natural product metadata for wholesale product pages", () => {
   assert.match(description, /Ruby Rose/i);
   assert.match(description, /preço/i);
   assert.match(description, /em estoque/i);
-  assert.match(description, /pedido mínimo R\$ 300,00/i);
+  assert.match(description, /pedido mínimo R\$ 500,00/i);
   assert.doesNotMatch(description, mojibakePattern);
   assert.ok(description.length <= META_DESCRIPTION_MAX_LENGTH);
 });
@@ -125,7 +125,8 @@ test("builds truthful merchant product data without invented reviews", () => {
   const data = productJsonLd(product);
 
   assert.equal(data.url, "http://localhost:3000/produto/batom-duo-lip-twice-ruby-rose-hb-l6203");
-  assert.equal(data.offers.availability, "https://schema.org/InStock");
+  assert.equal(data.offers.availability, "https://schema.org/OutOfStock");
+  assert.equal(data.offers.price, "9.75");
   assert.equal(
     data.offers.hasMerchantReturnPolicy["@id"],
     "http://localhost:3000/trocas-e-devolucoes#policy"
@@ -136,12 +137,12 @@ test("builds truthful merchant product data without invented reviews", () => {
   assert.equal(data.sku, "HB-L6203");
   assert.equal(data.gtin, undefined);
 
-  const unavailableVariantData = productJsonLd({
+  const availablePackageData = productJsonLd({
     ...product,
     inventory: { quantity: 12 },
     skus: product.skus.map((sku) => ({ ...sku, quantity: 0 }))
   });
-  assert.equal(unavailableVariantData.offers.availability, "https://schema.org/OutOfStock");
+  assert.equal(availablePackageData.offers.availability, "https://schema.org/InStock");
 });
 
 test("links the published Brazil return policy without duplicating editable rules", () => {

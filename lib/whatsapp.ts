@@ -1,5 +1,4 @@
 import { money } from "@/lib/money";
-import { lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { productWholesaleWhatsAppLines, type WholesaleProductDetails } from "@/lib/product-wholesale";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 
@@ -7,7 +6,6 @@ type ProductContact = {
   slug: string;
   name: string;
   priceCents: number;
-  skus?: Array<{ priceCents?: number | null; active?: boolean }>;
   stockStatus?: string;
   volume?: string;
   brand: { name: string };
@@ -16,6 +14,7 @@ type ProductContact = {
 
 type CartContactItem = {
   quantity: number;
+  packagePieces?: number | null;
   product: {
     name: string;
     priceCents: number;
@@ -95,7 +94,7 @@ export function buildProductWhatsAppHref(product: ProductContact, phone?: string
       siteConfig.whatsapp.messages.productGreeting,
       `Produto: ${product.name}`,
       `Marca: ${product.brand.name}`,
-      `Preço no site: ${money(lowestEffectivePriceCents(product))}`,
+      `Preço unitário no site: ${money(product.priceCents)}`,
       product.volume ? `Volume: ${product.volume}` : "",
       stockAvailabilityLabel(quantity),
       ...wholesaleLines,
@@ -115,9 +114,15 @@ export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: n
   if (!items.length) return buildGeneralWhatsAppHref("carrinho vazio", phone);
 
   const missingCents = Math.max(siteConfig.wholesale.minimumOrderCents - subtotalCents, 0);
-  const lines = items.map(
-    (item) => `- ${item.quantity}x ${item.product.name} (${item.product.brand.name}) = ${money(item.product.priceCents * item.quantity)}`
-  );
+  const lines = items.map((item) => {
+    const packagePieces = Math.floor(Number(item.packagePieces) || 0);
+    const packageCount = packagePieces > 0 ? Math.floor(item.quantity / packagePieces) : 0;
+    const quantityLabel = packageCount > 0
+      ? `${packageCount} ${packageCount === 1 ? "embalagem fechada" : "embalagens fechadas"} (${item.quantity} unidades)`
+      : `${item.quantity} unidades`;
+
+    return `- ${quantityLabel}: ${item.product.name} (${item.product.brand.name}) = ${money(item.product.priceCents * item.quantity)}`;
+  });
 
   return buildHref(
     [

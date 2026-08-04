@@ -7,7 +7,6 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getPromotionCollections } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
-import { hasSkuPriceRange, lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { productQuantity, productStockLabel } from "@/lib/product-conversion";
 import { storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
@@ -23,8 +22,7 @@ export const metadata: Metadata = storefrontMetadata({
 type HighlightProduct = Awaited<ReturnType<typeof getPromotionCollections>>["products"][number];
 
 function displayPriceLabel(product: HighlightProduct) {
-  const price = money(lowestEffectivePriceCents(product));
-  return hasSkuPriceRange(product) ? `A partir de ${price}` : price;
+  return money(product.priceCents);
 }
 
 export default async function PromotionsPage() {

@@ -8,7 +8,6 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getFeaturedBrands, getProductCount, getProducts } from "@/lib/catalog";
 import { getPublishedGuideArticles } from "@/lib/guide-articles";
 import { money } from "@/lib/money";
-import { hasSkuPriceRange, lowestEffectivePriceCents } from "@/lib/product-pricing";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import { getStoreProfile } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
@@ -23,8 +22,7 @@ export const metadata: Metadata = {
 };
 
 function displayPriceLabel(product: Awaited<ReturnType<typeof getProducts>>[number]) {
-  const price = money(lowestEffectivePriceCents(product));
-  return hasSkuPriceRange(product) ? `A partir de ${price}` : price;
+  return money(product.priceCents);
 }
 
 export default async function HomePage() {

@@ -2,9 +2,6 @@ import type { CartCompletionRecommendation } from "@/lib/cart-completion";
 
 export type CartSummaryLine = {
   slug: string;
-  skuId: string | null;
-  skuName: string | null;
-  skuCode: string | null;
   name: string;
   brandName: string;
   image: string;
@@ -12,6 +9,9 @@ export type CartSummaryLine = {
   requestedQuantity: number;
   quantity: number;
   stockQuantity: number;
+  packagePieces: number | null;
+  packageValid: boolean;
+  packageCount: number;
   active: boolean;
   available: boolean;
   warning: string;
@@ -26,6 +26,7 @@ export type CartSummary = {
   minimumOrderCents: number;
   remainingToMinimumCents: number;
   minimumReached: boolean;
+  packageReady: boolean;
   recommendations: CartCompletionRecommendation[];
   error?: string;
 };

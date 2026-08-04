@@ -3,31 +3,29 @@ import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import type { CartSummary } from "@/lib/cart-summary";
 import { prisma } from "@/lib/db";
 import { discountCents, subtotalCents, totalCents } from "@/lib/money";
-import { effectiveSkuPriceCents } from "@/lib/product-pricing";
+import { productWholesalePackagePieces, productWholesaleStockQuantity } from "@/lib/product-wholesale";
 import { siteConfig } from "@/lib/site-config";
+import { normalizeWholesaleLineQuantity } from "@/lib/wholesale-order";
 
 type CartSummaryItem = {
   slug?: unknown;
-  skuId?: unknown;
   quantity?: unknown;
 };
 
 function parseItems(input: unknown) {
   if (!Array.isArray(input)) return [];
 
-  const byKey = new Map<string, { slug: string; skuId?: string; quantity: number }>();
+  const bySlug = new Map<string, { slug: string; quantity: number }>();
   for (const item of input as CartSummaryItem[]) {
     const slug = String(item?.slug || "").trim();
-    const skuId = String(item?.skuId || "").trim() || undefined;
-    const quantity = Math.max(0, Math.min(999, Math.floor(Number(item?.quantity) || 0)));
+    const quantity = normalizeWholesaleLineQuantity(item?.quantity);
     if (!slug || quantity <= 0) continue;
-    const key = `${slug}::${skuId || ""}`;
-    const existing = byKey.get(key);
-    if (existing) existing.quantity += quantity;
-    else byKey.set(key, { slug, skuId, quantity });
+    const existing = bySlug.get(slug);
+    if (existing) existing.quantity = normalizeWholesaleLineQuantity(existing.quantity + quantity);
+    else bySlug.set(slug, { slug, quantity });
   }
 
-  return Array.from(byKey.values());
+  return Array.from(bySlug.values());
 }
 
 export async function POST(request: Request) {
@@ -54,49 +52,57 @@ export async function POST(request: Request) {
         })
       : [];
     const productMap = new Map(products.map((product) => [product.slug, product]));
+    const requestedQuantityBySlug = new Map<string, number>();
+    for (const item of requestedItems) {
+      requestedQuantityBySlug.set(item.slug, (requestedQuantityBySlug.get(item.slug) || 0) + item.quantity);
+    }
 
     const lines = requestedItems.map((item) => {
       const product = productMap.get(item.slug);
-      const activeSkus = product?.skus.filter((sku) => sku.active) || [];
-      const selectedSku = item.skuId ? activeSkus.find((sku) => sku.id === item.skuId) : null;
-      const requiresSku = activeSkus.length > 0;
-      const stockQuantity = requiresSku ? selectedSku?.quantity ?? 0 : product?.inventory?.quantity ?? 0;
+      const stockQuantity = product ? productWholesaleStockQuantity(product) : 0;
+      const packagePieces = product ? productWholesalePackagePieces(product) : null;
+      const requestedProductQuantity = requestedQuantityBySlug.get(item.slug) || item.quantity;
+      const packageValid = Boolean(packagePieces && requestedProductQuantity % packagePieces === 0);
+      const packageCount = packagePieces ? Math.floor(requestedProductQuantity / packagePieces) : 0;
       const active = Boolean(product?.active);
-      const available = active && (!requiresSku || Boolean(selectedSku)) && stockQuantity > 0;
-      const acceptedQuantity = product ? Math.min(item.quantity, Math.max(stockQuantity, 0)) : 0;
-      const priceCents = product ? effectiveSkuPriceCents(product, selectedSku) : 0;
+      const available = active && stockQuantity >= item.quantity && Boolean(packagePieces);
+      const acceptedQuantity = product ? item.quantity : 0;
+      const priceCents = product?.priceCents || 0;
       const lineTotalCents = priceCents * acceptedQuantity;
       const warning = !product
         ? "Produto não encontrado."
         : !active
           ? "Produto indisponível."
-          : requiresSku && !selectedSku
-            ? "Escolha uma variação disponível."
+          : !packagePieces
+            ? "Embalagem fechada sob consulta. Fale com o atendimento."
             : stockQuantity <= 0
               ? "Produto sem estoque."
               : item.quantity > stockQuantity
-                ? "Quantidade ajustada ao estoque disponível."
+                ? "Não há embalagens completas suficientes para esta quantidade."
+                : !packageValid
+                  ? `Este produto é vendido somente em embalagem fechada com ${packagePieces} unidades.`
                 : "";
 
       return {
         slug: item.slug,
-        skuId: selectedSku?.id || item.skuId || null,
-        skuName: selectedSku?.name || null,
-        skuCode: selectedSku?.code || null,
         name: product?.name || item.slug,
         brandName: product?.brand.name || "",
-        image: selectedSku?.image || product?.image || "",
+        image: product?.image || "",
         priceCents,
         requestedQuantity: item.quantity,
         quantity: acceptedQuantity,
         stockQuantity,
+        packagePieces,
+        packageValid,
+        packageCount,
         active,
         available,
         warning,
         lineTotalCents
       };
     });
-    const validLines = lines.filter((line) => line.quantity > 0 && line.available);
+    const validLines = lines.filter((line) => line.quantity > 0 && line.available && line.packageValid);
+    const packageReady = lines.length > 0 && lines.every((line) => line.available && line.packageValid);
     const subtotal = subtotalCents(validLines.map((line) => ({ priceCents: line.priceCents, quantity: line.quantity })));
     const discount = discountCents();
     const total = totalCents(subtotal, discount, 0);
@@ -118,6 +124,7 @@ export async function POST(request: Request) {
       minimumOrderCents,
       remainingToMinimumCents,
       minimumReached: remainingToMinimumCents === 0,
+      packageReady,
       recommendations
     };
 
@@ -133,6 +140,7 @@ export async function POST(request: Request) {
         minimumOrderCents: siteConfig.wholesale.minimumOrderCents,
         remainingToMinimumCents: siteConfig.wholesale.minimumOrderCents,
         minimumReached: false,
+        packageReady: false,
         recommendations: [],
         error: "Não foi possível resumir o carrinho agora."
       },

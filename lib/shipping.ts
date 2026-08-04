@@ -4,6 +4,7 @@ import { cepDigits, formatCep } from "@/lib/cep";
 import { prisma } from "@/lib/db";
 import { calculateMelhorEnvioRates, MelhorEnvioError, type MelhorEnvioProduct, type MelhorEnvioRate } from "@/lib/melhor-envio";
 import { money } from "@/lib/money";
+import { normalizeWholesaleLineQuantity } from "@/lib/wholesale-order";
 import {
   billableWeightGrams,
   productShippingProfile,
@@ -25,7 +26,6 @@ export const shippingConfig = {
 
 export type ShippingQuoteCartItem = {
   slug: string;
-  skuId?: string;
   quantity: number;
 };
 
@@ -138,13 +138,11 @@ function normalizeQuoteItems(items: ShippingQuoteCartItem[]) {
   const byLine = new Map<string, ShippingQuoteCartItem>();
   for (const item of items) {
     const slug = cleanText(item.slug);
-    const skuId = cleanText(item.skuId) || undefined;
-    const quantity = Math.max(1, Math.min(20, Math.floor(Number(item.quantity) || 0)));
+    const quantity = normalizeWholesaleLineQuantity(item.quantity);
     if (!slug || quantity <= 0) continue;
-    const key = `${slug}::${skuId || ""}`;
-    const existing = byLine.get(key);
-    if (existing) existing.quantity = Math.min(20, existing.quantity + quantity);
-    else byLine.set(key, { slug, skuId, quantity });
+    const existing = byLine.get(slug);
+    if (existing) existing.quantity = normalizeWholesaleLineQuantity(existing.quantity + quantity);
+    else byLine.set(slug, { slug, quantity });
   }
   return Array.from(byLine.values());
 }
@@ -202,8 +200,7 @@ export async function getShippingQuoteForCart(items: ShippingQuoteCartItem[], ce
       name: true,
       priceCents: true,
       weightGrams: true,
-      category: { select: { slug: true } },
-      skus: { where: { active: true }, select: { id: true, priceCents: true } }
+      category: { select: { slug: true } }
     }
   });
   const productBySlug = new Map(products.map((product) => [product.slug, product]));
@@ -212,14 +209,12 @@ export async function getShippingQuoteForCart(items: ShippingQuoteCartItem[], ce
   for (const item of normalizedItems) {
     const product = productBySlug.get(item.slug);
     if (!product) continue;
-    const sku = item.skuId ? product.skus.find((candidate) => candidate.id === item.skuId) : null;
-    if (item.skuId && !sku) continue;
     lines.push({
-      productSlug: item.skuId ? `${product.slug}:${item.skuId}` : product.slug,
+      productSlug: product.slug,
       productName: product.name,
       categorySlug: product.category.slug,
       weightGrams: product.weightGrams,
-      unitPriceCents: sku?.priceCents ?? product.priceCents,
+      unitPriceCents: product.priceCents,
       quantity: item.quantity
     });
   }
@@ -227,7 +222,7 @@ export async function getShippingQuoteForCart(items: ShippingQuoteCartItem[], ce
   if (!lines.length || lines.length !== normalizedItems.length) {
     return {
       status: "EMPTY_CART",
-      message: "Revise os produtos e as variações antes de calcular o frete.",
+      message: "Revise os produtos e as embalagens antes de calcular o frete.",
       options: [],
       productWeightGrams: 0,
       billableWeightGrams: shippingConfig.minBillableWeightGrams

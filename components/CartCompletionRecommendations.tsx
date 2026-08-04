@@ -8,6 +8,7 @@ import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import type { CartCompletionRecommendation } from "@/lib/cart-completion";
 import { money } from "@/lib/money";
 import { siteConfig } from "@/lib/site-config";
+import { addWholesalePackageQuantity } from "@/lib/wholesale-order";
 
 type Props = {
   recommendations: CartCompletionRecommendation[];
@@ -39,8 +40,14 @@ export function CartCompletionRecommendations({
   function addRecommendation(recommendation: CartCompletionRecommendation) {
     const cart = readCart();
     const existing = cart.find((item) => item.slug === recommendation.slug);
-    if (existing) existing.quantity = Math.min(existing.quantity + 1, recommendation.stockQuantity);
-    else cart.push({ slug: recommendation.slug, quantity: 1 });
+    const nextQuantity = addWholesalePackageQuantity(
+      existing?.quantity || 0,
+      recommendation.packagePieces,
+      recommendation.stockQuantity
+    );
+    if (nextQuantity <= 0 || nextQuantity === existing?.quantity) return;
+    if (existing) existing.quantity = nextQuantity;
+    else cart.push({ slug: recommendation.slug, quantity: nextQuantity });
     writeCart(cart);
     if (openDrawerOnAdd) notifyQuickPurchaseOpen();
     setAddedSlug(recommendation.slug);
@@ -72,26 +79,21 @@ export function CartCompletionRecommendations({
                   <strong>{recommendation.name}</strong>
                 </Link>
                 <small>{recommendation.brandName} / Em estoque</small>
+                <small>Embalagem fechada: {recommendation.packagePieces} unidades</small>
                 <div className="completion-price">
                   <b>{money(recommendation.priceCents)}</b>
                 </div>
               </div>
-              {recommendation.hasSkuChoices ? (
-                <Link className="completion-link-button" href={`/produto/${recommendation.slug}`}>
-                  Escolher variação
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (requireCustomerSession({ intent: "add_to_cart", onSuccess: () => addRecommendation(recommendation) })) {
-                      addRecommendation(recommendation);
-                    }
-                  }}
-                >
-                  {isAdded ? siteConfig.productConversion.completionAddedCta : siteConfig.productConversion.completionAddCta}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (requireCustomerSession({ intent: "add_to_cart", onSuccess: () => addRecommendation(recommendation) })) {
+                    addRecommendation(recommendation);
+                  }
+                }}
+              >
+                {isAdded ? siteConfig.productConversion.completionAddedCta : "Adicionar 1 embalagem"}
+              </button>
             </article>
           );
         })}

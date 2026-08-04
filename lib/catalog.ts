@@ -14,6 +14,8 @@ export type CatalogProduct = {
   name: string;
   subcategory: string;
   priceCents: number;
+  baseBoxPriceCents: number | null;
+  baseBoxPieces: number | null;
   compareAtPriceCents: number | null;
   weightGrams: number | null;
   suggestedQuantity: number | null;
@@ -57,6 +59,7 @@ const productCardSelect = {
   name: true,
   subcategory: true,
   priceCents: true,
+  baseBoxPieces: true,
   suggestedQuantity: true,
   kitRecommendation: true,
   wholesalePackage: true,

@@ -2,24 +2,24 @@
 
 import Link from "next/link";
 import { useMemo, useSyncExternalStore } from "react";
+import { normalizeWholesaleLineQuantity } from "@/lib/wholesale-order";
 
 const CART_KEY = "bela-viva-cart";
 const QUICK_PURCHASE_OPEN_EVENT = "bela-viva-quick-purchase-open";
 
 type CartLine = {
   slug: string;
-  skuId?: string;
   quantity: number;
 };
 
 export type { CartLine };
 
-export function cartLineKey(line: Pick<CartLine, "slug" | "skuId">) {
-  return `${line.slug}::${line.skuId || ""}`;
+export function cartLineKey(line: Pick<CartLine, "slug">) {
+  return line.slug;
 }
 
-export function sameCartLine(line: Pick<CartLine, "slug" | "skuId">, slug: string, skuId?: string | null) {
-  return line.slug === slug && (line.skuId || "") === (skuId || "");
+export function sameCartLine(line: Pick<CartLine, "slug">, slug: string) {
+  return line.slug === slug;
 }
 
 export function normalizeCartLines(input: unknown): CartLine[] {
@@ -29,14 +29,13 @@ export function normalizeCartLines(input: unknown): CartLine[] {
   for (const rawLine of input) {
     const candidate = rawLine as Partial<CartLine>;
     const slug = String(candidate.slug || "").trim();
-    const skuId = String(candidate.skuId || "").trim() || undefined;
-    const quantity = Math.max(0, Math.min(999, Math.floor(Number(candidate.quantity) || 0)));
+    const quantity = normalizeWholesaleLineQuantity(candidate.quantity);
     if (!slug || quantity <= 0) continue;
 
-    const key = cartLineKey({ slug, skuId });
+    const key = cartLineKey({ slug });
     const existing = byKey.get(key);
-    if (existing) existing.quantity += quantity;
-    else byKey.set(key, { slug, skuId, quantity });
+    if (existing) existing.quantity = normalizeWholesaleLineQuantity(existing.quantity + quantity);
+    else byKey.set(key, { slug, quantity });
   }
 
   return Array.from(byKey.values());
@@ -98,10 +97,10 @@ export function useCart() {
 
 export function CartCount() {
   const cart = useCart();
-  const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const count = cart.length;
   return (
-    <Link className="cart-link" href="/carrinho" aria-label="Abrir carrinho">
-      <span className="cart-icon">Sacola</span>
+    <Link className="cart-link" href="/carrinho" aria-label="Abrir pedido">
+      <span className="cart-icon">Pedido</span>
       <span className="cart-count">{count}</span>
     </Link>
   );

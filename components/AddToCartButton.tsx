@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { notifyQuickPurchaseOpen, readCart, sameCartLine, writeCart } from "@/components/CartCount";
 import { useCustomerSession } from "@/components/CustomerSession";
 import { trackProductEvent } from "@/components/ProductAnalyticsTracker";
+import { addWholesalePackageQuantity } from "@/lib/wholesale-order";
 
 export function AddToCartButton({
   slug,
-  skuId,
+  quantity = 1,
   label = "Adicionar",
   confirmationLabel = "Adicionado",
   unavailableLabel = "Sem estoque",
@@ -16,7 +17,7 @@ export function AddToCartButton({
   analyticsItem
 }: {
   slug: string;
-  skuId?: string;
+  quantity?: number;
   label?: string;
   confirmationLabel?: string;
   unavailableLabel?: string;
@@ -36,11 +37,13 @@ export function AddToCartButton({
 
   function addItem() {
     const cart = readCart();
-    const existing = cart.find((item) => sameCartLine(item, slug, skuId));
-    if (existing) existing.quantity += 1;
-    else cart.push({ slug, skuId, quantity: 1 });
+    const existing = cart.find((item) => sameCartLine(item, slug));
+    const nextQuantity = addWholesalePackageQuantity(existing?.quantity || 0, quantity);
+    if (nextQuantity <= 0 || nextQuantity === existing?.quantity) return;
+    if (existing) existing.quantity = nextQuantity;
+    else cart.push({ slug, quantity: nextQuantity });
     writeCart(cart);
-    trackProductEvent({ type: "ADD_TO_CART", slug, skuId: skuId || null, quantity: 1, item: analyticsItem });
+    trackProductEvent({ type: "ADD_TO_CART", slug, skuId: null, quantity, item: analyticsItem });
     notifyQuickPurchaseOpen();
     setAdded(true);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

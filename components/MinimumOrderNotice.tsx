@@ -21,8 +21,8 @@ export function MinimumOrderNotice({
         <strong>{money(minimum)}</strong>
         <p>
           {reached
-            ? "Pedido acima do mínimo sugerido para atacado."
-            : `Faltam ${money(remaining)} para atingir o mínimo sugerido. Adicione mais itens ou fale com o atendimento.`}
+            ? "Pedido mínimo para atacado atingido."
+            : `Faltam ${money(remaining)} para liberar o checkout de atacado. Adicione mais itens ou fale com o atendimento.`}
         </p>
       </div>
       <div className="minimum-order-meter" aria-hidden="true">

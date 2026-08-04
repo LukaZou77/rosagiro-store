@@ -3,6 +3,9 @@ import test from "node:test";
 import {
   productCommercialSummary,
   productEditorialDescription,
+  productWholesalePackageLabel,
+  productWholesalePackagePieces,
+  productWholesaleStockQuantity,
   wholesalePackageFromLegacyDescription
 } from "./product-wholesale";
 
@@ -12,7 +15,7 @@ test("preserves unit price and box terms from legacy product descriptions", () =
   assert.equal(wholesalePackageFromLegacyDescription(description), "Caixa com 36 unidades: R$ 373,50.");
   assert.equal(
     productCommercialSummary({ priceCents: 1038, wholesalePackage: null, descriptionPt: description }),
-    "Preço unitário: R$ 10,38. Caixa com 36 unidades: R$ 373,50."
+    "Preço unitário no atacado: R$ 10,38. Embalagem fechada com 36 unidades: R$ 373,50."
   );
   assert.equal(productEditorialDescription(description), "");
 });
@@ -27,7 +30,7 @@ test("keeps researched editorial copy separate from wholesale terms", () => {
       wholesalePackage: "Caixa com 36 unidades: R$ 351,00.",
       descriptionPt: description
     }),
-    "Preço unitário: R$ 9,75. Caixa com 36 unidades: R$ 351,00."
+    "Preço unitário no atacado: R$ 9,75. Embalagem fechada com 36 unidades: R$ 351,00."
   );
 });
 
@@ -37,5 +40,38 @@ test("keeps WhatsApp consultation terms visible", () => {
   assert.equal(
     wholesalePackageFromLegacyDescription(description),
     "Caixa fechada e volumes maiores: consulte pelo WhatsApp."
+  );
+});
+
+test("resolves a reliable closed-package quantity", () => {
+  assert.equal(productWholesalePackagePieces({ baseBoxPieces: 36, wholesalePackage: null }), 36);
+  assert.equal(productWholesalePackagePieces({ wholesalePackage: "Caixa com 48 unidades: R$ 270,24." }), 48);
+  assert.equal(productWholesalePackagePieces({ wholesalePackage: "Consulte no WhatsApp" }), null);
+  assert.equal(
+    productWholesalePackageLabel({ baseBoxPieces: 24, wholesalePackage: null }),
+    "Embalagem fechada com 24 unidades"
+  );
+});
+
+test("uses product-level stock for closed mixed packages", () => {
+  assert.equal(
+    productWholesaleStockQuantity({
+      inventory: { quantity: 48 },
+      skus: [
+        { active: true, quantity: 999 },
+        { active: true, quantity: 999 }
+      ]
+    }),
+    48
+  );
+  assert.equal(
+    productWholesaleStockQuantity({
+      inventory: null,
+      skus: [
+        { active: true, quantity: 12 },
+        { active: false, quantity: 40 }
+      ]
+    }),
+    12
   );
 });

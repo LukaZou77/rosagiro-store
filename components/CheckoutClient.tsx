@@ -201,10 +201,14 @@ export function CheckoutClient({
   const summary = cart.length && summaryState?.key === cartKey ? summaryState.data : null;
   const summaryLoadError = cart.length && summaryError?.key === cartKey ? summaryError.message : "";
   const summaryLoading = cart.length > 0 && !summary && !summaryLoadError;
-  const items = useMemo(() => (summary?.lines ?? []).filter((line) => line.available && line.quantity > 0), [summary]);
-  const quoteItems = useMemo(() => items.map((item) => ({ slug: item.slug, skuId: item.skuId || undefined, quantity: item.quantity })), [items]);
+  const items = useMemo(
+    () => (summary?.lines ?? []).filter((line) => line.available && line.packageValid && line.quantity > 0),
+    [summary]
+  );
+  const quoteItems = useMemo(() => items.map((item) => ({ slug: item.slug, quantity: item.quantity })), [items]);
   const subtotal = summary?.subtotalCents || 0;
   const minimumReached = summary?.minimumReached ?? subtotal >= siteConfig.wholesale.minimumOrderCents;
+  const packageReady = summary?.packageReady ?? false;
   const recommendations = summary?.recommendations || [];
   const checkoutPaymentMethods = useMemo(
     () => paymentMethodsForCheckout(mercadoPagoMaxInstallments, { includeSimulated: includeSimulatedPayment }),
@@ -218,8 +222,9 @@ export function CheckoutClient({
     () =>
       items.map((item) => ({
         quantity: item.quantity,
+        packagePieces: item.packagePieces,
         product: {
-          name: item.skuName ? `${item.name} - ${item.skuName}` : item.name,
+          name: item.name,
           priceCents: item.priceCents,
           brand: { name: item.brandName }
         }
@@ -261,7 +266,7 @@ export function CheckoutClient({
   const paymentLabel = checkoutPaymentMethods.find((method) => method.value === paymentMethod)?.label || "Pagamento";
 
   useEffect(() => {
-    if (!items.length || !summary) return;
+    if (!items.length || !summary || !minimumReached || !packageReady) return;
     trackCommerceOnce(`begin_checkout:${cartKey}`, "begin_checkout", {
       currency: "BRL",
       value: subtotal / 100,
@@ -269,12 +274,11 @@ export function CheckoutClient({
         item_id: item.slug,
         item_name: item.name,
         item_brand: item.brandName,
-        item_variant: item.skuName || undefined,
         price: item.priceCents / 100,
         quantity: item.quantity
       }))
     });
-  }, [cartKey, items, subtotal, summary]);
+  }, [cartKey, items, minimumReached, packageReady, subtotal, summary]);
   const stepSummaries: Record<CheckoutStep, string> = {
     contact: contactComplete
       ? `${contactValue.name.trim()} · ${contactValue.phone.trim()}`
@@ -309,9 +313,9 @@ export function CheckoutClient({
   }, []);
 
   useEffect(() => {
-    if (!items.length || customer) return;
+    if (!items.length || !minimumReached || !packageReady || customer) return;
     requireCustomerSession({ intent: "checkout", onSuccess: prefillContactFromCustomer });
-  }, [customer, items.length, prefillContactFromCustomer, requireCustomerSession]);
+  }, [customer, items.length, minimumReached, packageReady, prefillContactFromCustomer, requireCustomerSession]);
 
   function updateContact(field: ContactField, value: string) {
     setContact((current) => ({ ...current, [field]: value }));
@@ -742,7 +746,7 @@ export function CheckoutClient({
 
   useEffect(() => {
     const digits = cepDigits(address.cep);
-    if (!quoteItems.length) {
+    if (!quoteItems.length || !packageReady) {
       return;
     }
 
@@ -801,11 +805,21 @@ export function CheckoutClient({
       window.clearTimeout(loadingId);
       controller.abort();
     };
-  }, [address.cep, quoteItems]);
+  }, [address.cep, packageReady, quoteItems]);
 
   async function submit(formData: FormData) {
     setSubmitting(true);
     setError("");
+    if (!packageReady) {
+      setSubmitting(false);
+      setError("Todos os produtos devem ser comprados em embalagens fechadas completas.");
+      return;
+    }
+    if (!minimumReached) {
+      setSubmitting(false);
+      setError(`Complete o pedido mínimo de ${money(siteConfig.wholesale.minimumOrderCents)} antes de finalizar.`);
+      return;
+    }
     for (const step of checkoutStepOrder) {
       if (!validateCheckoutStep(step)) {
         setSubmitting(false);
@@ -870,7 +884,7 @@ export function CheckoutClient({
         <div className="cart-panel empty-checkout-card">
           <p className="eyebrow">Checkout RosaGiro</p>
           <h1>Carregando seu pedido.</h1>
-          <p>Estamos conferindo preços, SKU e disponibilidade antes de abrir o checkout.</p>
+          <p>Estamos conferindo preços, embalagens e disponibilidade antes de abrir o checkout.</p>
           <MinimumOrderNotice subtotalCents={0} />
         </div>
         <aside className="summary-panel">
@@ -893,6 +907,29 @@ export function CheckoutClient({
             </Link>
             <WhatsAppLink className="button whatsapp" href={emptyCheckoutWhatsAppHref}>
               Falar no WhatsApp
+            </WhatsAppLink>
+          </div>
+        </div>
+        <aside className="summary-panel">
+          <StoreTrustSignals signals={trustSignals} compact />
+        </aside>
+      </section>
+    );
+  }
+
+  if (!packageReady && summary?.lines.length) {
+    return (
+      <section className="checkout-shell empty-checkout-shell">
+        <div className="cart-panel empty-checkout-card">
+          <p className="eyebrow">Pedido de atacado</p>
+          <h1>Ajuste as embalagens do pedido.</h1>
+          <p>Os produtos são vendidos somente na embalagem fechada original, sem escolha de cores. Revise as quantidades antes de continuar.</p>
+          <div className="empty-actions">
+            <Link className="button primary" href="/carrinho">
+              Revisar pedido
+            </Link>
+            <WhatsAppLink className="button whatsapp" href={checkoutWhatsAppHref}>
+              Confirmar embalagem no WhatsApp
             </WhatsAppLink>
           </div>
         </div>
@@ -938,6 +975,36 @@ export function CheckoutClient({
     );
   }
 
+  if (!minimumReached) {
+    return (
+      <section className="checkout-shell empty-checkout-shell">
+        <div className="cart-panel empty-checkout-card">
+          <p className="eyebrow">Pedido de atacado</p>
+          <h1>Complete o pedido mínimo.</h1>
+          <p>
+            O checkout é liberado quando a seleção atinge {money(siteConfig.wholesale.minimumOrderCents)}. Você pode combinar
+            produtos, marcas e categorias, sempre em embalagem fechada.
+          </p>
+          <MinimumOrderNotice subtotalCents={subtotal} />
+          <div className="empty-actions">
+            <Link className="button primary" href="/categoria/all?sort=price-asc">
+              Adicionar produtos
+            </Link>
+            <Link className="button secondary" href="/carrinho">
+              Voltar ao pedido
+            </Link>
+            <WhatsAppLink className="button whatsapp" href={checkoutWhatsAppHref}>
+              Pedir ajuda no WhatsApp
+            </WhatsAppLink>
+          </div>
+        </div>
+        <aside className="summary-panel">
+          <StoreTrustSignals signals={trustSignals} compact />
+        </aside>
+      </section>
+    );
+  }
+
   return (
     <section className="checkout-shell">
       <form
@@ -949,7 +1016,7 @@ export function CheckoutClient({
         onBlur={handleCheckoutBlur}
         noValidate
       >
-        <p className="eyebrow">Checkout RosaGiro</p>
+        <p className="eyebrow">Pedido de atacado RosaGiro</p>
         <h1>Entrega e pagamento</h1>
         <ol className="checkout-stepper" aria-label={siteConfig.checkout.stepperLabel}>
           {checkoutStepCards.map((step) => (
@@ -1203,7 +1270,7 @@ export function CheckoutClient({
               <button className="button secondary" type="button" onClick={() => goToStep("address")}>
                 {siteConfig.checkout.backCta}
               </button>
-              <button className="button primary wide" type="submit" disabled={submitting || !items.length}>
+              <button className="button primary wide" type="submit" disabled={submitting || !items.length || !minimumReached || !packageReady}>
                 {submitting ? "Criando pedido..." : siteConfig.checkout.finalCta}
               </button>
             </div>
@@ -1233,10 +1300,9 @@ export function CheckoutClient({
         <div className="summary-block">
           <h2>Resumo</h2>
             {items.map((item) => (
-              <div key={cartLineKey({ slug: item.slug, skuId: item.skuId || undefined })}>
+              <div key={cartLineKey({ slug: item.slug })}>
                 <span>
-                  {item.quantity}x {item.name}
-                  {item.skuName ? ` - ${item.skuName}` : ""}
+                  {item.packageCount} {item.packageCount === 1 ? "embalagem" : "embalagens"} · {item.quantity} un. · {item.name}
                 </span>
               <strong>{money(item.lineTotalCents)}</strong>
             </div>
@@ -1270,7 +1336,7 @@ export function CheckoutClient({
         <button
           className="button primary"
           type="button"
-          disabled={submitting || !items.length}
+          disabled={submitting || !items.length || !minimumReached || !packageReady}
           onClick={handleMobileCheckoutAction}
         >
           {submitting ? "Criando..." : mobileCheckoutActionLabel}
