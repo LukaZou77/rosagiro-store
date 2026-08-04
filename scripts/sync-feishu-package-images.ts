@@ -83,6 +83,8 @@ function parseArgs() {
   }
   const rawLimit = Number(get("--limit", mode === "prepare" ? "10" : "0"));
   if (!Number.isInteger(rawLimit) || rawLimit < 0) throw new Error("--limit must be a non-negative integer.");
+  const rawOffset = Number(get("--offset", "0"));
+  if (!Number.isInteger(rawOffset) || rawOffset < 0) throw new Error("--offset must be a non-negative integer.");
   const source = get("--source", "all") as SourceFilter;
   if (!(["all", "package", "tray"] as SourceFilter[]).includes(source)) {
     throw new Error("--source must be all, package or tray.");
@@ -91,6 +93,7 @@ function parseArgs() {
     mode,
     source,
     limit: rawLimit,
+    offset: rawOffset,
     yes: args.includes("--yes"),
     reviewedJson: get("--reviewed-json"),
     reportDir: get("--report-dir"),
@@ -576,6 +579,7 @@ async function main() {
       let pending = candidates.filter((candidate) => candidate.status === "package-source" || candidate.status === "tray-fallback");
       if (args.source === "package") pending = pending.filter((candidate) => candidate.status === "package-source");
       if (args.source === "tray") pending = pending.filter((candidate) => candidate.status === "tray-fallback");
+      if (args.offset) pending = pending.slice(args.offset);
       if (args.limit) pending = pending.slice(0, args.limit);
       const reviews = await prepareCandidates(pending, tenantToken, reportDir);
       await writeReviewReport(reportDir, reviews);

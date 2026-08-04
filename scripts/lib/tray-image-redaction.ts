@@ -62,6 +62,19 @@ async function recognize(worker: Worker, image: Buffer | string) {
   const scale = Math.max(1, Math.min(2, 2600 / width, 2600 / height));
   const baseResult = await worker.recognize(normalized, {}, { text: true, blocks: true });
   const lines = tesseractLines(baseResult.data, 1);
+
+  // Supplier cards often render costs as white text inside a red badge. The
+  // inverted threshold makes those labels black on white without changing the
+  // customer-facing image that is ultimately written.
+  const invertedCostText = await sharp(normalized)
+    .grayscale()
+    .normalize()
+    .threshold(175)
+    .negate()
+    .png()
+    .toBuffer();
+  const invertedResult = await worker.recognize(invertedCostText, {}, { text: true, blocks: true });
+  lines.push(...tesseractLines(invertedResult.data, 1));
   if (scale === 1) return lines;
 
   const prepared = await sharp(normalized)
@@ -115,9 +128,7 @@ function rectangleSvg(width: number, height: number, color: RgbColor) {
 
 async function recognizeWithWorkers(workers: Worker | Worker[], image: Buffer | string) {
   const workerList = Array.isArray(workers) ? workers : [workers];
-  const lines: OcrLine[] = [];
-  for (const worker of workerList) lines.push(...await recognize(worker, image));
-  return lines;
+  return (await Promise.all(workerList.map((worker) => recognize(worker, image)))).flat();
 }
 
 export async function inspectImageForSensitiveText(workers: Worker | Worker[], imagePath: string) {
