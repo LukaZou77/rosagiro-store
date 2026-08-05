@@ -74,6 +74,13 @@ type Classification = {
   subcategoryLabel: string;
 };
 
+type RowImportOverride = {
+  productName?: string;
+  displayName?: string;
+  categorySlug?: keyof typeof CATEGORY_INFO;
+  subcategoryLabel?: string;
+};
+
 type DownloadedImage = {
   token: string;
   localPath: string;
@@ -127,6 +134,261 @@ const CATEGORY_INFO: Record<string, { label: string; note: string }> = {
   acessorios: {
     label: "Acessórios",
     note: "Pincéis, esponjas, nécessaires e ferramentas de apoio."
+  }
+};
+
+const ROW_IMPORT_OVERRIDES: Record<number, RowImportOverride> = {
+  191: {
+    productName: "Esfoliante Corporal Body Juice Cereja Dermachem 100g",
+    displayName: "Esfoliante Corporal Body Juice Cereja Dermachem 100g",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Esfoliante corporal"
+  },
+  192: {
+    productName: "Esfoliante Corporal Body Juice Maracujá Dermachem 100g",
+    displayName: "Esfoliante Corporal Body Juice Maracujá Dermachem 100g",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Esfoliante corporal"
+  },
+  193: {
+    productName: "Esfoliante Corporal Body Juice Melancia Dermachem 100g",
+    displayName: "Esfoliante Corporal Body Juice Melancia Dermachem 100g",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Esfoliante corporal"
+  },
+  194: {
+    productName: "Sabonete de Banho Body Juice Morango Dermachem 100ml",
+    displayName: "Sabonete de Banho Body Juice Morango Dermachem 100ml",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Sabonete corporal"
+  },
+  196: {
+    productName: "Gel Esfoliante Facial Rosa Mosqueta Dermachem 100g",
+    displayName: "Gel Esfoliante Facial Rosa Mosqueta Dermachem 100g",
+    categorySlug: "rosto",
+    subcategoryLabel: "Esfoliante facial"
+  },
+  198: {
+    productName: "Gel Rosa Mosqueta para Pele Sensível e Extrasseca Dermachem 100g",
+    displayName: "Gel Rosa Mosqueta para Pele Sensível e Extrasseca Dermachem 100g",
+    categorySlug: "rosto",
+    subcategoryLabel: "Gel facial"
+  },
+  200: {
+    productName: "Gel Esfoliante Facial Vitamina C Dermachem 100g",
+    displayName: "Gel Esfoliante Facial Vitamina C Dermachem 100g",
+    categorySlug: "rosto",
+    subcategoryLabel: "Esfoliante facial"
+  },
+  201: {
+    productName: "Gel Esfoliante Facial Ácido Salicílico Dermachem 100g",
+    displayName: "Gel Esfoliante Facial Ácido Salicílico Dermachem 100g",
+    categorySlug: "rosto",
+    subcategoryLabel: "Esfoliante facial"
+  },
+  202: {
+    productName: "Sabonete Facial Demaquilante New Make Out Niacinamida Dermachem",
+    displayName: "Sabonete Facial Demaquilante New Make Out Niacinamida Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Sabonete facial"
+  },
+  203: {
+    productName: "Sérum Facial Peônia Dermachem",
+    displayName: "Sérum Facial Peônia Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Sérum facial"
+  },
+  204: {
+    productName: "Sérum Facial Rosa Mosqueta Dermachem 30ml",
+    displayName: "Sérum Facial Rosa Mosqueta Dermachem 30ml",
+    categorySlug: "rosto",
+    subcategoryLabel: "Sérum facial"
+  },
+  205: {
+    productName: "Protetor Solar Facial FPS 85 com Niacinamida Dermachem 40g",
+    displayName: "Protetor Solar Facial FPS 85 com Niacinamida Dermachem 40g",
+    categorySlug: "rosto",
+    subcategoryLabel: "Protetor solar facial"
+  },
+  206: {
+    productName: "Protetor Solar Facial FPS 60 sem Cor Dermachem 40g",
+    displayName: "Protetor Solar Facial FPS 60 sem Cor Dermachem 40g",
+    categorySlug: "rosto",
+    subcategoryLabel: "Protetor solar facial"
+  },
+  207: {
+    productName: "Sérum Facial Melasma Clear Efeito Clareador Dermachem",
+    displayName: "Sérum Facial Melasma Clear Efeito Clareador Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Sérum facial"
+  },
+  208: {
+    productName: "Sabonete Líquido Facial Vitamina C Dermachem",
+    displayName: "Sabonete Líquido Facial Vitamina C Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Sabonete facial"
+  },
+  209: {
+    productName: "Body Splash Body Juice Morango Dermachem 200ml",
+    displayName: "Body Splash Body Juice Morango Dermachem 200ml",
+    categorySlug: "perfumes",
+    subcategoryLabel: "Body splash"
+  },
+  210: {
+    productName: "Hidratante Facial Primer Anti-Craquelamento Dermachem Makeup",
+    displayName: "Hidratante Facial Primer Anti-Craquelamento Dermachem Makeup",
+    categorySlug: "rosto",
+    subcategoryLabel: "Primer facial"
+  },
+  211: {
+    productName: "Creme Corporal Desodorante Body Juice Cereja Dermachem 100g",
+    displayName: "Creme Corporal Desodorante Body Juice Cereja Dermachem 100g",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Creme corporal"
+  },
+  212: {
+    productName: "Esfoliante Corporal Body Juice Morango Dermachem 100g",
+    displayName: "Esfoliante Corporal Body Juice Morango Dermachem 100g",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Esfoliante corporal"
+  },
+  214: {
+    productName: "Ativador Facial de Limpeza Hidratante Dermachem 120ml",
+    displayName: "Ativador Facial de Limpeza Hidratante Dermachem 120ml",
+    categorySlug: "rosto",
+    subcategoryLabel: "Limpeza facial"
+  },
+  215: {
+    productName: "Gel Facial Vitamina C Dermachem",
+    displayName: "Gel Facial Vitamina C Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Gel facial"
+  },
+  216: {
+    productName: "Creme Corporal Desodorante Body Juice Melancia Dermachem 100g",
+    displayName: "Creme Corporal Desodorante Body Juice Melancia Dermachem 100g",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Creme corporal"
+  },
+  218: {
+    productName: "Água Micelar Vitamina C Dermachem 250ml",
+    displayName: "Água Micelar Vitamina C Dermachem 250ml",
+    categorySlug: "rosto",
+    subcategoryLabel: "Água micelar"
+  },
+  219: {
+    productName: "Água Micelar Rosa Mosqueta e Íons Dermachem 250ml",
+    displayName: "Água Micelar Rosa Mosqueta e Íons Dermachem 250ml",
+    categorySlug: "rosto",
+    subcategoryLabel: "Água micelar"
+  },
+  220: {
+    productName: "Água Micelar Ácido Salicílico Dermachem 250ml",
+    displayName: "Água Micelar Ácido Salicílico Dermachem 250ml",
+    categorySlug: "rosto",
+    subcategoryLabel: "Água micelar"
+  },
+  221: {
+    productName: "Sabonete Facial Primer Pré-Maquiagem com Ácido Hialurônico Dermachem",
+    displayName: "Sabonete Facial Primer Pré-Maquiagem com Ácido Hialurônico Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Sabonete facial"
+  },
+  222: {
+    productName: "Sabonete Facial Demaquilante Make Out Dermachem",
+    displayName: "Sabonete Facial Demaquilante Make Out Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Sabonete facial"
+  },
+  223: {
+    productName: "Máscara Facial Peel Off Pepino e Argila Verde Dermachem",
+    displayName: "Máscara Facial Peel Off Pepino e Argila Verde Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Máscara facial"
+  },
+  224: {
+    productName: "Sabonete de Banho Body Juice Melancia Dermachem 100ml",
+    displayName: "Sabonete de Banho Body Juice Melancia Dermachem 100ml",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Sabonete corporal"
+  },
+  225: {
+    productName: "Sabonete Líquido Facial Ácido Salicílico Dermachem",
+    displayName: "Sabonete Líquido Facial Ácido Salicílico Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Sabonete facial"
+  },
+  227: {
+    productName: "Gel Esfoliante Facial com Pedras Vulcânicas Dermachem Make Out",
+    displayName: "Gel Esfoliante Facial com Pedras Vulcânicas Dermachem Make Out",
+    categorySlug: "rosto",
+    subcategoryLabel: "Esfoliante facial"
+  },
+  229: {
+    productName: "Máscara Facial Peel Off Argila Negra Dermachem",
+    displayName: "Máscara Facial Peel Off Argila Negra Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Máscara facial"
+  },
+  230: {
+    productName: "Creme Corporal Desodorante Doce Limão Dermachem",
+    displayName: "Creme Corporal Desodorante Doce Limão Dermachem",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Creme corporal"
+  },
+  231: {
+    productName: "Espuma Cremosa Facial Esfoliante Dermachem",
+    displayName: "Espuma Cremosa Facial Esfoliante Dermachem",
+    categorySlug: "rosto",
+    subcategoryLabel: "Espuma de limpeza facial"
+  },
+  232: {
+    productName: "Sabonete de Banho Body Juice Cereja Dermachem 100ml",
+    displayName: "Sabonete de Banho Body Juice Cereja Dermachem 100ml",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Sabonete corporal"
+  },
+  233: {
+    productName: "Body Splash Body Juice Cereja Dermachem 200ml",
+    displayName: "Body Splash Body Juice Cereja Dermachem 200ml",
+    categorySlug: "perfumes",
+    subcategoryLabel: "Body splash"
+  },
+  234: {
+    productName: "Body Splash Body Juice Melancia Dermachem 200ml",
+    displayName: "Body Splash Body Juice Melancia Dermachem 200ml",
+    categorySlug: "perfumes",
+    subcategoryLabel: "Body splash"
+  },
+  1613: {
+    productName: "Body Splash Napolitano Bliss Poran",
+    categorySlug: "perfumes",
+    subcategoryLabel: "Body splash"
+  },
+  1729: {
+    productName: "Sabonete Líquido Lovely Pitaya Rosa Mosqueta Face Beautiful",
+    categorySlug: "corpo-banho",
+    subcategoryLabel: "Sabonete corporal"
+  },
+  2237: {
+    productName: "Lápis Delineador em Gel ViVai",
+    categorySlug: "olhos-sobrancelhas",
+    subcategoryLabel: "Delineador em lápis"
+  },
+  2656: {
+    productName: "Shampoo a Seco Rush Isis Hair",
+    categorySlug: "cabelos",
+    subcategoryLabel: "Shampoo a seco"
+  },
+  2657: {
+    productName: "Shampoo a Seco Cloud Isis Hair",
+    categorySlug: "cabelos",
+    subcategoryLabel: "Shampoo a seco"
+  },
+  2658: {
+    productName: "Shampoo a Seco Blink Isis Hair",
+    categorySlug: "cabelos",
+    subcategoryLabel: "Shampoo a seco"
   }
 };
 
@@ -194,7 +456,9 @@ function parseArgs() {
     sheetTitle: get("--sheet", process.env.FEISHU_SHEET_TITLE || DEFAULT_SHEET_TITLE),
     skipExisting: !args.includes("--no-skip-existing"),
     batchLabel: get("--batch-label", ""),
-    onlyRows: parseRowFilter(get("--only-rows", ""))
+    onlyRows: parseRowFilter(get("--only-rows", "")),
+    allowNoTrayStatus: args.includes("--allow-no-tray-status"),
+    requirePackageSource: args.includes("--require-package-source")
   };
 }
 
@@ -377,10 +641,17 @@ function normalizeBoxText(value: string) {
   const text = value.trim();
   if (!text) return "";
   return text
+    .replace(/&/g, "/")
     .replace(/pcs/gi, "pçs")
     .replace(/p[cç]s/gi, "pçs")
     .replace(/(\d+)\.(\d{2})(?=c\/)/i, "$1,$2")
     .replace(/\s+/g, "");
+}
+
+function normalizeProductNameForImport(value: string) {
+  const text = value.trim();
+  if (text === "防晒霜" || text === "防曬霜") return "Protetor Solar";
+  return text;
 }
 
 function slugify(value: string) {
@@ -444,7 +715,10 @@ function classify(row: Pick<FeishuRow, "category" | "productName" | "model">): C
   let categorySlug = "rosto";
   let subcategoryLabel = "Multifuncional rosto, olhos e lábios";
 
-  if (hasAny(productText, ["iluminador", "highlighter"])) {
+  if (hasAny(text, ["protetor solar", "solar", "sunscreen", "防晒", "防曬"])) {
+    categorySlug = "rosto";
+    subcategoryLabel = "Protetor solar facial";
+  } else if (hasAny(productText, ["iluminador", "highlighter"])) {
     categorySlug = "rosto";
     subcategoryLabel = hasAny(productText, ["stick", "bastao", "bastão"]) ? "Iluminador em bastão" : "Iluminador em pó";
   } else if (hasAny(text, ["labial", "batom", "boca", "lip", "lips", "gloss", "唇"])) {
@@ -475,6 +749,9 @@ function classify(row: Pick<FeishuRow, "category" | "productName" | "model">): C
   } else if (hasAny(text, ["contorno", "修容"])) {
     categorySlug = "rosto";
     subcategoryLabel = hasAny(text, ["cremoso", "cream", "膏"]) ? "Contorno cremoso" : "Pó de contorno";
+  } else if (hasAny(text, ["base em po", "base em pó", "powder foundation", "粉状粉底", "定妆粉饼"])) {
+    categorySlug = "rosto";
+    subcategoryLabel = "Base em pó";
   } else if (hasAny(text, ["base", "粉底"])) {
     categorySlug = "rosto";
     subcategoryLabel = "Base líquida";
@@ -524,6 +801,19 @@ function formatDisplayName(productName: string, model: string) {
   return normalizedName.includes(normalizedModel) ? productName.trim() : `${productName.trim()} ${model}`.trim();
 }
 
+function classificationForRow(row: FeishuRow) {
+  const override = ROW_IMPORT_OVERRIDES[row.rowNumber];
+  if (!override?.categorySlug || !override.subcategoryLabel) return classify(row);
+  const info = categoryInfo(override.categorySlug);
+  if (!info) return null;
+  return {
+    categorySlug: override.categorySlug,
+    categoryLabel: info.label,
+    categoryNote: info.note,
+    subcategoryLabel: override.subcategoryLabel
+  };
+}
+
 function parseRows(values: unknown[][], headers: HeaderMap): FeishuRow[] {
   const rows: FeishuRow[] = [];
   let lastCategory = "";
@@ -550,7 +840,8 @@ function parseRows(values: unknown[][], headers: HeaderMap): FeishuRow[] {
 
     const rawCategory = cellText(row[headers.columns.category]);
     const rawBrand = cellText(row[headers.columns.brand]);
-    const rawName = cellText(row[headers.columns.name]);
+    const rowOverride = ROW_IMPORT_OVERRIDES[rowNumber];
+    const rawName = rowOverride?.productName || normalizeProductNameForImport(cellText(row[headers.columns.name]));
     const rawUnit = cellText(row[headers.columns.unitPrice]);
     const rawBox = cellText(row[headers.columns.boxPrice]);
     const rawStatus = cellText(row[headers.columns.trayStatus]);
@@ -612,14 +903,28 @@ function parseRows(values: unknown[][], headers: HeaderMap): FeishuRow[] {
   return rows;
 }
 
-function shouldUseRow(row: FeishuRow) {
+function shouldUseRow(row: FeishuRow, allowNoTrayRows: Set<number>, requirePackageSource: boolean) {
+  const hasRequiredFields = Boolean(
+    row.category &&
+      row.brand &&
+      row.productName &&
+      row.model &&
+      row.sampleToken &&
+      row.unitPriceCents > 0
+  );
   return (
-    row.trayStatus.includes("已有货盘图") &&
-    Boolean(row.category && row.brand && row.productName && row.model && row.sampleToken && row.unitPriceCents > 0)
+    hasRequiredFields &&
+    (!requirePackageSource || Boolean(row.packageToken || row.trayToken)) &&
+    (row.trayStatus.includes("已有货盘图") || allowNoTrayRows.has(row.rowNumber))
   );
 }
 
-function selectGroups(rows: FeishuRow[], limit: number) {
+function selectGroups(
+  rows: FeishuRow[],
+  limit: number,
+  allowNoTrayRows = new Set<number>(),
+  requirePackageSource = false
+) {
   const selected: ProductGroup[] = [];
   const skipped: Array<{ row: number; brand: string; model: string; reason: string }> = [];
   let active: FeishuRow[] = [];
@@ -628,7 +933,7 @@ function selectGroups(rows: FeishuRow[], limit: number) {
   function flush() {
     if (!active.length) return;
     const first = active[0];
-    const classification = classify(first);
+    const classification = classificationForRow(first);
     if (!classification) {
       skipped.push({ row: first.rowNumber, brand: first.brand, model: first.mainModel, reason: "classification unavailable" });
       active = [];
@@ -642,7 +947,7 @@ function selectGroups(rows: FeishuRow[], limit: number) {
       activeKey = "";
       return;
     }
-    const displayName = formatDisplayName(first.productName, first.mainModel);
+    const displayName = ROW_IMPORT_OVERRIDES[first.rowNumber]?.displayName || formatDisplayName(first.productName, first.mainModel);
     selected.push({
       rows: active,
       category: first.category,
@@ -663,13 +968,19 @@ function selectGroups(rows: FeishuRow[], limit: number) {
 
   for (const row of rows) {
     if (selected.length >= limit) break;
-    if (!shouldUseRow(row)) {
-      if (row.trayStatus.includes("已有货盘图")) {
+    if (!shouldUseRow(row, allowNoTrayRows, requirePackageSource)) {
+      if (row.trayStatus.includes("已有货盘图") || allowNoTrayRows.has(row.rowNumber)) {
+        const reason =
+          requirePackageSource && !row.packageToken && !row.trayToken
+            ? "missing_package_image_source"
+            : row.productName
+              ? "missing price or sample image"
+              : "missing_product_name";
         skipped.push({
           row: row.rowNumber,
           brand: row.brand,
           model: row.model,
-          reason: row.productName ? "missing price or sample image" : "missing_product_name"
+          reason
         });
       }
       flush();
@@ -905,18 +1216,38 @@ function createPrismaClient() {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString: requireEnv("DATABASE_URL") }) });
 }
 
-async function findExistingProductSlugs(slugs: string[]) {
-  const uniqueSlugs = Array.from(new Set(slugs.filter(Boolean)));
-  if (!uniqueSlugs.length) return new Set<string>();
+async function findExistingProductConflicts(groups: ProductGroup[]) {
+  if (!groups.length) return new Map<string, string>();
   const prisma = createPrismaClient();
   try {
     const products = await prisma.product.findMany({
-      where: {
-        slug: { in: uniqueSlugs }
-      },
-      select: { slug: true }
+      select: {
+        slug: true,
+        brand: { select: { name: true } },
+        skus: { select: { code: true } }
+      }
     });
-    return new Set(products.map((product) => product.slug));
+    const existingSlugs = new Set(products.map((product) => product.slug));
+    const existingBrandModels = new Set(
+      products.flatMap((product) =>
+        product.skus.map((sku) => `${brandAliasKey(product.brand.name)}|${mainModel(sku.code)}`)
+      )
+    );
+    const conflicts = new Map<string, string>();
+
+    for (const group of groups) {
+      if (existingSlugs.has(group.slug)) {
+        conflicts.set(group.slug, "already_imported_slug");
+        continue;
+      }
+      const brandKey = brandAliasKey(group.brand);
+      const matchingModel = group.rows
+        .map((row) => mainModel(row.model))
+        .find((model) => existingBrandModels.has(`${brandKey}|${model}`));
+      if (matchingModel) conflicts.set(group.slug, `already_imported_brand_model:${matchingModel}`);
+    }
+
+    return conflicts;
   } finally {
     await prisma.$disconnect();
   }
@@ -1050,6 +1381,7 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
 
       const uploadedSkuImages: string[] = [];
       const skuData: Array<{ name: string; code: string; image: string; sortOrder: number }> = [];
+      const seenSkuCodes = new Set<string>();
       for (let index = 0; index < group.rows.length; index += 1) {
         const row = group.rows[index];
         const image = images.get(row.sampleToken);
@@ -1060,6 +1392,8 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
           image.contentType
         );
         uploadedSkuImages.push(url);
+        if (seenSkuCodes.has(row.model)) continue;
+        seenSkuCodes.add(row.model);
         skuData.push({ name: row.model, code: row.model, image: url, sortOrder: (index + 1) * 10 });
       }
 
@@ -1117,9 +1451,9 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
             deletedAt: null,
             deletedByAdminEmail: null,
             deleteNote: null,
-            wholesalePackage: "Venda por unidade; caixa fechada e volume maior sob consulta.",
+            wholesalePackage: adjustedPricing.wholesalePackage,
             validityNote: "Validade/lote sob conferência no atendimento antes do envio.",
-            purchaseNote: "Para compra em volume, confirme estoque, cidade/UF e melhor forma de entrega pelo WhatsApp."
+            purchaseNote: "Venda somente em embalagem fechada do fabricante, sem fracionamento ou escolha de cores. Confirme o estoque antes do envio."
           },
           create: {
             slug: group.slug,
@@ -1149,9 +1483,9 @@ async function applyGroups(groups: ProductGroup[], images: Map<string, Downloade
             badges: ["Atacado", catalog.subcategoryLabel],
             active: true,
             featuredRank: 0,
-            wholesalePackage: "Venda por unidade; caixa fechada e volume maior sob consulta.",
+            wholesalePackage: adjustedPricing.wholesalePackage,
             validityNote: "Validade/lote sob conferência no atendimento antes do envio.",
-            purchaseNote: "Para compra em volume, confirme estoque, cidade/UF e melhor forma de entrega pelo WhatsApp.",
+            purchaseNote: "Venda somente em embalagem fechada do fabricante, sem fracionamento ou escolha de cores. Confirme o estoque antes do envio.",
             inventory: { create: { quantity: INTERNAL_AVAILABLE_STOCK_QUANTITY } }
           },
           select: { id: true }
@@ -1236,25 +1570,30 @@ async function main() {
   const values = await readRange(spreadsheetToken, sheet.sheetId, args.readRange, tenantToken);
   const headers = findHeader(values);
   const rows = parseRows(values, headers);
-  const candidateResult = selectGroups(rows, rows.length);
+  const candidateResult = selectGroups(
+    rows,
+    rows.length,
+    args.allowNoTrayStatus ? args.onlyRows : new Set<number>(),
+    args.requirePackageSource
+  );
   const candidateGroups = args.onlyRows.size
     ? candidateResult.selected.filter((group) => group.rows.some((row) => args.onlyRows.has(row.rowNumber)))
     : candidateResult.selected;
   const candidateSkipped = args.onlyRows.size
     ? candidateResult.skipped.filter((item) => args.onlyRows.has(item.row))
     : candidateResult.skipped;
-  const existingSlugs = args.skipExisting
-    ? await findExistingProductSlugs(candidateGroups.map((group) => group.slug))
-    : new Set<string>();
+  const existingConflicts = args.skipExisting
+    ? await findExistingProductConflicts(candidateGroups)
+    : new Map<string, string>();
   const existingSkipped = candidateGroups
-    .filter((group) => existingSlugs.has(group.slug))
+    .filter((group) => existingConflicts.has(group.slug))
     .map((group) => ({
       row: group.rows[0]?.rowNumber || 0,
       brand: group.brand,
       model: group.mainModel,
-      reason: "already_imported"
+      reason: existingConflicts.get(group.slug) || "already_imported"
     }));
-  const availableCandidates = candidateGroups.filter((group) => !existingSlugs.has(group.slug));
+  const availableCandidates = candidateGroups.filter((group) => !existingConflicts.has(group.slug));
   const images = new Map<string, DownloadedImage>();
   const imageSkipped: Array<{ row: number; brand: string; model: string; reason: string }> = [];
   const selected: ProductGroup[] = [];
@@ -1305,8 +1644,11 @@ async function main() {
       "subcategory",
       "slug",
       "imageStatus",
+      "sampleImagePaths",
+      "packageImageStatus",
       "trayPolicy",
-      "trayInternalStatus"
+      "trayInternalStatus",
+      "trayImagePath"
     ]
   ];
   for (const group of selected) {
@@ -1327,8 +1669,18 @@ async function main() {
       group.classification.subcategoryLabel,
       group.slug,
       missingTokens.length ? `missing ${missingTokens.length} storefront image(s)` : "ok",
+      group.rows
+        .map((row) => images.get(row.sampleToken)?.localPath || "")
+        .filter(Boolean)
+        .join("|"),
+      group.packageToken
+        ? images.has(group.packageToken)
+          ? "available"
+          : "unavailable"
+        : "missing",
       "internal",
-      group.trayToken && images.has(group.trayToken) ? "saved to Product.trayImage" : "missing internal tray image"
+      group.trayToken && images.has(group.trayToken) ? "saved to Product.trayImage" : "missing internal tray image",
+      group.trayToken ? images.get(group.trayToken)?.localPath || "" : ""
     ]);
   }
   await writeCsv(path.join(reportDir, "pilot-products-preview.csv"), previewRows);
@@ -1344,6 +1696,7 @@ async function main() {
         sheet: sheet.title,
         readRange: args.readRange,
         onlyRows: Array.from(args.onlyRows).sort((a, b) => a - b),
+        requirePackageSource: args.requirePackageSource,
         parsedRows: rows.length,
         parsedCandidateGroups: candidateResult.selected.length,
         candidateGroups: candidateGroups.length,
