@@ -169,14 +169,14 @@ export function brandMetadataTitle(name: string, page = 1) {
 export function brandMetaDescription(name: string, count: number, page = 1) {
   const opening = page > 1 ? `Página ${page}: ` : "";
   return compactText(
-    `${opening}${name} no atacado para revenda: ${count} ${count === 1 ? "produto" : "produtos"} por embalagem fechada, pedido mínimo de R$ 500,00 e entrega no Brasil.`,
+    `${opening}${name} no atacado para revenda: ${count} ${count === 1 ? "produto" : "produtos"} por embalagem fechada, pedido mínimo de ${siteConfig.wholesale.minimumOrderLabel} e entrega no Brasil.`,
     META_DESCRIPTION_MAX_LENGTH
   );
 }
 
 export function brandIntroText(name: string, count: number) {
   return compactText(
-    `${count} ${count === 1 ? "produto" : "produtos"} ${name} no atacado para lojistas e revendedores. Combine embalagens fechadas no pedido mínimo de R$ 500,00 e consulte a entrega por CEP.`
+    `${count} ${count === 1 ? "produto" : "produtos"} ${name} no atacado para lojistas e revendedores. Combine embalagens fechadas no pedido mínimo de ${siteConfig.wholesale.minimumOrderLabel} e consulte a entrega por CEP.`
   );
 }
 
@@ -370,7 +370,7 @@ export function productMetaDescription(product: CatalogProduct) {
   const nameIncludesBrand = product.name.toLocaleLowerCase("pt-BR").includes(product.brand.name.toLocaleLowerCase("pt-BR"));
   const productName = nameIncludesBrand ? product.name : `${product.name} da ${product.brand.name}`;
   return compactText(
-    `${productName} no atacado. Pedido mínimo R$ 500,00; preço unitário ${money(product.priceCents)}; embalagem fechada; ${stock}.`,
+    `${productName} no atacado. Pedido mínimo ${siteConfig.wholesale.minimumOrderLabel}; preço unitário ${money(product.priceCents)}; embalagem fechada; ${stock}.`,
     META_DESCRIPTION_MAX_LENGTH
   );
 }
@@ -388,7 +388,7 @@ export function categoryIntroText(label: string, count: number, isAllCategory = 
     );
   }
   return compactText(
-    `${label} no atacado para lojistas e revendedores: ${productText} por embalagem fechada, pedido mínimo R$ 500,00 e suporte para montar reposição.`
+    `${label} no atacado para lojistas e revendedores: ${productText} por embalagem fechada, pedido mínimo ${siteConfig.wholesale.minimumOrderLabel} e suporte para montar reposição.`
   );
 }
 
@@ -396,12 +396,12 @@ export function categoryMetaDescription(label: string, count: number, isAllCateg
   const pageText = page > 1 ? `Página ${page}: ` : "";
   if (isAllCategory) {
     return compactText(
-      `${pageText}cosméticos no atacado para revenda: ${count} produtos por embalagem fechada, pedido mínimo R$ 500,00 e entrega no Brasil.`,
+      `${pageText}cosméticos no atacado para revenda: ${count} produtos por embalagem fechada, pedido mínimo ${siteConfig.wholesale.minimumOrderLabel} e entrega no Brasil.`,
       META_DESCRIPTION_MAX_LENGTH
     );
   }
   return compactText(
-    `${pageText}${label} no atacado: ${count} produtos para lojistas e revendedores, vendidos por embalagem fechada, pedido mínimo R$ 500,00 e entrega no Brasil.`,
+    `${pageText}${label} no atacado: ${count} produtos para lojistas e revendedores, vendidos por embalagem fechada, pedido mínimo ${siteConfig.wholesale.minimumOrderLabel} e entrega no Brasil.`,
     META_DESCRIPTION_MAX_LENGTH
   );
 }

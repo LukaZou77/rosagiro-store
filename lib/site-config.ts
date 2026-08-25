@@ -1,9 +1,14 @@
+import { money } from "@/lib/money";
+
 const whatsappPhone = "5511970792390";
+export const wholesaleMinimumOrderCents = 50000;
+export const wholesaleMinimumOrderLabel = money(wholesaleMinimumOrderCents).replace(/\u00a0/g, " ");
+export const wholesaleMinimumOrderShortLabel = wholesaleMinimumOrderLabel.replace(/,00$/, "");
 
 export const siteConfig = {
   name: "RosaGiro",
   tagline: "Atacado de cosméticos em São Paulo",
-  description: "Cosméticos no atacado para lojistas e revendedores, com venda por embalagem fechada, pedido mínimo de R$ 500,00, entrega no Brasil e atendimento pelo WhatsApp.",
+  description: `Cosméticos no atacado para lojistas e revendedores, com venda por embalagem fechada, pedido mínimo de ${wholesaleMinimumOrderLabel}, entrega no Brasil e atendimento pelo WhatsApp.`,
   defaultUrl: "http://localhost:3000",
   supportEmail: "rosagiroatacado@gmail.com",
   businessIdentity: {
@@ -50,10 +55,12 @@ export const siteConfig = {
   },
   marketplace: "Brasil",
   wholesale: {
-    minimumOrderCents: 50000,
+    minimumOrderCents: wholesaleMinimumOrderCents,
+    minimumOrderLabel: wholesaleMinimumOrderLabel,
+    minimumOrderShortLabel: wholesaleMinimumOrderShortLabel,
     minimumOrderTitle: "Pedido mínimo",
-    minimumOrderText: "Pedido mínimo R$ 500,00 para compras no atacado. Produtos vendidos somente na embalagem fechada original, sem escolha de cores.",
-    headerStrip: "PEDIDO MÍNIMO R$ 500,00 - EMBALAGEM FECHADA - ENTREGA PARA TODO O BRASIL",
+    minimumOrderText: `Pedido mínimo ${wholesaleMinimumOrderLabel} para compras no atacado. Produtos vendidos somente na embalagem fechada original, sem escolha de cores.`,
+    headerStrip: `PEDIDO MÍNIMO ${wholesaleMinimumOrderLabel} - EMBALAGEM FECHADA - ENTREGA PARA TODO O BRASIL`,
     storeTrust: "Dados comerciais, atendimento e políticas reunidos para uma compra mais segura.",
     nationalDeliveryLabel: "Entrega para todo o Brasil",
     nationalDeliveryText: "Enviamos para todo o Brasil com cotação por CEP.",
@@ -63,12 +70,12 @@ export const siteConfig = {
       "Retirada local mediante confirmação",
       "Transportadora própria ou excursão sob consulta"
     ],
-    shelfSignals: ["Pedido mínimo R$ 500", "Venda por embalagem fechada", "Envio para todo o Brasil", "Atendimento no WhatsApp"]
+    shelfSignals: [`Pedido mínimo ${wholesaleMinimumOrderShortLabel}`, "Venda por embalagem fechada", "Envio para todo o Brasil", "Atendimento no WhatsApp"]
   },
   hero: {
     eyebrow: "Atacado de cosméticos em São Paulo",
     title: "Cosméticos no atacado para revenda",
-    body: "Maquiagens, skincare, perfumes, produtos para cabelo e acessórios no atacado para lojistas e revendedores, vendidos por embalagem fechada, com pedido mínimo de R$ 500,00 e atendimento pelo WhatsApp.",
+    body: `Maquiagens, skincare, perfumes, produtos para cabelo e acessórios no atacado para lojistas e revendedores, vendidos por embalagem fechada, com pedido mínimo de ${wholesaleMinimumOrderLabel} e atendimento pelo WhatsApp.`,
     primaryCta: "Ver catálogo",
     secondaryCta: "Comprar destaque"
   },
@@ -83,7 +90,7 @@ export const siteConfig = {
   homePromotions: {
     promoBar: {
       label: "Destaques no atacado",
-      text: "Pedido mínimo R$ 500,00, venda por embalagem fechada, Pix, entrega para todo o Brasil e suporte no WhatsApp.",
+      text: `Pedido mínimo ${wholesaleMinimumOrderLabel}, venda por embalagem fechada, Pix, entrega para todo o Brasil e suporte no WhatsApp.`,
       cta: "Ver destaques",
       href: "/promocoes"
     },
@@ -94,7 +101,7 @@ export const siteConfig = {
       brandsLabel: "marcas no catálogo"
     },
     trustPoints: [
-      "Pedido mínimo R$ 500,00 e embalagem fechada sinalizados em toda compra",
+      `Pedido mínimo ${wholesaleMinimumOrderLabel} e embalagem fechada sinalizados em toda compra`,
       "Pedido multimarcas em um carrinho",
       "Pix e cartão pelo checkout seguro",
       "Entrega para todo o Brasil com cotação por CEP",
@@ -149,7 +156,7 @@ export const siteConfig = {
     stockShelfTitle: "Em estoque para reposição",
     shelfNote: "Os destaques usam campos atuais do produto: tags, estoque, marca, categoria e organização da vitrine.",
     signals: [
-      "Pedido mínimo R$ 500",
+      `Pedido mínimo ${wholesaleMinimumOrderShortLabel}`,
       "Produtos selecionados para reposição",
       "Produtos multimarcas para revenda",
       "Entrega para todo o Brasil",
@@ -177,7 +184,7 @@ export const siteConfig = {
     stockLabel: "Disponibilidade",
     freightLabel: "Entrega",
     freightText: "Frete nacional por CEP",
-    cardMinimumHint: "R$ 500 mínimo",
+    cardMinimumHint: `${wholesaleMinimumOrderShortLabel} mínimo`,
     detailPanelTitle: "Compra no atacado",
     detailPanelNote: "O preço exibido é unitário, mas a venda é feita somente pela embalagem fechada original. As cores e variações não podem ser escolhidas separadamente.",
     bundlePrompt: "Quer comprar em volume? Envie este item pelo WhatsApp e informe sua cidade/UF.",

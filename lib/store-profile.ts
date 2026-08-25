@@ -126,7 +126,9 @@ function cleanPublicSignal(signal: string) {
   if (!normalized) return "";
   if (/preparacao|prepara\u00e7\u00e3o|teste|simulad/i.test(normalized)) return "";
   if (/cnpj em revisao|cnpj em revisão/i.test(normalized)) return "Dados da loja";
-  if (/pedido minimo|pedido mínimo/i.test(normalized)) return "Pedido mínimo sinalizado";
+  if (/pedido minimo|pedido mínimo|compra minima|compra mínima/i.test(normalized)) {
+    return `Pedido mínimo ${siteConfig.wholesale.minimumOrderShortLabel}`;
+  }
   return normalized;
 }
 

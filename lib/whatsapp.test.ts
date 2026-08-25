@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildCartWhatsAppHref } from "./whatsapp";
+import { buildCartWhatsAppHref, buildGeneralWhatsAppHref } from "./whatsapp";
+
+test("uses the canonical wholesale minimum in general WhatsApp messages", () => {
+  const href = buildGeneralWhatsAppHref("home atacado", "5511970792390");
+  const message = new URL(href).searchParams.get("text") || "";
+
+  assert.match(message, /Pedido mínimo para atacado: R\$\s*500,00\./i);
+  assert.doesNotMatch(message, /R\$\s*300(?:,00)?/i);
+});
 
 test("describes wholesale cart lines as complete packages instead of retail units", () => {
   const href = buildCartWhatsAppHref(

@@ -157,7 +157,7 @@ export default async function BrandPage({ params, searchParams }: PageProps) {
             Produtos
           </span>
           <span>
-            <strong>R$ 500</strong>
+            <strong>{siteConfig.wholesale.minimumOrderShortLabel}</strong>
             Pedido mínimo
           </span>
           <span>
