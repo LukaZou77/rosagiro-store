@@ -8,6 +8,7 @@ import {
   priceAdjustmentConfigFromStoredValues
 } from "../lib/product-price-adjustment";
 import { INTERNAL_AVAILABLE_STOCK_QUANTITY } from "../lib/product-stock";
+import { verifiedWholesaleBoxText } from "../lib/verified-wholesale-package";
 
 type Mode = "dry-run" | "apply";
 
@@ -1255,7 +1256,8 @@ async function findExistingProductConflicts(groups: ProductGroup[]) {
 
 function descriptionFor(group: ProductGroup) {
   const unit = moneyPt(group.unitPriceCents);
-  const box = group.boxPrice ? normalizeBoxText(group.boxPrice) : "";
+  const box = verifiedWholesaleBoxText(group.slug, group.unitPriceCents)
+    ?? (group.boxPrice ? normalizeBoxText(group.boxPrice) : "");
   if (box) return `Preço unitário: ${unit}; Embalagem para atacado: ${box}.`;
   return `Preço unitário: ${unit}; Embalagem para atacado: consulte pelo WhatsApp.`;
 }

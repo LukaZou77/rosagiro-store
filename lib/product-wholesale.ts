@@ -60,7 +60,9 @@ export function productWholesalePackagePieces(product: WholesalePackageInput) {
 
 export function productWholesalePackageLabel(product: WholesalePackageInput) {
   const pieces = productWholesalePackagePieces(product);
-  return pieces ? `Embalagem fechada com ${pieces} unidades` : "Embalagem fechada sob consulta";
+  return pieces
+    ? `Embalagem fechada com ${pieces} ${pieces === 1 ? "unidade" : "unidades"}`
+    : "Embalagem fechada sob consulta";
 }
 
 export function productWholesalePackagePriceCents(product: WholesalePackagePriceInput) {

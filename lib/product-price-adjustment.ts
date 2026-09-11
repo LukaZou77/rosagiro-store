@@ -137,7 +137,7 @@ export const wholesalePackageConsultText =
   "Caixa fechada e volumes maiores: consulte pelo WhatsApp.";
 
 export function formatWholesalePackage(boxPriceCents: number, boxPieces: number) {
-  return `Caixa com ${boxPieces} unidades: R$ ${formatPlainBrl(boxPriceCents)}.`;
+  return `Caixa com ${boxPieces} ${boxPieces === 1 ? "unidade" : "unidades"}: R$ ${formatPlainBrl(boxPriceCents)}.`;
 }
 
 export function adjustedWholesalePackage(
