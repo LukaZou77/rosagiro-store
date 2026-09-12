@@ -5,6 +5,11 @@ import {
   parseStandardWholesaleDescription,
   wholesalePackageConsultText
 } from "@/lib/product-price-adjustment";
+import {
+  isSourceCatalogConsultationProduct,
+  sourceCatalogPriceLabel,
+  type SourceCatalogMarker
+} from "@/lib/source-catalog-product";
 
 export type WholesaleProductDetails = {
   baseBoxPieces?: number | null;
@@ -15,16 +20,16 @@ export type WholesaleProductDetails = {
   purchaseNote?: string | null;
 };
 
-type WholesalePackageInput = Pick<WholesaleProductDetails, "baseBoxPieces" | "wholesalePackage"> & {
+type WholesalePackageInput = Pick<WholesaleProductDetails, "baseBoxPieces" | "wholesalePackage"> & SourceCatalogMarker & {
   descriptionPt?: string | null;
 };
 
-type WholesalePackagePriceInput = WholesalePackageInput & {
+type WholesalePackagePriceInput = WholesalePackageInput & SourceCatalogMarker & {
   priceCents: number;
   baseBoxPriceCents?: number | null;
 };
 
-type WholesaleStockInput = {
+type WholesaleStockInput = SourceCatalogMarker & {
   inventory?: { quantity: number } | null;
   skus?: Array<{ quantity: number; active: boolean }>;
 };
@@ -59,6 +64,12 @@ export function productWholesalePackagePieces(product: WholesalePackageInput) {
 }
 
 export function productWholesalePackageLabel(product: WholesalePackageInput) {
+  if (isSourceCatalogConsultationProduct(product)) {
+    const sourcePackage = clean(product.wholesalePackage)
+      .replace(/^Unidade de venda: (?:unidade|pacote|kit|conjunto|cartela)\.\s*/i, "")
+      .trim();
+    return sourcePackage || "Embalagem sob consulta";
+  }
   const pieces = productWholesalePackagePieces(product);
   return pieces
     ? `Embalagem fechada com ${pieces} ${pieces === 1 ? "unidade" : "unidades"}`
@@ -66,6 +77,11 @@ export function productWholesalePackageLabel(product: WholesalePackageInput) {
 }
 
 export function productWholesalePackagePriceCents(product: WholesalePackagePriceInput) {
+  if (isSourceCatalogConsultationProduct(product)) {
+    const verifiedSourcePrice = Math.floor(Number(product.baseBoxPriceCents) || 0);
+    return verifiedSourcePrice > 0 ? verifiedSourcePrice : null;
+  }
+
   const pieces = productWholesalePackagePieces(product);
   if (!pieces) return null;
 
@@ -93,6 +109,7 @@ export function productWholesaleLineTotalCents(product: WholesalePackagePriceInp
 }
 
 export function productWholesaleStockQuantity(product: WholesaleStockInput) {
+  if (isSourceCatalogConsultationProduct(product)) return 0;
   if (product.inventory) return Math.max(0, product.inventory.quantity);
 
   return (product.skus || []).reduce(
@@ -115,12 +132,16 @@ export function productCommercialSummary(product: {
   baseBoxPieces?: number | null;
   wholesalePackage?: string | null;
   descriptionPt: string;
+  stockStatus?: string | null;
 }) {
   const legacyPackage = wholesalePackageFromLegacyDescription(product.descriptionPt);
   const packageText = customerWholesalePackageText(
     legacyPackage || clean(product.wholesalePackage) || wholesalePackageConsultText
   );
-  return `Preço unitário no atacado: R$ ${formatPlainBrl(product.priceCents)}. ${packageText}`;
+  const priceLabel = isSourceCatalogConsultationProduct(product)
+    ? sourceCatalogPriceLabel(product.wholesalePackage)
+    : "Preço unitário no atacado";
+  return `${priceLabel}: R$ ${formatPlainBrl(product.priceCents)}. ${packageText}`;
 }
 
 export function productEditorialDescription(description: string) {

@@ -124,6 +124,7 @@ test("builds truthful merchant product data without invented reviews", () => {
   } as unknown as Parameters<typeof productJsonLd>[0];
   const data = productJsonLd(product);
 
+  assert.ok(data.offers);
   assert.equal(data.url, "http://localhost:3000/produto/batom-duo-lip-twice-ruby-rose-hb-l6203");
   assert.equal(data.offers.availability, "https://schema.org/OutOfStock");
   assert.equal(data.offers.price, "9.75");
@@ -142,7 +143,25 @@ test("builds truthful merchant product data without invented reviews", () => {
     inventory: { quantity: 12 },
     skus: product.skus.map((sku) => ({ ...sku, quantity: 0 }))
   });
+  assert.ok(availablePackageData.offers);
   assert.equal(availablePackageData.offers.availability, "https://schema.org/InStock");
+});
+
+test("omits commerce offers for source products that require consultation", () => {
+  const product = {
+    ...sampleProduct,
+    stockStatus: "Sob consulta",
+    wholesalePackage: "Unidade de venda: pacote. Caixa sob consulta.",
+    inventory: { quantity: 999 }
+  } as unknown as Parameters<typeof productJsonLd>[0];
+  const data = productJsonLd(product);
+  const description = productMetaDescription(product);
+
+  assert.equal("offers" in data, false);
+  assert.doesNotMatch(JSON.stringify(data), /InStock|OutOfStock/);
+  assert.match(description, /preço por pacote/i);
+  assert.match(description, /estoque e embalagem via WhatsApp/i);
+  assert.doesNotMatch(description, /\.\.\.$/);
 });
 
 test("links the published Brazil return policy without duplicating editable rules", () => {

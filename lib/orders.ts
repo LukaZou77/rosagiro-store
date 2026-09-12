@@ -13,6 +13,7 @@ import {
   productWholesalePackagePieces,
   productWholesaleStockQuantity
 } from "@/lib/product-wholesale";
+import { isSourceCatalogConsultationProduct } from "@/lib/source-catalog-product";
 import { resolveOrderShipping } from "@/lib/shipping";
 import { parseCheckoutShippingMethod, type CheckoutShippingMethod } from "@/lib/shipping-rules";
 import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
@@ -176,6 +177,9 @@ export async function createOrder(input: CheckoutInput) {
   const lines = input.items.map((item) => {
     const product = productBySlug.get(item.slug);
     if (!product) throw new OrderError("Um produto do carrinho não está mais disponível.");
+    if (isSourceCatalogConsultationProduct(product)) {
+      throw new OrderError(`${product.name}: confirme estoque, preço e embalagem pelo WhatsApp antes de finalizar.`);
+    }
     const availableQuantity = productWholesaleStockQuantity(product);
     if (availableQuantity < item.quantity) {
       throw new OrderError(`${product.name} não tem estoque suficiente.`);

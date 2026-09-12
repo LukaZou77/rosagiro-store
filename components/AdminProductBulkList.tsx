@@ -11,6 +11,7 @@ export type AdminProductListRow = {
   image: string;
   active: boolean;
   inStock: boolean;
+  consultationOnly?: boolean;
   brandName: string;
   categoryLabel: string;
   subcategory: string;
@@ -86,7 +87,7 @@ export function AdminProductBulkList({
                   {product.active ? t("Ativo", "启用") : t("Inativo", "停用")}
                 </span>
                 <span className={product.inStock ? "status-chip success" : "status-chip warning"}>
-                  {product.inStock ? t("Em estoque", "有货") : t("Sem estoque", "缺货")}
+                  {product.consultationOnly ? t("Sob consulta", "库存待核实") : product.inStock ? t("Em estoque", "有货") : t("Sem estoque", "缺货")}
                 </span>
                 {product.qualityStatusLabel && product.qualityStatusClass ? (
                   <span className={`status-chip ${product.qualityStatusClass}`}>{product.qualityStatusLabel}</span>

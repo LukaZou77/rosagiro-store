@@ -12,6 +12,7 @@ import {
   productStockTone
 } from "@/lib/product-conversion";
 import { siteConfig } from "@/lib/site-config";
+import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 
 function normalizedLabel(value: string) {
@@ -42,7 +43,8 @@ function productCardTags(product: CatalogCardProduct) {
 
 export function ProductCard({ product, whatsappPhone }: { product: CatalogCardProduct; whatsappPhone?: string | null }) {
   const quantity = productQuantity(product);
-  const available = quantity > 0;
+  const consultationOnly = isSourceCatalogConsultationProduct(product);
+  const available = !consultationOnly && quantity > 0;
   const heroBadge = product.badges.map(customerDisplayText).find(isSpecialCardBadge) || "";
   const stockTone = productStockTone(product);
   const shortStockLabel = productShortStockLabel(product);
@@ -50,10 +52,13 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
   const displayPrice = product.priceCents;
   const infoTags = productCardTags(product);
   const packagePieces = productWholesalePackagePieces(product);
-  const packageOrderable = Boolean(packagePieces && quantity >= packagePieces);
+  const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces);
+  const priceLabel = consultationOnly
+    ? sourceCatalogPriceLabel(product.wholesalePackage)
+    : siteConfig.productConversion.priceLabel;
 
   return (
-    <article className={available ? "product-card" : "product-card is-unavailable"}>
+    <article className={consultationOnly ? "product-card is-consultation" : available ? "product-card" : "product-card is-unavailable"}>
       <Link href={`/produto/${product.slug}`} className="product-image">
         {heroBadge ? <span className="product-badge">{heroBadge}</span> : null}
         <OptimizedProductImage
@@ -80,12 +85,16 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
         ) : null}
         <div className="product-card-bottom">
           <div className="price-stack">
-            <small>{siteConfig.productConversion.priceLabel}</small>
+            <small>{priceLabel}</small>
             <strong>{money(displayPrice)}</strong>
             <small className="wholesale-package-hint">{productWholesalePackageLabel(product)}</small>
           </div>
           <div className="product-card-actions">
-            {!packagePieces ? (
+            {consultationOnly ? (
+              <button type="button" disabled>
+                Estoque sob consulta
+              </button>
+            ) : !packagePieces ? (
               <Link className="button secondary" href={`/produto/${product.slug}`}>
                 Consultar embalagem
               </Link>

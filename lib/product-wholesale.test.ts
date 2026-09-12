@@ -55,6 +55,25 @@ test("resolves a reliable closed-package quantity", () => {
   );
 });
 
+test("preserves source package wording instead of converting kits to units", () => {
+  assert.equal(
+    productWholesalePackageLabel({
+      stockStatus: "Sob consulta",
+      baseBoxPieces: 24,
+      wholesalePackage: "Unidade de venda: kit. Caixa: 24 kits; preço da caixa: R$ 240,00."
+    }),
+    "Caixa: 24 kits; preço da caixa: R$ 240,00."
+  );
+  assert.equal(
+    productWholesalePackageLabel({
+      stockStatus: "Sob consulta",
+      baseBoxPieces: 1,
+      wholesalePackage: "Unidade de venda: kit."
+    }),
+    "Embalagem sob consulta"
+  );
+});
+
 test("uses product-level stock for closed mixed packages", () => {
   assert.equal(
     productWholesaleStockQuantity({
@@ -90,4 +109,77 @@ test("uses the authoritative package price instead of multiplying a rounded unit
   assert.equal(productWholesaleLineTotalCents(product, 36), 32850);
   assert.equal(productWholesaleLineTotalCents(product, 72), 65700);
   assert.equal(productWholesaleLineTotalCents(product, 1), 0);
+});
+
+test("never infers package totals or stock for consultation-only source products", () => {
+  const sourceProduct = {
+    stockStatus: "Sob consulta",
+    priceCents: 720,
+    baseBoxPieces: 50,
+    baseBoxPriceCents: null,
+    wholesalePackage: "Unidade de venda: pacote. Caixa: 50 unidades; preço da caixa sob consulta.",
+    inventory: { quantity: 999 }
+  };
+
+  assert.equal(productWholesaleStockQuantity(sourceProduct), 0);
+  assert.equal(productWholesalePackagePriceCents(sourceProduct), null);
+  assert.equal(productWholesaleLineTotalCents(sourceProduct, 50), 0);
+});
+
+test("keeps explicit source package prices while preserving ordinary fallback behavior", () => {
+  assert.equal(
+    productWholesalePackagePriceCents({
+      stockStatus: "Sob consulta",
+      priceCents: 720,
+      baseBoxPieces: null,
+      baseBoxPriceCents: 14400,
+      wholesalePackage: "Caixa com quantidade sob consulta; preço da caixa: R$ 144,00."
+    }),
+    14400
+  );
+  assert.equal(
+    productWholesalePackagePriceCents({
+      stockStatus: "Sob consulta",
+      priceCents: 720,
+      baseBoxPieces: 24,
+      baseBoxPriceCents: 14400,
+      wholesalePackage: "Unidade de venda: pacote. Caixa: 24 unidades; preço da caixa: R$ 144,00."
+    }),
+    14400
+  );
+  assert.equal(
+    productWholesalePackagePriceCents({
+      stockStatus: "Sob consulta",
+      priceCents: 720,
+      baseBoxPieces: 24,
+      baseBoxPriceCents: null,
+      wholesalePackage: "Unidade de venda: pacote. Caixa: 24 unidades; preço da caixa: R$ 144,00."
+    }),
+    null
+  );
+  assert.equal(
+    productWholesalePackagePriceCents({ priceCents: 720, baseBoxPieces: 24, wholesalePackage: null }),
+    17280
+  );
+});
+
+test("uses the verified source sale unit in customer price copy", () => {
+  assert.equal(
+    productCommercialSummary({
+      stockStatus: "Sob consulta",
+      priceCents: 720,
+      wholesalePackage: "Unidade de venda: pacote. Caixa sob consulta.",
+      descriptionPt: ""
+    }),
+    "Preço por pacote: R$ 7,20. Unidade de venda: pacote. Caixa sob consulta."
+  );
+  assert.equal(
+    productCommercialSummary({
+      stockStatus: "Sob consulta",
+      priceCents: 1990,
+      wholesalePackage: "Kit conforme imagem; caixa sob consulta.",
+      descriptionPt: ""
+    }),
+    "Preço unitário da imagem: R$ 19,90. Kit conforme imagem; caixa sob consulta."
+  );
 });

@@ -1,6 +1,6 @@
 import type { Prisma } from "@/src/generated/prisma/client";
 import Link from "next/link";
-import { moveProductsToTrashAction, saveProductPriceAdjustmentAction } from "@/app/admin/actions";
+import { moveProductsToTrashAction, refreshCatalogAction, saveProductPriceAdjustmentAction } from "@/app/admin/actions";
 import { AdminPriceAdjustmentJobProgress } from "@/components/AdminPriceAdjustmentJobProgress";
 import { AdminPriceAdjustmentResultDialog } from "@/components/AdminPriceAdjustmentResultDialog";
 import { AdminPriceAdjustmentSubmitButton } from "@/components/AdminPriceAdjustmentSubmitButton";
@@ -11,6 +11,7 @@ import { createAdminTranslator } from "@/lib/admin-i18n";
 import { getAdminLocale } from "@/lib/admin-i18n-server";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
+import { isSourceCatalogConsultationProduct, SOURCE_CATALOG_CONSULTATION_STATUS } from "@/lib/source-catalog-product";
 import { formatPlainBrl, parsePriceAdjustmentInput, priceAdjustmentLabel } from "@/lib/product-price-adjustment";
 import { configFromStoreProfile, previewPriceAdjustment } from "@/lib/product-price-adjustment-server";
 import { evaluateProductQuality } from "@/lib/product-quality";
@@ -59,6 +60,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   const requestedPage = Math.max(1, numberParam(params.page) || 1);
   const trashed = single(params.trashed);
   const error = single(params.error);
+  const catalogRefreshed = single(params.catalogRefreshed) === "1";
   const priceAdjusted = single(params.priceAdjusted);
   const priceAdjustedSkus = single(params.priceAdjustedSkus);
   const priceAdjustmentJob = single(params.priceAdjustmentJob);
@@ -112,9 +114,11 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       category !== "all" ? { categoryId: category } : {},
       status === "active" ? { active: true } : status === "inactive" ? { active: false } : {},
       stock === "in"
-        ? { inventory: { quantity: { gt: 0 } } }
+        ? { stockStatus: { not: SOURCE_CATALOG_CONSULTATION_STATUS }, inventory: { quantity: { gt: 0 } } }
         : stock === "out"
-          ? { OR: [{ inventory: null }, { inventory: { quantity: 0 } }] }
+          ? { stockStatus: { not: SOURCE_CATALOG_CONSULTATION_STATUS }, OR: [{ inventory: null }, { inventory: { quantity: 0 } }] }
+          : stock === "consultation"
+            ? { stockStatus: SOURCE_CATALOG_CONSULTATION_STATUS }
           : {},
       q
         ? {
@@ -136,10 +140,11 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   const totalProducts = await prisma.product.count({ where });
   const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
   const page = Math.min(requestedPage, totalPages);
-  const [activeCount, inStockCount, outOfStockCount, products] = await Promise.all([
+  const [activeCount, inStockCount, outOfStockCount, consultationCount, products] = await Promise.all([
     prisma.product.count({ where: { AND: [where, { active: true }] } }),
-    prisma.product.count({ where: { AND: [where, { inventory: { quantity: { gt: 0 } } }] } }),
-    prisma.product.count({ where: { AND: [where, { OR: [{ inventory: null }, { inventory: { quantity: 0 } }] }] } }),
+    prisma.product.count({ where: { AND: [where, { stockStatus: { not: SOURCE_CATALOG_CONSULTATION_STATUS }, inventory: { quantity: { gt: 0 } } }] } }),
+    prisma.product.count({ where: { AND: [where, { stockStatus: { not: SOURCE_CATALOG_CONSULTATION_STATUS }, OR: [{ inventory: null }, { inventory: { quantity: 0 } }] }] } }),
+    prisma.product.count({ where: { AND: [where, { stockStatus: SOURCE_CATALOG_CONSULTATION_STATUS }] } }),
     prisma.product.findMany({
       where,
       include: { brand: true, category: true, inventory: true },
@@ -161,7 +166,8 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       name: product.name,
       image: product.image,
       active: product.active,
-      inStock: quantity > 0,
+      inStock: !isSourceCatalogConsultationProduct(product) && quantity > 0,
+      consultationOnly: isSourceCatalogConsultationProduct(product),
       brandName: product.brand.name,
       categoryLabel: product.category.label,
       subcategory: product.subcategory,
@@ -186,12 +192,22 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         <h1>{t("Central de produtos", "商品管理")}</h1>
         <p>{t("Filtre, revise e abra cada item para editar a ficha completa do catálogo.", "筛选和检查商品，打开单个商品即可编辑完整资料。")}</p>
         <div className="admin-actions">
+          <form action={refreshCatalogAction}>
+            <button className="button secondary" type="submit">
+              {t("Atualizar catálogo público", "刷新网站目录")}
+            </button>
+          </form>
           <Link className="button primary" href="/admin/produtos/novo" prefetch={false}>
             {t("Novo produto", "新建商品")}
           </Link>
         </div>
       </div>
 
+      {catalogRefreshed ? (
+        <div className="admin-notice success" role="status">
+          {t("Catálogo atualizado. Nenhum preço, estoque ou produto foi alterado.", "网站目录已刷新，未修改价格、库存或商品资料。")}
+        </div>
+      ) : null}
       {trashed ? (
         <div className="admin-notice success" role="status">
           {trashed} {t("produto(s) movido(s) para a lixeira.", "个商品已移入回收站。")}
@@ -323,6 +339,10 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           <span>{t("Sem estoque", "缺货")}</span>
           <strong>{outOfStockCount}</strong>
         </div>
+        <div>
+          <span>{t("Sob consulta", "库存待核实")}</span>
+          <strong>{consultationCount}</strong>
+        </div>
         <Link href="/admin/produtos/qualidade" prefetch={false}>
           <span>{t("Críticos nesta página", "本页严重问题")}</span>
           <strong>{qualityActionCount}</strong>
@@ -370,6 +390,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
             <option value="all">{t("Todos", "全部")}</option>
             <option value="in">{t("Em estoque", "有货")}</option>
             <option value="out">{t("Sem estoque", "缺货")}</option>
+            <option value="consultation">{t("Sob consulta", "库存待核实")}</option>
           </select>
         </label>
         <button className="button primary" type="submit">

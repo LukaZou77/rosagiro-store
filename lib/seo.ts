@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { productQuantity } from "@/lib/product-conversion";
+import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import type { StoreProfileView } from "@/lib/store-profile-public";
 import { storeProfileAddress, storeSocialLinks } from "@/lib/store-profile-public";
@@ -319,6 +320,7 @@ export function guideArticleJsonLd(article: GuideArticleJsonLdInput) {
 
 export function productJsonLd(product: CatalogProduct) {
   const url = siteUrl(`/produto/${product.slug}`);
+  const consultationOnly = isSourceCatalogConsultationProduct(product);
   const inStock = productQuantity(product) > 0;
   const images = Array.from(
     new Set(
@@ -343,7 +345,7 @@ export function productJsonLd(product: CatalogProduct) {
     sku: product.mpn || undefined,
     mpn: product.mpn || undefined,
     gtin: product.gtin || undefined,
-    offers: {
+    ...(consultationOnly ? {} : { offers: {
       "@type": "Offer",
       url,
       priceCurrency: "BRL",
@@ -356,7 +358,7 @@ export function productJsonLd(product: CatalogProduct) {
       seller: {
         "@id": siteUrl("/#store")
       }
-    },
+    } }),
     additionalProperty: [
       { "@type": "PropertyValue", name: "Volume", value: product.volume },
       { "@type": "PropertyValue", name: "Acabamento", value: product.finish },
@@ -366,9 +368,19 @@ export function productJsonLd(product: CatalogProduct) {
 }
 
 export function productMetaDescription(product: CatalogProduct) {
-  const stock = (product.inventory?.quantity || 0) > 0 ? "em estoque" : "disponibilidade sob consulta";
+  const consultationOnly = isSourceCatalogConsultationProduct(product);
+  const priceLabel = consultationOnly
+    ? sourceCatalogPriceLabel(product.wholesalePackage).toLocaleLowerCase("pt-BR")
+    : "preço unitário";
   const nameIncludesBrand = product.name.toLocaleLowerCase("pt-BR").includes(product.brand.name.toLocaleLowerCase("pt-BR"));
   const productName = nameIncludesBrand ? product.name : `${product.name} da ${product.brand.name}`;
+  if (consultationOnly) {
+    return compactText(
+      `${productName} no atacado. ${priceLabel}: ${money(product.priceCents)}; estoque e embalagem via WhatsApp; mínimo ${siteConfig.wholesale.minimumOrderLabel}.`,
+      META_DESCRIPTION_MAX_LENGTH
+    );
+  }
+  const stock = (product.inventory?.quantity || 0) > 0 ? "em estoque" : "disponibilidade sob consulta";
   return compactText(
     `${productName} no atacado. Pedido mínimo ${siteConfig.wholesale.minimumOrderLabel}; preço unitário ${money(product.priceCents)}; embalagem fechada; ${stock}.`,
     META_DESCRIPTION_MAX_LENGTH

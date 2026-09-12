@@ -127,7 +127,13 @@ function revalidateCatalog(productSlug?: string, invalidateData = true) {
   revalidatePath("/");
   revalidatePath("/promocoes");
   revalidatePath("/categoria/[slug]", "page");
+  revalidatePath("/marcas");
+  revalidatePath("/marcas/[slug]", "page");
+  revalidatePath("/produto/[slug]", "page");
   revalidatePath("/sitemap.xml");
+  revalidatePath("/sitemaps/products.xml");
+  revalidatePath("/sitemaps/brands.xml");
+  revalidatePath("/sitemaps/categories.xml");
   revalidatePath("/llms.txt");
   revalidatePath("/admin");
   revalidatePath("/admin/produtos");
@@ -141,6 +147,12 @@ function revalidateCatalog(productSlug?: string, invalidateData = true) {
 function revalidateCategoryManagement() {
   revalidateCatalog();
   revalidatePath("/admin/categorias");
+}
+
+export async function refreshCatalogAction() {
+  await requireAdmin();
+  revalidateCatalog();
+  redirect("/admin/produtos?catalogRefreshed=1");
 }
 
 function revalidateGuides(articleSlug?: string, previousSlug?: string) {
@@ -1427,12 +1439,7 @@ export async function importProductsAction(formData: FormData) {
 
   try {
     const result = await importProductsFromCsv(csvText);
-    revalidatePath("/");
-    revalidatePath("/categoria/[slug]", "page");
-    revalidatePath("/admin/produtos");
-    revalidatePath("/admin/importar-produtos");
-    revalidatePath("/admin/produtos/qualidade");
-    revalidatePath("/admin/prontidao");
+    revalidateCatalog();
     redirectTo = `/admin/importar-produtos?created=${result.created}&updated=${result.updated}&stock=${result.stockUpdated}`;
   } catch (error) {
     const message =

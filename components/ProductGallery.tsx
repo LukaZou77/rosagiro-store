@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { PackageCheck } from "lucide-react";
-import { OptimizedProductImage } from "@/components/OptimizedProductImage";
+import { isSourceBoardImage, OptimizedProductImage } from "@/components/OptimizedProductImage";
 import { isProductPackageImage } from "@/lib/product-package-images";
 
 const PRODUCT_IMAGE_SELECT_EVENT = "rosagiro:select-product-image";
@@ -35,6 +35,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
   const activeIndex = gallery[selectedIndex] ? selectedIndex : 0;
   const activeImage = gallery[activeIndex] || "";
   const activeIsPackageImage = isProductPackageImage(activeImage);
+  const activeIsSourceBoardImage = isSourceBoardImage(activeImage);
   const hasCarousel = gallery.length > 1;
 
   useEffect(() => {
@@ -159,6 +160,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
     if (isLightboxOpen) return;
+    if (activeIsSourceBoardImage) return;
     if (!canUseHoverZoom()) return;
     const target = mainRef.current;
     if (!target) return;
@@ -223,7 +225,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
         <div
           aria-label={`Ver imagem ampliada de ${productName}`}
           aria-live="polite"
-          className={`product-gallery-main ${isZooming ? "zooming" : ""}`}
+          className={`product-gallery-main ${isZooming ? "zooming" : ""} ${activeIsSourceBoardImage ? "source-board-main" : ""}`}
           onClick={openLightbox}
           onKeyDown={handleMainKeyDown}
           onPointerLeave={stopZoom}
@@ -250,6 +252,11 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
           ) : null}
           {hasCarousel ? <span className="product-gallery-count">{activeIndex + 1}/{gallery.length}</span> : null}
         </div>
+        {activeIsSourceBoardImage ? (
+          <a className="product-board-original-link" href={activeImage} rel="noreferrer" target="_blank">
+            Abrir imagem HD original
+          </a>
+        ) : null}
         {hasCarousel ? (
           <button
             aria-label="Próxima imagem"
@@ -275,6 +282,11 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
                 <strong>{productName}</strong>
                 {activeIsPackageImage ? <span>Embalagem fechada do fabricante</span> : null}
                 {hasCarousel ? <span>Imagem {activeIndex + 1} de {gallery.length}</span> : null}
+                {activeIsSourceBoardImage ? (
+                  <a className="product-board-original-link" href={activeImage} rel="noreferrer" target="_blank">
+                    Abrir imagem HD original
+                  </a>
+                ) : null}
               </div>
               <button
                 aria-label="Fechar imagem ampliada"

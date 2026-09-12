@@ -1299,6 +1299,15 @@ textarea:focus-visible {
   transform: scale(1.015);
 }
 
+.product-image img.source-board-image,
+.product-gallery-thumbs img.source-board-image {
+  object-fit: contain;
+}
+
+.product-card:hover .product-image img.source-board-image {
+  transform: none;
+}
+
 .product-badge {
   position: absolute;
   top: 10px;
@@ -1357,6 +1366,11 @@ textarea:focus-visible {
 .stock-chip.out {
   background: rgba(var(--ink-rgb), 0.08);
   color: var(--muted);
+}
+
+.stock-chip.consultation {
+  background: var(--deal-soft);
+  color: var(--ink);
 }
 
 .product-card p {
@@ -2578,6 +2592,33 @@ textarea {
   pointer-events: none;
   user-select: none;
   transition: transform 180ms var(--ease-out), opacity 160ms var(--ease-out);
+}
+
+/* Immutable board assets keep their complete supplier frame on the product page. */
+.product-gallery-main.source-board-main .product-gallery-image {
+  object-fit: contain;
+}
+
+.product-board-original-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(var(--promo-deep-rgb), 0.22);
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--promo-deep);
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.product-board-original-link:hover,
+.product-board-original-link:focus-visible {
+  border-color: rgba(var(--promo-deep-rgb), 0.48);
+  box-shadow: 0 8px 18px rgba(var(--promo-deep-rgb), 0.12);
 }
 
 .product-gallery-thumbs {

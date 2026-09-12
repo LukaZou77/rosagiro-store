@@ -26,6 +26,7 @@ import {
 } from "@/lib/product-wholesale";
 import { breadcrumbJsonLd, noIndexMetadata, productJsonLd, productMetaDescription, storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
+import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 
@@ -105,7 +106,8 @@ export default async function ProductPage({ params }: PageProps) {
   if (!product || !product.active) notFound();
 
   const quantity = productQuantity(product);
-  const available = quantity > 0;
+  const consultationOnly = isSourceCatalogConsultationProduct(product);
+  const available = !consultationOnly && quantity > 0;
   const stockLabel = productStockLabel(product);
   const stockTone = productStockTone(product);
   const activeSkus = product.skus.filter((sku) => sku.active).sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
@@ -118,7 +120,10 @@ export default async function ProductPage({ params }: PageProps) {
   const serviceCards = productDetailServiceCards();
   const wholesaleLines = productWholesaleLines(product);
   const packagePieces = productWholesalePackagePieces(product);
-  const packageOrderable = Boolean(packagePieces && quantity >= packagePieces);
+  const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces);
+  const priceLabel = consultationOnly
+    ? sourceCatalogPriceLabel(product.wholesalePackage)
+    : siteConfig.productConversion.priceLabel;
   const editorialDescription = productEditorialDescription(product.descriptionPt);
 
   return (
@@ -164,7 +169,7 @@ export default async function ProductPage({ params }: PageProps) {
           <p className="description product-commercial-summary">{productCommercialSummary(product)}</p>
           {editorialDescription ? <p className="description product-editorial-description">{editorialDescription}</p> : null}
           <div className="price-line wholesale-price-line">
-            <span>{siteConfig.productConversion.priceLabel}</span>
+            <span>{priceLabel}</span>
             <strong>{money(displayPrice)}</strong>
           </div>
           <div className={`purchase-panel ${available ? "" : "is-unavailable"}`}>
@@ -184,12 +189,23 @@ export default async function ProductPage({ params }: PageProps) {
               </div>
             </div>
             <p>{siteConfig.productConversion.detailPanelNote}</p>
-            <div className="fixed-package-note">
-              <strong>Embalagem fechada do fabricante</strong>
-              <span>As cores e variações vêm na composição original da embalagem. Não é possível escolher cores nem fracionar unidades.</span>
-            </div>
+            {consultationOnly ? (
+              <div className="fixed-package-note">
+                <strong>Condição de compra sob consulta</strong>
+                <span>Confirme estoque, unidade de venda e composição da embalagem pelo WhatsApp antes do pedido.</span>
+              </div>
+            ) : (
+              <div className="fixed-package-note">
+                <strong>Embalagem fechada do fabricante</strong>
+                <span>As cores e variações vêm na composição original da embalagem. Não é possível escolher cores nem fracionar unidades.</span>
+              </div>
+            )}
             <div className="purchase-panel-actions">
-              {packageOrderable && packagePieces ? (
+              {consultationOnly ? (
+                <span className="button primary wide disabled" aria-disabled="true">
+                  Estoque sob consulta
+                </span>
+              ) : packageOrderable && packagePieces ? (
                 <AddToCartButton
                   analyticsItem={{
                     name: product.name,

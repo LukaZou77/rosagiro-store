@@ -13,6 +13,24 @@ type OptimizedProductImageProps = {
   draggable?: boolean;
 };
 
+const SOURCE_BOARD_PATH = /^\/products\/boards\/[^/]+\/[a-f0-9]{64}\.(?:jpe?g|png|webp)$/i;
+
+/**
+ * Production board images use an immutable source-ID and SHA-256 key. Keeping
+ * this recognition narrow prevents legacy product photos from changing their
+ * presentation rules merely because they happen to live in Blob storage.
+ */
+export function isSourceBoardImage(src?: string | null) {
+  if (!src) return false;
+
+  try {
+    const url = new URL(src);
+    return url.protocol === "https:" && url.hostname.endsWith(".public.blob.vercel-storage.com") && SOURCE_BOARD_PATH.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
 function canOptimizeImage(src: string) {
   if (/\.svg(?:$|\?)/i.test(src)) return false;
   if (src.startsWith("/")) return true;
@@ -43,11 +61,13 @@ export function OptimizedProductImage({
 }: OptimizedProductImageProps) {
   if (!src) return null;
 
+  const imageClassName = [className, isSourceBoardImage(src) ? "source-board-image" : ""].filter(Boolean).join(" ") || undefined;
+
   if (!canOptimizeImage(src)) {
     return (
       <img
         alt={alt}
-        className={className}
+        className={imageClassName}
         draggable={draggable}
         loading={priority ? "eager" : loading}
         src={src}
@@ -59,7 +79,7 @@ export function OptimizedProductImage({
     return (
       <Image
         alt={alt}
-        className={className}
+        className={imageClassName}
         draggable={draggable}
         fill
         priority={priority}
@@ -72,7 +92,7 @@ export function OptimizedProductImage({
   return (
     <Image
       alt={alt}
-      className={className}
+      className={imageClassName}
       draggable={draggable}
       height={height}
       loading={priority ? undefined : loading}

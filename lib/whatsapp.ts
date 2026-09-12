@@ -1,6 +1,7 @@
 import { money } from "@/lib/money";
 import { productWholesaleWhatsAppLines, type WholesaleProductDetails } from "@/lib/product-wholesale";
 import { siteConfig, siteUrl } from "@/lib/site-config";
+import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 
 type ProductContact = {
   slug: string;
@@ -88,15 +89,17 @@ export function buildCatalogWhatsAppHref(categoryLabel: string, productCount: nu
 }
 
 export function buildProductWhatsAppHref(product: ProductContact, phone?: string | null) {
-  const quantity = product.inventory?.quantity ?? null;
+  const consultationOnly = isSourceCatalogConsultationProduct(product);
+  const quantity = consultationOnly ? 0 : product.inventory?.quantity ?? null;
+  const priceLabel = consultationOnly ? sourceCatalogPriceLabel(product.wholesalePackage) : "Preço unitário no site";
   const wholesaleLines = productWholesaleWhatsAppLines(product);
   return buildHref(
     [
       siteConfig.whatsapp.messages.productGreeting,
       `Produto: ${product.name}`,
       `Marca: ${product.brand.name}`,
-      `Preço unitário no site: ${money(product.priceCents)}`,
-      product.volume ? `Volume: ${product.volume}` : "",
+      `${priceLabel}: ${money(product.priceCents)}`,
+      product.volume ? `${consultationOnly ? "Especificações" : "Volume"}: ${product.volume}` : "",
       stockAvailabilityLabel(quantity),
       ...wholesaleLines,
       `Link: ${siteUrl(`/produto/${product.slug}`)}`,

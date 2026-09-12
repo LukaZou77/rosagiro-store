@@ -3,6 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import type { Prisma } from "@/src/generated/prisma/client";
+import { SOURCE_CATALOG_CONSULTATION_STATUS } from "@/lib/source-catalog-product";
 import { STOREFRONT_CATALOG_CACHE_TAG } from "@/lib/cache-tags";
 import { prisma } from "@/lib/db";
 import { BODY_AREA_CATEGORY_ORDER } from "@/lib/category-taxonomy";
@@ -113,6 +114,10 @@ function productWhere(options: ProductQueryOptions = {}): Prisma.ProductWhereInp
   return {
     deletedAt: null,
     active: activeOnly ? true : undefined,
+    stockStatus:
+      stockFilter === "ready" || stockFilter === "out"
+        ? { not: SOURCE_CATALOG_CONSULTATION_STATUS }
+        : undefined,
     category: categorySlug && categorySlug !== "all" ? { slug: categorySlug } : undefined,
     brand: brandName && brandName !== "all" ? { name: brandName } : undefined,
     inventory:
@@ -361,6 +366,7 @@ const getRecommendationPoolCached = unstable_cache(async function getRecommendat
   const products = await prisma.product.findMany({
     where: {
       ...productWhere({ categorySlug }),
+      stockStatus: { not: SOURCE_CATALOG_CONSULTATION_STATUS },
       OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
     },
     select: productCardSelect,
@@ -388,6 +394,7 @@ export async function getRecommendationProducts(options: {
 export async function getPromotionCollections() {
   const stockWhere = {
     ...productWhere(),
+    stockStatus: { not: SOURCE_CATALOG_CONSULTATION_STATUS },
     OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
   } satisfies Prisma.ProductWhereInput;
   const [readyStockCount, lowPriceProducts, stockReadyProducts, products] = await Promise.all([
