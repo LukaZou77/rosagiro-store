@@ -4,9 +4,10 @@ export type SourceCatalogMarker = {
   stockStatus?: string | null;
 };
 
-export type VerifiedSaleUnit = "unidade" | "pacote" | "kit" | "conjunto" | "cartela";
+export type VerifiedSaleUnit = "unidade" | "pacote" | "kit" | "conjunto" | "cartela" |
+  "miniembalagem" | "embalagem de lenços" | "estojo" | "maleta";
 
-const SALE_UNIT_PATTERN = /^Unidade de venda: (unidade|pacote|kit|conjunto|cartela)\./i;
+const SALE_UNIT_PATTERN = /^Unidade de venda: (unidade|pacote|kit|conjunto|cartela|miniembalagem|embalagem de lenços|estojo|maleta)\./i;
 
 export function isSourceCatalogConsultationProduct(product: SourceCatalogMarker) {
   return product.stockStatus === SOURCE_CATALOG_CONSULTATION_STATUS;
@@ -22,4 +23,8 @@ export function sourceCatalogPriceLabel(wholesalePackage?: string | null) {
   if (saleUnit === "unidade") return "Preço unitário";
   if (saleUnit) return `Preço por ${saleUnit}`;
   return "Preço unitário da imagem";
+}
+
+export function sourceCatalogPackageText(wholesalePackage?: string | null) {
+  return wholesalePackage?.trim().replace(SALE_UNIT_PATTERN, "").trim() || "";
 }

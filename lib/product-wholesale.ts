@@ -7,6 +7,7 @@ import {
 } from "@/lib/product-price-adjustment";
 import {
   isSourceCatalogConsultationProduct,
+  sourceCatalogPackageText,
   sourceCatalogPriceLabel,
   type SourceCatalogMarker
 } from "@/lib/source-catalog-product";
@@ -65,9 +66,7 @@ export function productWholesalePackagePieces(product: WholesalePackageInput) {
 
 export function productWholesalePackageLabel(product: WholesalePackageInput) {
   if (isSourceCatalogConsultationProduct(product)) {
-    const sourcePackage = clean(product.wholesalePackage)
-      .replace(/^Unidade de venda: (?:unidade|pacote|kit|conjunto|cartela)\.\s*/i, "")
-      .trim();
+    const sourcePackage = sourceCatalogPackageText(product.wholesalePackage);
     return sourcePackage || "Embalagem sob consulta";
   }
   const pieces = productWholesalePackagePieces(product);
