@@ -307,6 +307,22 @@ export async function getProducts(options: ProductListOptions = {}) {
   return products.map(withProductCardDisplayText);
 }
 
+export async function getHomeProducts() {
+  const products = await prisma.product.findMany({
+    where: {
+      ...productWhere({ stockFilter: "ready" }),
+      // Original Feishu sample photos use sku-*; supplier boards use separate paths.
+      image: { contains: "/sku-" },
+      NOT: { image: { contains: "/products/boards/" } }
+    },
+    select: productCardSelect,
+    orderBy: [{ featuredRank: "asc" }, { id: "asc" }],
+    take: 8
+  });
+
+  return products.map(withProductCardDisplayText);
+}
+
 export async function getProductCount(options: ProductQueryOptions = {}) {
   return prisma.product.count({ where: productWhere(options) });
 }

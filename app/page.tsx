@@ -5,7 +5,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
-import { getCategories, getFeaturedBrands, getProductCount, getProducts } from "@/lib/catalog";
+import { getCategories, getFeaturedBrands, getHomeProducts, getProductCount } from "@/lib/catalog";
 import { getPublishedGuideArticles } from "@/lib/guide-articles";
 import { money } from "@/lib/money";
 import { siteConfig, siteUrl } from "@/lib/site-config";
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   }
 };
 
-function displayPriceLabel(product: Awaited<ReturnType<typeof getProducts>>[number]) {
+function displayPriceLabel(product: Awaited<ReturnType<typeof getHomeProducts>>[number]) {
   return money(product.priceCents);
 }
 
@@ -29,7 +29,7 @@ export default async function HomePage() {
   const [categories, brands, products, storeProfile, productCount, guideArticles] = await Promise.all([
     getCategories(),
     getFeaturedBrands(),
-    getProducts({ take: 12 }),
+    getHomeProducts(),
     getStoreProfile(),
     getProductCount(),
     getPublishedGuideArticles({ take: 3 })
@@ -181,14 +181,14 @@ export default async function HomePage() {
         <div className="section-heading">
           <div>
             <p className="eyebrow">Compra rápida</p>
-            <h2>Produtos em estoque para comprar agora</h2>
+            <h2>Produtos em destaque</h2>
           </div>
           <Link className="button secondary" href="/categoria/all">
             Ver catálogo
           </Link>
         </div>
         <div className="product-grid">
-          {products.slice(0, 8).map((product) => (
+          {products.map((product) => (
             <ProductCard product={product} whatsappPhone={storeProfile.whatsapp} key={product.slug} />
           ))}
         </div>
