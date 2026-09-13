@@ -3,6 +3,7 @@ import "server-only";
 import type { Prisma } from "@/src/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { normalizeProductGallery } from "@/lib/product-import-shared";
+import { productStockQualityIssue } from "@/lib/product-quality-stock";
 
 export type ProductQualityStatus = "READY" | "REVIEW" | "ACTION_REQUIRED";
 export type ProductQualitySeverity = "low" | "medium" | "high";
@@ -226,17 +227,8 @@ export function evaluateProductQuality(product: ProductWithQualityRelations): Pr
     );
   }
 
-  if (product.active && stock <= 0) {
-    issues.push(
-      issue({
-        key: "active-out-of-stock",
-        group: "operation",
-        severity: "high",
-        label: "Ativo sem estoque",
-        message: "Produto ativo sem estoque pode frustrar compra e pagamento."
-      })
-    );
-  }
+  const stockIssue = productStockQualityIssue(product, stock);
+  if (stockIssue) issues.push(issue(stockIssue));
 
   if (!product.weightGrams) {
     issues.push(
