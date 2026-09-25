@@ -50,7 +50,7 @@ export const prelaunchSteps: PrelaunchStep[] = [
   {
     index: 6,
     title: "Confirmar frete e regras operacionais",
-    summary: "Validar Melhor Envio em produção, origem, CEPs, pesos técnicos, seguro, retirada e exceções.",
+    summary: "Validar a comunicação de frete separado, o cálculo manual, a aprovação do cliente e a cobrança fora do site; a Melhor Envio é apenas uma integração futura opcional.",
     actionHref: "/admin/frete",
     actionLabel: "Ver frete"
   },
@@ -120,7 +120,7 @@ export const prelaunchStepsZh: PrelaunchStep[] = [
   { index: 3, title: "复核公开政策", summary: "依据真实客服流程和 LGPD 完善隐私、条款、换货、配送和联系方式。", actionHref: "/admin/politicas", actionLabel: "编辑政策" },
   { index: 4, title: "完善商品目录与图片", summary: "替换 SVG，核对库存、价格、重量、保质期或批次、图库及批发资料。", actionHref: "/admin/produtos/qualidade", actionLabel: "查看质量" },
   { index: 5, title: "准备图片持久存储", summary: "部署 Vercel 前将本地上传迁移至 S3、R2、Vercel Blob 或其他持久存储。", actionHref: "/admin/produtos/qualidade", actionLabel: "查看图片" },
-  { index: 6, title: "确认运费与运营规则", summary: "核对 Melhor Envio 正式环境、发货邮编、重量、技术包装参数、保险、自提和异常地区。", actionHref: "/admin/frete", actionLabel: "查看运费" },
+  { index: 6, title: "确认运费与运营规则", summary: "核对运费另收提示、人工核算、客户确认及网站外收款流程；Melhor Envio 仅为未来可选接入。", actionHref: "/admin/frete", actionLabel: "查看运费" },
   { index: 7, title: "验证 Mercado Pago 沙盒与正式模式", summary: "先配置沙盒测试，再使用正式令牌、Webhook 密钥和公开 HTTPS URL 切换正式付款。", actionHref: "/admin/pagamentos", actionLabel: "查看支付" },
   { index: 8, title: "配置生产环境", summary: "准备域名、Vercel、生产 PostgreSQL、备份、环境变量和数据库迁移。", actionHref: "/admin/prontidao", actionLabel: "查看部署" },
   { index: 9, title: "审查 SEO 与销售渠道", summary: "检查 metadata、sitemap、robots、llms.txt、Search Console 及后续 Merchant / Ads 接入。", actionHref: "/admin/prontidao", actionLabel: "查看 SEO" },

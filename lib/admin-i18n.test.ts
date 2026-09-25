@@ -33,14 +33,14 @@ test("traduz estados dinamicos do painel sem alterar a versao em portugues", () 
   const signal = {
     key: "shipping-rates",
     group: "Logística",
-    label: "Melhor Envio",
+    label: "Frete cobrado separadamente",
     status: "READY",
-    severity: "high",
-    message: "Cotação de produção configurada para calcular transportadoras por CEP antes do pagamento.",
+    severity: "low",
+    message: "O checkout cobra somente os produtos; o frete é cobrado separadamente.",
     actionHref: "/admin/frete"
   };
   assert.equal(localizeLaunchSignal(signal, "pt-BR"), signal);
-  assert.equal(localizeLaunchSignal(signal, "zh-CN").label, "Melhor Envio 实时运费");
+  assert.equal(localizeLaunchSignal(signal, "zh-CN").label, "运费单独收取");
   assert.equal(adminPaymentStatusLabel("WARNING", "simulated", "zh-CN"), "当前为模拟模式");
 });
 

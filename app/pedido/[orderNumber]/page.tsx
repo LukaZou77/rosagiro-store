@@ -7,6 +7,7 @@ import { StoreShell } from "@/components/StoreShell";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
+import { isSeparateFreight, separateFreightNotice } from "@/lib/freight-policy";
 import { money } from "@/lib/money";
 import { mercadoPagoReturnMessage, paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 import { noIndexMetadata } from "@/lib/seo";
@@ -42,6 +43,7 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
 
   if (!order) notFound();
   const mercadoPagoMessage = mercadoPagoReturnMessage(query.mp);
+  const separateFreight = isSeparateFreight(order);
   const pixAccount =
     order.payment?.method === "PIX"
       ? pixPaymentAccountFromPayload(order.payment.providerPayload) || getPublicPixPaymentAccount(storeProfile)
@@ -74,9 +76,16 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
           <strong>{order.orderNumber}</strong>
           <small>
             Status: {order.status.replace("_", " ")} / {paymentProviderLabel(order.payment?.provider)} -{" "}
-            {paymentMethodLabel(order.payment?.method)} / {paymentStatusLabel(order.payment?.status)} / Total: {money(order.totalCents)}
+            {paymentMethodLabel(order.payment?.method)} / {paymentStatusLabel(order.payment?.status)} / {separateFreight ? "Valor dos produtos" : "Total"}: {money(order.totalCents)}
           </small>
         </div>
+        {separateFreight ? (
+          <div className="address-match-card needs-review">
+            <span>Frete não incluído no pagamento</span>
+            <strong>A combinar e pagar separadamente</strong>
+            <small>{separateFreightNotice}</small>
+          </div>
+        ) : null}
         {order.payment?.provider === "MERCADO_PAGO" ? (
           <div className="address-match-card needs-review">
             <span>Mercado Pago</span>
@@ -100,9 +109,11 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
         <div className={`address-match-card ${order.shippingQuoteStatus.toLowerCase().replace("_", "-")}`}>
           <span>{order.shippingServiceLabel || "Entrega"}</span>
           <strong>
-            {money(order.shippingCents)} / {order.shippingWeightGrams ? `${(order.shippingWeightGrams / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg` : "peso a conferir"}
+            {separateFreight
+              ? "A combinar e pagar separadamente"
+              : `${money(order.shippingCents)} / ${order.shippingWeightGrams ? `${(order.shippingWeightGrams / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg` : "peso a conferir"}`}
           </strong>
-          <small>{order.shippingQuoteMessage || "Frete salvo para conferência operacional."}</small>
+          <small>{separateFreight ? separateFreightNotice : order.shippingQuoteMessage || "Frete salvo para conferência operacional."}</small>
         </div>
         <div className="order-items">
           {order.items.map((item) => (

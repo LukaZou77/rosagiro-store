@@ -63,10 +63,10 @@ export const siteConfig = {
     headerStrip: `PEDIDO MÍNIMO ${wholesaleMinimumOrderLabel} - EMBALAGEM FECHADA - ENTREGA PARA TODO O BRASIL`,
     storeTrust: "Dados comerciais, atendimento e políticas reunidos para uma compra mais segura.",
     nationalDeliveryLabel: "Entrega para todo o Brasil",
-    nationalDeliveryText: "Enviamos para todo o Brasil com cotação por CEP.",
-    nationalDeliveryNote: "Algumas regiões podem exigir confirmação de cobertura, prazo, seguro ou taxa adicional pelo WhatsApp.",
+    nationalDeliveryText: "Enviamos para todo o Brasil, com frete calculado e cobrado separadamente pelo atendimento.",
+    nationalDeliveryNote: "O frete não faz parte do pagamento no site e só é cobrado separadamente após a aprovação do cliente.",
     deliveryModes: [
-      "Frete calculado pela Melhor Envio no checkout",
+      "Frete calculado pelo atendimento e cobrado separadamente após sua aprovação",
       "Retirada local mediante confirmação",
       "Transportadora própria ou excursão sob consulta"
     ],
@@ -104,7 +104,7 @@ export const siteConfig = {
       `Pedido mínimo ${wholesaleMinimumOrderLabel} e embalagem fechada sinalizados em toda compra`,
       "Pedido multimarcas em um carrinho",
       "Pix e cartão pelo checkout seguro",
-      "Entrega para todo o Brasil com cotação por CEP",
+      "Entrega nacional com frete combinado e pago separadamente",
       "WhatsApp para dúvidas de estoque e entrega"
     ],
     quickActions: [
@@ -132,7 +132,7 @@ export const siteConfig = {
     wholesaleBand: {
       eyebrow: "Compra com volume",
       title: "Compra mínima clara, WhatsApp rápido e entrega para todo o Brasil.",
-      body: "A vitrine orienta pedido mínimo, disponibilidade, Pix, cotação por CEP para todo o Brasil e consulta por WhatsApp para quem compra para revenda ou reposição.",
+      body: "A vitrine orienta pedido mínimo, disponibilidade, Pix e entrega para todo o Brasil, com frete calculado e cobrado separadamente pelo atendimento após a aprovação do cliente.",
       primaryCta: "Ver todos os produtos",
       secondaryCta: "Falar no WhatsApp"
     },
@@ -173,7 +173,7 @@ export const siteConfig = {
       },
       {
         label: "Atacado local",
-        text: "Pedido mínimo, cotação nacional por CEP, retirada, transportadora e excursão continuam visíveis."
+        text: "Pedido mínimo, entrega nacional, retirada, transportadora e excursão continuam visíveis; o frete é cobrado separadamente após a aprovação do cliente."
       }
     ]
   },
@@ -183,7 +183,7 @@ export const siteConfig = {
     minimumNote: "Pode combinar produtos diferentes; cada item é vendido em embalagem fechada.",
     stockLabel: "Disponibilidade",
     freightLabel: "Entrega",
-    freightText: "Frete nacional por CEP",
+    freightText: "Frete calculado e pago separadamente",
     cardMinimumHint: `${wholesaleMinimumOrderShortLabel} mínimo`,
     detailPanelTitle: "Compra no atacado",
     detailPanelNote: "O preço exibido é unitário, mas a venda é feita somente pela embalagem fechada original. As cores e variações não podem ser escolhidas separadamente.",
@@ -202,14 +202,14 @@ export const siteConfig = {
     galleryRichHint: "Use a galeria para ver embalagem, textura, frente, verso e detalhes antes de montar sua lista.",
     galleryLeanHint: "Consulte fotos do lote, validade e embalagem pelo WhatsApp antes de comprar em volume.",
     deliveryTitle: "Entrega e atendimento",
-    deliveryBody: "A compra combina checkout com suporte humano para estoque, lote, entrega para todo o Brasil, retirada, transportadora ou excursão."
+    deliveryBody: "O checkout recebe somente o pagamento dos produtos. O frete é calculado pelo atendimento conforme o pacote real e cobrado separadamente após a aprovação do cliente; retirada, transportadora ou excursão continuam sob consulta."
   },
   mobilePurchase: {
     filterTitle: "Filtrar e ordenar",
     filterHint: "Ajuste busca, marca e prioridade.",
     productCta: "Adicionar ao pedido",
     productWhatsAppCta: "WhatsApp",
-    checkoutBarLabel: "Total do pedido",
+    checkoutBarLabel: "Total no site (produtos)",
     checkoutSubmit: "Finalizar"
   },
   checkout: {
@@ -228,8 +228,8 @@ export const siteConfig = {
         summary: "Nome, e-mail, CPF e WhatsApp para atendimento."
       },
       address: {
-        title: "Endereço e frete",
-        summary: "CEP, cotação online de entrega ou retirada confirmada."
+        title: "Endereço de entrega",
+        summary: "Endereço completo para calcular o frete depois da compra."
       },
       payment: {
         title: "Pagamento",
@@ -247,7 +247,8 @@ export const siteConfig = {
       street: "Informe a rua.",
       number: "Informe o número.",
       district: "Informe o bairro.",
-      payment: "Escolha uma forma de pagamento."
+      payment: "Escolha uma forma de pagamento.",
+      freightSeparateAccepted: "Confirme que entendeu e concorda com a cobrança separada do frete."
     }
   }
 };
@@ -351,19 +352,19 @@ export const infoPages = {
     href: "/entrega",
     eyebrow: "Entrega",
     title: "Entrega e frete",
-    description: "Informações iniciais sobre entrega nacional e modalidades de frete para pedidos no Brasil.",
+    description: "Informações sobre entrega nacional e cobrança separada do frete para pedidos no Brasil.",
     sections: [
       {
         title: "Modalidades",
-        body: "Enviamos para todo o Brasil com cotação por CEP no checkout. Retirada local, transportadora e excursão continuam como opções de consulta pelo WhatsApp."
+        body: "Enviamos para todo o Brasil. O checkout coleta o endereço, mas recebe somente o pagamento dos produtos; o frete é calculado e cobrado separadamente pelo atendimento. Retirada local, transportadora e excursão continuam sob consulta pelo WhatsApp."
       },
       {
-        title: "Cotação por CEP",
-        body: "O checkout consulta a Melhor Envio em tempo real com origem em São Paulo e inclui o frete escolhido no total antes do pagamento. Produtos sem peso confirmado usam um perfil técnico conservador até a conferência."
+        title: "Cálculo e cobrança do frete",
+        body: "Após a compra, o atendimento calcula o frete conforme o peso e as dimensões reais do pacote. O valor é informado ao cliente e cobrado fora do site somente depois de sua aprovação."
       },
       {
         title: "Cobertura e prazo",
-        body: "As opções dependem do CEP, peso, dimensões e serviços habilitados. Quando nenhuma transportadora retornar preço, o pedido de entrega não segue para pagamento sem nova cotação."
+        body: "Cobertura, prazo e valor dependem do CEP, do peso, das dimensões e dos serviços disponíveis. O envio só é contratado depois que o cliente aprova o frete calculado pelo atendimento."
       }
     ]
   },

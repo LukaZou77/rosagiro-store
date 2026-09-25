@@ -6,6 +6,7 @@ import { createAdminTranslator } from "@/lib/admin-i18n";
 import { getAdminLocale } from "@/lib/admin-i18n-server";
 import { formatAdminDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/db";
+import { isSeparateFreight, separateFreightNotice } from "@/lib/freight-policy";
 import { money } from "@/lib/money";
 import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 
@@ -64,6 +65,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
     include: { items: true, payment: true }
   });
   if (!order) notFound();
+  const separateFreight = isSeparateFreight(order);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -141,23 +143,25 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
             ) : null}
             <div>
               <span>{t("Frete", "运费")}</span>
-              <strong>{money(order.shippingCents)}</strong>
+              <strong>{separateFreight ? t("A combinar e pagar separadamente", "另行核算并收取") : money(order.shippingCents)}</strong>
             </div>
             <div>
               <span>{t("Método", "配送方式")}</span>
               <strong>{order.shippingServiceLabel || order.shippingMethod}</strong>
             </div>
             <div className="summary-total">
-              <span>{t("Total", "总额")}</span>
+              <span>{separateFreight ? t("Valor dos produtos", "商品金额") : t("Total", "总额")}</span>
               <strong>{money(order.totalCents)}</strong>
             </div>
           </div>
           <div className={`address-match-card admin ${order.shippingQuoteStatus.toLowerCase().replace("_", "-")}`}>
             <span>{order.shippingQuoteStatus}</span>
             <strong>
-              {order.shippingCarrier || t("Frete", "运费")} {order.shippingZone ? `/ ${order.shippingZone}` : ""}
+              {separateFreight
+                ? t("Cobrança fora do site", "网站外另行收取")
+                : `${order.shippingCarrier || t("Frete", "运费")} ${order.shippingZone ? `/ ${order.shippingZone}` : ""}`}
             </strong>
-            <small>{order.shippingQuoteMessage || t("Frete salvo para conferência.", "运费已保存，等待核对。")}</small>
+            <small>{separateFreight ? separateFreightNotice : order.shippingQuoteMessage || t("Frete salvo para conferência.", "运费已保存，等待核对。")}</small>
             {order.shippingWeightGrams ? (
               <small>
                 {t("Peso cobrado: ", "计费重量：")}{(order.shippingWeightGrams / 1000).toLocaleString(locale, { maximumFractionDigits: 3 })} kg

@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
+import { isSeparateFreight, separateFreightNotice } from "@/lib/freight-policy";
 import { OrderError, markOrderPaid } from "@/lib/orders";
 import { isMercadoPagoMode, isPaymentModeValue, normalizePaymentMode, type PaymentMethodValue, type PaymentMode } from "@/lib/payments";
 import { configuredMercadoPagoInstallments, getStoreProfile } from "@/lib/store-profile";
@@ -198,7 +199,8 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
     items: [
       {
         id: order.orderNumber,
-        title: `Pedido RosaGiro ${order.orderNumber}`,
+        title: `Pedido RosaGiro ${order.orderNumber}${isSeparateFreight(order) ? " - somente produtos, frete à parte" : ""}`,
+        ...(isSeparateFreight(order) ? { description: separateFreightNotice } : {}),
         quantity: 1,
         currency_id: "BRL",
         unit_price: centsToAmount(order.totalCents)
@@ -237,7 +239,8 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
     metadata: {
       order_number: order.orderNumber,
       payment_method_requested: order.payment.method,
-      max_installments: maxInstallments
+      max_installments: maxInstallments,
+      ...(isSeparateFreight(order) ? { freight_charge_mode: "OUTSIDE_WEBSITE" } : {})
     }
   };
 

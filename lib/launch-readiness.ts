@@ -1,5 +1,4 @@
 import type { StoreProfile } from "@/src/generated/prisma/client";
-import { getMelhorEnvioConfigStatus } from "@/lib/melhor-envio";
 import { buildPaymentConfigDiagnostics } from "@/lib/payment-config-diagnostics";
 import type { ProductQualitySummary } from "@/lib/product-quality";
 
@@ -61,8 +60,6 @@ function signal(input: LaunchReadinessSignal): LaunchReadinessSignal {
 }
 
 export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchReadinessSnapshot {
-  const melhorEnvio = getMelhorEnvioConfigStatus(input.env);
-  const melhorEnvioProductionReady = melhorEnvio.configured && melhorEnvio.environment === "production";
   const env = input.env || process.env;
   const profile = input.profile;
   const profileHasRealIdentity = Boolean(profile && hasRealCnpj(profile.cnpj) && !placeholderAddressPattern.test(profile.street));
@@ -168,15 +165,10 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
     signal({
       key: "shipping-rates",
       group: "Logística",
-      label: "Melhor Envio",
-      status: melhorEnvioProductionReady ? "READY" : melhorEnvio.tokenConfigured ? "WARNING" : "ACTION_REQUIRED",
-      severity: "high",
-      message:
-        melhorEnvioProductionReady
-          ? "Cotação de produção configurada para calcular transportadoras por CEP antes do pagamento."
-          : melhorEnvio.tokenConfigured
-            ? "A integração possui token, mas ainda não está marcada como ambiente de produção."
-            : "Token da Melhor Envio ausente; entregas não podem ser finalizadas sem uma cotação válida.",
+      label: "Frete cobrado separadamente",
+      status: "READY",
+      severity: "low",
+      message: "O checkout cobra somente os produtos. O frete é calculado pelo atendimento e cobrado separadamente, fora do site, após a aprovação do cliente; a Melhor Envio não é usada no checkout e sua configuração não bloqueia pagamentos.",
       actionHref: "/admin/frete"
     }),
     signal({

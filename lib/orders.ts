@@ -14,8 +14,7 @@ import {
   productWholesaleStockQuantity
 } from "@/lib/product-wholesale";
 import { isSourceCatalogConsultationProduct } from "@/lib/source-catalog-product";
-import { resolveOrderShipping } from "@/lib/shipping";
-import { parseCheckoutShippingMethod, type CheckoutShippingMethod } from "@/lib/shipping-rules";
+import { hasAcceptedSeparateFreight, separateFreightForOrder } from "@/lib/freight-policy";
 import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
 import { siteConfig } from "@/lib/site-config";
 import {
@@ -47,8 +46,7 @@ export type CheckoutInput = {
     number: string;
     complement?: string;
   };
-  shippingMethod: CheckoutShippingMethod;
-  shippingRateId?: string;
+  freightSeparateAccepted: true;
   paymentMethod: PaymentMethodValue;
   attribution?: OrderAttribution;
 };
@@ -120,13 +118,8 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
     complement: cleanText(data.address?.complement)
   };
 
-  const shippingMethod = parseCheckoutShippingMethod(data.shippingMethod);
-  if (!shippingMethod) {
-    throw new OrderError("Escolha uma opção de entrega ou retirada local.");
-  }
-  const shippingRateId = cleanText(data.shippingRateId).slice(0, 80) || undefined;
-  if (shippingMethod === "MELHOR_ENVIO" && !shippingRateId) {
-    throw new OrderError("Calcule o frete e escolha uma transportadora antes de continuar.");
+  if (!hasAcceptedSeparateFreight(data.freightSeparateAccepted)) {
+    throw new OrderError("Confirme que o frete não está incluído e será combinado e pago separadamente, fora do site. Se necessário, atualize a página de pagamento.");
   }
   const rawPaymentMethod = cleanText((data as Partial<CheckoutInput>).paymentMethod).toUpperCase();
   if (!isPaymentMethod(rawPaymentMethod)) {
@@ -152,7 +145,7 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
     throw new OrderError("Pagamento temporariamente indisponível. Escolha Pix ou cartão pelo Mercado Pago.", 503);
   }
 
-  return { items, customer, address, shippingMethod, shippingRateId, paymentMethod, attribution };
+  return { items, customer, address, freightSeparateAccepted: true, paymentMethod, attribution };
 }
 
 function makeOrderNumber() {
@@ -162,6 +155,9 @@ function makeOrderNumber() {
 }
 
 export async function createOrder(input: CheckoutInput) {
+  if (!hasAcceptedSeparateFreight(input.freightSeparateAccepted)) {
+    throw new OrderError("Confirme que o frete será combinado e pago separadamente, fora do site.");
+  }
   const slugs = input.items.map((item) => item.slug);
   const products = await prisma.product.findMany({
     where: { slug: { in: slugs }, active: true, deletedAt: null },
@@ -218,28 +214,7 @@ export async function createOrder(input: CheckoutInput) {
     );
   }
   const discount = discountCents();
-  let shippingQuote;
-  try {
-    shippingQuote = await resolveOrderShipping({
-      method: input.shippingMethod,
-      rateId: input.shippingRateId,
-      cep: input.address.cep,
-      lines: lines.map((line) => ({
-        productSlug: line.product.slug,
-        productName: line.product.name,
-        categorySlug: line.categorySlug,
-        weightGrams: line.weightGrams,
-        unitPriceCents: line.priceCents,
-        quantity: line.quantity
-      }))
-    });
-  } catch (error) {
-    throw new OrderError(
-      error instanceof Error
-        ? error.message
-        : "Não foi possível recalcular o frete. Revise o CEP e escolha novamente a entrega."
-    );
-  }
+  const shippingQuote = separateFreightForOrder();
   const total = totalCents(subtotal, discount, shippingQuote.shippingCents);
   const addressMatch = await validateCheckoutAddress(input.address);
   const customer = await upsertCustomerFromContact(input.customer.name, input.customer.phone);

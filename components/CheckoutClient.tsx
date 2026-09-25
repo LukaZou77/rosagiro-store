@@ -14,6 +14,7 @@ import type { CartSummary } from "@/lib/cart-summary";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
 import { money } from "@/lib/money";
 import { paymentMethodsForCheckout, type PaymentMethodValue } from "@/lib/payments";
+import { separateFreightNotice } from "@/lib/freight-policy";
 import { siteConfig } from "@/lib/site-config";
 import { buildCartWhatsAppHref, buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 import { readAttribution, trackCommerceOnce } from "@/lib/commerce-analytics";
@@ -67,35 +68,6 @@ type AddressDetailsResponse = {
   message?: string;
 };
 
-type CheckoutShippingMethod = "MELHOR_ENVIO" | "RETIRADA_LOCAL";
-
-type ShippingQuoteOption = {
-  selectionKey: string;
-  method: CheckoutShippingMethod;
-  carrier: string;
-  service: string;
-  label: string;
-  priceCents: number;
-  billableWeightGrams: number;
-  productWeightGrams: number;
-  rateId: string | null;
-  zone: string | null;
-  city: string | null;
-  state: string | null;
-  estimate: string;
-  note: string;
-};
-
-type ShippingQuoteResponse = {
-  status: "OK" | "NO_RATE" | "INVALID_CEP" | "EMPTY_CART" | "CONFIGURATION_REQUIRED" | "ERROR";
-  message: string;
-  options: ShippingQuoteOption[];
-  productWeightGrams: number;
-  billableWeightGrams: number;
-};
-
-type ShippingStatus = "idle" | "loading" | "ready" | "warning" | "error";
-
 function makeAddressSessionToken() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -140,8 +112,8 @@ export function CheckoutClient({
   const [contactTouched, setContactTouched] = useState({ name: false, phone: false });
   const [activeStep, setActiveStep] = useState<CheckoutStep>("contact");
   const [stepError, setStepError] = useState("");
-  const [shippingSelectionKey, setShippingSelectionKey] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("PIX");
+  const [freightSeparateAccepted, setFreightSeparateAccepted] = useState(false);
   const [address, setAddress] = useState<AddressState>({
     cep: "",
     state: "",
@@ -158,9 +130,6 @@ export function CheckoutClient({
   const [addressSearchStatus, setAddressSearchStatus] = useState<AddressSearchStatus>("idle");
   const [addressSearchMessage, setAddressSearchMessage] = useState("Digite rua, bairro ou cidade para buscar sugestões.");
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
-  const [shippingQuote, setShippingQuote] = useState<ShippingQuoteResponse | null>(null);
-  const [shippingStatus, setShippingStatus] = useState<ShippingStatus>("idle");
-  const [shippingMessage, setShippingMessage] = useState("Informe o CEP para calcular as opções de entrega.");
   const [mobileFieldFocused, setMobileFieldFocused] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -205,7 +174,6 @@ export function CheckoutClient({
     () => (summary?.lines ?? []).filter((line) => line.available && line.packageValid && line.quantity > 0),
     [summary]
   );
-  const quoteItems = useMemo(() => items.map((item) => ({ slug: item.slug, quantity: item.quantity })), [items]);
   const subtotal = summary?.subtotalCents || 0;
   const minimumReached = summary?.minimumReached ?? subtotal >= siteConfig.wholesale.minimumOrderCents;
   const packageReady = summary?.packageReady ?? false;
@@ -214,9 +182,7 @@ export function CheckoutClient({
     () => paymentMethodsForCheckout(mercadoPagoMaxInstallments, { includeSimulated: includeSimulatedPayment }),
     [includeSimulatedPayment, mercadoPagoMaxInstallments]
   );
-  const selectedShipping = shippingQuote?.options.find((option) => option.selectionKey === shippingSelectionKey) || null;
-  const shipping = selectedShipping?.priceCents || 0;
-  const total = subtotal + shipping;
+  const total = subtotal;
   const emptyCheckoutWhatsAppHref = useMemo(() => buildGeneralWhatsAppHref("checkout sem itens", whatsappPhone), [whatsappPhone]);
   const checkoutWhatsAppItems = useMemo(
     () =>
@@ -257,8 +223,8 @@ export function CheckoutClient({
     address.street.trim().length > 0 &&
     address.number.trim().length > 0 &&
     address.district.trim().length > 0;
-  const addressComplete = addressFieldsComplete && Boolean(selectedShipping);
-  const paymentComplete = contactComplete && addressComplete && Boolean(paymentMethod);
+  const addressComplete = addressFieldsComplete;
+  const paymentComplete = contactComplete && addressComplete && Boolean(paymentMethod) && freightSeparateAccepted;
   const stepComplete: Record<CheckoutStep, boolean> = {
     contact: contactComplete,
     address: addressComplete,
@@ -287,7 +253,7 @@ export function CheckoutClient({
     address: addressComplete
       ? `${address.city.trim()}/${address.state} · ${address.cep}`
       : siteConfig.checkout.steps.address.summary,
-    payment: `${paymentLabel} · ${selectedShipping?.label || "Entrega ainda não selecionada"}`
+    payment: `${paymentLabel} · frete pago separadamente`
   };
   const currentStepIndex = stepIndex(activeStep);
   const checkoutStepCards = checkoutStepOrder.map((step, index) => ({
@@ -392,12 +358,13 @@ export function CheckoutClient({
       if (!address.street.trim()) return failStep("address", siteConfig.checkout.validation.street, "street");
       if (!address.number.trim()) return failStep("address", siteConfig.checkout.validation.number, "number");
       if (!address.district.trim()) return failStep("address", siteConfig.checkout.validation.district, "district");
-      if (shippingStatus === "loading") return failStep("address", "Aguarde o cálculo do frete.");
-      if (!selectedShipping) return failStep("address", "Calcule o frete e escolha uma opção de entrega.");
     }
 
-    if (step === "payment" && !paymentMethod) {
-      return failStep("payment", siteConfig.checkout.validation.payment);
+    if (step === "payment") {
+      if (!paymentMethod) return failStep("payment", siteConfig.checkout.validation.payment);
+      if (!freightSeparateAccepted) {
+        return failStep("payment", siteConfig.checkout.validation.freightSeparateAccepted, "freightSeparateAccepted");
+      }
     }
 
     setStepError("");
@@ -469,17 +436,9 @@ export function CheckoutClient({
       if (!digits) {
         setCepStatus("idle");
         setCepMessage(manualCepMessage);
-        setShippingQuote(null);
-        setShippingSelectionKey("");
-        setShippingStatus("idle");
-        setShippingMessage("Informe o CEP para calcular as opções de entrega.");
       } else if (digits.length < 8) {
         setCepStatus("idle");
         setCepMessage("Digite os 8 números do CEP para buscar o endereço.");
-        setShippingQuote(null);
-        setShippingSelectionKey("");
-        setShippingStatus("idle");
-        setShippingMessage("Informe o CEP com 8 dígitos para calcular as opções de entrega.");
       } else {
         setCepStatus("loading");
         setCepMessage("Buscando CEP...");
@@ -745,69 +704,6 @@ export function CheckoutClient({
     };
   }, [address.cep, clearAutofilledAddress]);
 
-  useEffect(() => {
-    const digits = cepDigits(address.cep);
-    if (!quoteItems.length || !packageReady) {
-      return;
-    }
-
-    if (digits.length !== 8) {
-      return;
-    }
-
-    const controller = new AbortController();
-    let active = true;
-    const loadingId = window.setTimeout(() => {
-      if (!active) return;
-      setShippingStatus("loading");
-      setShippingMessage("Calculando frete por CEP e peso...");
-    }, 0);
-
-    fetch("/api/shipping/quote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: quoteItems, cep: digits }),
-      signal: controller.signal
-    })
-      .then(async (response) => {
-        const result = (await response.json()) as ShippingQuoteResponse;
-        if (!active) return;
-        window.clearTimeout(loadingId);
-
-        if (!response.ok || result.status === "ERROR") {
-          setShippingQuote(result);
-          setShippingSelectionKey("");
-          setShippingStatus("error");
-          setShippingMessage(result.message || "Não foi possível calcular o frete agora.");
-          return;
-        }
-
-        const deliveryOptions = result.options.filter((option) => option.method === "MELHOR_ENVIO");
-        setShippingQuote(result);
-        setShippingSelectionKey((current) => {
-          if (result.options.some((option) => option.selectionKey === current)) return current;
-          return deliveryOptions[0]?.selectionKey || "";
-        });
-        setShippingStatus(result.status === "OK" ? "ready" : "warning");
-        setShippingMessage(result.message);
-      })
-      .catch((quoteError: unknown) => {
-        if (!active) return;
-        window.clearTimeout(loadingId);
-        if (quoteError instanceof DOMException && quoteError.name === "AbortError") return;
-        setShippingQuote(null);
-        setShippingSelectionKey("");
-        setShippingStatus("error");
-        setShippingMessage("Não foi possível calcular o frete agora. Tente novamente antes de finalizar.");
-      });
-
-    return () => {
-      active = false;
-      window.clearTimeout(loadingId);
-      controller.abort();
-    };
-  }, [address.cep, packageReady, quoteItems]);
-
   async function submit(formData: FormData) {
     setSubmitting(true);
     setError("");
@@ -852,8 +748,7 @@ export function CheckoutClient({
         district: String(formData.get("district") || ""),
         city: String(formData.get("city") || "")
       },
-      shippingMethod: selectedShipping?.method,
-      shippingRateId: selectedShipping?.rateId || undefined,
+      freightSeparateAccepted,
       paymentMethod,
       attribution: readAttribution()
     };
@@ -1201,38 +1096,6 @@ export function CheckoutClient({
                 Bairro <input name="district" value={address.district} onChange={(event) => updateAddress("district", event.target.value)} required />
               </label>
             </div>
-            <div className="checkout-step-subsection">
-              <h2>Entrega</h2>
-              <p className={`cep-status shipping-status ${shippingStatus}`} aria-live="polite">
-                {shippingMessage}
-              </p>
-              {shippingQuote?.options.length ? (
-                shippingQuote.options.map((option) => (
-                  <label className="radio-card" key={option.selectionKey}>
-                    <input
-                      type="radio"
-                      name="shipping"
-                      checked={shippingSelectionKey === option.selectionKey}
-                      onChange={() => setShippingSelectionKey(option.selectionKey)}
-                    />
-                    <span>
-                      <strong>{option.label}</strong>
-                      <small>
-                        {option.priceCents === 0 ? "R$ 0,00" : money(option.priceCents)} · {option.estimate}
-                      </small>
-                      <small>{option.note}</small>
-                    </span>
-                  </label>
-                ))
-              ) : (
-                <p className="table-note">As opções aparecem aqui após informar um CEP válido.</p>
-              )}
-              <div className="delivery-note inline">
-                {siteConfig.wholesale.deliveryModes.map((mode) => (
-                  <span key={mode}>{mode}</span>
-                ))}
-              </div>
-            </div>
             <div className="checkout-step-actions">
               <button className="button secondary" type="button" onClick={() => goToStep("contact")}>
                 {siteConfig.checkout.backCta}
@@ -1249,6 +1112,20 @@ export function CheckoutClient({
             <small>{stepSummaries.payment}</small>
           </legend>
           <div className="checkout-step-body">
+            <div className="checkout-step-subsection">
+              <h2>Frete cobrado separadamente</h2>
+              <p className="cep-status warning">{separateFreightNotice}</p>
+              <label className="checkbox-label">
+                <input
+                  name="freightSeparateAccepted"
+                  type="checkbox"
+                  checked={freightSeparateAccepted}
+                  onChange={(event) => setFreightSeparateAccepted(event.target.checked)}
+                  required
+                />
+                <span>Li, entendi e concordo que o pagamento no site não inclui o frete.</span>
+              </label>
+            </div>
             {checkoutPaymentMethods.map((method) => (
               <label className="radio-card" key={method.value}>
                 <input
@@ -1271,7 +1148,11 @@ export function CheckoutClient({
               <button className="button secondary" type="button" onClick={() => goToStep("address")}>
                 {siteConfig.checkout.backCta}
               </button>
-              <button className="button primary wide" type="submit" disabled={submitting || !items.length || !minimumReached || !packageReady}>
+              <button
+                className="button primary wide"
+                type="submit"
+                disabled={submitting || !items.length || !minimumReached || !packageReady || !freightSeparateAccepted}
+              >
                 {submitting ? "Criando pedido..." : siteConfig.checkout.finalCta}
               </button>
             </div>
@@ -1314,17 +1195,11 @@ export function CheckoutClient({
           </div>
           <div>
             <span>Frete</span>
-            <strong>{selectedShipping ? (shipping === 0 ? "R$ 0,00" : money(shipping)) : "A calcular"}</strong>
+            <strong>A combinar e pagar separadamente</strong>
           </div>
-          {selectedShipping ? (
-            <p>
-              {selectedShipping.note} {siteConfig.wholesale.nationalDeliveryNote}
-            </p>
-          ) : (
-            <p>{siteConfig.wholesale.nationalDeliveryText} Informe o CEP para calcular o frete.</p>
-          )}
+          <p>{separateFreightNotice}</p>
           <div className="summary-total">
-            <span>Total</span>
+            <span>Total no site (somente produtos)</span>
             <strong>{money(total)}</strong>
           </div>
         </div>
@@ -1337,7 +1212,13 @@ export function CheckoutClient({
         <button
           className="button primary"
           type="button"
-          disabled={submitting || !items.length || !minimumReached || !packageReady}
+          disabled={
+            submitting ||
+            !items.length ||
+            !minimumReached ||
+            !packageReady ||
+            (activeStep === "payment" && !freightSeparateAccepted)
+          }
           onClick={handleMobileCheckoutAction}
         >
           {submitting ? "Criando..." : mobileCheckoutActionLabel}

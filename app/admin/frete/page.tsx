@@ -9,66 +9,64 @@ export default async function AdminFreightPage() {
   const [admin, locale] = await Promise.all([requireAdmin(), getAdminLocale()]);
   const t = createAdminTranslator(locale);
   const status = getMelhorEnvioConfigStatus();
-  const productionReady = status.configured && status.environment === "production";
+  const futureConfigDetail = status.configured
+    ? `${status.environment === "production" ? t("Produção", "正式") : "Sandbox"} · ${status.originConfigured ? formatCep(status.originCep) : t("origem não configurada", "未配置发货邮编")}`
+    : t("Sem token; não é necessário no fluxo atual", "未配置令牌；当前流程不需要")
 
   return (
     <AdminShell adminName={admin.name}>
       <div className="admin-heading">
         <p className="eyebrow">{t("Frete", "运费")}</p>
-        <h1>{t("Melhor Envio", "Melhor Envio 实时运费")}</h1>
+        <h1>{t("Frete cobrado separadamente", "运费单独收取")}</h1>
         <p>
           {t(
-            "O checkout consulta transportadoras em tempo real e recalcula a opção escolhida antes de criar o pedido. Nenhuma etiqueta é comprada nesta etapa.",
-            "结账页会实时查询承运商，并在创建订单前重新计算所选运费。当前阶段不会自动购买运单。"
+            "O site recebe somente o pagamento dos produtos. O atendimento calcula o frete depois da compra e faz a cobrança separadamente, fora do site, somente após a aprovação do cliente.",
+            "网站只收取商品款。下单后由客服核算运费，待客户确认后再在网站外单独收取。"
           )}
         </p>
       </div>
 
       <section className="metric-grid compact">
         <div>
-          <span>{t("Integração", "接口状态")}</span>
-          <strong>{status.configured ? t("Configurada", "已配置") : t("Aguardando token", "等待令牌")}</strong>
+          <span>{t("Política ativa", "当前政策")}</span>
+          <strong>{t("Cobrança separada", "运费另收")}</strong>
         </div>
         <div>
-          <span>{t("Ambiente", "环境")}</span>
-          <strong>{status.environment === "production" ? t("Produção", "正式") : "Sandbox"}</strong>
+          <span>{t("Pagamento no site", "网站付款")}</span>
+          <strong>{t("Somente produtos", "仅商品款")}</strong>
         </div>
         <div>
-          <span>{t("Origem", "发货邮编")}</span>
-          <strong>{status.originConfigured ? formatCep(status.originCep) : "-"}</strong>
+          <span>{t("Melhor Envio", "Melhor Envio")}</span>
+          <strong>{t("Não usado no checkout", "未用于结账")}</strong>
         </div>
         <div>
-          <span>User-Agent</span>
-          <strong>{status.userAgentConfigured ? t("Válido", "有效") : t("Revisar", "需检查")}</strong>
+          <span>{t("Configuração futura", "未来配置")}</span>
+          <strong>{status.configured ? t("Disponível", "已配置") : t("Opcional", "可选")}</strong>
+          <small>{futureConfigDetail}</small>
         </div>
       </section>
 
-      <div className={productionReady ? "admin-notice success" : "admin-notice error"} role="status">
-        {productionReady
-          ? t(
-              "A cotação de produção está pronta. Faça um pedido de teste antes de liberar campanhas para o checkout.",
-              "正式运费报价已就绪。投放广告导向结账前，请先完成一笔测试订单。"
-            )
-          : t(
-              "Para ativar no site, configure MELHOR_ENVIO_TOKEN e MELHOR_ENVIO_ENVIRONMENT=production na Vercel. Enquanto faltar configuração, o checkout não permite finalizar uma entrega sem preço.",
-              "要在正式网站启用，请在 Vercel 配置 MELHOR_ENVIO_TOKEN 和 MELHOR_ENVIO_ENVIRONMENT=production。配置缺失时，结账不会允许客户以未计算运费的方式完成配送订单。"
-            )}
+      <div className="admin-notice success" role="status">
+        {t(
+          "A configuração da Melhor Envio não é necessária para o checkout atual e não bloqueia o pagamento dos produtos. Os dados acima ficam apenas como referência para uma integração futura.",
+          "当前结账不需要 Melhor Envio 配置，也不会因此阻塞商品付款。上述数据仅作为未来接入参考。"
+        )}
       </div>
 
       <section className="admin-form-section">
         <div className="admin-heading compact">
           <p className="eyebrow">{t("Fluxo ativo", "当前流程")}</p>
-          <h2>{t("Cotação antes do pagamento", "付款前确定运费")}</h2>
+          <h2>{t("Produtos no site, frete fora do site", "网站收商品款，网站外收运费")}</h2>
         </div>
         <div className="field-helper">
           <strong>1.</strong>
-          <span>{t("Cliente informa o CEP e escolhe uma transportadora.", "客户填写邮编并选择承运商。")}</span>
+          <span>{t("Cliente informa o endereço e confirma que o frete será cobrado separadamente.", "客户填写收货地址，并确认运费将另行收取。")}</span>
           <strong>2.</strong>
-          <span>{t("O servidor recalcula o serviço e inclui o frete no total.", "服务器重新报价，并把运费计入订单总额。")}</span>
+          <span>{t("O site cria o pedido e cobra somente o valor dos produtos.", "网站创建订单并仅收取商品款。")}</span>
           <strong>3.</strong>
-          <span>{t("Mercado Pago recebe o total de produtos e frete.", "Mercado Pago 接收商品与运费合计金额。")}</span>
+          <span>{t("O atendimento calcula o frete conforme o pacote e informa o valor ao cliente.", "客服根据实际包裹核算运费并告知客户。")}</span>
           <strong>4.</strong>
-          <span>{t("A compra de etiqueta continua manual no painel da Melhor Envio.", "运单仍需在 Melhor Envio 后台手动购买。")}</span>
+          <span>{t("Depois da aprovação, o frete é cobrado separadamente, fora do site, antes do envio.", "客户确认后，发货前在网站外单独收取运费。")}</span>
         </div>
       </section>
     </AdminShell>
