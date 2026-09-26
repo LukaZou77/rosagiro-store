@@ -21,7 +21,8 @@ class MemoryStorage {
 }
 
 function installBrowserGlobals(fakeWindow: object, localStorage = new MemoryStorage(), sessionStorage = new MemoryStorage()) {
-  Object.defineProperty(globalThis, "window", { configurable: true, value: fakeWindow });
+  localStorage.setItem("rosagiro:google-consent", "granted");
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { ...fakeWindow, localStorage } });
   Object.defineProperty(globalThis, "localStorage", { configurable: true, value: localStorage });
   Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value: sessionStorage });
   Object.defineProperty(globalThis, "navigator", {
@@ -134,4 +135,36 @@ test("does not mark configured destinations when installed gtag throws", async (
     { ga4: "not_ready", googleAds: "not_ready", pending: true }
   );
   assert.equal(storage.getItem(PURCHASE_LEDGER_KEY), null);
+});
+
+test("privacy opt-out prevents purchase tracking and dedupe writes", async (context) => {
+  context.after(restoreBrowserGlobals);
+  const calls: unknown[] = [];
+  const storage = installBrowserGlobals({ gtag: (...args: unknown[]) => calls.push(args) });
+  Object.defineProperty(globalThis, "navigator", { configurable: true, value: { globalPrivacyControl: true } });
+  const result = await trackPurchaseOnce("RG-OPT-OUT", { transaction_id: "RG-OPT-OUT" }, { ga4MeasurementId: "G-TEST" });
+  assert.equal(result.ga4, "not_ready");
+  assert.deepEqual(calls, []);
+  assert.equal(storage.getItem(PURCHASE_LEDGER_KEY), null);
+});
+
+test("denied consent does not send or mark purchases and later consent permits tracking", async (context) => {
+  context.after(restoreBrowserGlobals);
+  const calls: unknown[] = [];
+  const storage = installBrowserGlobals({ gtag: (...args: unknown[]) => calls.push(args) });
+  storage.setItem("rosagiro:google-consent", "denied");
+  const payload = { transaction_id: "RG-CONSENT", value: 25, currency: "BRL" };
+  const destinations = { ga4MeasurementId: "G-TEST", googleAdsSendTo: "AW-test/purchase" };
+
+  assert.deepEqual(await trackPurchaseOnce("RG-CONSENT", payload, destinations), {
+    ga4: "not_ready", googleAds: "not_ready", pending: true
+  });
+  assert.deepEqual(calls, []);
+  assert.equal(storage.getItem(PURCHASE_LEDGER_KEY), null);
+
+  storage.setItem("rosagiro:google-consent", "granted");
+  assert.deepEqual(await trackPurchaseOnce("RG-CONSENT", payload, destinations), {
+    ga4: "sent", googleAds: "sent", pending: false
+  });
+  assert.equal(calls.length, 2);
 });

@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Suspense } from "react";
 import { AttributionTracker } from "@/components/AttributionTracker";
+import { AnalyticsConsent } from "@/components/AnalyticsConsent";
 import { GoogleAdsWhatsAppConversionTracker } from "@/components/GoogleAdsWhatsAppConversionTracker";
 import { SiteAnalyticsTracker } from "@/components/SiteAnalyticsTracker";
+import { GooglePageViewTracker } from "@/components/GooglePageViewTracker";
+import { googleTagBootstrap } from "@/lib/google-tag-bootstrap";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import "./globals.css";
 
@@ -47,22 +50,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="pt-BR">
       <body>
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsId}`}
-          strategy="afterInteractive"
-        />
         <Script id="google-ads-tag" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${googleAdsId}');
-            ${ga4MeasurementId ? `gtag('config', '${ga4MeasurementId}');` : ""}
-          `}
+          {googleTagBootstrap(googleAdsId, ga4MeasurementId)}
         </Script>
         <AttributionTracker />
         <GoogleAdsWhatsAppConversionTracker />
         <Suspense fallback={null}>
+          <AnalyticsConsent />
+          <GooglePageViewTracker />
           <SiteAnalyticsTracker />
         </Suspense>
         {children}

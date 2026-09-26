@@ -28,6 +28,18 @@ test("requires transparent editorial information before publishing a guide", () 
   );
 });
 
+test("accepts a clearly identified AI-assisted editorial review without calling it human", () => {
+  const guide = validateGuideArticleInput({
+    ...baseGuide,
+    reviewerName: "Revisão editorial assistida por IA (Codex)",
+    reviewedAt: "2026-09-26",
+    sourceNotes: "Revisão editorial assistida por IA (Codex) em 26/09/2026, com fontes e critérios identificados."
+  });
+
+  assert.equal(guide.reviewerName, "Revisão editorial assistida por IA (Codex)");
+  assert.ok(guide.sourceNotes.includes("assistida por IA"));
+});
+
 test("allows incomplete editorial metadata only while a guide remains a draft", () => {
   const guide = validateGuideArticleInput({
     ...baseGuide,

@@ -10,21 +10,27 @@ import {
 import { readAttribution } from "@/lib/commerce-analytics";
 import { GOOGLE_ADS_WHATSAPP_CONVERSION_SEND_TO, isWhatsAppTrackingHref } from "@/lib/google-ads";
 import { trackCommerceOnce, trackGoogleAdsConversion } from "@/lib/commerce-analytics";
+import {
+  prepareWhatsAppInquiryHref,
+  WHATSAPP_CLICK_ANALYTICS_EVENT,
+  whatsAppAnalyticsDestination,
+  whatsAppInternalTrackingPath
+} from "@/lib/whatsapp-inquiry";
 
-function sendWhatsAppConversion(href: string) {
-  trackGoogleAdsConversion(GOOGLE_ADS_WHATSAPP_CONVERSION_SEND_TO, {
+function sendWhatsAppConversion(eventLabel: string) {
+  return trackGoogleAdsConversion(GOOGLE_ADS_WHATSAPP_CONVERSION_SEND_TO, {
     event_category: "WhatsApp",
-    event_label: href
+    event_label: eventLabel
   });
 }
 
-function recordInternalWhatsAppClick() {
-  if (analyticsPrivacySignalEnabled()) return;
+function recordInternalWhatsAppClick(eventId: string, inquiryReference: string, path: string) {
   const body = JSON.stringify({
-    eventId: makeAnalyticsId(),
+    eventId,
+    inquiryReference,
     anonymousId: getAnalyticsVisitorId(),
     sessionId: getAnalyticsSessionId(),
-    path: window.location.pathname,
+    path,
     referrer: document.referrer,
     ...readAttribution()
   });
@@ -45,31 +51,47 @@ function recordInternalWhatsAppClick() {
 
 export function GoogleAdsWhatsAppConversionTracker() {
   useEffect(() => {
-    function handleDocumentClick(event: MouseEvent) {
+    function handleWhatsAppActivation(event: MouseEvent) {
+      if (event.type === "auxclick" && event.button !== 1) return;
       if (!(event.target instanceof Element)) return;
 
       const link = event.target.closest("a[href]");
       if (!(link instanceof HTMLAnchorElement)) return;
       if (!isWhatsAppTrackingHref(link.href)) return;
+      if (analyticsPrivacySignalEnabled()) return;
+      const trackingPath = whatsAppInternalTrackingPath(window.location.pathname);
+      if (!trackingPath) return;
 
-      recordInternalWhatsAppClick();
-      const key = `whatsapp:${window.location.pathname}:${link.href}`;
-      trackCommerceOnce(key, "generate_lead", {
+      const prepared = prepareWhatsAppInquiryHref(link.href, makeAnalyticsId());
+      if (!prepared) return;
+      link.href = prepared.href;
+
+      const destination = whatsAppAnalyticsDestination(prepared.href);
+      if (!destination) return;
+
+      recordInternalWhatsAppClick(prepared.eventId, prepared.inquiryReference, trackingPath);
+      const key = `whatsapp:${trackingPath}:${destination.label}`;
+      trackCommerceOnce(key, WHATSAPP_CLICK_ANALYTICS_EVENT, {
         lead_source: "whatsapp",
-        link_url: link.href,
+        link_url: destination.linkUrl,
         transport_type: "beacon"
       });
       try {
         if (sessionStorage.getItem(`rosagiro:ads-conversion:${key}`)) return;
-        sessionStorage.setItem(`rosagiro:ads-conversion:${key}`, "1");
       } catch {
         // Fall through when storage is unavailable.
       }
-      sendWhatsAppConversion(link.href);
+      if (sendWhatsAppConversion(destination.label)) {
+        try { sessionStorage.setItem(`rosagiro:ads-conversion:${key}`, "1"); } catch { /* Storage is optional. */ }
+      }
     }
 
-    document.addEventListener("click", handleDocumentClick, { capture: true });
-    return () => document.removeEventListener("click", handleDocumentClick, { capture: true });
+    document.addEventListener("click", handleWhatsAppActivation, { capture: true });
+    document.addEventListener("auxclick", handleWhatsAppActivation, { capture: true });
+    return () => {
+      document.removeEventListener("click", handleWhatsAppActivation, { capture: true });
+      document.removeEventListener("auxclick", handleWhatsAppActivation, { capture: true });
+    };
   }, []);
 
   return null;

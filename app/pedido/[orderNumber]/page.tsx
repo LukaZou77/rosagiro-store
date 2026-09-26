@@ -9,11 +9,12 @@ import { getCategories } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { isSeparateFreight, separateFreightNotice } from "@/lib/freight-policy";
 import { money } from "@/lib/money";
+import { hasOrderAccess } from "@/lib/order-access";
 import { mercadoPagoReturnMessage, paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 import { noIndexMetadata } from "@/lib/seo";
 import { isPaymentConfirmed } from "@/lib/purchase-analytics";
 import { getPublicPixPaymentAccount, getStoreProfile, pixPaymentAccountFromPayload } from "@/lib/store-profile";
-import { buildOrderPaymentWhatsAppHref } from "@/lib/whatsapp";
+import { buildOrderPaymentWhatsAppHref, buildWhatsAppBaseHref } from "@/lib/whatsapp";
 
 const addressMatchLabels: Record<string, string> = {
   VALIDATED: "Endereço validado",
@@ -33,6 +34,27 @@ export const dynamic = "force-dynamic";
 
 export default async function OrderPage({ params, searchParams }: PageProps) {
   const { orderNumber } = await params;
+  const authorized = await hasOrderAccess(orderNumber);
+  if (!authorized) {
+    const categories = await getCategories();
+    const supportHref = `${buildWhatsAppBaseHref()}?text=${encodeURIComponent("Oi, preciso de um novo link seguro para acompanhar meu pedido.")}`;
+    return (
+      <StoreShell categories={categories}>
+        <section className="confirmation order-confirmation">
+          <p className="eyebrow">Acesso ao pedido</p>
+          <h1>Use um link seguro para continuar.</h1>
+          <p>Para proteger seus dados, este endereço sozinho não libera detalhes do pedido.</p>
+          <p>Peça ao atendimento um novo link seguro de acompanhamento.</p>
+          <WhatsAppLink className="button whatsapp" href={supportHref}>
+            Solicitar link seguro
+          </WhatsAppLink>
+          <Link className="button primary" href="/">
+            Voltar ao início
+          </Link>
+        </section>
+      </StoreShell>
+    );
+  }
   const query = searchParams ? await searchParams : {};
   const [categories, order, storeProfile] = await Promise.all([
     getCategories(),

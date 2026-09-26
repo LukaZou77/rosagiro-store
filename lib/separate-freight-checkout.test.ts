@@ -27,6 +27,7 @@ type PreferenceBody = {
   items: Array<{ unit_price: number; description?: string }>;
   metadata: { payment_method_requested: string };
   payment_methods: { installments: number };
+  back_urls: { success: string; pending: string; failure: string };
 };
 
 type PersistedOrder = {
@@ -170,9 +171,10 @@ const ordersModule = await import("./orders");
 const mercadoPagoModule = await import("./mercado-pago");
 const freightPolicyModule = await import("./freight-policy");
 const orderRouteModule = await import("../app/api/orders/route");
+const orderAccessCoreModule = await import("./order-access-core");
 const retiredShippingRouteModule = await import("../app/api/shipping/quote/route");
 
-const { createOrder, OrderError, parseCheckoutPayload } = ordersModule;
+const { createOrder, OrderError, parseCheckoutPayload, simulatePayment } = ordersModule;
 const { startOrderPayment } = mercadoPagoModule;
 const { separateFreightForOrder, separateFreightNotice } = freightPolicyModule;
 const { POST: postOrder } = orderRouteModule;
@@ -181,7 +183,8 @@ const originalEnv = {
   PAYMENT_MODE: process.env.PAYMENT_MODE,
   MERCADO_PAGO_ACCESS_TOKEN: process.env.MERCADO_PAGO_ACCESS_TOKEN,
   MERCADO_PAGO_WEBHOOK_SECRET: process.env.MERCADO_PAGO_WEBHOOK_SECRET,
-  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  SESSION_SECRET: process.env.SESSION_SECRET
 };
 const originalFetch = globalThis.fetch;
 
@@ -213,6 +216,7 @@ beforeEach(() => {
   process.env.MERCADO_PAGO_ACCESS_TOKEN = "TEST_ONLY_ACCESS_TOKEN";
   process.env.MERCADO_PAGO_WEBHOOK_SECRET = "TEST_ONLY_WEBHOOK_SECRET";
   process.env.NEXT_PUBLIC_SITE_URL = "https://example.test";
+  process.env.SESSION_SECRET = "TEST_ONLY_SESSION_SECRET";
   products = [orderableProduct()];
   persistedOrder = null;
   capturedOrderData = null;
@@ -355,10 +359,75 @@ test("CREDIT_CARD succeeds end-to-end through the real orders route with product
   assert.equal(body.paymentProvider, "MERCADO_PAGO");
   assert.equal(body.externalRedirect, true);
   assert.match(String(body.redirectTo), /TEST-PREFERENCE-1/);
+  const cookieName = orderAccessCoreModule.orderAccessCookieName("RG-TEST-1", process.env.SESSION_SECRET);
+  const setCookie = String(response.headers.get("set-cookie"));
+  const cookieValue = new RegExp(`${cookieName}=([^;]+)`).exec(setCookie)?.[1];
+  assert.ok(cookieValue);
+  assert.equal(orderAccessCoreModule.verifyOrderAccessGrant("RG-TEST-1", cookieValue, process.env.SESSION_SECRET), true);
+  assert.match(setCookie, /HttpOnly/i);
+  assert.match(setCookie, /SameSite=Lax/i);
   assert.equal(capturedOrderData?.shippingCents, 0);
   assert.equal(capturedOrderData?.totalCents, 50_000);
   assert.equal(capturedPreferenceBodies[0].items[0].unit_price, 500);
   assert.equal(capturedPreferenceBodies[0].metadata.payment_method_requested, "CREDIT_CARD");
+  assert.deepEqual(capturedPreferenceBodies[0].back_urls, {
+    success: "https://example.test/pedido/RG-TEST-1?mp=success",
+    pending: "https://example.test/pedido/RG-TEST-1?mp=pending",
+    failure: "https://example.test/pedido/RG-TEST-1?mp=failure"
+  });
+});
+
+test("orders route fails closed before creating an order when SESSION_SECRET is missing", async (context) => {
+  const consoleError = context.mock.method(console, "error", () => undefined);
+  delete process.env.SESSION_SECRET;
+  const request = new Request("https://example.test/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(checkoutPayload("CREDIT_CARD"))
+  });
+
+  const response = await postOrder(request);
+  assert.equal(response.status, 500);
+  assert.equal(orderCreateCalls, 0);
+  assert.equal(capturedPreferenceBodies.length, 0);
+  assert.equal(consoleError.mock.callCount(), 1);
+});
+
+test("live and sandbox Mercado Pago orders cannot be marked paid through simulation", async () => {
+  await assert.rejects(simulatePayment("RG-TEST-1"), (error: unknown) => {
+    assert.ok(error instanceof OrderError);
+    assert.equal(error.status, 403);
+    return true;
+  });
+
+  process.env.PAYMENT_MODE = "mercado_pago_sandbox";
+  persistedOrder = {
+    id: "sandbox-order-1",
+    orderNumber: "RG-SANDBOX-1",
+    subtotalCents: 50_000,
+    shippingCents: 0,
+    totalCents: 50_000,
+    shippingQuoteStatus: "SEPARATE_PAYMENT",
+    customerName: "Cliente Sandbox",
+    customerEmail: "sandbox@example.test",
+    customerPhone: "+55 11 90000-0000",
+    customerCpf: "111.444.777-35",
+    cep: "01001-000",
+    street: "Rua Teste",
+    number: "1",
+    payment: {
+      method: "CREDIT_CARD",
+      providerPreferenceId: "TEST-PREFERENCE-1",
+      providerInitPoint: "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=TEST-PREFERENCE-1",
+      providerSandboxInitPoint: null
+    }
+  };
+
+  await assert.rejects(simulatePayment("RG-SANDBOX-1"), (error: unknown) => {
+    assert.ok(error instanceof OrderError);
+    assert.equal(error.status, 403);
+    return true;
+  });
 });
 
 test("legacy orders retain their stored freight and total in Mercado Pago", async () => {

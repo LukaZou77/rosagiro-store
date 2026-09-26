@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { confirmManualPixPaymentAction, updateOrderStatusAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/AdminShell";
@@ -8,6 +9,7 @@ import { formatAdminDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/db";
 import { isSeparateFreight, separateFreightNotice } from "@/lib/freight-policy";
 import { money } from "@/lib/money";
+import { createAdminOrderSharePath } from "@/lib/order-access";
 import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 
 const statusLabels: Record<string, string> = {
@@ -51,6 +53,16 @@ function single(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function absoluteShareUrl(path: string) {
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!configuredUrl) return path;
+  try {
+    return new URL(path, configuredUrl).toString();
+  } catch {
+    return path;
+  }
+}
+
 export default async function AdminOrderDetailPage({ params, searchParams }: PageProps) {
   const [admin, locale] = await Promise.all([requireAdmin(), getAdminLocale()]);
   const t = createAdminTranslator(locale);
@@ -66,6 +78,12 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
   });
   if (!order) notFound();
   const separateFreight = isSeparateFreight(order);
+  let customerShareUrl: string | null = null;
+  try {
+    customerShareUrl = absoluteShareUrl(createAdminOrderSharePath(order.orderNumber));
+  } catch {
+    customerShareUrl = null;
+  }
 
   return (
     <AdminShell adminName={admin.name}>
@@ -110,6 +128,20 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
         </div>
         <div className="summary-panel">
           <h2>{t("Status", "状态")}</h2>
+          {customerShareUrl ? (
+            <div className="address-match-card admin needs-review">
+              <span>{t("Link seguro do cliente", "客户安全链接")}</span>
+              <strong>{t("Válido por 15 minutos e restrito a este pedido.", "15 分钟内有效，仅限此订单。")}</strong>
+              <input aria-label={t("Link seguro do cliente", "客户安全链接")} readOnly type="text" value={customerShareUrl} />
+              <Link className="button secondary" href={customerShareUrl} prefetch={false} rel="noreferrer" target="_blank">
+                {t("Abrir link seguro", "打开安全链接")}
+              </Link>
+            </div>
+          ) : (
+            <div className="admin-notice error" role="alert">
+              {t("Link seguro indisponível: confira SESSION_SECRET.", "安全链接不可用：请检查 SESSION_SECRET。")}
+            </div>
+          )}
           <form action={updateOrderStatusAction} className="status-form detail-status-form">
             <input type="hidden" name="orderNumber" value={order.orderNumber} />
             <select name="status" defaultValue={order.status}>

@@ -386,5 +386,17 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
 }
 
 export async function simulatePayment(orderNumber: string) {
+  const paymentMode = String(process.env.PAYMENT_MODE || "simulated").trim();
+  if (!paymentModeAllowsSimulated(paymentMode)) {
+    throw new OrderError("Pagamento simulado não está disponível neste ambiente.", 403);
+  }
+  const order = await prisma.order.findUnique({
+    where: { orderNumber },
+    select: { payment: { select: { method: true } } }
+  });
+  if (!order) throw new OrderError("Pedido não encontrado.", 404);
+  if (paymentMode === "mercado_pago_sandbox" && order.payment?.method !== "SIMULATED") {
+    throw new OrderError("Este pedido deve ser confirmado pelo Mercado Pago.", 403);
+  }
   return markOrderPaid(orderNumber, { provider: "SIMULATED" });
 }

@@ -8,19 +8,42 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
+import { hasOrderAccess } from "@/lib/order-access";
 import { paymentMethodLabel } from "@/lib/payments";
 import { noIndexMetadata } from "@/lib/seo";
 import { getPublicPixPaymentAccount, getStoreProfile, pixPaymentAccountFromPayload } from "@/lib/store-profile";
-import { buildOrderPaymentWhatsAppHref } from "@/lib/whatsapp";
+import { buildOrderPaymentWhatsAppHref, buildWhatsAppBaseHref } from "@/lib/whatsapp";
 
 type PageProps = {
   params: Promise<{ orderNumber: string }>;
 };
 
 export const metadata: Metadata = noIndexMetadata("Pagamento", "Confirmação de pagamento RosaGiro.");
+export const dynamic = "force-dynamic";
 
 export default async function SimulatedPaymentPage({ params }: PageProps) {
   const { orderNumber } = await params;
+  const authorized = await hasOrderAccess(orderNumber);
+  if (!authorized) {
+    const categories = await getCategories();
+    const supportHref = `${buildWhatsAppBaseHref()}?text=${encodeURIComponent("Oi, preciso de um novo link seguro para acessar meu pedido.")}`;
+    return (
+      <StoreShell categories={categories}>
+        <section className="confirmation">
+          <p className="eyebrow">Acesso ao pagamento</p>
+          <h1>Use um link seguro para continuar.</h1>
+          <p>Para proteger seus dados, este endereço sozinho não libera detalhes ou ações do pedido.</p>
+          <p>Peça ao atendimento um novo link seguro.</p>
+          <WhatsAppLink className="button whatsapp" href={supportHref}>
+            Solicitar link seguro
+          </WhatsAppLink>
+          <Link className="button primary" href="/">
+            Voltar ao início
+          </Link>
+        </section>
+      </StoreShell>
+    );
+  }
   const [categories, order, storeProfile] = await Promise.all([
     getCategories(),
     prisma.order.findUnique({

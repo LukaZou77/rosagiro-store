@@ -44,7 +44,7 @@ function GuideEditor({ article, locale }: { article?: GuideArticle; locale: Admi
         {article
           ? `${t("Ultima atualizacao: ", "最近更新：")}${formatAdminDateTime(article.updatedAt, t("Conteudo em preparacao", "内容准备中"), locale)}${t(". ", "。")}`
           : t("Use guias para SEO, atendimento e compra consciente no atacado.", "指南可用于 SEO、客户服务和批发采购决策。")}{" "}
-        {t("Use texto simples, sem HTML. Para publicar, informe autor, revisao humana, data e fontes ou criterio de verificacao.", "请使用纯文本，不要填写 HTML。发布前必须填写作者、人工审核、日期及来源或核验标准。")}
+        {t("Use texto simples, sem HTML. Para publicar, informe autor, responsavel pela revisao editorial, data e fontes ou criterio de verificacao.", "请使用纯文本，不要填写 HTML。发布前必须填写作者、编辑审核责任方、日期及来源或核验标准。")}
       </p>
 
       <div className="form-grid">
@@ -87,12 +87,12 @@ function GuideEditor({ article, locale }: { article?: GuideArticle; locale: Admi
         </label>
         <label>
           {t("Revisado por", "审核人")}
-          <input name="reviewerName" defaultValue={article?.reviewerName || ""} maxLength={120} placeholder={t("Nome da pessoa responsavel pela revisao", "填写负责人姓名")} />
+          <input name="reviewerName" defaultValue={article?.reviewerName || ""} maxLength={120} placeholder={t("Pessoa, equipe ou ferramenta responsavel pela revisao", "填写审核负责人、团队或工具")} />
         </label>
       </div>
 
       <label>
-        {t("Data da revisao humana", "人工审核日期")}
+        {t("Data da revisao editorial", "编辑审核日期")}
         <input name="reviewedAt" type="date" defaultValue={article?.reviewedAt?.toISOString().slice(0, 10) || ""} />
       </label>
 

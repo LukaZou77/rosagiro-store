@@ -3,6 +3,12 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GA4_MEASUREMENT_ID, trackPurchaseOnce } from "@/lib/commerce-analytics";
+import {
+  GOOGLE_ANALYTICS_CONSENT_CHANGE_EVENT,
+  GOOGLE_ANALYTICS_CONSENT_STORAGE_KEY,
+  getGoogleAnalyticsConsent
+} from "@/lib/google-analytics-consent";
+import { GOOGLE_ANALYTICS_READY_EVENT } from "@/lib/google-tag-bootstrap";
 import { GOOGLE_ADS_PURCHASE_CONVERSION_SEND_TO } from "@/lib/google-ads";
 import {
   isPurchaseQualifiedOrder,
@@ -10,6 +16,7 @@ import {
   purchaseTrackingRetryDelay,
   shouldPollPurchaseConfirmation
 } from "@/lib/purchase-analytics";
+import { startPurchaseTrackingLifecycle } from "@/lib/purchase-tracking-lifecycle";
 
 type OrderConversionTrackerProps = {
   orderNumber: string;
@@ -24,8 +31,6 @@ export function OrderConversionTracker({ orderNumber, orderStatus, paymentConfir
 
   useEffect(() => {
     if (!isPurchaseQualifiedOrder(orderStatus, paymentConfirmed)) return;
-    let cancelled = false;
-    let timeoutId: number | undefined;
     const payload = {
       transaction_id: orderNumber,
       value: totalCents / 100,
@@ -40,22 +45,18 @@ export function OrderConversionTracker({ orderNumber, orderStatus, paymentConfir
       }))
     };
 
-    async function attemptTracking(attempt: number) {
-      const result = await trackPurchaseOnce(orderNumber, payload, {
+    return startPurchaseTrackingLifecycle({
+      target: window,
+      attempt: () => trackPurchaseOnce(orderNumber, payload, {
         ga4MeasurementId: GA4_MEASUREMENT_ID,
         googleAdsSendTo: GOOGLE_ADS_PURCHASE_CONVERSION_SEND_TO
-      });
-      if (cancelled || !result.pending) return;
-      const delay = purchaseTrackingRetryDelay(attempt);
-      if (delay === null) return;
-      timeoutId = window.setTimeout(() => void attemptTracking(attempt + 1), delay);
-    }
-
-    void attemptTracking(0);
-    return () => {
-      cancelled = true;
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-    };
+      }),
+      retryDelay: purchaseTrackingRetryDelay,
+      consentGranted: getGoogleAnalyticsConsent,
+      consentChangeEvent: GOOGLE_ANALYTICS_CONSENT_CHANGE_EVENT,
+      consentStorageKey: GOOGLE_ANALYTICS_CONSENT_STORAGE_KEY,
+      analyticsReadyEvent: GOOGLE_ANALYTICS_READY_EVENT
+    });
   }, [items, orderNumber, orderStatus, paymentConfirmed, totalCents]);
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { getAnalyticsVisitorId } from "@/lib/browser-analytics";
+import { analyticsPrivacySignalEnabled, getAnalyticsVisitorId } from "@/lib/browser-analytics";
 import { commerceItem, trackCommerceEvent } from "@/lib/commerce-analytics";
 
 const VIEW_KEY_PREFIX = "rosagiro-product-view:";
@@ -30,7 +30,7 @@ export function trackProductEvent(input: {
   quantity?: number;
   item?: { name?: string; brand?: string; category?: string; variant?: string; priceCents?: number };
 }) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || analyticsPrivacySignalEnabled()) return;
   const anonymousId = getAnalyticsVisitorId();
   if (!anonymousId || !input.slug) return;
 
@@ -76,6 +76,7 @@ export function ProductAnalyticsTracker({
   item?: { name?: string; brand?: string; category?: string; priceCents?: number };
 }) {
   useEffect(() => {
+    if (analyticsPrivacySignalEnabled()) return;
     const today = new Date().toISOString().slice(0, 10);
     const viewKey = `${VIEW_KEY_PREFIX}${slug}:${today}`;
     if (storageGet(sessionStorage, viewKey)) return;

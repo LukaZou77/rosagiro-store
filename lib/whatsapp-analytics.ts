@@ -12,9 +12,15 @@ import {
   normalizeReferrerHost
 } from "@/lib/site-analytics-core";
 import { analyticsHashSecret } from "@/lib/site-analytics";
+import {
+  normalizeWhatsAppInquiryReference,
+  whatsAppInquiryReference,
+  whatsAppInternalTrackingPath
+} from "@/lib/whatsapp-inquiry";
 
 type WhatsAppClickPayload = {
   eventId?: unknown;
+  inquiryReference?: unknown;
   anonymousId?: unknown;
   sessionId?: unknown;
   path?: unknown;
@@ -52,8 +58,11 @@ export async function recordWhatsAppClick(payload: WhatsAppClickPayload, headers
   const eventId = normalizeAnalyticsIdentifier(payload.eventId);
   const anonymousId = normalizeAnalyticsIdentifier(payload.anonymousId);
   const sessionId = normalizeAnalyticsIdentifier(payload.sessionId);
-  const path = normalizeAnalyticsPath(payload.path);
+  const normalizedPath = normalizeAnalyticsPath(payload.path);
+  const path = normalizedPath ? whatsAppInternalTrackingPath(normalizedPath) : null;
   if (!eventId || !anonymousId || !sessionId || !path) return { ok: false, ignored: false } as const;
+  const inquiryReference = normalizeWhatsAppInquiryReference(payload.inquiryReference);
+  if (inquiryReference !== whatsAppInquiryReference(eventId)) return { ok: false, ignored: false } as const;
 
   const secret = analyticsHashSecret();
   const visitorHash = hmacAnalyticsValue(secret, anonymousId);
@@ -70,6 +79,7 @@ export async function recordWhatsAppClick(payload: WhatsAppClickPayload, headers
       await tx.whatsAppClickEvent.create({
         data: {
           eventId,
+          inquiryReference,
           eventDate,
           visitorHash,
           sessionHash,

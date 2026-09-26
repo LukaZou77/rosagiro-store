@@ -89,7 +89,7 @@ export function validateGuideArticleInput(input: {
     throw new GuideArticleValidationError("Descreva a imagem de capa para acessibilidade.");
   }
   if (input.active && (!authorName || !reviewerName || !reviewedAt || !sourceNotes)) {
-    throw new GuideArticleValidationError("Para publicar, informe autor, revisao humana, data da revisao e fontes ou criterio de verificacao.");
+    throw new GuideArticleValidationError("Para publicar, informe autor, responsavel pela revisao editorial, data da revisao e fontes ou criterio de verificacao.");
   }
 
   return {

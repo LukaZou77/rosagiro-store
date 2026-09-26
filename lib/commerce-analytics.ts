@@ -1,3 +1,6 @@
+import { analyticsPrivacySignalEnabled } from "@/lib/browser-analytics";
+import { analyticsPageContext } from "@/lib/google-tag-bootstrap";
+import { getGoogleAnalyticsConsent } from "@/lib/google-analytics-consent";
 import {
   hasPurchaseChannelBeenSent,
   markPurchaseChannelSent,
@@ -75,7 +78,7 @@ function storageSet(key: string, value: string) {
 }
 
 export function captureAttributionFromLocation() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || analyticsPrivacySignalEnabled() || !getGoogleAnalyticsConsent()) return;
   const params = new URLSearchParams(window.location.search);
   const next: OrderAttribution = {};
   for (const [field, queryKey] of attributionKeys) {
@@ -87,7 +90,7 @@ export function captureAttributionFromLocation() {
 }
 
 export function readAttribution(): OrderAttribution {
-  if (typeof window === "undefined") return {};
+  if (typeof window === "undefined" || analyticsPrivacySignalEnabled() || !getGoogleAnalyticsConsent()) return {};
   try {
     const raw = JSON.parse(storageGet(ATTRIBUTION_KEY) || "{}") as OrderAttribution & { capturedAt?: number };
     if (raw.capturedAt && Date.now() - raw.capturedAt > 90 * 24 * 60 * 60 * 1000) return {};
@@ -102,14 +105,16 @@ export function readAttribution(): OrderAttribution {
 }
 
 export function trackCommerceEvent(eventName: string, payload: GtagPayload = {}) {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || analyticsPrivacySignalEnabled() || !getGoogleAnalyticsConsent()) return false;
+  const context = browserPageContext();
+  if (context === null) return false;
   try {
     if (typeof window.gtag === "function") {
-      window.gtag("event", eventName, payload);
+      window.gtag("event", eventName, { ...payload, ...context });
       return true;
     }
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push(["event", eventName, payload]);
+    window.dataLayer.push(["event", eventName, { ...payload, ...context }]);
     return true;
   } catch {
     return false;
@@ -192,13 +197,20 @@ type PurchaseTrackingDestinations = {
 };
 
 function trackInstalledGtagEvent(eventName: string, payload: GtagPayload) {
-  if (typeof window === "undefined" || typeof window.gtag !== "function") return false;
+  if (typeof window === "undefined" || analyticsPrivacySignalEnabled() || !getGoogleAnalyticsConsent() || typeof window.gtag !== "function") return false;
+  const context = browserPageContext();
+  if (context === null) return false;
   try {
-    window.gtag("event", eventName, payload);
+    window.gtag("event", eventName, { ...payload, ...context });
     return true;
   } catch {
     return false;
   }
+}
+
+function browserPageContext() {
+  if (typeof document === "undefined" || !window.location) return {};
+  return analyticsPageContext(window.location, document.title, document.referrer);
 }
 
 export async function trackPurchaseOnce(

@@ -6,6 +6,8 @@ import { createAdminTranslator } from "@/lib/admin-i18n";
 import { getAdminLocale } from "@/lib/admin-i18n-server";
 import { formatAdminDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/db";
+import { money } from "@/lib/money";
+import { paidLinkedOrderSummary } from "@/lib/whatsapp-inquiry";
 
 type PageProps = {
   searchParams: Promise<{ saved?: string; error?: string }>;
@@ -42,7 +44,7 @@ export default async function AdminWhatsAppLeadsPage({ searchParams }: PageProps
   const [admin, params, locale] = await Promise.all([requireAdmin(), searchParams, getAdminLocale()]);
   const t = createAdminTranslator(locale);
   const localizedLeadStatusLabels = locale === "zh-CN" ? leadStatusLabelsZh : leadStatusLabels;
-  const [leads, products, qualifiedCount, wonCount] = await Promise.all([
+  const [leads, products, qualifiedCount, wonCount, linkedLeadOrders] = await Promise.all([
     prisma.whatsAppLead.findMany({ orderBy: { qualifiedAt: "desc" }, take: 100 }),
     prisma.product.findMany({
       where: { active: true, deletedAt: null },
@@ -50,8 +52,31 @@ export default async function AdminWhatsAppLeadsPage({ searchParams }: PageProps
       select: { id: true, name: true, brand: { select: { name: true } } }
     }),
     prisma.whatsAppLead.count({ where: { status: "QUALIFIED" } }),
-    prisma.whatsAppLead.count({ where: { status: "WON" } })
+    prisma.whatsAppLead.count({ where: { status: "WON" } }),
+    prisma.whatsAppLead.findMany({
+      where: { orderId: { not: null } },
+      select: { orderId: true }
+    })
   ]);
+  const linkedOrderIds = Array.from(
+    new Set(linkedLeadOrders.map((lead) => lead.orderId).filter((orderId): orderId is string => Boolean(orderId)))
+  );
+  const linkedOrders = linkedOrderIds.length
+    ? await prisma.order.findMany({
+        where: { id: { in: linkedOrderIds } },
+        select: {
+          id: true,
+          payment: { select: { status: true, paidAt: true, amountCents: true } }
+        }
+      })
+    : [];
+  const orderPaymentById = new Map(linkedOrders.map((order) => [order.id, order.payment]));
+  const paidLinkedSummary = paidLinkedOrderSummary(
+    linkedLeadOrders.map((lead) => ({
+      orderId: lead.orderId,
+      orderPayment: lead.orderId ? orderPaymentById.get(lead.orderId) || null : null
+    }))
+  );
 
   return (
     <AdminShell adminName={admin.name}>
@@ -68,8 +93,8 @@ export default async function AdminWhatsAppLeadsPage({ searchParams }: PageProps
 
       <section className="admin-metric-strip admin-metric-strip-compact" aria-label={t("Resumo de leads", "询盘摘要")}>
         <div><span><MessageCircleMore size={17} /> {t("Registrados", "已登记")}</span><strong>{leads.length}</strong><small>{t("100 mais recentes", "最近 100 条")}</small></div>
-        <div><span><UserCheck size={17} /> {t("Qualificados", "有效询盘")}</span><strong>{qualifiedCount}</strong><small>{t("Aguardando evolução", "等待跟进")}</small></div>
-        <div><span><TrendingUp size={17} /> {t("Convertidos", "已成交")}</span><strong>{wonCount}</strong><small>{t("Marcados manualmente", "人工标记")}</small></div>
+        <div><span><UserCheck size={17} /> {t("Status manuais", "人工状态")}</span><strong>{qualifiedCount} / {wonCount}</strong><small>{t("Qualificados / WON", "有效 / WON")}</small></div>
+        <div><span><TrendingUp size={17} /> {t("Receita paga vinculada", "关联实付收入")}</span><strong>{money(paidLinkedSummary.revenueCents)}</strong><small>{paidLinkedSummary.orderCount} {t("pedidos pagos distintos", "个不同实付订单")}</small></div>
       </section>
 
       <section className="admin-work-surface admin-lead-entry">
@@ -82,6 +107,7 @@ export default async function AdminWhatsAppLeadsPage({ searchParams }: PageProps
           <label>{t("WhatsApp com DDD", "WhatsApp（含区号）")} *<input name="whatsapp" inputMode="tel" placeholder="(11) 99999-9999" required /></label>
           <label>{t("Recebido em", "收到时间")} *<input type="datetime-local" name="occurredAt" defaultValue={saoPauloDateTimeInput()} required /></label>
           <label>{t("Origem", "来源")}<input name="sourceLabel" defaultValue="WhatsApp" maxLength={80} /></label>
+          <label>{t("Referência exata do atendimento", "精确询盘编号")}<input name="inquiryReference" placeholder="RGWA-..." autoCapitalize="characters" /></label>
           <label>
             {t("Produto relacionado", "关联商品")}
             <select name="productId" defaultValue="">
@@ -101,26 +127,35 @@ export default async function AdminWhatsAppLeadsPage({ searchParams }: PageProps
         {leads.length ? (
           <div className="admin-compact-table-wrap">
             <table className="admin-data-table admin-leads-table">
-              <thead><tr><th>{t("Contato", "联系人")}</th><th>{t("Recebido", "收到时间")}</th><th>{t("Origem", "来源")}</th><th>{t("Referência", "关联信息")}</th><th>{t("Status", "状态")}</th><th>{t("Responsável", "负责人")}</th></tr></thead>
+              <thead><tr><th>{t("Contato", "联系人")}</th><th>{t("Recebido", "收到时间")}</th><th>{t("Origem rastreada", "追踪来源")}</th><th>{t("Produto", "商品")}</th><th>{t("Vínculos e status", "关联与状态")}</th><th>{t("Receita paga", "实付收入")}</th><th>{t("Responsável", "负责人")}</th></tr></thead>
               <tbody>
-                {leads.map((lead) => (
-                  <tr key={lead.id}>
+                {leads.map((lead) => {
+                  const payment = lead.orderId ? orderPaymentById.get(lead.orderId) : null;
+                  const isPaidOrder = payment?.status === "PAID" && Boolean(payment.paidAt);
+                  return <tr key={lead.id}>
                     <td><strong>{lead.contactName}</strong><small>{lead.whatsapp}</small></td>
                     <td>{formatAdminDateTime(lead.occurredAt, t("Sem registro", "未记录"), locale)}</td>
-                    <td>{lead.sourceLabel}<small>{lead.sourcePath || t("Sem página associada", "未关联页面")}</small></td>
-                    <td>{lead.productNameSnapshot || lead.orderNumberSnapshot || "—"}</td>
+                    <td>
+                      <strong>{lead.inquiryReference || t("Sem referência", "无编号")}</strong>
+                      <small>{lead.clickPathSnapshot || lead.sourcePath || t("Sem página associada", "未关联页面")}</small>
+                      <small>{[lead.clickUtmSource, lead.clickUtmMedium, lead.clickUtmCampaign].filter(Boolean).join(" / ") || lead.sourceLabel}</small>
+                    </td>
+                    <td>{lead.productNameSnapshot || "—"}</td>
                     <td>
                       <form action={updateWhatsAppLeadStatusAction} className="admin-inline-status-form">
                         <input type="hidden" name="id" value={lead.id} />
+                        <input name="inquiryReference" defaultValue={lead.inquiryReference || ""} placeholder="RGWA-..." aria-label={t(`Referência de ${lead.contactName}`, `${lead.contactName} 的询盘编号`)} autoCapitalize="characters" />
+                        <input name="orderNumber" defaultValue={lead.orderNumberSnapshot || ""} placeholder="RG-..." aria-label={t(`Pedido de ${lead.contactName}`, `${lead.contactName} 的订单号`)} />
                         <select name="status" defaultValue={lead.status} aria-label={`Status de ${lead.contactName}`}>
                           {Object.entries(localizedLeadStatusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
                         </select>
                         <button type="submit">{t("Salvar", "保存")}</button>
                       </form>
                     </td>
+                    <td>{isPaidOrder && payment ? <><strong>{money(payment.amountCents)}</strong><small>{lead.orderNumberSnapshot}</small></> : <><strong>—</strong><small>{lead.orderNumberSnapshot || t("Sem pedido", "无订单")}</small></>}</td>
                     <td>{lead.createdByAdminEmail}</td>
-                  </tr>
-                ))}
+                  </tr>;
+                })}
               </tbody>
             </table>
           </div>

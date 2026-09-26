@@ -294,20 +294,22 @@ model AnalyticsVisitorDay {
 }
 
 model WhatsAppClickEvent {
-  id           String   @id @default(cuid())
-  eventId      String   @unique
-  eventDate    DateTime @db.Date
-  visitorHash  String
-  sessionHash  String
-  path         String
-  linkKind     String
-  productId    String?
-  productSlug  String?
-  referrerHost String?
-  utmSource    String?
-  utmMedium    String?
-  utmCampaign  String?
-  occurredAt   DateTime @default(now())
+  id               String        @id @default(cuid())
+  eventId          String        @unique
+  inquiryReference String?       @unique
+  eventDate        DateTime      @db.Date
+  visitorHash      String
+  sessionHash      String
+  path             String
+  linkKind         String
+  productId        String?
+  productSlug      String?
+  referrerHost     String?
+  utmSource        String?
+  utmMedium        String?
+  utmCampaign      String?
+  occurredAt       DateTime      @default(now())
+  lead             WhatsAppLead?
 
   @@index([eventDate])
   @@index([sessionHash, eventDate])
@@ -337,6 +339,13 @@ model WhatsAppLead {
   whatsappDigits      String
   sourceLabel         String                @default("WhatsApp")
   sourcePath          String?
+  inquiryReference    String?               @unique
+  clickEventId        String?               @unique
+  clickOccurredAt     DateTime?
+  clickPathSnapshot   String?
+  clickUtmSource      String?
+  clickUtmMedium      String?
+  clickUtmCampaign    String?
   customerId          String?
   productId           String?
   productNameSnapshot String?
@@ -350,6 +359,7 @@ model WhatsAppLead {
   createdByAdminEmail String
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
+  clickEvent          WhatsAppClickEvent?    @relation(fields: [clickEventId], references: [id], onDelete: SetNull)
 
   @@index([status, qualifiedAt])
   @@index([whatsappDigits, qualifiedAt])

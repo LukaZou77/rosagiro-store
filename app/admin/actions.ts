@@ -16,6 +16,11 @@ import { brlInputToCents } from "@/lib/money";
 import { markOrderPaid, OrderError } from "@/lib/orders";
 import { recordCreatedOrderProductMetrics } from "@/lib/product-daily-metrics";
 import { whatsAppLeadDedupeKey } from "@/lib/whatsapp-leads";
+import {
+  normalizeWhatsAppInquiryReference,
+  whatsAppInquiryReferenceUpdateIntent,
+  whatsAppOrderLinkError
+} from "@/lib/whatsapp-inquiry";
 import { isMercadoPagoInstallments } from "@/lib/payments";
 import { extractGuideCoverUpload, saveGuideCoverUpload, deleteGuideImages } from "@/lib/guide-images";
 import { GuideArticleValidationError, validateGuideArticleInput } from "@/lib/guide-articles";
@@ -972,15 +977,61 @@ export async function createWhatsAppLeadAction(formData: FormData) {
   const occurredAt = leadOccurredAt(field(formData, "occurredAt"));
   const productId = nullableField(formData, "productId");
   const orderNumber = nullableField(formData, "orderNumber");
-  const [customer, product, order] = await Promise.all([
+  const rawInquiryReference = nullableField(formData, "inquiryReference");
+  const inquiryReference = rawInquiryReference ? normalizeWhatsAppInquiryReference(rawInquiryReference) : null;
+  if (rawInquiryReference && !inquiryReference) {
+    redirectError("/admin/leads", "Referência inválida. Informe exatamente o código RGWA recebido no WhatsApp.");
+  }
+
+  const [customer, product, order, clickEvent] = await Promise.all([
     prisma.customer.findUnique({ where: { whatsappDigits: normalized.whatsappDigits }, select: { id: true } }),
     productId
       ? prisma.product.findUnique({ where: { id: productId }, select: { id: true, name: true } })
       : Promise.resolve(null),
     orderNumber
-      ? prisma.order.findUnique({ where: { orderNumber }, select: { id: true, orderNumber: true } })
+      ? prisma.order.findUnique({
+          where: { orderNumber },
+          select: {
+            id: true,
+            orderNumber: true,
+            customerPhone: true,
+            payment: { select: { status: true, paidAt: true } }
+          }
+        })
+      : Promise.resolve(null),
+    inquiryReference
+      ? prisma.whatsAppClickEvent.findUnique({
+          where: { inquiryReference },
+          select: {
+            id: true,
+            inquiryReference: true,
+            occurredAt: true,
+            path: true,
+            utmSource: true,
+            utmMedium: true,
+            utmCampaign: true,
+            lead: { select: { id: true } }
+          }
+        })
       : Promise.resolve(null)
   ]);
+  if (orderNumber && !order) redirectError("/admin/leads", "Pedido não encontrado. Confira o número exato.");
+  if (inquiryReference && !clickEvent) {
+    redirectError("/admin/leads", "Referência de atendimento não encontrada. Não foi feita associação automática.");
+  }
+  if (clickEvent?.lead) redirectError("/admin/leads", "Esta referência de atendimento já está vinculada a outro lead.");
+
+  const orderLinkError = whatsAppOrderLinkError({
+    leadWhatsappDigits: normalized.whatsappDigits,
+    orderWhatsappDigits: order ? normalizeBrazilWhatsapp(order.customerPhone)?.whatsappDigits : null,
+    requestedStatus: "QUALIFIED",
+    hasOrder: Boolean(order),
+    paymentStatus: order?.payment?.status,
+    paidAt: order?.payment?.paidAt
+  });
+  if (orderLinkError === "PHONE_MISMATCH") {
+    redirectError("/admin/leads", "O WhatsApp do pedido não corresponde ao WhatsApp deste lead.");
+  }
 
   try {
     await prisma.whatsAppLead.create({
@@ -990,7 +1041,14 @@ export async function createWhatsAppLeadAction(formData: FormData) {
         whatsapp: normalized.whatsapp,
         whatsappDigits: normalized.whatsappDigits,
         sourceLabel: field(formData, "sourceLabel").slice(0, 80) || "WhatsApp",
-        sourcePath: nullableField(formData, "sourcePath")?.slice(0, 220) || null,
+        sourcePath: clickEvent?.path || nullableField(formData, "sourcePath")?.slice(0, 220) || null,
+        inquiryReference: clickEvent?.inquiryReference || null,
+        clickEventId: clickEvent?.id || null,
+        clickOccurredAt: clickEvent?.occurredAt || null,
+        clickPathSnapshot: clickEvent?.path || null,
+        clickUtmSource: clickEvent?.utmSource || null,
+        clickUtmMedium: clickEvent?.utmMedium || null,
+        clickUtmCampaign: clickEvent?.utmCampaign || null,
         customerId: customer?.id || null,
         productId: product?.id || null,
         productNameSnapshot: product?.name || null,
@@ -1004,7 +1062,7 @@ export async function createWhatsAppLeadAction(formData: FormData) {
     });
   } catch (error) {
     if (typeof error === "object" && error && "code" in error && error.code === "P2002") {
-      redirectError("/admin/leads", "Este contato já foi registrado neste minuto.");
+      redirectError("/admin/leads", "Este contato já foi registrado neste minuto ou a referência já está vinculada.");
     }
     throw error;
   }
@@ -1023,14 +1081,114 @@ export async function updateWhatsAppLeadStatusAction(formData: FormData) {
     redirectError("/admin/leads", "Status de lead invalido.");
   }
 
-  await prisma.whatsAppLead.update({
+  const lead = await prisma.whatsAppLead.findUnique({
     where: { id },
-    data: {
-      status: status as (typeof whatsAppLeadStatuses)[number],
-      wonAt: status === "WON" ? new Date() : null,
-      lostAt: status === "LOST" ? new Date() : null
+    select: {
+      id: true,
+      whatsappDigits: true,
+      wonAt: true,
+      lostAt: true,
+      inquiryReference: true,
+      clickEventId: true,
+      clickOccurredAt: true,
+      clickPathSnapshot: true,
+      clickUtmSource: true,
+      clickUtmMedium: true,
+      clickUtmCampaign: true
     }
   });
+  if (!lead) redirectError("/admin/leads", "Lead não encontrado.");
+
+  const orderNumber = nullableField(formData, "orderNumber");
+  const referenceIntent = whatsAppInquiryReferenceUpdateIntent({
+    existingReference: lead.inquiryReference,
+    fieldPresent: formData.has("inquiryReference"),
+    submittedValue: formData.get("inquiryReference")
+  });
+  if (referenceIntent.invalid) {
+    redirectError("/admin/leads", "Referência inválida. Informe exatamente o código RGWA recebido no WhatsApp.");
+  }
+  const inquiryReference = referenceIntent.reference;
+
+  const [order, clickEvent] = await Promise.all([
+    orderNumber
+      ? prisma.order.findUnique({
+          where: { orderNumber },
+          select: {
+            id: true,
+            orderNumber: true,
+            customerPhone: true,
+            payment: { select: { status: true, paidAt: true } }
+          }
+        })
+      : Promise.resolve(null),
+    inquiryReference
+      ? prisma.whatsAppClickEvent.findUnique({
+          where: { inquiryReference },
+          select: {
+            id: true,
+            inquiryReference: true,
+            occurredAt: true,
+            path: true,
+            utmSource: true,
+            utmMedium: true,
+            utmCampaign: true,
+            lead: { select: { id: true } }
+          }
+        })
+      : Promise.resolve(null)
+  ]);
+  if (orderNumber && !order) redirectError("/admin/leads", "Pedido não encontrado. Confira o número exato.");
+  if (inquiryReference && !clickEvent && referenceIntent.changed) {
+    redirectError("/admin/leads", "Referência de atendimento não encontrada. Não foi feita associação automática.");
+  }
+  if (clickEvent?.lead && clickEvent.lead.id !== lead.id) {
+    redirectError("/admin/leads", "Esta referência de atendimento já está vinculada a outro lead.");
+  }
+
+  const requestedStatus = status as (typeof whatsAppLeadStatuses)[number];
+  const orderLinkError = whatsAppOrderLinkError({
+    leadWhatsappDigits: lead.whatsappDigits,
+    orderWhatsappDigits: order ? normalizeBrazilWhatsapp(order.customerPhone)?.whatsappDigits : null,
+    requestedStatus,
+    hasOrder: Boolean(order),
+    paymentStatus: order?.payment?.status,
+    paidAt: order?.payment?.paidAt
+  });
+  if (orderLinkError === "PHONE_MISMATCH") {
+    redirectError("/admin/leads", "O WhatsApp do pedido não corresponde ao WhatsApp deste lead.");
+  }
+  if (orderLinkError === "WON_REQUIRES_ORDER") {
+    redirectError("/admin/leads", "Para marcar como convertido, vincule um pedido real.");
+  }
+  if (orderLinkError === "WON_REQUIRES_PAID_ORDER") {
+    redirectError("/admin/leads", "O lead só pode ser convertido após a confirmação real do pagamento do pedido vinculado.");
+  }
+
+  try {
+    await prisma.whatsAppLead.update({
+      where: { id },
+      data: {
+        status: requestedStatus,
+        inquiryReference: clickEvent ? clickEvent.inquiryReference : lead.inquiryReference,
+        clickEventId: clickEvent ? clickEvent.id : lead.clickEventId,
+        clickOccurredAt: clickEvent ? clickEvent.occurredAt : lead.clickOccurredAt,
+        clickPathSnapshot: clickEvent ? clickEvent.path : lead.clickPathSnapshot,
+        clickUtmSource: clickEvent ? clickEvent.utmSource : lead.clickUtmSource,
+        clickUtmMedium: clickEvent ? clickEvent.utmMedium : lead.clickUtmMedium,
+        clickUtmCampaign: clickEvent ? clickEvent.utmCampaign : lead.clickUtmCampaign,
+        orderId: order?.id || null,
+        orderNumberSnapshot: order?.orderNumber || null,
+        wonAt: requestedStatus === "WON" ? lead.wonAt || new Date() : null,
+        lostAt: requestedStatus === "LOST" ? lead.lostAt || new Date() : null
+      }
+    });
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && error.code === "P2002") {
+      redirectError("/admin/leads", "Esta referência de atendimento já foi vinculada a outro lead.");
+    }
+    throw error;
+  }
   revalidatePath("/admin");
   revalidatePath("/admin/analytics");
   revalidatePath("/admin/leads");

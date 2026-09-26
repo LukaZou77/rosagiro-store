@@ -89,6 +89,10 @@ const nonIndexablePageHeaders = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  env: {
+    NEXT_PUBLIC_GA4_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID ||
+      (process.env.VERCEL_ENV === "production" ? "G-XHSC1B250B" : "")
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

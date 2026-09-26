@@ -104,7 +104,7 @@ export default async function GuideArticlePage({ params }: PageProps) {
             </div>
             {article.reviewerName && article.reviewedAt ? (
               <div>
-                <dt>Revisao</dt>
+                <dt>Revisão editorial</dt>
                 <dd>
                   {article.reviewerName} em {formatDatePtBr(article.reviewedAt)}
                 </dd>

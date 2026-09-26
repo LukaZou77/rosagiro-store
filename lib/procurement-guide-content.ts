@@ -8,11 +8,11 @@ const sharedEditorialDetails = {
   coverImage: "/assets/rosagiro-atacado-hero.webp",
   coverImageAlt: "Caixas e produtos de beleza organizados em prateleiras de estoque.",
   authorName: "Equipe RosaGiro",
-  reviewerName: "",
-  reviewedAt: "",
+  reviewerName: "RosaGiro",
+  reviewedAt: "2026-09-26",
   sourceNotes:
-    "Critérios editoriais baseados na configuração pública atual de pedido mínimo, embalagem fechada e modalidades de entrega da RosaGiro.",
-  active: false
+    "Configuração vigente da RosaGiro conferida em 26/09/2026: pedido mínimo, embalagem fechada, frete separado e retirada agendada.",
+  active: true
 } as const;
 
 export const procurementGuideArticles: readonly ProcurementGuideArticle[] = [
@@ -20,27 +20,27 @@ export const procurementGuideArticles: readonly ProcurementGuideArticle[] = [
     ...sharedEditorialDetails,
     slug: "como-montar-pedido-misto-atacado",
     title: "Como montar um pedido misto no atacado",
-    excerpt: "Organize uma compra para revenda combinando produtos e atingindo o pedido mínimo atual de R$ 500.",
+    excerpt: "Combine produtos e marcas no mesmo carrinho para alcançar o pedido mínimo de R$ 500 em mercadorias.",
     body:
-      "Comece pelo que sua loja precisa repor e agrupe os produtos por categoria, marca ou faixa de preço. Na RosaGiro, o pedido mínimo atual para atacado é de R$ 500,00. Você pode combinar produtos diferentes para chegar a esse valor, desde que cada item respeite a embalagem de venda indicada no catálogo.\n\nAntes de finalizar, confira a quantidade de cada item e o subtotal do carrinho. Usar itens de reposição para completar o valor pode ajudar a montar uma seleção mais equilibrada, mas escolha somente o que faz sentido para seu público e para o espaço disponível na loja.\n\nSe houver dúvida sobre disponibilidade, lote, embalagem ou combinação de itens, envie a lista ao atendimento com sua cidade e UF. Assim, a conferência é feita antes da conclusão do pedido.",
+      "Na RosaGiro, o pedido mínimo atual para compras no atacado é de R$ 500,00 em produtos. Você pode combinar categorias, itens e marcas diferentes no mesmo carrinho para alcançar esse valor. O frete não entra nesse mínimo nem no total pago pelo site.\n\nComece pelos produtos que sua loja precisa repor e distribua o orçamento entre itens de giro, novidades e complementos. Cada produto deve respeitar a embalagem fechada e a quantidade indicadas em sua própria ficha; o pedido misto não transforma uma caixa em venda avulsa.\n\nAntes de finalizar, confira o subtotal dos produtos, a quantidade de cada embalagem e os dados de entrega. Se precisar confirmar estoque, lote, validade ou composição de uma embalagem, fale com o atendimento e informe sua cidade e UF.",
     sortOrder: 10
   },
   {
     ...sharedEditorialDetails,
     slug: "entenda-caixa-fechada-caixa-master-e-minimo-por-item",
     title: "Caixa fechada, caixa master e mínimo por item: como conferir",
-    excerpt: "Veja o que cada tipo de embalagem significa e o que confirmar antes de adicionar produtos ao pedido.",
+    excerpt: "Entenda como conferir a embalagem de venda e por que caixa fechada e caixa master não têm uma quantidade universal.",
     body:
-      "Caixa fechada é a embalagem original de venda do produto. A quantidade e a composição devem ser conferidas na ficha do item ou com o atendimento antes da compra. Não existe uma quantidade universal para todas as caixas: cada produto pode ter embalagem e mínimo próprios.\n\nCaixa master é uma embalagem maior que reúne unidades ou embalagens menores para transporte ou compra em maior volume. Ela não substitui automaticamente a caixa fechada nem define um mínimo único para todo o catálogo. Quando houver essa opção, confirme a quantidade total, a composição e a disponibilidade para o produto escolhido.\n\nA venda por unidade, caixa fechada ou caixa master depende da condição informada para cada item. Em embalagens fechadas, as cores e variações geralmente não podem ser escolhidas separadamente, pois seguem a composição original. Qualquer exceção precisa ser confirmada pelo atendimento antes do fechamento do pedido.",
+      "Caixa fechada é a embalagem de venda indicada para um produto. A quantidade, a composição e as possíveis variações devem ser conferidas na ficha do item. Não existe uma quantidade universal: cada produto pode ter uma embalagem própria.\n\nCaixa master é uma embalagem maior, normalmente usada para reunir unidades ou caixas menores. Esse termo só vale quando estiver informado para o produto ou confirmado pelo atendimento. Uma caixa master não substitui automaticamente a caixa fechada e também não define um mínimo único para todo o catálogo.\n\nAntes de comprar, confira qual embalagem aparece na ficha e quantas unidades ela contém. Nas embalagens fechadas, cores e variações seguem a composição original e não podem ser escolhidas separadamente. Se a ficha não deixar clara a quantidade ou mencionar caixa master, confirme a composição exata com o atendimento antes de finalizar.",
     sortOrder: 20
   },
   {
     ...sharedEditorialDetails,
     slug: "como-funciona-frete-e-retirada-no-atacado",
     title: "Frete separado e retirada no atacado: como funciona",
-    excerpt: "Entenda o pagamento dos produtos no site, a aprovação do frete cobrado fora do site e a retirada combinada.",
+    excerpt: "Veja como o frete é cotado e pago após sua aprovação e como agendar retirada na LA BELLA.",
     body:
-      "O pagamento no site inclui somente os produtos. O frete não está incluído nesse pagamento e não é cobrado pelo site.\n\nDepois da confirmação da lista, o atendimento calcula o frete com base no peso e nas dimensões reais do pacote. O valor é informado para aprovação do comprador e, após essa aprovação, é cobrado separadamente pelo atendimento, fora do site. Se a lista ou o destino mudar, peça uma nova confirmação do frete.\n\nRetirada local não é automática. Ela pode ser combinada com o atendimento quando houver confirmação prévia de disponibilidade, local e horário. Não se desloque para retirar produtos sem essa confirmação.",
+      "O pagamento feito no site inclui somente os produtos. O frete não está incluído nesse pagamento e não é cobrado pelo site.\n\nApós a compra, a equipe calcula o frete com base no peso e nas dimensões reais do pacote. O atendimento informa o valor para sua aprovação e só depois dessa aprovação faz a cobrança separada, fora do site. Se os produtos ou o destino mudarem, a cotação precisa ser confirmada novamente.\n\nA retirada pode ser feita na LA BELLA, Rua Paula Sousa, 529, Box A01, São Paulo - SP, somente com agendamento e confirmação pelo WhatsApp. Aguarde a confirmação de que o pedido está pronto e do horário combinado antes de ir ao local.",
     sortOrder: 30
   }
 ];
