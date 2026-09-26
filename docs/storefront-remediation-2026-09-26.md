@@ -20,7 +20,7 @@
 
 ## Verification
 
-- 60 focused tests passed, including 11 existing separate-freight checkout regression tests with mocked persistence/payment transport.
+- 61 focused tests passed, including 11 existing separate-freight checkout regression tests with mocked persistence/payment transport.
 - Complete TypeScript check and ESLint passed.
 - Default Next.js Turbopack production build passed, 61 static pages generated.
 - Optional legacy Webpack build failed on an existing global selector in admin print CSS; no unrelated print change was included. Production uses the default build.
@@ -39,3 +39,7 @@
 - Vivai 217211-01 identity and remaining catalog duplicates still require source-by-source review. No sitewide duplicate cleanup claimed.
 
 Production alias/read-back evidence is recorded separately after deployment, not inferred from a local build.
+
+## Production read-back follow-up
+
+The first production read-back found that the source canonical page had no legacy descriptionPt and was therefore omitted by the historical sitemap query. Confirmed against database fields, not inferred from a crawler cache. The sitemap now explicitly admits the narrowly allowlisted canonical target while retaining active/image/positive-price requirements. A mocked query regression test verifies inclusion of the canonical page and exclusion of its duplicate. No product data was changed.

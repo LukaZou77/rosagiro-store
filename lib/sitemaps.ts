@@ -89,7 +89,10 @@ export async function productSitemapEntries(): Promise<SitemapEntry[]> {
       active: true,
       deletedAt: null,
       image: { not: "" },
-      descriptionPt: { not: "" },
+      OR: [
+        { descriptionPt: { not: "" } },
+        { slug: { in: Object.values(productCanonicalAliases) } }
+      ],
       priceCents: { gt: 0 }
     },
     select: { slug: true, updatedAt: true, active: true, priceCents: true, baseBoxPieces: true, baseBoxPriceCents: true, brand: { select: { name: true } } },
