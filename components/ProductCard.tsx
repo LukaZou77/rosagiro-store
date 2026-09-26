@@ -1,11 +1,18 @@
 import Link from "next/link";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { OptimizedProductImage } from "@/components/OptimizedProductImage";
+import { shouldDisplayProductBrand } from "@/components/ProductBrandDisplay";
+import buyingStyles from "@/components/ProductBuying.module.css";
+import { ProductPackagePrice } from "@/components/ProductPackagePrice";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import type { CatalogCardProduct } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
-import { productWholesalePackageLabel, productWholesalePackagePieces } from "@/lib/product-wholesale";
+import {
+  productWholesalePackageLabel,
+  productWholesalePackagePieces,
+  productWholesalePackagePriceCents
+} from "@/lib/product-wholesale";
 import {
   productQuantity,
   productShortStockLabel,
@@ -52,7 +59,9 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
   const displayPrice = product.priceCents;
   const infoTags = productCardTags(product);
   const packagePieces = productWholesalePackagePieces(product);
+  const packagePriceCents = productWholesalePackagePriceCents(product);
   const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces);
+  const showBrand = shouldDisplayProductBrand(product.brand.name);
   const priceLabel = consultationOnly
     ? sourceCatalogPriceLabel(product.wholesalePackage)
     : siteConfig.productConversion.priceLabel;
@@ -70,7 +79,7 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
       </Link>
       <div className="product-card-body">
         <div className="product-meta-line">
-          <span>{product.brand.name}</span>
+          {showBrand ? <span>{product.brand.name}</span> : null}
           <small className={`stock-chip ${stockTone}`}>{shortStockLabel}</small>
         </div>
         <Link href={`/produto/${product.slug}`}>
@@ -90,6 +99,12 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
             <small className="wholesale-package-hint">{productWholesalePackageLabel(product)}</small>
           </div>
           <div className="product-card-actions">
+            <ProductPackagePrice
+              className={`${buyingStyles.packagePrice} ${buyingStyles.cardPackagePrice}`}
+              packagePieces={packagePieces}
+              packagePriceCents={packagePriceCents}
+              unitPriceCents={displayPrice}
+            />
             {consultationOnly ? (
               <button type="button" disabled>
                 Estoque sob consulta

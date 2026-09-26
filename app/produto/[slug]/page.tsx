@@ -5,14 +5,17 @@ import { Suspense } from "react";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { ProductCard } from "@/components/ProductCard";
+import { shouldDisplayProductBrand } from "@/components/ProductBrandDisplay";
+import buyingStyles from "@/components/ProductBuying.module.css";
 import { ProductAnalyticsTracker } from "@/components/ProductAnalyticsTracker";
 import { ProductGallery } from "@/components/ProductGallery";
+import { ProductPackagePrice } from "@/components/ProductPackagePrice";
 import { StoreShell } from "@/components/StoreShell";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
-import { getCategories, getProduct, getRecommendationProducts, getRelatedProducts } from "@/lib/catalog";
+import { getCategories, getProduct, getProductCanonicalSlug, getRecommendationProducts, getRelatedProducts } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import { productDetailGalleryState, productDetailServiceCards } from "@/lib/product-detail-standard";
@@ -22,6 +25,7 @@ import {
   productCommercialSummary,
   productEditorialDescription,
   productWholesalePackagePieces,
+  productWholesalePackagePriceCents,
   productWholesaleLines
 } from "@/lib/product-wholesale";
 import { breadcrumbJsonLd, noIndexMetadata, productJsonLd, productMetaDescription, storefrontMetadata } from "@/lib/seo";
@@ -42,9 +46,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return storefrontMetadata({
-    title: `${product.name} | ${product.brand.name}`,
+    title: shouldDisplayProductBrand(product.brand.name) && !product.name.toLowerCase().includes(product.brand.name.toLowerCase()) ? `${product.name} | ${product.brand.name}` : product.name,
     description: productMetaDescription(product),
-    path: `/produto/${product.slug}`,
+    path: `/produto/${await getProductCanonicalSlug(product)}`,
     image: product.image
   });
 }
@@ -104,6 +108,7 @@ export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
   const [product, categories, storeProfile] = await Promise.all([getProduct(slug), getCategories(), getStoreProfile()]);
   if (!product || !product.active) notFound();
+  const canonicalSlug = await getProductCanonicalSlug(product);
 
   const quantity = productQuantity(product);
   const consultationOnly = isSourceCatalogConsultationProduct(product);
@@ -120,7 +125,9 @@ export default async function ProductPage({ params }: PageProps) {
   const serviceCards = productDetailServiceCards();
   const wholesaleLines = productWholesaleLines(product);
   const packagePieces = productWholesalePackagePieces(product);
+  const packagePriceCents = productWholesalePackagePriceCents(product);
   const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces);
+  const showBrand = shouldDisplayProductBrand(product.brand.name);
   const priceLabel = consultationOnly
     ? sourceCatalogPriceLabel(product.wholesalePackage)
     : siteConfig.productConversion.priceLabel;
@@ -139,7 +146,7 @@ export default async function ProductPage({ params }: PageProps) {
       />
       <StructuredData
         data={[
-          productJsonLd(product),
+          productJsonLd(product, canonicalSlug),
           breadcrumbJsonLd([
             { name: "Início", path: "/" },
             { name: product.category.label, path: `/categoria/${product.category.slug}` },
@@ -160,47 +167,38 @@ export default async function ProductPage({ params }: PageProps) {
             Voltar para {product.category.label}
           </Link>
           <p className="eyebrow">
-            <Link className="product-brand-link" href={`/marcas/${product.brand.slug}`}>
-              {product.brand.name}
-            </Link>{" "}
-            / {product.subcategory}
+            {showBrand ? (
+              <>
+                <Link className="product-brand-link" href={`/marcas/${product.brand.slug}`}>
+                  {product.brand.name}
+                </Link>{" "}
+                /{" "}
+              </>
+            ) : null}
+            {product.subcategory}
           </p>
           <h1>{product.name}</h1>
-          <p className="description product-commercial-summary">{productCommercialSummary(product)}</p>
-          {editorialDescription ? <p className="description product-editorial-description">{editorialDescription}</p> : null}
-          <div className="price-line wholesale-price-line">
-            <span>{priceLabel}</span>
-            <strong>{money(displayPrice)}</strong>
-          </div>
+          {!packagePieces || !packagePriceCents ? (
+            <>
+              <p className="description product-commercial-summary">{productCommercialSummary(product)}</p>
+              <div className="price-line wholesale-price-line">
+                <span>{priceLabel}</span>
+                <strong>{money(displayPrice)}</strong>
+              </div>
+            </>
+          ) : null}
           <div className={`purchase-panel ${available ? "" : "is-unavailable"}`}>
             <div className="purchase-panel-heading">
               <span>{siteConfig.productConversion.detailPanelTitle}</span>
               <strong className={`stock-text ${stockTone}`}>{stockLabel}</strong>
             </div>
-            <div className="purchase-metrics" aria-label="Resumo de compra">
-              <div>
-                <span>{siteConfig.productConversion.minimumLabel}</span>
-                <strong>{money(siteConfig.wholesale.minimumOrderCents)}</strong>
-                <small>{siteConfig.productConversion.minimumNote}</small>
-              </div>
-              <div>
-                <span>{siteConfig.productConversion.freightLabel}</span>
-                <strong>{siteConfig.productConversion.freightText}</strong>
-              </div>
-            </div>
-            <p>{siteConfig.productConversion.detailPanelNote}</p>
-            {consultationOnly ? (
-              <div className="fixed-package-note">
-                <strong>Condição de compra sob consulta</strong>
-                <span>Confirme estoque, unidade de venda e composição da embalagem pelo WhatsApp antes do pedido.</span>
-              </div>
-            ) : (
-              <div className="fixed-package-note">
-                <strong>Embalagem fechada do fabricante</strong>
-                <span>As cores e variações vêm na composição original da embalagem. Não é possível escolher cores nem fracionar unidades.</span>
-              </div>
-            )}
-            <div className="purchase-panel-actions">
+            <ProductPackagePrice
+              className={buyingStyles.packagePrice}
+              packagePieces={packagePieces}
+              packagePriceCents={packagePriceCents}
+              unitPriceCents={displayPrice}
+            />
+            <div className={`purchase-panel-actions ${buyingStyles.purchaseActions}`}>
               {consultationOnly ? (
                 <span className="button primary wide disabled" aria-disabled="true">
                   Estoque sob consulta
@@ -229,7 +227,36 @@ export default async function ProductPage({ params }: PageProps) {
               </WhatsAppLink>
               <small>{siteConfig.productConversion.bundlePrompt}</small>
             </div>
+            <div className="purchase-metrics" aria-label="Resumo de compra">
+              <div>
+                <span>{siteConfig.productConversion.minimumLabel}</span>
+                <strong>{money(siteConfig.wholesale.minimumOrderCents)}</strong>
+                <small>{siteConfig.productConversion.minimumNote}</small>
+              </div>
+              <div>
+                <span>{siteConfig.productConversion.freightLabel}</span>
+                <strong>{siteConfig.productConversion.freightText}</strong>
+              </div>
+            </div>
+            <p>{siteConfig.productConversion.detailPanelNote}</p>
+            {consultationOnly ? (
+              <div className="fixed-package-note">
+                <strong>Condição de compra sob consulta</strong>
+                <span>Confirme estoque, unidade de venda e composição da embalagem pelo WhatsApp antes do pedido.</span>
+              </div>
+            ) : (
+              <div className="fixed-package-note">
+                <strong>Embalagem fechada do fabricante</strong>
+                <span>As cores e variações vêm na composição original da embalagem. Não é possível escolher cores nem fracionar unidades.</span>
+              </div>
+            )}
           </div>
+          {editorialDescription ? (
+            <section className={buyingStyles.editorialDescription} aria-labelledby="product-description-title">
+              <h2 id="product-description-title">Sobre o produto</h2>
+              <p>{editorialDescription}</p>
+            </section>
+          ) : null}
           <div className="badge-row">{product.badges.map((badge) => <span key={badge}>{customerDisplayText(badge)}</span>)}</div>
           <StoreTrustSignals signals={trustSignals} compact />
         </div>

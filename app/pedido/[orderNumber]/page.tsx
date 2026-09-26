@@ -11,6 +11,7 @@ import { isSeparateFreight, separateFreightNotice } from "@/lib/freight-policy";
 import { money } from "@/lib/money";
 import { mercadoPagoReturnMessage, paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 import { noIndexMetadata } from "@/lib/seo";
+import { isPaymentConfirmed } from "@/lib/purchase-analytics";
 import { getPublicPixPaymentAccount, getStoreProfile, pixPaymentAccountFromPayload } from "@/lib/store-profile";
 import { buildOrderPaymentWhatsAppHref } from "@/lib/whatsapp";
 
@@ -28,6 +29,7 @@ type PageProps = {
 };
 
 export const metadata: Metadata = noIndexMetadata("Pedido", "Acompanhamento de pedido RosaGiro.");
+export const dynamic = "force-dynamic";
 
 export default async function OrderPage({ params, searchParams }: PageProps) {
   const { orderNumber } = await params;
@@ -52,9 +54,10 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
 
   return (
     <StoreShell categories={categories}>
-      {order.status === "PAID" ? (
         <OrderConversionTracker
           orderNumber={order.orderNumber}
+          orderStatus={order.status}
+          paymentConfirmed={isPaymentConfirmed(order.payment?.status, order.payment?.paidAt)}
           totalCents={order.totalCents}
           items={order.items.map((item) => ({
             productSlug: item.productSlug,
@@ -65,7 +68,6 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
             quantity: item.quantity
           }))}
         />
-      ) : null}
       <section className="confirmation order-confirmation">
         <p className="eyebrow">Pedido RosaGiro</p>
         <h1>{order.status === "PAID" ? "Compra confirmada." : "Pedido criado."}</h1>

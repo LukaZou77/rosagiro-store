@@ -15,3 +15,12 @@ export function customerDisplayText(value: string) {
     .replace(/\bPinceis\b/g, "Pincéis")
     .replace(/\bnecessaires\b/g, "nécessaires");
 }
+
+export function productDisplayName(name: string, brandName: string) {
+  if (!/^marca n[aã]o informada$/i.test(brandName.trim())) return name;
+  return name.replace(/^marca n[aã]o informada\s*[:\-]?\s+/i, "").trim() || name;
+}
+
+export function shouldDisplayProductBrand(brandName: string) {
+  return Boolean(brandName.trim()) && !/^marca n[aã]o informada$/i.test(brandName.trim());
+}

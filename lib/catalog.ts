@@ -7,7 +7,8 @@ import { SOURCE_CATALOG_CONSULTATION_STATUS } from "@/lib/source-catalog-product
 import { STOREFRONT_CATALOG_CACHE_TAG } from "@/lib/cache-tags";
 import { prisma } from "@/lib/db";
 import { BODY_AREA_CATEGORY_ORDER } from "@/lib/category-taxonomy";
-import { customerDisplayText } from "@/lib/display-text";
+import { customerDisplayText, productDisplayName } from "@/lib/display-text";
+import { productCanonicalAliases, verifiedProductCanonicalSlug } from "@/lib/product-canonical";
 
 export type CatalogProduct = {
   id: string;
@@ -152,6 +153,7 @@ function productOrderBy(sort = "featured"): Prisma.ProductOrderByWithRelationInp
 function withProductDisplayText(product: CatalogProduct): CatalogProduct {
   return {
     ...product,
+    name: productDisplayName(product.name, product.brand.name),
     subcategory: customerDisplayText(product.subcategory),
     badges: product.badges.map(customerDisplayText),
     category: {
@@ -165,6 +167,7 @@ function withProductDisplayText(product: CatalogProduct): CatalogProduct {
 function withProductCardDisplayText(product: CatalogCardProduct): CatalogCardProduct {
   return {
     ...product,
+    name: productDisplayName(product.name, product.brand.name),
     subcategory: customerDisplayText(product.subcategory),
     badges: product.badges.map(customerDisplayText),
     category: {
@@ -467,6 +470,11 @@ const getProductCached = unstable_cache(async function getProduct(slug: string) 
 });
 
 export const getProduct = cache(getProductCached);
+
+export async function getProductCanonicalSlug(product: CatalogProduct) {
+  const targetSlug = productCanonicalAliases[product.slug];
+  return targetSlug ? verifiedProductCanonicalSlug(product, await getProduct(targetSlug)) : product.slug;
+}
 
 export async function getRelatedProducts(categorySlug: string, currentSlug: string) {
   const products = await prisma.product.findMany({

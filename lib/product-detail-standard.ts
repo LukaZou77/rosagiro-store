@@ -34,7 +34,7 @@ export function productDetailServiceCards(): ProductDetailServiceCard[] {
     },
     {
       label: "Checkout",
-      value: "Preço, estoque e frete são conferidos antes de finalizar o pedido.",
+      value: "O site recebe o valor dos produtos. O frete é aprovado e cobrado separadamente pelo atendimento.",
       tone: "assist"
     }
   ];

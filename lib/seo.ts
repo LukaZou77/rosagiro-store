@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { productQuantity } from "@/lib/product-conversion";
+import { productWholesalePackagePieces, productWholesalePackagePriceCents } from "@/lib/product-wholesale";
+import { productDisplayName, shouldDisplayProductBrand } from "@/lib/display-text";
 import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import type { StoreProfileView } from "@/lib/store-profile-public";
-import { storeProfileAddress, storeSocialLinks } from "@/lib/store-profile-public";
+import { storeSocialLinks } from "@/lib/store-profile-public";
 
 type BreadcrumbEntry = {
   name: string;
@@ -67,16 +69,14 @@ function publicPhone(value: string) {
   return /90000|0000-0000|00000000/.test(value) ? undefined : value;
 }
 
-function publicAddress(profile: StoreProfileView) {
-  const fullAddress = storeProfileAddress(profile);
-  if (/preparacao|prepara\u00e7\u00e3o|a ajustar|s\/n|endereco/i.test(fullAddress)) return undefined;
+function pickupAddress() {
+  const pickup = siteConfig.pickupLocation;
   return {
     "@type": "PostalAddress",
-    streetAddress: [profile.street, profile.number].filter(Boolean).join(", "),
-    addressLocality: profile.city,
-    addressRegion: profile.state,
-    postalCode: profile.cep,
-    addressCountry: "BR"
+    streetAddress: pickup.streetAddress,
+    addressLocality: pickup.city,
+    addressRegion: pickup.state,
+    addressCountry: pickup.country
   };
 }
 
@@ -191,7 +191,7 @@ export function storeJsonLd(profile: StoreProfileView) {
   const socials = storeSocialLinks(profile).map((link) => link.href);
   const email = publicEmail(profile.email);
   const telephone = publicPhone(profile.whatsapp);
-  const address = publicAddress(profile);
+  const address = pickupAddress();
   return {
     "@context": "https://schema.org",
     "@type": "Store",
@@ -223,17 +223,9 @@ export function storeJsonLd(profile: StoreProfileView) {
       location: [
         {
           "@type": "Place",
-          name: siteConfig.businessIdentity.saoPauloLocationLabel,
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: siteConfig.businessIdentity.legalAddress.streetAddress,
-            addressLocality: siteConfig.businessIdentity.legalAddress.city,
-            addressRegion: siteConfig.businessIdentity.legalAddress.state,
-            postalCode: siteConfig.businessIdentity.legalAddress.postalCode,
-            addressCountry: siteConfig.businessIdentity.legalAddress.country
-          }
-        },
-        ...(address ? [{ "@type": "Place", name: siteConfig.businessIdentity.operatingAddressLabel, address }] : [])
+          name: `Ponto de retirada - ${siteConfig.pickupLocation.name}`,
+          address
+        }
       ]
     },
     sameAs: socials.length ? socials : undefined
@@ -318,9 +310,11 @@ export function guideArticleJsonLd(article: GuideArticleJsonLdInput) {
   };
 }
 
-export function productJsonLd(product: CatalogProduct) {
-  const url = siteUrl(`/produto/${product.slug}`);
+export function productJsonLd(product: CatalogProduct, canonicalSlug = product.slug) {
+  const url = siteUrl(`/produto/${canonicalSlug}`);
   const consultationOnly = isSourceCatalogConsultationProduct(product);
+  const packagePieces = productWholesalePackagePieces(product);
+  const packagePrice = productWholesalePackagePriceCents(product);
   const inStock = productQuantity(product) > 0;
   const images = Array.from(
     new Set(
@@ -332,24 +326,24 @@ export function productJsonLd(product: CatalogProduct) {
   return {
     "@context": "https://schema.org",
     "@type": "Product",
-    "@id": siteUrl(`/produto/${product.slug}#product`),
+    "@id": siteUrl(`/produto/${canonicalSlug}#product`),
     url,
-    name: product.name,
+    name: productDisplayName(product.name, product.brand.name),
     description: compactText(product.descriptionPt, 300),
     image: images.length ? images : [absoluteImageUrl(product.image)],
-    brand: {
+    brand: shouldDisplayProductBrand(product.brand.name) ? {
       "@type": "Brand",
       name: product.brand.name
-    },
+    } : undefined,
     category: product.category.label,
     sku: product.mpn || undefined,
     mpn: product.mpn || undefined,
     gtin: product.gtin || undefined,
-    ...(consultationOnly ? {} : { offers: {
+    ...(consultationOnly || !packagePieces || !packagePrice ? {} : { offers: {
       "@type": "Offer",
       url,
       priceCurrency: "BRL",
-      price: (product.priceCents / 100).toFixed(2),
+      price: (packagePrice / 100).toFixed(2),
       availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
       hasMerchantReturnPolicy: {
@@ -360,6 +354,7 @@ export function productJsonLd(product: CatalogProduct) {
       }
     } }),
     additionalProperty: [
+      ...(packagePieces ? [{ "@type": "PropertyValue", name: "Unidades por embalagem", value: String(packagePieces) }] : []),
       { "@type": "PropertyValue", name: "Volume", value: product.volume },
       { "@type": "PropertyValue", name: "Acabamento", value: product.finish },
       ...(product.weightGrams ? [{ "@type": "PropertyValue", name: "Peso", value: `${product.weightGrams} g` }] : [])
@@ -372,8 +367,9 @@ export function productMetaDescription(product: CatalogProduct) {
   const priceLabel = consultationOnly
     ? sourceCatalogPriceLabel(product.wholesalePackage).toLocaleLowerCase("pt-BR")
     : "preço unitário";
-  const nameIncludesBrand = product.name.toLocaleLowerCase("pt-BR").includes(product.brand.name.toLocaleLowerCase("pt-BR"));
-  const productName = nameIncludesBrand ? product.name : `${product.name} da ${product.brand.name}`;
+  const displayName = productDisplayName(product.name, product.brand.name);
+  const nameIncludesBrand = displayName.toLocaleLowerCase("pt-BR").includes(product.brand.name.toLocaleLowerCase("pt-BR"));
+  const productName = nameIncludesBrand || !shouldDisplayProductBrand(product.brand.name) ? displayName : `${displayName} da ${product.brand.name}`;
   if (consultationOnly) {
     return compactText(
       `${productName} no atacado. ${priceLabel}: ${money(product.priceCents)}; estoque e embalagem via WhatsApp; mínimo ${siteConfig.wholesale.minimumOrderLabel}.`,
@@ -419,11 +415,11 @@ export function categoryMetaDescription(label: string, count: number, isAllCateg
 }
 
 export function storeSummaryForLlms(profile: StoreProfileView) {
-  const address = publicAddress(profile);
+  const pickup = siteConfig.pickupLocation;
   return {
     name: profile.storeName || siteConfig.name,
     description: siteConfig.description,
-    address: address ? storeProfileAddress(profile) : "",
+    address: `${pickup.name}, ${pickup.streetAddress}, ${pickup.city} - ${pickup.state}. ${pickup.note}`,
     whatsapp: publicPhone(profile.whatsapp) || "",
     email: publicEmail(profile.email) || ""
   };

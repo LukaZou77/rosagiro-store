@@ -1,0 +1,85 @@
+.packagePrice {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(var(--promo-deep-rgb), 0.2);
+  border-radius: 8px;
+  background: rgba(var(--deal-rgb), 0.18);
+}
+
+.packagePrice span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.packagePrice strong {
+  color: var(--promo-deep);
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.packagePrice small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.cardPackagePrice {
+  padding: 8px 9px;
+  background: var(--paper);
+}
+
+.cardPackagePrice span {
+  font-size: 0.64rem;
+}
+
+.cardPackagePrice strong {
+  font-size: 1rem;
+}
+
+.cardPackagePrice small {
+  font-size: 0.7rem;
+}
+
+.purchaseActions {
+  display: grid;
+  gap: 8px;
+}
+
+.editorialDescription {
+  display: grid;
+  gap: 7px;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.editorialDescription h2,
+.editorialDescription p {
+  margin: 0;
+}
+
+.editorialDescription h2 {
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+.editorialDescription p {
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+@media (max-width: 679px) {
+  .packagePrice {
+    padding: 10px;
+  }
+
+  .purchaseActions :global(.button) {
+    min-height: 50px;
+  }
+}

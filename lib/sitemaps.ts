@@ -5,6 +5,7 @@ import { getPublishedGuideArticles } from "@/lib/guide-articles";
 import { MIN_INDEXABLE_BRAND_PRODUCTS } from "@/lib/seo";
 import { getAllSiteInfoPages } from "@/lib/site-info-pages";
 import { siteUrl } from "@/lib/site-config";
+import { productCanonicalAliases, verifiedProductCanonicalSlug } from "@/lib/product-canonical";
 
 export type SitemapEntry = {
   url: string;
@@ -91,10 +92,13 @@ export async function productSitemapEntries(): Promise<SitemapEntry[]> {
       descriptionPt: { not: "" },
       priceCents: { gt: 0 }
     },
-    select: { slug: true, updatedAt: true },
+    select: { slug: true, updatedAt: true, active: true, priceCents: true, baseBoxPieces: true, baseBoxPriceCents: true, brand: { select: { name: true } } },
     orderBy: [{ featuredRank: "desc" }, { updatedAt: "desc" }]
   });
-  return products.map((product) => ({ url: siteUrl(`/produto/${product.slug}`), lastModified: product.updatedAt }));
+  const bySlug = new Map(products.map((product) => [product.slug, product]));
+  return products
+    .filter((product) => verifiedProductCanonicalSlug(product, bySlug.get(productCanonicalAliases[product.slug])) === product.slug)
+    .map((product) => ({ url: siteUrl(`/produto/${product.slug}`), lastModified: product.updatedAt }));
 }
 
 export async function contentSitemapEntries(): Promise<SitemapEntry[]> {

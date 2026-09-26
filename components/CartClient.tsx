@@ -222,7 +222,7 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
           </div>
           <div>
             <span>Frete</span>
-            <strong>Calculado no checkout</strong>
+            <strong>Não incluído no subtotal</strong>
           </div>
           <div className="summary-total">
             <span>Total sem frete</span>
@@ -231,6 +231,7 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
           <p>
             {siteConfig.wholesale.nationalDeliveryText} {siteConfig.wholesale.nationalDeliveryNote}
           </p>
+          <p>O site recebe somente o valor dos produtos. O atendimento confirma o frete e o prazo pelo WhatsApp; a cobrança do frete é separada, após sua aprovação.</p>
         </div>
         <div className="delivery-note">
           {siteConfig.wholesale.deliveryModes.map((mode) => (

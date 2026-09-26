@@ -23,9 +23,16 @@ export const siteConfig = {
       postalCode: "03032-020",
       country: "BR"
     },
-    operatingAddressLabel: "Unidade Arujá - estoque e retirada",
-    saoPauloLocationLabel: "Unidade São Paulo - estoque e retirada",
-    pickupNote: "As duas unidades pertencem à operação RosaGiro e recebem retiradas com agendamento prévio pelo WhatsApp."
+    operatingAddressLabel: "Endereço operacional",
+    saoPauloLocationLabel: "Endereço cadastral da empresa"
+  },
+  pickupLocation: {
+    name: "LA BELLA",
+    streetAddress: "Rua Paula Sousa, 529, Box A01",
+    city: "São Paulo",
+    state: "SP",
+    country: "BR",
+    note: "Retirada somente com agendamento e confirmação pelo WhatsApp. Aguarde a confirmação de que seu pedido está pronto antes de ir ao local."
   },
   brandAssets: {
     avatar: "/brand/rosagiro-avatar.webp",
@@ -186,7 +193,7 @@ export const siteConfig = {
     freightText: "Frete calculado e pago separadamente",
     cardMinimumHint: `${wholesaleMinimumOrderShortLabel} mínimo`,
     detailPanelTitle: "Compra no atacado",
-    detailPanelNote: "O preço exibido é unitário, mas a venda é feita somente pela embalagem fechada original. As cores e variações não podem ser escolhidas separadamente.",
+    detailPanelNote: "Confira o total e a quantidade da embalagem antes de comprar. O preço por unidade é uma referência; cores e variações seguem a composição original da embalagem.",
     bundlePrompt: "Quer comprar em volume? Envie este item pelo WhatsApp e informe sua cidade/UF.",
     wholesaleInfoEyebrow: "Compra para revenda",
     wholesaleInfoTitle: "Detalhes para atacado",

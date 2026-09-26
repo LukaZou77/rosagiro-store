@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { StoreShell } from "@/components/StoreShell";
+import { PickupLocation } from "@/components/PickupLocation";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { StructuredData } from "@/components/StructuredData";
 import { getCategories } from "@/lib/catalog";
@@ -11,7 +12,6 @@ import {
   publicLegalName,
   storeCnpjLabel,
   publicStoreProfileNotes,
-  storeProfileAddress,
   storeSocialLinks,
   storeTrustSignals
 } from "@/lib/store-profile";
@@ -97,21 +97,19 @@ export default async function StoreInformationPage() {
         </article>
 
         <article className="store-info-card wide">
-          <span>{siteConfig.businessIdentity.operatingAddressLabel}</span>
-          <h2>Estoque e retirada em Arujá</h2>
-          <p>{storeProfileAddress(profile)}</p>
-          <p>{profile.pickupNote}</p>
+          <span>Ponto de retirada</span>
+          <PickupLocation />
         </article>
 
         <article className="store-info-card wide">
           <span>{siteConfig.businessIdentity.saoPauloLocationLabel}</span>
-          <h2>Estoque e retirada em São Paulo</h2>
+          <h2>Endereço cadastral</h2>
           <p>
             {siteConfig.businessIdentity.legalAddress.streetAddress}, {siteConfig.businessIdentity.legalAddress.district},{" "}
             {siteConfig.businessIdentity.legalAddress.city} - {siteConfig.businessIdentity.legalAddress.state}, CEP{" "}
             {siteConfig.businessIdentity.legalAddress.postalCode}.
           </p>
-          <p>{siteConfig.businessIdentity.pickupNote}</p>
+          <p>Para buscar seu pedido, utilize o ponto de retirada acima, após confirmação do atendimento.</p>
         </article>
 
         <article className="store-info-card">
@@ -133,7 +131,7 @@ export default async function StoreInformationPage() {
         <article className="store-info-card">
           <span>Pós-compra</span>
           <h2>Trocas e devoluções</h2>
-          <p>{profile.exchangeNote}</p>
+          <p>Para dúvidas sobre avaria, divergência, troca ou devolução, envie o número do pedido e uma descrição ao atendimento. Fotos ou vídeos, quando disponíveis, ajudam na análise.</p>
           <Link href="/trocas-e-devolucoes">Ver política de trocas</Link>
         </article>
 

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { StoreShell } from "@/components/StoreShell";
+import { PickupLocation } from "@/components/PickupLocation";
 import { StructuredData } from "@/components/StructuredData";
 import { getCategories } from "@/lib/catalog";
 import { breadcrumbJsonLd, storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
-import { getStoreProfile, storeProfileAddress } from "@/lib/store-profile";
 
 export const metadata: Metadata = storefrontMetadata({
   title: "Quem somos",
@@ -14,7 +14,7 @@ export const metadata: Metadata = storefrontMetadata({
 });
 
 export default async function AboutPage() {
-  const [categories, profile] = await Promise.all([getCategories(), getStoreProfile()]);
+  const categories = await getCategories();
 
   return (
     <StoreShell categories={categories}>
@@ -55,20 +55,18 @@ export default async function AboutPage() {
 
       <section className="section split-band">
         <div>
-          <p className="eyebrow">Operação</p>
-          <h2>Estoque e retirada em Arujá</h2>
-          <p>{storeProfileAddress(profile)}</p>
-          <p>{profile.pickupNote}</p>
+          <p className="eyebrow">Ponto de retirada</p>
+          <PickupLocation />
         </div>
         <div>
-          <p className="eyebrow">Unidade São Paulo</p>
-          <h2>Estoque e retirada em São Paulo</h2>
+          <p className="eyebrow">Identificação da empresa</p>
+          <h2>Endereço cadastral</h2>
           <p>
             {siteConfig.businessIdentity.legalAddress.streetAddress}, {siteConfig.businessIdentity.legalAddress.district},{" "}
             {siteConfig.businessIdentity.legalAddress.city} - {siteConfig.businessIdentity.legalAddress.state}, CEP{" "}
             {siteConfig.businessIdentity.legalAddress.postalCode}.
           </p>
-          <p>{siteConfig.businessIdentity.pickupNote}</p>
+          <p>O endereço cadastral não é o ponto de retirada de pedidos.</p>
           <Link className="button secondary" href="/informacoes-da-loja">Ver dados da loja</Link>
         </div>
       </section>

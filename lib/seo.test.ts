@@ -24,6 +24,8 @@ const sampleProduct = {
   name: "Batom Duo Lip Twice Ruby Rose HB-L6203",
   slug: "batom-duo-lip-twice-ruby-rose-hb-l6203",
   priceCents: 975,
+  baseBoxPieces: 1,
+  baseBoxPriceCents: 975,
   descriptionPt: "Batom líquido para reposição em loja e compra no atacado.",
   image: "/uploads/products/batom.jpg",
   gallery: [],
@@ -164,6 +166,30 @@ test("omits commerce offers for source products that require consultation", () =
   assert.doesNotMatch(description, /\.\.\.$/);
 });
 
+test("uses the exact package total in the offer, not a rounded unit price", () => {
+  const product = { ...sampleProduct, priceCents: 333, baseBoxPieces: 3, baseBoxPriceCents: 1000 };
+  const data = productJsonLd(product);
+  assert.equal(data.offers?.price, "10.00");
+  assert.ok(data.additionalProperty.some((entry) => entry.name === "Unidades por embalagem" && entry.value === "3"));
+  assert.equal(product.priceCents, 333);
+});
+
+test("does not invent an offer or brand when commercial information is missing", () => {
+  const product = { ...sampleProduct, name: "Marca não informada Paleta MYJ-0920", brand: { ...sampleProduct.brand, name: "Marca não informada" }, baseBoxPieces: null, baseBoxPriceCents: null };
+  const data = productJsonLd(product);
+  assert.equal(data.name, "Paleta MYJ-0920");
+  assert.equal(data.brand, undefined);
+  assert.equal(data.offers, undefined);
+  assert.doesNotMatch(productMetaDescription(product), /marca não informada/i);
+});
+
+test("uses the resolved canonical consistently in product and offer URLs", () => {
+  const data = productJsonLd(sampleProduct, "canonical-product");
+  assert.equal(data.url, "http://localhost:3000/produto/canonical-product");
+  assert.equal(data["@id"], `${data.url}#product`);
+  assert.equal(data.offers?.url, data.url);
+});
+
 test("links the published Brazil return policy without duplicating editable rules", () => {
   const data = storeJsonLd({
     storeName: "RosaGiro",
@@ -184,6 +210,11 @@ test("links the published Brazil return policy without duplicating editable rule
   assert.equal(data.hasMerchantReturnPolicy.applicableCountry, "BR");
   assert.equal(data.hasMerchantReturnPolicy.merchantReturnLink, "http://localhost:3000/trocas-e-devolucoes");
   assert.equal("merchantReturnDays" in data.hasMerchantReturnPolicy, false);
+  assert.equal(data.address.streetAddress, "Rua Paula Sousa, 529, Box A01");
+  assert.equal(data.parentOrganization.address.streetAddress, "Rua Conselheiro Dantas, 408, Loja 2088");
+  assert.equal(data.parentOrganization.location.length, 1);
+  assert.match(data.parentOrganization.location[0].name, /LA BELLA/);
+  assert.equal("postalCode" in data.address, false);
 });
 
 test("builds ItemList JSON-LD with absolute product URLs", () => {

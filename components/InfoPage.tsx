@@ -1,4 +1,5 @@
 import { StoreShell } from "@/components/StoreShell";
+import { PickupLocation } from "@/components/PickupLocation";
 import { getCategories } from "@/lib/catalog";
 import type { InfoPageContent } from "@/lib/site-config";
 
@@ -13,6 +14,9 @@ export async function InfoPage({ page }: { page: InfoPageContent }) {
         <p>{page.description}</p>
       </section>
       <section className="info-sections" aria-label={page.title}>
+        {page.href === "/contato" || page.href === "/entrega" ? (
+          <article><PickupLocation /></article>
+        ) : null}
         {page.sections.map((section) => (
           <article key={section.title}>
             <h2>{section.title}</h2>
