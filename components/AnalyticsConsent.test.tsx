@@ -42,12 +42,11 @@ test("renders a reusable privacy settings control", () => {
   assert.match(html, /type="button"/);
 });
 
-test("privacy page keeps a permanent consent entry point and factual Google disclosure", () => {
+test("privacy page describes internal statistics without a Google opt-in control", () => {
   const source = readFileSync(new URL("../app/politica-de-privacidade/page.tsx", import.meta.url), "utf8");
-  assert.match(source, /<AnalyticsConsentSettingsButton \/>/);
-  assert.match(source, /Google Analytics e Google Ads/);
-  assert.match(source, /CPF, e-mail, telefone, conteúdo de mensagens ou conversas no WhatsApp/);
-  assert.match(source, /https:\/\/policies\.google\.com\/privacy/);
+  assert.doesNotMatch(source, /AnalyticsConsentSettingsButton|Configurar medição/);
+  assert.match(source, /Estatísticas internas da RosaGiro/);
+  assert.match(source, /não carrega ferramentas de medição do Google Analytics ou Google Ads/);
 });
 
 test("mobile consent layout clears fixed navigation and remains scrollable on short screens", () => {

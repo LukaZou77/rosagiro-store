@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { analyticsPrivacySignalEnabled, getAnalyticsVisitorId } from "@/lib/browser-analytics";
-import { commerceItem, trackCommerceEvent } from "@/lib/commerce-analytics";
 
 const VIEW_KEY_PREFIX = "rosagiro-product-view:";
 
@@ -41,18 +40,6 @@ export function trackProductEvent(input: {
     quantity: input.quantity || 1,
     anonymousId
   });
-
-  const eventName = input.type === "PRODUCT_VIEW" ? "view_item" : "add_to_cart";
-  const item = commerceItem({
-    item_id: input.slug,
-    item_name: input.item?.name,
-    item_brand: input.item?.brand,
-    item_category: input.item?.category,
-    item_variant: input.item?.variant,
-    price: input.item?.priceCents ? input.item.priceCents / 100 : undefined,
-    quantity: input.quantity || 1
-  });
-  trackCommerceEvent(eventName, { currency: "BRL", value: item.price ? item.price * (item.quantity || 1) : undefined, items: [item] });
 
   if (navigator.sendBeacon) {
     const blob = new Blob([body], { type: "application/json" });

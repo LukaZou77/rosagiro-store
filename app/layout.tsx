@@ -1,17 +1,9 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Suspense } from "react";
-import { AttributionTracker } from "@/components/AttributionTracker";
-import { AnalyticsConsent } from "@/components/AnalyticsConsent";
-import { GoogleAdsWhatsAppConversionTracker } from "@/components/GoogleAdsWhatsAppConversionTracker";
+import { WhatsAppAnalyticsTracker } from "@/components/WhatsAppAnalyticsTracker";
 import { SiteAnalyticsTracker } from "@/components/SiteAnalyticsTracker";
-import { GooglePageViewTracker } from "@/components/GooglePageViewTracker";
-import { googleTagBootstrap } from "@/lib/google-tag-bootstrap";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import "./globals.css";
-
-const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || "AW-17323505855";
-const ga4MeasurementId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -50,14 +42,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="pt-BR">
       <body>
-        <Script id="google-ads-tag" strategy="afterInteractive">
-          {googleTagBootstrap(googleAdsId, ga4MeasurementId)}
-        </Script>
-        <AttributionTracker />
-        <GoogleAdsWhatsAppConversionTracker />
+        <WhatsAppAnalyticsTracker />
         <Suspense fallback={null}>
-          <AnalyticsConsent />
-          <GooglePageViewTracker />
           <SiteAnalyticsTracker />
         </Suspense>
         {children}

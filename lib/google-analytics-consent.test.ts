@@ -77,18 +77,25 @@ test("defaults to no consent and ignores unknown stored values", (context) => {
   assert.equal(getGoogleAnalyticsConsent(), false);
 });
 
-test("persists explicit grant and denial and dispatches the consent event", (context) => {
+test("first-party-only policy cannot be overridden by an explicit Google grant", (context) => {
   context.after(restoreGlobals);
   const browser = installBrowser();
 
   persistGoogleAnalyticsConsent(true);
-  assert.equal(browser.storage.getItem(GOOGLE_ANALYTICS_CONSENT_STORAGE_KEY), "granted");
-  assert.equal(getGoogleAnalyticsConsent(), true);
+  assert.equal(browser.storage.getItem(GOOGLE_ANALYTICS_CONSENT_STORAGE_KEY), "denied");
+  assert.equal(getGoogleAnalyticsConsent(), false);
 
   persistGoogleAnalyticsConsent(false);
   assert.equal(browser.storage.getItem(GOOGLE_ANALYTICS_CONSENT_STORAGE_KEY), "denied");
   assert.equal(getGoogleAnalyticsConsent(), false);
   assert.deepEqual(browser.events, [GOOGLE_ANALYTICS_CONSENT_CHANGE_EVENT, GOOGLE_ANALYTICS_CONSENT_CHANGE_EVENT]);
+});
+
+test("an old saved grant does not reactivate Google measurement", (context) => {
+  context.after(restoreGlobals);
+  installBrowser({ stored: "granted" });
+  assert.equal(getStoredGoogleAnalyticsConsent(), "granted");
+  assert.equal(getGoogleAnalyticsConsent(), false);
 });
 
 test("DNT and GPC prevent an override even when grant is requested", (context) => {

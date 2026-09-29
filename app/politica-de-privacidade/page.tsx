@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AnalyticsConsentSettingsButton } from "@/components/AnalyticsConsent";
 import { StoreShell } from "@/components/StoreShell";
 import { getCategories } from "@/lib/catalog";
 import { storefrontMetadata } from "@/lib/seo";
@@ -31,20 +30,16 @@ export default async function PrivacyPage() {
           </article>
         ))}
       </section>
-      <section className="section" aria-labelledby="google-measurement-title">
+      <section className="section" aria-labelledby="site-statistics-title">
         <div style={{ maxWidth: 820 }}>
-          <p className="eyebrow">Preferências opcionais</p>
-          <h2 id="google-measurement-title">Google Analytics e Google Ads</h2>
+          <p className="eyebrow">Estatísticas do site</p>
+          <h2 id="site-statistics-title">Estatísticas internas da RosaGiro</h2>
           <p>
-            Essas ferramentas são opcionais e só carregam depois da sua autorização. Quando permitidas, podem usar cookies e identificadores para medir, de forma pseudônima, o tráfego, as interações e as compras no site.
+            Utilizamos estatísticas internas para acompanhar visitas, visualizações de produtos, adições ao carrinho, cliques no WhatsApp e pedidos. Os eventos de navegação são enviados ao próprio site e podem utilizar identificadores locais do navegador. Sinais DNT e GPC mantêm a coleta desses eventos desativada.
           </p>
           <p>
-            A integração não envia CPF, e-mail, telefone, conteúdo de mensagens ou conversas no WhatsApp ao Google. Sinais DNT e GPC do navegador mantêm essa medição desativada e não podem ser substituídos por uma escolha no site.
+            O site não carrega ferramentas de medição do Google Analytics ou Google Ads, mesmo que uma autorização tenha sido salva anteriormente neste navegador. Os registros necessários para processar e acompanhar seus pedidos continuam funcionando normalmente.
           </p>
-          <p>
-            Você pode alterar ou retirar sua autorização neste navegador a qualquer momento. Consulte também a <a href="https://policies.google.com/privacy" rel="noreferrer" target="_blank">Política de Privacidade do Google</a>.
-          </p>
-          <AnalyticsConsentSettingsButton />
         </div>
       </section>
     </StoreShell>

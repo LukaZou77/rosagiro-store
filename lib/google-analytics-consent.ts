@@ -1,5 +1,8 @@
 export const GOOGLE_ANALYTICS_CONSENT_STORAGE_KEY = "rosagiro:google-consent";
 export const GOOGLE_ANALYTICS_CONSENT_CHANGE_EVENT = "rosagiro:consent-change";
+// Store policy: use first-party statistics only. Old browser grants must not
+// reactivate GA4, Ads, checkout events, or advertising attribution.
+export const GOOGLE_MEASUREMENT_ENABLED = false;
 
 export type GoogleAnalyticsConsentValue = "granted" | "denied";
 
@@ -35,13 +38,13 @@ export function getStoredGoogleAnalyticsConsent(): GoogleAnalyticsConsentValue |
 }
 
 export function getGoogleAnalyticsConsent(): boolean {
-  if (googleAnalyticsPrivacySignalEnabled()) return false;
+  if (!GOOGLE_MEASUREMENT_ENABLED || googleAnalyticsPrivacySignalEnabled()) return false;
   return getStoredGoogleAnalyticsConsent() === "granted";
 }
 
 export function persistGoogleAnalyticsConsent(allowed: boolean): void {
   if (typeof window === "undefined") return;
-  const value: GoogleAnalyticsConsentValue = allowed && !googleAnalyticsPrivacySignalEnabled() ? "granted" : "denied";
+  const value: GoogleAnalyticsConsentValue = GOOGLE_MEASUREMENT_ENABLED && allowed && !googleAnalyticsPrivacySignalEnabled() ? "granted" : "denied";
   try {
     window.localStorage.setItem(GOOGLE_ANALYTICS_CONSENT_STORAGE_KEY, value);
   } catch {

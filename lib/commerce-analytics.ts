@@ -1,6 +1,6 @@
 import { analyticsPrivacySignalEnabled } from "@/lib/browser-analytics";
 import { analyticsPageContext } from "@/lib/google-tag-bootstrap";
-import { getGoogleAnalyticsConsent } from "@/lib/google-analytics-consent";
+import { GOOGLE_MEASUREMENT_ENABLED, getGoogleAnalyticsConsent } from "@/lib/google-analytics-consent";
 import {
   hasPurchaseChannelBeenSent,
   markPurchaseChannelSent,
@@ -218,6 +218,9 @@ export async function trackPurchaseOnce(
   payload: GtagPayload,
   destinations: PurchaseTrackingDestinations
 ): Promise<PurchaseTrackingResult> {
+  if (!GOOGLE_MEASUREMENT_ENABLED) {
+    return { ga4: "not_configured", googleAds: "not_configured", pending: false };
+  }
   const ga4MeasurementId = destinations.ga4MeasurementId?.trim() || "";
   const googleAdsSendTo = destinations.googleAdsSendTo?.trim() || "";
   const unavailableResult: PurchaseTrackingResult = {
