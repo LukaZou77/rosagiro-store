@@ -465,7 +465,7 @@ async function applyPaymentDetails(paymentDetails: MercadoPagoPaymentResponse & 
     where: { orderId: order.id },
     data: {
       ...providerUpdate,
-      status: failedStatuses.has(providerStatus) && order.status !== "PAID" ? "FAILED" : order.payment.status,
+      status: failedStatuses.has(providerStatus) && order.payment.status !== "PAID" ? "FAILED" : order.payment.status,
       syncError: failedStatuses.has(providerStatus) || manualReviewStatuses.has(providerStatus) ? `Mercado Pago retornou ${providerStatus}.` : null
     }
   });

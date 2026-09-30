@@ -7,14 +7,14 @@ import {
   clearAdminLoginFailures,
   recordAdminLoginFailure
 } from "@/lib/admin-login-rate-limit";
-import { clearAdminSession, hashPassword, requireAdmin, setAdminSession, verifyPassword } from "@/lib/auth";
+import { clearAdminSession, hashPassword, rememberAdminEmail, requireAdmin, setAdminSession, verifyPassword } from "@/lib/auth";
+import { adminLoginPath, adminReturnPath } from "@/lib/admin-login-return";
 import { saoPauloDateTime } from "@/lib/admin-analytics-core";
 import { STOREFRONT_CATALOG_CACHE_TAG, STORE_PROFILE_CACHE_TAG } from "@/lib/cache-tags";
 import { cleanCustomerName, normalizeBrazilWhatsapp } from "@/lib/customers";
 import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
 import { markOrderPaid, OrderError } from "@/lib/orders";
-import { recordCreatedOrderProductMetrics } from "@/lib/product-daily-metrics";
 import { whatsAppLeadDedupeKey } from "@/lib/whatsapp-leads";
 import {
   normalizeWhatsAppInquiryReference,
@@ -47,7 +47,6 @@ import { pixAccountTypeOptions, pixKeyTypeOptions, STORE_PROFILE_ID } from "@/li
 import { SiteInfoPageValidationError, validateSiteInfoPageInput } from "@/lib/site-info-pages";
 import type { Prisma } from "@/src/generated/prisma/client";
 
-const statuses = ["PENDING_PAYMENT", "PAID", "FULFILLING", "SHIPPED", "CANCELED"] as const;
 const whatsAppLeadStatuses = ["QUALIFIED", "WON", "LOST"] as const;
 const launchReadinessStatuses = ["PENDING", "IN_PROGRESS", "DONE", "BLOCKED"] as const;
 
@@ -460,23 +459,25 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
 }
 
 export async function loginAction(formData: FormData) {
+  const returnTo = adminReturnPath(formData.get("returnTo"));
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
   const rateLimit = await adminLoginRateLimitStatus(email);
   if (!rateLimit.allowed) {
-    redirect("/admin/login?error=rate");
+    redirect(adminLoginPath(returnTo, "rate"));
   }
 
   const user = await prisma.adminUser.findFirst({ where: { email, active: true } });
 
   if (!user || !verifyPassword(password, user.passwordHash)) {
     await recordAdminLoginFailure(email);
-    redirect("/admin/login?error=1");
+    redirect(adminLoginPath(returnTo, "1"));
   }
 
   await clearAdminLoginFailures(email);
   await setAdminSession(user.id);
-  redirect("/admin");
+  await rememberAdminEmail(user.email);
+  redirect(returnTo);
 }
 
 export async function logoutAction() {
@@ -532,6 +533,7 @@ export async function updateAdminCredentialsAction(formData: FormData) {
   });
 
   await setAdminSession(updatedAdmin.id);
+  await rememberAdminEmail(email);
   revalidatePath("/admin");
   revalidatePath("/admin/loja");
   redirect(`${redirectPath}?adminCredentials=1`);
@@ -1192,35 +1194,6 @@ export async function updateWhatsAppLeadStatusAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/analytics");
   revalidatePath("/admin/leads");
-}
-
-export async function updateOrderStatusAction(formData: FormData) {
-  await requireAdmin();
-
-  const orderNumber = String(formData.get("orderNumber") || "");
-  const status = String(formData.get("status") || "");
-  if (!orderNumber || !statuses.includes(status as (typeof statuses)[number])) {
-    redirect("/admin/pedidos?error=1");
-  }
-
-  const currentOrder = await prisma.order.findUnique({ where: { orderNumber }, select: { id: true, status: true } });
-  if (!currentOrder) redirect("/admin/pedidos?error=1");
-
-  await prisma.order.update({
-    where: { orderNumber },
-    data: { status: status as (typeof statuses)[number] }
-  });
-
-  const nextCanceled = status === "CANCELED";
-  const wasCanceled = currentOrder.status === "CANCELED";
-  if (nextCanceled !== wasCanceled) {
-    await recordCreatedOrderProductMetrics(currentOrder.id, nextCanceled ? -1 : 1).catch(() => undefined);
-  }
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/pedidos");
-  revalidatePath(`/admin/pedidos/${orderNumber}`);
-  revalidatePath(`/pedido/${orderNumber}`);
 }
 
 export async function confirmManualPixPaymentAction(formData: FormData) {

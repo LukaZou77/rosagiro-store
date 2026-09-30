@@ -1,7 +1,7 @@
 import type { Prisma } from "@/src/generated/prisma/client";
 import Link from "next/link";
 import { Download, Filter, Search } from "lucide-react";
-import { updateOrderStatusAction } from "@/app/admin/actions";
+import { updateOrderStatusAction } from "@/app/admin/order-actions";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminTranslator } from "@/lib/admin-i18n";

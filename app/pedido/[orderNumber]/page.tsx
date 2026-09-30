@@ -92,7 +92,7 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
         />
       <section className="confirmation order-confirmation">
         <p className="eyebrow">Pedido RosaGiro</p>
-        <h1>{order.status === "PAID" ? "Compra confirmada." : "Pedido criado."}</h1>
+        <h1>{order.status === "SHIPPED" ? "Pedido enviado." : order.status === "FULFILLING" ? "Pedido em separação." : order.status === "PAID" ? "Compra confirmada." : order.status === "CANCELED" ? "Pedido cancelado." : "Pedido criado."}</h1>
         <p>{order.customerName}, acompanhe aqui o status do pedido e confira os dados antes da entrega.</p>
         {mercadoPagoMessage ? <p className="payment-return-note">{mercadoPagoMessage}</p> : null}
         <div className="confirmation-card">
@@ -103,6 +103,13 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
             {paymentMethodLabel(order.payment?.method)} / {paymentStatusLabel(order.payment?.status)} / {separateFreight ? "Valor dos produtos" : "Total"}: {money(order.totalCents)}
           </small>
         </div>
+        {order.trackingCode ? (
+          <div className="address-match-card">
+            <span>Rastreamento da entrega</span>
+            <strong>{order.fulfillmentCarrier}</strong>
+            <small>Código de rastreio: {order.trackingCode}</small>
+          </div>
+        ) : null}
         {separateFreight ? (
           <div className="address-match-card needs-review">
             <span>Frete não incluído no pagamento</span>
@@ -117,7 +124,7 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
             <small>{order.payment.syncError || "A confirmação do provedor atualizará o pedido automaticamente."}</small>
           </div>
         ) : null}
-        {pixAccount && order.status !== "PAID" ? (
+        {pixAccount && order.status === "PENDING_PAYMENT" && !isPaymentConfirmed(order.payment?.status, order.payment?.paidAt) ? (
           <>
             <PixPaymentInfo account={pixAccount} orderNumber={order.orderNumber} totalCents={order.totalCents} />
             <WhatsAppLink className="button whatsapp" href={paymentWhatsAppHref}>

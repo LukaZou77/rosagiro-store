@@ -465,6 +465,8 @@ model Order {
   addressMatchCheckedAt   DateTime?
   shippingMethod          ShippingMethod @default(PADRAO)
   shippingCarrier         String?
+  fulfillmentCarrier      String?
+  trackingCode            String?
   shippingService         String?
   shippingServiceLabel    String?
   shippingRateId          String?

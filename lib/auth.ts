@@ -4,9 +4,27 @@ import { createHmac, randomBytes, timingSafeEqual, scryptSync } from "node:crypt
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { adminLoginPath } from "@/lib/admin-login-return";
 
 const COOKIE_NAME = "bv_admin_session";
 const SESSION_DAYS = 7;
+const EMAIL_COOKIE_NAME = "rg_admin_email";
+
+export async function rememberAdminEmail(email: string) {
+  const jar = await cookies();
+  jar.set(EMAIL_COOKIE_NAME, email, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 365 * 24 * 60 * 60,
+    path: "/admin"
+  });
+}
+
+export async function rememberedAdminEmail() {
+  const jar = await cookies();
+  return jar.get(EMAIL_COOKIE_NAME)?.value || "";
+}
 
 function secret() {
   const value = process.env.SESSION_SECRET;
@@ -74,8 +92,8 @@ export async function getAdmin() {
   });
 }
 
-export async function requireAdmin() {
+export async function requireAdmin(returnTo?: string) {
   const admin = await getAdmin();
-  if (!admin) redirect("/admin/login");
+  if (!admin) redirect(returnTo ? adminLoginPath(returnTo, "session") : "/admin/login");
   return admin;
 }

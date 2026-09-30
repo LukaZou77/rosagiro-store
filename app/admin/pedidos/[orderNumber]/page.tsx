@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { confirmManualPixPaymentAction, updateOrderStatusAction } from "@/app/admin/actions";
+import { confirmManualPixPaymentAction } from "@/app/admin/actions";
+import { updateOrderStatusAction } from "@/app/admin/order-actions";
+import { AdminProductSubmitButton } from "@/components/AdminProductSubmitButton";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminTranslator } from "@/lib/admin-i18n";
@@ -144,16 +146,17 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           )}
           <form action={updateOrderStatusAction} className="status-form detail-status-form">
             <input type="hidden" name="orderNumber" value={order.orderNumber} />
-            <select name="status" defaultValue={order.status}>
+            <input type="hidden" name="detail" value="1" />
+            <select aria-label={t("Status do pedido", "订单状态")} name="status" defaultValue={order.status}>
               {Object.entries(statusLabels).map(([value, label]) => (
                 <option value={value} key={value}>
                   {localizedStatusLabels[value] || label}
                 </option>
               ))}
             </select>
-            <button className="button primary" type="submit">
-              {t("Atualizar status", "更新状态")}
-            </button>
+            <label>{t("Transportadora do envio", "发货快递公司")}<input name="fulfillmentCarrier" maxLength={100} defaultValue={order.fulfillmentCarrier || ""} /></label>
+            <label>{t("Código de rastreio", "物流单号")}<input name="trackingCode" maxLength={120} defaultValue={order.trackingCode || ""} /></label>
+            <AdminProductSubmitButton label={t("Salvar status e envio", "保存状态和物流")} />
           </form>
           <div className="summary-block">
             <div>

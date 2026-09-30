@@ -321,7 +321,7 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
       include: { items: true, payment: true }
     });
     if (!order) throw new OrderError("Pedido não encontrado.", 404);
-    if (order.status === "PAID") {
+    if (order.payment?.status === "PAID" || order.status === "PAID") {
       const shouldRefreshProvider =
         paymentUpdate.provider === "MERCADO_PAGO" ||
         Boolean(paymentUpdate.providerPaymentId || paymentUpdate.providerStatus || paymentUpdate.lastWebhookAt);
@@ -353,7 +353,7 @@ export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrde
         where: { id: order.id },
         include: { items: true, payment: true }
       });
-      if (currentOrder?.status === "PAID") return currentOrder;
+      if (currentOrder?.payment?.status === "PAID" || currentOrder?.status === "PAID") return currentOrder;
       throw new OrderError("Este pedido não pode ser pago.");
     }
     newlyPaid = true;
