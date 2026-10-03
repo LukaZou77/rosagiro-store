@@ -2,11 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cartLineKey, readCart, sameCartLine, subscribeQuickPurchaseOpen, useCart, writeCart } from "@/components/CartCount";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { CustomerCheckoutButton } from "@/components/CustomerSession";
 import { OptimizedProductImage } from "@/components/OptimizedProductImage";
+import {
+  currentQuickPurchaseSummaryState,
+  isCurrentQuickPurchaseRequest,
+  shouldFetchQuickPurchaseSummary,
+  wrappedDialogFocusTarget,
+  type QuickPurchaseSummaryState
+} from "@/components/QuickPurchaseDrawerState";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
 import type { CartSummary, CartSummaryLine } from "@/lib/cart-summary";
@@ -36,37 +43,83 @@ export function QuickPurchaseDrawer() {
   const whatsappPhone = useWhatsAppPhone();
   const cart = useCart();
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const activeRequestRef = useRef(0);
   const [open, setOpen] = useState(false);
-  const [summaryState, setSummaryState] = useState<{ key: string; data: CartSummary } | null>(null);
-  const [errorState, setErrorState] = useState<{ key: string; message: string } | null>(null);
+  const [requestCycle, setRequestCycle] = useState(0);
+  const [summaryState, setSummaryState] = useState<QuickPurchaseSummaryState | null>(null);
   const count = cart.length;
   const cartKey = useMemo(() => JSON.stringify(cart), [cart]);
   const drawerDisabled = pathname === "/checkout";
   const drawerOpen = open && !drawerDisabled;
 
-  useEffect(() => {
-    return subscribeQuickPurchaseOpen(() => {
-      if (drawerDisabled) return;
-      setOpen(true);
-      window.setTimeout(() => closeButtonRef.current?.focus(), 0);
-    });
+  const openDrawer = useCallback((opener?: HTMLElement | null) => {
+    if (drawerDisabled) return;
+    const activeElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const candidate = opener || activeElement;
+    // Adding another item inside an already-open drawer must not replace the
+    // external return-focus target with a control that will be hidden on close.
+    if (!candidate || !drawerRef.current?.contains(candidate)) {
+      openerRef.current = candidate && candidate !== document.body && candidate !== document.documentElement ? candidate : null;
+    }
+    setRequestCycle((current) => current + 1);
+    setOpen(true);
+    window.setTimeout(() => closeButtonRef.current?.focus({ preventScroll: true }), 0);
   }, [drawerDisabled]);
+
+  const closeDrawer = useCallback(() => {
+    setOpen(false);
+    window.setTimeout(() => {
+      const opener = openerRef.current;
+      const fallback = document.getElementById("conteudo-principal");
+      const target = opener?.isConnected && !opener.hasAttribute("disabled") ? opener : fallback;
+      target?.focus({ preventScroll: true });
+    }, 0);
+  }, []);
+
+  useEffect(() => {
+    return subscribeQuickPurchaseOpen(() => openDrawer());
+  }, [openDrawer]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDrawer();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const drawer = drawerRef.current;
+      if (!drawer) return;
+      const focusableElements = Array.from(
+        drawer.querySelectorAll<HTMLElement>(
+          "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+        )
+      ).filter((element) => !element.hasAttribute("disabled"));
+      const activeElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const target = wrappedDialogFocusTarget({
+        elements: focusableElements,
+        activeElement,
+        activeInside: Boolean(activeElement && drawer.contains(activeElement)),
+        shiftKey: event.shiftKey
+      });
+      if (!target) return;
+      event.preventDefault();
+      target.focus({ preventScroll: true });
     }
 
     if (drawerOpen) window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [drawerOpen]);
+  }, [closeDrawer, drawerOpen]);
 
   useEffect(() => {
-    if (!cart.length) {
-      return;
-    }
+    if (!shouldFetchQuickPurchaseSummary({ drawerOpen, cartLength: cart.length })) return;
 
     const controller = new AbortController();
+    const requestId = activeRequestRef.current + 1;
+    activeRequestRef.current = requestId;
     fetch("/api/cart/summary", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -76,18 +129,41 @@ export function QuickPurchaseDrawer() {
       .then(async (response) => {
         const data = (await response.json()) as CartSummary;
         if (!response.ok) throw new Error(data.error || "Não foi possível carregar o resumo.");
-        setSummaryState({ key: cartKey, data });
+        if (
+          !isCurrentQuickPurchaseRequest({
+            requestId,
+            activeRequestId: activeRequestRef.current,
+            aborted: controller.signal.aborted
+          })
+        ) return;
+        setSummaryState({ cartKey, requestCycle, status: "success", data });
       })
       .catch((fetchError: Error) => {
-        if (fetchError.name === "AbortError") return;
-        setErrorState({ key: cartKey, message: fetchError.message || "Não foi possível carregar o resumo." });
+        if (
+          fetchError.name === "AbortError" ||
+          !isCurrentQuickPurchaseRequest({
+            requestId,
+            activeRequestId: activeRequestRef.current,
+            aborted: controller.signal.aborted
+          })
+        ) return;
+        setSummaryState({
+          cartKey,
+          requestCycle,
+          status: "error",
+          message: fetchError.message || "Não foi possível carregar o resumo."
+        });
       });
 
-    return () => controller.abort();
-  }, [cart, cartKey]);
+    return () => {
+      controller.abort();
+      if (activeRequestRef.current === requestId) activeRequestRef.current += 1;
+    };
+  }, [cart, cartKey, drawerOpen, requestCycle]);
 
-  const summary = cart.length && summaryState?.key === cartKey ? summaryState.data : null;
-  const error = cart.length && errorState?.key === cartKey ? errorState.message : "";
+  const currentSummaryState = currentQuickPurchaseSummaryState(summaryState, cartKey, requestCycle);
+  const summary = cart.length && currentSummaryState?.status === "success" ? currentSummaryState.data : null;
+  const error = cart.length && currentSummaryState?.status === "error" ? currentSummaryState.message : "";
   const loading = cart.length > 0 && !summary && !error;
 
   const whatsappItems = useMemo(
@@ -127,20 +203,25 @@ export function QuickPurchaseDrawer() {
   return (
     <>
       {count > 0 && !drawerOpen && !hideFloatingEntry ? (
-        <button className="quick-purchase-fab" type="button" onClick={() => setOpen(true)} aria-label="Abrir pedido rápido">
+        <button
+          className="quick-purchase-fab"
+          type="button"
+          onClick={(event) => openDrawer(event.currentTarget)}
+          aria-label="Abrir pedido rápido"
+        >
           <span>Pedido</span>
           <strong>{count}</strong>
         </button>
       ) : null}
       <div className={drawerOpen ? "quick-drawer-shell open" : "quick-drawer-shell"} aria-hidden={!drawerOpen}>
-        <button className="quick-drawer-overlay" type="button" onClick={() => setOpen(false)} aria-label="Fechar painel de pedido" />
-        <aside className="quick-drawer" aria-label="Pedido rápido" aria-modal="true" role="dialog">
+        <button className="quick-drawer-overlay" type="button" onClick={closeDrawer} aria-label="Fechar painel de pedido" />
+        <aside className="quick-drawer" aria-label="Pedido rápido" aria-modal="true" ref={drawerRef} role="dialog">
           <header className="quick-drawer-header">
             <div>
               <span>Pedido rápido</span>
               <h2>Monte sua lista</h2>
             </div>
-            <button ref={closeButtonRef} type="button" onClick={() => setOpen(false)} aria-label="Fechar pedido rápido">
+            <button ref={closeButtonRef} type="button" onClick={closeDrawer} aria-label="Fechar pedido rápido">
               Fechar
             </button>
           </header>

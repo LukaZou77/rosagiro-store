@@ -3,9 +3,8 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  adminLoginRateLimitStatus,
-  clearAdminLoginFailures,
-  recordAdminLoginFailure
+  clearSuccessfulAdminLoginAttempt,
+  consumeAdminLoginAttempt
 } from "@/lib/admin-login-rate-limit";
 import { clearAdminSession, hashPassword, rememberAdminEmail, requireAdmin, setAdminSession, verifyPassword } from "@/lib/auth";
 import { adminLoginPath, adminReturnPath } from "@/lib/admin-login-return";
@@ -462,7 +461,7 @@ export async function loginAction(formData: FormData) {
   const returnTo = adminReturnPath(formData.get("returnTo"));
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
-  const rateLimit = await adminLoginRateLimitStatus(email);
+  const rateLimit = await consumeAdminLoginAttempt(email);
   if (!rateLimit.allowed) {
     redirect(adminLoginPath(returnTo, "rate"));
   }
@@ -470,11 +469,10 @@ export async function loginAction(formData: FormData) {
   const user = await prisma.adminUser.findFirst({ where: { email, active: true } });
 
   if (!user || !verifyPassword(password, user.passwordHash)) {
-    await recordAdminLoginFailure(email);
     redirect(adminLoginPath(returnTo, "1"));
   }
 
-  await clearAdminLoginFailures(email);
+  await clearSuccessfulAdminLoginAttempt(rateLimit.ipEmailReceipt);
   await setAdminSession(user.id);
   await rememberAdminEmail(user.email);
   redirect(returnTo);

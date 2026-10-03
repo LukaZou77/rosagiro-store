@@ -11,11 +11,38 @@ import {
 } from "@/lib/product-wholesale";
 import { siteConfig } from "@/lib/site-config";
 import { normalizeWholesaleLineQuantity } from "@/lib/wholesale-order";
+import type { Prisma } from "@/src/generated/prisma/client";
 
 type CartSummaryItem = {
   slug?: unknown;
   quantity?: unknown;
 };
+
+const cartProductSelect = {
+  slug: true,
+  name: true,
+  priceCents: true,
+  baseBoxPriceCents: true,
+  baseBoxPieces: true,
+  wholesalePackage: true,
+  descriptionPt: true,
+  image: true,
+  stockStatus: true,
+  active: true,
+  brand: { select: { name: true } },
+  category: { select: { slug: true } },
+  inventory: { select: { quantity: true } },
+  skus: {
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    select: { quantity: true, active: true }
+  }
+} satisfies Prisma.ProductSelect;
+
+const recommendationProductSelect = {
+  ...cartProductSelect,
+  badges: true,
+  reviewCount: true
+} satisfies Prisma.ProductSelect;
 
 function parseItems(input: unknown) {
   if (!Array.isArray(input)) return [];
@@ -38,24 +65,25 @@ export async function POST(request: Request) {
     const payload = await request.json();
     const requestedItems = parseItems(payload?.items);
     const uniqueSlugs = [...new Set(requestedItems.map((item) => item.slug))];
-    const products = uniqueSlugs.length
-      ? await prisma.product.findMany({
+    const productsPromise = uniqueSlugs.length
+      ? prisma.product.findMany({
           where: { slug: { in: uniqueSlugs }, deletedAt: null },
-          include: { brand: true, category: true, inventory: true, skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } }
+          select: cartProductSelect
         })
-      : [];
-    const recommendationProducts = requestedItems.length
-      ? await prisma.product.findMany({
+      : Promise.resolve([]);
+    const recommendationProductsPromise = requestedItems.length
+      ? prisma.product.findMany({
           where: {
             active: true,
             deletedAt: null,
             OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
           },
-          include: { brand: true, category: true, inventory: true, skus: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } },
+          select: recommendationProductSelect,
           orderBy: { featuredRank: "asc" },
           take: 64
         })
-      : [];
+      : Promise.resolve([]);
+    const [products, recommendationProducts] = await Promise.all([productsPromise, recommendationProductsPromise]);
     const productMap = new Map(products.map((product) => [product.slug, product]));
     const requestedQuantityBySlug = new Map<string, number>();
     for (const item of requestedItems) {

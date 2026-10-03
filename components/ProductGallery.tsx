@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { PackageCheck } from "lucide-react";
 import { isSourceBoardImage, OptimizedProductImage } from "@/components/OptimizedProductImage";
+import {
+  canUseGalleryHoverPointer,
+  createAnimationFrameBatcher,
+  galleryZoomPercent,
+  type GalleryZoomBounds,
+  type GalleryZoomPoint
+} from "@/components/ProductGalleryPerformance";
 import { isProductPackageImage } from "@/lib/product-package-images";
 
 const PRODUCT_IMAGE_SELECT_EVENT = "rosagiro:select-product-image";
@@ -31,12 +38,62 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
   const mainRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const hoverZoomEnabledRef = useRef(false);
+  const zoomBoundsRef = useRef<GalleryZoomBounds | null>(null);
+  const zoomingRef = useRef(false);
+  const zoomFrameBatcherRef = useRef<ReturnType<typeof createAnimationFrameBatcher<GalleryZoomPoint>> | null>(null);
 
   const activeIndex = gallery[selectedIndex] ? selectedIndex : 0;
   const activeImage = gallery[activeIndex] || "";
   const activeIsPackageImage = isProductPackageImage(activeImage);
   const activeIsSourceBoardImage = isSourceBoardImage(activeImage);
   const hasCarousel = gallery.length > 1;
+
+  const resetZoomTracking = useCallback(() => {
+    zoomFrameBatcherRef.current?.cancel();
+    zoomBoundsRef.current = null;
+    hoverZoomEnabledRef.current = false;
+    zoomingRef.current = false;
+    setIsZooming(false);
+  }, []);
+
+  const measureZoomBounds = useCallback(() => {
+    const target = mainRef.current;
+    if (!target) return null;
+    const hoverZoomEnabled =
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    hoverZoomEnabledRef.current = hoverZoomEnabled;
+    if (!hoverZoomEnabled) {
+      zoomBoundsRef.current = null;
+      return null;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const bounds = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+    zoomBoundsRef.current = bounds;
+    return bounds;
+  }, []);
+
+  useEffect(() => {
+    const hoverQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const invalidateZoomGeometry = () => resetZoomTracking();
+
+    window.addEventListener("resize", invalidateZoomGeometry, { passive: true });
+    window.addEventListener("scroll", invalidateZoomGeometry, { passive: true, capture: true });
+    hoverQuery.addEventListener("change", invalidateZoomGeometry);
+    reducedMotionQuery.addEventListener("change", invalidateZoomGeometry);
+
+    return () => {
+      window.removeEventListener("resize", invalidateZoomGeometry);
+      window.removeEventListener("scroll", invalidateZoomGeometry, true);
+      hoverQuery.removeEventListener("change", invalidateZoomGeometry);
+      reducedMotionQuery.removeEventListener("change", invalidateZoomGeometry);
+      zoomFrameBatcherRef.current?.dispose();
+      zoomFrameBatcherRef.current = null;
+    };
+  }, [resetZoomTracking]);
 
   useEffect(() => {
     if (!isLightboxOpen) return;
@@ -67,20 +124,20 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
       if (event.key === "Escape") {
         event.preventDefault();
         setIsLightboxOpen(false);
-        setIsZooming(false);
+        resetZoomTracking();
         window.setTimeout(() => {
           (lastFocusedRef.current || mainRef.current)?.focus({ preventScroll: true });
         }, 0);
       }
       if (hasCarousel && event.key === "ArrowLeft") {
         event.preventDefault();
+        resetZoomTracking();
         setSelectedIndex((current) => (current - 1 + gallery.length) % gallery.length);
-        setIsZooming(false);
       }
       if (hasCarousel && event.key === "ArrowRight") {
         event.preventDefault();
+        resetZoomTracking();
         setSelectedIndex((current) => (current + 1 + gallery.length) % gallery.length);
-        setIsZooming(false);
       }
     }
 
@@ -90,7 +147,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleDocumentKeyDown);
     };
-  }, [gallery.length, hasCarousel, isLightboxOpen]);
+  }, [gallery.length, hasCarousel, isLightboxOpen, resetZoomTracking]);
 
   useEffect(() => {
     function handleSkuImageSelect(event: Event) {
@@ -98,23 +155,23 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
       if (!image) return;
       const nextIndex = gallery.indexOf(image);
       if (nextIndex < 0) return;
+      resetZoomTracking();
       setSelectedIndex(nextIndex);
-      setIsZooming(false);
     }
 
     window.addEventListener(PRODUCT_IMAGE_SELECT_EVENT, handleSkuImageSelect);
     return () => window.removeEventListener(PRODUCT_IMAGE_SELECT_EVENT, handleSkuImageSelect);
-  }, [gallery]);
+  }, [gallery, resetZoomTracking]);
 
   function selectImage(index: number) {
+    resetZoomTracking();
     setSelectedIndex(index);
-    setIsZooming(false);
   }
 
   function moveImage(step: number) {
     if (!hasCarousel) return;
+    resetZoomTracking();
     setSelectedIndex((current) => (current + step + gallery.length) % gallery.length);
-    setIsZooming(false);
   }
 
   function openLightbox() {
@@ -122,13 +179,13 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
     if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
       lastFocusedRef.current = document.activeElement;
     }
-    setIsZooming(false);
+    resetZoomTracking();
     setIsLightboxOpen(true);
   }
 
   function closeLightbox() {
     setIsLightboxOpen(false);
-    setIsZooming(false);
+    resetZoomTracking();
     window.setTimeout(() => {
       (lastFocusedRef.current || mainRef.current)?.focus({ preventScroll: true });
     }, 0);
@@ -150,31 +207,49 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
     }
   }
 
-  function canUseHoverZoom() {
-    return (
-      typeof window !== "undefined" &&
-      window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    );
+  function handlePointerEnter(event: PointerEvent<HTMLDivElement>) {
+    if (!canUseGalleryHoverPointer(event)) {
+      resetZoomTracking();
+      return;
+    }
+    if (isLightboxOpen || activeIsSourceBoardImage) return;
+    measureZoomBounds();
   }
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!canUseGalleryHoverPointer(event)) {
+      resetZoomTracking();
+      return;
+    }
     if (isLightboxOpen) return;
     if (activeIsSourceBoardImage) return;
-    if (!canUseHoverZoom()) return;
-    const target = mainRef.current;
-    if (!target) return;
+    const bounds = zoomBoundsRef.current || measureZoomBounds();
+    if (!bounds || !hoverZoomEnabledRef.current) return;
 
-    const rect = target.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
-    target.style.setProperty("--zoom-x", `${Math.min(100, Math.max(0, x)).toFixed(2)}%`);
-    target.style.setProperty("--zoom-y", `${Math.min(100, Math.max(0, y)).toFixed(2)}%`);
-    if (!isZooming) setIsZooming(true);
+    if (!zoomFrameBatcherRef.current) {
+      zoomFrameBatcherRef.current = createAnimationFrameBatcher<GalleryZoomPoint>({
+        requestFrame: (callback) => window.requestAnimationFrame(callback),
+        cancelFrame: (handle) => window.cancelAnimationFrame(handle),
+        flush: (point) => {
+          const target = mainRef.current;
+          const currentBounds = zoomBoundsRef.current;
+          if (!target || !currentBounds || !hoverZoomEnabledRef.current) return;
+          const position = galleryZoomPercent(currentBounds, point);
+          if (!position) return;
+          target.style.setProperty("--zoom-x", `${position.x.toFixed(2)}%`);
+          target.style.setProperty("--zoom-y", `${position.y.toFixed(2)}%`);
+        }
+      });
+    }
+    zoomFrameBatcherRef.current.schedule({ clientX: event.clientX, clientY: event.clientY });
+    if (!zoomingRef.current) {
+      zoomingRef.current = true;
+      setIsZooming(true);
+    }
   }
 
   function stopZoom() {
-    setIsZooming(false);
+    resetZoomTracking();
   }
 
   if (!activeImage) {
@@ -228,6 +303,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
           className={`product-gallery-main ${isZooming ? "zooming" : ""} ${activeIsSourceBoardImage ? "source-board-main" : ""}`}
           onClick={openLightbox}
           onKeyDown={handleMainKeyDown}
+          onPointerEnter={handlePointerEnter}
           onPointerLeave={stopZoom}
           onPointerMove={handlePointerMove}
           ref={mainRef}

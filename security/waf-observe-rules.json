@@ -1,0 +1,38 @@
+[
+  {
+    "name": "RosaGiro catalog burst - observe",
+    "description": "Observe public catalog bursts only. No blocking. Verify legitimate search bots before any enforcement; no UA-only bypass.",
+    "conditions": [
+      { "type": "path", "op": "re", "value": "^/(produto|categoria|marcas|promocoes)(/|$)" },
+      { "type": "method", "op": "inc", "value": ["GET", "HEAD"] }
+    ],
+    "windowSeconds": 60,
+    "requests": 600,
+    "key": "ip",
+    "exceedAction": "log"
+  },
+  {
+    "name": "RosaGiro commerce API burst - observe",
+    "description": "Observe only. Shared per-IP commerce API counters. Exact POST paths; excludes payments webhooks, cron and storefront GETs.",
+    "conditions": [
+      { "type": "path", "op": "inc", "value": ["/api/orders", "/api/cart/summary", "/api/shipping/quote", "/api/address/autocomplete", "/api/address/place-details", "/api/address/validate", "/api/customers/session"] },
+      { "type": "method", "op": "eq", "value": "POST" }
+    ],
+    "windowSeconds": 60,
+    "requests": 600,
+    "key": "ip",
+    "exceedAction": "log"
+  },
+  {
+    "name": "RosaGiro admin login burst - observe",
+    "description": "Observe only. Backend login has its own shared admission guard. This edge rule does not change admin authorization.",
+    "conditions": [
+      { "type": "path", "op": "eq", "value": "/admin/login" },
+      { "type": "method", "op": "eq", "value": "POST" }
+    ],
+    "windowSeconds": 60,
+    "requests": 60,
+    "key": "ip",
+    "exceedAction": "log"
+  }
+]

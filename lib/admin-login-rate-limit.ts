@@ -1,57 +1,179 @@
 import "server-only";
 
 import { headers } from "next/headers";
+import { prisma } from "@/lib/db";
+import { requestClientIp } from "@/lib/request-client-ip";
+import {
+  ADMIN_LOGIN_RATE_LIMIT_WINDOW_SECONDS,
+  type AdminLoginAttemptStore,
+  type AdminLoginCounterReceipt,
+  clearSuccessfulAdminLoginAttemptCore,
+  consumeAdminLoginAttemptCore
+} from "@/lib/admin-login-rate-limit-core";
 
-type LoginBucket = {
-  count: number;
-  resetAt: number;
+type CounterRow = {
+  scope: string;
+  keyHash: string;
+  attempts: number;
+  revision: bigint;
+  expiresAtEpochMs: bigint;
 };
 
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_FAILURES = 8;
-const loginBuckets = new Map<string, LoginBucket>();
+const loggedFailures = new Set<string>();
 
-async function requestIp() {
-  const headerList = await headers();
-  return (
-    headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    headerList.get("x-real-ip") ||
-    "unknown"
-  );
+function logFailureOnce(code: "client-ip-unavailable" | "consume-unavailable" | "clear-unavailable") {
+  if (loggedFailures.has(code)) return;
+  loggedFailures.add(code);
+  console.error(`[admin-login-rate-limit] ${code}`);
 }
 
-async function bucketKey(email: string) {
-  const normalizedEmail = email.trim().toLowerCase() || "unknown";
-  return `${await requestIp()}:${normalizedEmail}`;
-}
+const store: AdminLoginAttemptStore = {
+  async consume(input) {
+    const rows = await prisma.$queryRaw<CounterRow[]>`
+      WITH request_clock AS (
+        SELECT clock_timestamp() AS now
+      ), ip_bucket AS (
+        INSERT INTO "AdminLoginRateLimitBucket" AS bucket
+          ("scope", "keyHash", "attempts", "revision", "expiresAt")
+        SELECT
+          ${input.ipScope},
+          ${input.ipKeyHash},
+          1,
+          1::bigint,
+          request_clock.now + make_interval(secs => ${input.windowSeconds}::double precision)
+        FROM request_clock
+        WHERE true
+        ON CONFLICT ("scope", "keyHash") DO UPDATE SET
+          "attempts" = CASE
+            WHEN bucket."expiresAt" <= EXCLUDED."expiresAt" - make_interval(secs => ${input.windowSeconds}::double precision)
+              THEN 1
+            ELSE LEAST(bucket."attempts", ${input.ipLimit}) + 1
+          END,
+          "revision" = bucket."revision" + 1,
+          "expiresAt" = CASE
+            WHEN bucket."expiresAt" <= EXCLUDED."expiresAt" - make_interval(secs => ${input.windowSeconds}::double precision)
+              THEN EXCLUDED."expiresAt"
+            ELSE bucket."expiresAt"
+          END
+        RETURNING "scope", "keyHash", "attempts", "revision", "expiresAt"
+      ), ip_email_bucket AS (
+        INSERT INTO "AdminLoginRateLimitBucket" AS bucket
+          ("scope", "keyHash", "attempts", "revision", "expiresAt")
+        SELECT
+          ${input.ipEmailScope},
+          ${input.ipEmailKeyHash},
+          1,
+          1::bigint,
+          request_clock.now + make_interval(secs => ${input.windowSeconds}::double precision)
+        FROM request_clock
+        CROSS JOIN ip_bucket
+        WHERE ip_bucket."attempts" <= ${input.ipLimit}
+        ON CONFLICT ("scope", "keyHash") DO UPDATE SET
+          "attempts" = CASE
+            WHEN bucket."expiresAt" <= EXCLUDED."expiresAt" - make_interval(secs => ${input.windowSeconds}::double precision)
+              THEN 1
+            ELSE LEAST(bucket."attempts", ${input.ipEmailLimit}) + 1
+          END,
+          "revision" = bucket."revision" + 1,
+          "expiresAt" = CASE
+            WHEN bucket."expiresAt" <= EXCLUDED."expiresAt" - make_interval(secs => ${input.windowSeconds}::double precision)
+              THEN EXCLUDED."expiresAt"
+            ELSE bucket."expiresAt"
+          END
+        RETURNING "scope", "keyHash", "attempts", "revision", "expiresAt"
+      )
+      SELECT
+        "scope",
+        "keyHash",
+        "attempts",
+        "revision",
+        (extract(epoch FROM "expiresAt") * 1000)::bigint AS "expiresAtEpochMs"
+      FROM ip_bucket
+      UNION ALL
+      SELECT
+        "scope",
+        "keyHash",
+        "attempts",
+        "revision",
+        (extract(epoch FROM "expiresAt") * 1000)::bigint AS "expiresAtEpochMs"
+      FROM ip_email_bucket
+    `;
 
-export async function adminLoginRateLimitStatus(email: string) {
-  const key = await bucketKey(email);
-  const now = Date.now();
-  const bucket = loginBuckets.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    loginBuckets.delete(key);
-    return { allowed: true, retryAfterSeconds: 0 };
+    const ip = rows.find((row) => row.scope === input.ipScope && row.keyHash === input.ipKeyHash);
+    const ipEmail = rows.find(
+      (row) => row.scope === input.ipEmailScope && row.keyHash === input.ipEmailKeyHash
+    );
+    if (!ip) throw new Error("The IP login bucket was not consumed.");
+    return { ip, ipEmail };
+  },
+
+  async clearIfUnchanged(receipt) {
+    const deleted = await prisma.$executeRaw`
+      DELETE FROM "AdminLoginRateLimitBucket"
+      WHERE "scope" = ${receipt.scope}
+        AND "keyHash" = ${receipt.keyHash}
+        AND "revision" = ${receipt.revision}
+        AND (extract(epoch FROM "expiresAt") * 1000)::bigint = ${receipt.expiresAtEpochMs}
+    `;
+    return deleted === 1;
+  }
+};
+
+export async function consumeAdminLoginAttempt(email: string) {
+  let clientIp: string;
+  try {
+    clientIp = requestClientIp(await headers());
+  } catch {
+    logFailureOnce("consume-unavailable");
+    return {
+      allowed: false as const,
+      retryAfterSeconds: ADMIN_LOGIN_RATE_LIMIT_WINDOW_SECONDS,
+      reason: "unavailable" as const
+    };
+  }
+  if (clientIp === "unknown" && process.env.NODE_ENV === "production") {
+    logFailureOnce("client-ip-unavailable");
+    return {
+      allowed: false as const,
+      retryAfterSeconds: ADMIN_LOGIN_RATE_LIMIT_WINDOW_SECONDS,
+      reason: "unavailable" as const
+    };
   }
 
-  return {
-    allowed: bucket.count < MAX_FAILURES,
-    retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))
-  };
+  return consumeAdminLoginAttemptCore({
+    store,
+    secret: process.env.SESSION_SECRET || "",
+    clientIp,
+    email,
+    onUnavailable: () => logFailureOnce("consume-unavailable")
+  });
 }
 
-export async function recordAdminLoginFailure(email: string) {
-  const key = await bucketKey(email);
-  const now = Date.now();
-  const bucket = loginBuckets.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    loginBuckets.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return;
+export async function clearSuccessfulAdminLoginAttempt(receipt: AdminLoginCounterReceipt) {
+  try {
+    return await clearSuccessfulAdminLoginAttemptCore({ store, receipt });
+  } catch {
+    logFailureOnce("clear-unavailable");
+    throw new Error("Admin login rate limiter unavailable.");
   }
-
-  bucket.count += 1;
 }
 
-export async function clearAdminLoginFailures(email: string) {
-  loginBuckets.delete(await bucketKey(email));
+export async function deleteExpiredAdminLoginRateLimitBuckets(limit = 1_000) {
+  const requestedLimit = Number.isFinite(limit) ? Math.trunc(limit) : 1_000;
+  const boundedLimit = Math.max(1, Math.min(5_000, requestedLimit));
+  return prisma.$executeRaw`
+    WITH expired AS (
+      SELECT "scope", "keyHash"
+      FROM "AdminLoginRateLimitBucket"
+      WHERE "expiresAt" <= clock_timestamp()
+      ORDER BY "expiresAt"
+      LIMIT ${boundedLimit}
+      FOR UPDATE SKIP LOCKED
+    )
+    DELETE FROM "AdminLoginRateLimitBucket" AS bucket
+    USING expired
+    WHERE bucket."scope" = expired."scope"
+      AND bucket."keyHash" = expired."keyHash"
+      AND bucket."expiresAt" <= clock_timestamp()
+  `;
 }

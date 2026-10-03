@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-
-type Bucket = {
-  count: number;
-  resetAt: number;
-};
+import { isBlockedCrawler } from "@/lib/crawler-policy";
+import { LocalRateLimiter } from "@/lib/local-rate-limit";
+import { requestClientIp } from "@/lib/request-client-ip";
 
 type RateLimitRule = {
   prefix: string;
@@ -12,7 +10,7 @@ type RateLimitRule = {
   windowMs: number;
 };
 
-const rateBuckets = new Map<string, Bucket>();
+const rateLimiter = new LocalRateLimiter();
 
 const blockedScannerPaths = [
   /^\/\.env(?:[./-].*)?$/i,
@@ -27,45 +25,17 @@ const blockedScannerPaths = [
   /^\/cgi-bin(?:\/|$)/i
 ];
 
-const knownSearchBots = [
-  "googlebot",
-  "bingbot",
-  "duckduckbot",
-  "slurp",
-  "yandexbot"
-];
-
-const blockedBotUserAgents = [
-  "bytespider",
-  "ccbot",
-  "claudebot",
-  "gptbot",
-  "perplexitybot",
-  "anthropic-ai",
-  "applebot-extended",
-  "semrushbot",
-  "mj12bot",
-  "petalbot",
-  "ahrefsbot",
-  "dotbot",
-  "sqlmap",
-  "nikto",
-  "masscan",
-  "zgrab",
-  "httrack",
-  "scrapy"
-];
-
 const publicApiRateLimits: RateLimitRule[] = [
   { prefix: "/api/orders", methods: ["POST"], limit: 16, windowMs: 60_000 },
   { prefix: "/api/cart/summary", methods: ["POST"], limit: 120, windowMs: 60_000 },
   { prefix: "/api/shipping/quote", methods: ["POST"], limit: 60, windowMs: 60_000 },
-  { prefix: "/api/address/autocomplete", methods: ["GET"], limit: 80, windowMs: 60_000 },
-  { prefix: "/api/address/place-details", methods: ["GET"], limit: 50, windowMs: 60_000 },
+  { prefix: "/api/address/autocomplete", methods: ["POST"], limit: 80, windowMs: 60_000 },
+  { prefix: "/api/address/place-details", methods: ["POST"], limit: 50, windowMs: 60_000 },
   { prefix: "/api/address/validate", methods: ["POST"], limit: 60, windowMs: 60_000 },
   { prefix: "/api/customers/session", methods: ["POST"], limit: 40, windowMs: 60_000 },
   { prefix: "/api/analytics/product-events", methods: ["POST"], limit: 180, windowMs: 60_000 },
   { prefix: "/api/analytics/page-views", methods: ["POST"], limit: 240, windowMs: 60_000 },
+  { prefix: "/api/analytics/whatsapp-clicks", methods: ["POST"], limit: 120, windowMs: 60_000 },
   { prefix: "/api/admin/search", methods: ["GET"], limit: 80, windowMs: 60_000 },
   { prefix: "/api/admin/notifications", methods: ["GET", "POST"], limit: 120, windowMs: 60_000 }
 ];
@@ -74,46 +44,24 @@ const jsonOnlyApiPaths = [
   "/api/orders",
   "/api/cart/summary",
   "/api/shipping/quote",
+  "/api/address/autocomplete",
+  "/api/address/place-details",
   "/api/address/validate",
   "/api/customers/session",
   "/api/analytics/product-events",
   "/api/analytics/page-views",
+  "/api/analytics/whatsapp-clicks",
   "/api/admin/notifications/read"
 ];
 
-function clientIp(request: NextRequest) {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
-
-function tooManyRequests(key: string, limit: number, windowMs: number) {
-  const now = Date.now();
-  const current = rateBuckets.get(key);
-  if (!current || current.resetAt <= now) {
-    rateBuckets.set(key, { count: 1, resetAt: now + windowMs });
-    return false;
-  }
-  current.count += 1;
-  return current.count > limit;
-}
-
-function isKnownSearchBot(userAgent: string) {
-  const normalized = userAgent.toLowerCase();
-  return knownSearchBots.some((bot) => normalized.includes(bot));
-}
-
-function isBlockedBot(userAgent: string) {
-  const normalized = userAgent.toLowerCase();
-  return blockedBotUserAgents.some((bot) => normalized.includes(bot));
+function atPath(pathname: string, prefix: string) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
 function isProtectedMutation(request: NextRequest) {
   if (["GET", "HEAD", "OPTIONS"].includes(request.method)) return false;
   const { pathname } = request.nextUrl;
-  return pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
+  return atPath(pathname, "/admin") || atPath(pathname, "/api/admin");
 }
 
 function isSameOrigin(request: NextRequest) {
@@ -133,7 +81,7 @@ function isSameOrigin(request: NextRequest) {
 
 function matchingRateLimitRule(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  return publicApiRateLimits.find((rule) => pathname.startsWith(rule.prefix) && rule.methods.includes(request.method));
+  return publicApiRateLimits.find((rule) => atPath(pathname, rule.prefix) && rule.methods.includes(request.method));
 }
 
 function hasOversizedPublicJsonBody(request: NextRequest) {
@@ -143,7 +91,7 @@ function hasOversizedPublicJsonBody(request: NextRequest) {
 
 function hasExpectedJsonContentType(request: NextRequest) {
   const contentType = request.headers.get("content-type") || "";
-  return contentType.toLowerCase().includes("application/json");
+  return contentType.split(";", 1)[0].trim().toLowerCase() === "application/json";
 }
 
 function invalidCatalogQuery(request: NextRequest) {
@@ -167,7 +115,10 @@ export function proxy(request: NextRequest) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  if (userAgent && !isKnownSearchBot(userAgent) && isBlockedBot(userAgent)) {
+  // Every crawler must be able to discover robots.txt. This is not an auth/WAF
+  // bypass: a claimed Googlebot UA never skips scanner, origin or API checks.
+  const readingRobots = pathname === "/robots.txt" && ["GET", "HEAD"].includes(request.method);
+  if (!readingRobots && userAgent && isBlockedCrawler(userAgent)) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
@@ -179,7 +130,7 @@ export function proxy(request: NextRequest) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  if (jsonOnlyApiPaths.some((path) => pathname.startsWith(path)) && request.method === "POST") {
+  if (jsonOnlyApiPaths.some((path) => atPath(pathname, path)) && request.method === "POST") {
     if (!hasExpectedJsonContentType(request)) {
       return NextResponse.json({ error: "Content-Type invalido." }, { status: 415 });
     }
@@ -189,10 +140,17 @@ export function proxy(request: NextRequest) {
   }
 
   const rateLimitRule = matchingRateLimitRule(request);
-  if (rateLimitRule) {
-    const key = `${rateLimitRule.prefix}:${request.method}:${clientIp(request)}`;
-    if (tooManyRequests(key, rateLimitRule.limit, rateLimitRule.windowMs)) {
-      return NextResponse.json({ error: "Muitas requisicoes. Tente novamente em instantes." }, { status: 429 });
+  const ip = rateLimitRule ? requestClientIp(request.headers) : "unknown";
+  // Missing trusted IPs must not put unrelated shoppers in one global bucket.
+  // The edge layer can still count connections; admin login fails closed separately.
+  if (rateLimitRule && ip !== "unknown") {
+    const key = `${rateLimitRule.prefix}:${request.method}:${ip}`;
+    const result = rateLimiter.consume(key, rateLimitRule.limit, rateLimitRule.windowMs);
+    if (!result.allowed) {
+      return NextResponse.json(
+        { error: "Muitas requisicoes. Tente novamente em instantes." },
+        { status: 429, headers: { "Retry-After": String(result.retryAfterSeconds), "Cache-Control": "no-store" } }
+      );
     }
   }
 

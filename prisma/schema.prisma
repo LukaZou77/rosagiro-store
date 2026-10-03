@@ -86,6 +86,17 @@ model AdminUser {
   updatedAt    DateTime @updatedAt
 }
 
+model AdminLoginRateLimitBucket {
+  scope     String
+  keyHash   String   @db.Char(64)
+  attempts  Int      @default(0)
+  revision  BigInt   @default(0)
+  expiresAt DateTime @db.Timestamptz(3)
+
+  @@id([scope, keyHash])
+  @@index([expiresAt])
+}
+
 model Customer {
   id             String   @id @default(cuid())
   name           String
