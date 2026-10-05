@@ -5,25 +5,24 @@ export const defaultMercadoPagoInstallments: MercadoPagoInstallments = 6;
 export const paymentModeValues = ["simulated", "mercado_pago_sandbox", "mercado_pago_live"] as const;
 export type PaymentMode = (typeof paymentModeValues)[number];
 
+export const storefrontPaymentLabel = "Pix e transferência bancária";
+export const storefrontPaymentNote = "Aceitamos Pix e transferência bancária. Antes de pagar, aguarde a confirmação do estoque e dos dados de pagamento pelo atendimento no WhatsApp.";
+
 const basePaymentMethods = [
   {
     value: "PIX",
     label: "Pix",
-    description: "Pagamento seguro pelo Mercado Pago."
-  },
-  {
-    value: "CREDIT_CARD",
-    label: "Cartão de crédito",
-    description: "Pagamento seguro pelo Mercado Pago; a RosaGiro não armazena dados do cartão."
+    description: "Aguarde a confirmação do estoque e dos dados de pagamento pelo atendimento antes de fazer o Pix."
   },
   {
     value: "SIMULATED",
     label: "Confirmar com atendimento",
-    description: "Use quando preferir que a equipe confirme estoque, entrega e condições pelo WhatsApp."
+    description: "Para transferência bancária, solicite os dados de pagamento pelo WhatsApp após a confirmação do estoque."
   }
 ] as const;
 
-export type PaymentMethodValue = (typeof basePaymentMethods)[number]["value"];
+// Retain the legacy type for existing orders, but do not accept it for new checkout requests.
+export type PaymentMethodValue = (typeof basePaymentMethods)[number]["value"] | "CREDIT_CARD";
 
 export function normalizePaymentMode(value: unknown): PaymentMode {
   const cleaned = String(value || "").trim();
@@ -56,25 +55,9 @@ export function normalizeMercadoPagoInstallments(value: unknown, fallback: Merca
   return isMercadoPagoInstallments(parsed) ? parsed : fallback;
 }
 
-export function creditCardInstallmentLabel(maxInstallments: unknown) {
-  return `Cartão de crédito em até ${normalizeMercadoPagoInstallments(maxInstallments)}x`;
-}
-
-export function paymentMethodsForCheckout(
-  maxInstallments: unknown = defaultMercadoPagoInstallments,
-  options: { includeSimulated?: boolean } = {}
-) {
-  const installmentLabel = creditCardInstallmentLabel(maxInstallments);
+export function paymentMethodsForCheckout(options: { includeSimulated?: boolean } = {}) {
   return basePaymentMethods
-    .filter((method) => options.includeSimulated !== false || method.value !== "SIMULATED")
-    .map((method) =>
-      method.value === "CREDIT_CARD"
-        ? {
-            ...method,
-            label: installmentLabel
-          }
-        : method
-    );
+    .filter((method) => options.includeSimulated !== false || method.value !== "SIMULATED");
 }
 
 export const paymentMethods = paymentMethodsForCheckout();

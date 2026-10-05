@@ -96,11 +96,9 @@ function stepIndex(step: CheckoutStep) {
 
 export function CheckoutClient({
   trustSignals,
-  mercadoPagoMaxInstallments,
   includeSimulatedPayment
 }: {
   trustSignals: string[];
-  mercadoPagoMaxInstallments: number;
   includeSimulatedPayment: boolean;
 }) {
   const whatsappPhone = useWhatsAppPhone();
@@ -179,8 +177,8 @@ export function CheckoutClient({
   const packageReady = summary?.packageReady ?? false;
   const recommendations = summary?.recommendations || [];
   const checkoutPaymentMethods = useMemo(
-    () => paymentMethodsForCheckout(mercadoPagoMaxInstallments, { includeSimulated: includeSimulatedPayment }),
-    [includeSimulatedPayment, mercadoPagoMaxInstallments]
+    () => paymentMethodsForCheckout({ includeSimulated: includeSimulatedPayment }),
+    [includeSimulatedPayment]
   );
   const total = subtotal;
   const emptyCheckoutWhatsAppHref = useMemo(() => buildGeneralWhatsAppHref("checkout sem itens", whatsappPhone), [whatsappPhone]);

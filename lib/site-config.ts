@@ -110,7 +110,7 @@ export const siteConfig = {
     trustPoints: [
       `Pedido mínimo ${wholesaleMinimumOrderLabel} e embalagem fechada sinalizados em toda compra`,
       "Pedido multimarcas em um carrinho",
-      "Pix e cartão pelo checkout seguro",
+      "Pix e transferência bancária com confirmação pelo atendimento",
       "Entrega nacional com frete combinado e pago separadamente",
       "WhatsApp para dúvidas de estoque e entrega"
     ],
@@ -240,7 +240,7 @@ export const siteConfig = {
       },
       payment: {
         title: "Pagamento",
-        summary: "Pix, cartão ou confirmação pelo atendimento."
+        summary: "Pix ou transferência bancária com confirmação pelo atendimento."
       }
     },
     validation: {

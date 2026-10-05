@@ -188,7 +188,7 @@ const originalEnv = {
 };
 const originalFetch = globalThis.fetch;
 
-function checkoutPayload(paymentMethod: "PIX" | "CREDIT_CARD" = "CREDIT_CARD") {
+function checkoutPayload(paymentMethod: "PIX" | "CREDIT_CARD" = "PIX") {
   return {
     items: [{ slug: "produto-teste", quantity: 200 }],
     customer: {
@@ -344,11 +344,11 @@ test("PIX creates and redirects a new order using product total only", async () 
   assert.equal(paymentUpdates.length, 1);
 });
 
-test("CREDIT_CARD succeeds end-to-end through the real orders route with product total only", async () => {
+test("PIX succeeds end-to-end through the real orders route with product total only", async () => {
   const request = new Request("https://example.test/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(checkoutPayload("CREDIT_CARD"))
+    body: JSON.stringify(checkoutPayload("PIX"))
   });
 
   const response = await postOrder(request);
@@ -369,12 +369,24 @@ test("CREDIT_CARD succeeds end-to-end through the real orders route with product
   assert.equal(capturedOrderData?.shippingCents, 0);
   assert.equal(capturedOrderData?.totalCents, 50_000);
   assert.equal(capturedPreferenceBodies[0].items[0].unit_price, 500);
-  assert.equal(capturedPreferenceBodies[0].metadata.payment_method_requested, "CREDIT_CARD");
+  assert.equal(capturedPreferenceBodies[0].metadata.payment_method_requested, "PIX");
   assert.deepEqual(capturedPreferenceBodies[0].back_urls, {
     success: "https://example.test/pedido/RG-TEST-1?mp=success",
     pending: "https://example.test/pedido/RG-TEST-1?mp=pending",
     failure: "https://example.test/pedido/RG-TEST-1?mp=failure"
   });
+});
+
+test("credit-card checkout is rejected before creating an order or payment preference", async () => {
+  const response = await postOrder(new Request("https://example.test/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(checkoutPayload("CREDIT_CARD"))
+  }));
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /forma de pagamento válida/);
+  assert.equal(orderCreateCalls, 0);
+  assert.equal(capturedPreferenceBodies.length, 0);
 });
 
 test("orders route fails closed before creating an order when SESSION_SECRET is missing", async (context) => {
@@ -383,7 +395,7 @@ test("orders route fails closed before creating an order when SESSION_SECRET is 
   const request = new Request("https://example.test/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(checkoutPayload("CREDIT_CARD"))
+    body: JSON.stringify(checkoutPayload("PIX"))
   });
 
   const response = await postOrder(request);

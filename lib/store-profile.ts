@@ -4,7 +4,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { STORE_PROFILE_CACHE_TAG } from "@/lib/cache-tags";
 import { prisma } from "@/lib/db";
-import { defaultMercadoPagoInstallments, normalizeMercadoPagoInstallments } from "@/lib/payments";
+import { defaultMercadoPagoInstallments, normalizeMercadoPagoInstallments, storefrontPaymentLabel, storefrontPaymentNote } from "@/lib/payments";
 import { siteConfig } from "@/lib/site-config";
 import type { StoreProfileView } from "@/lib/store-profile-public";
 
@@ -62,7 +62,7 @@ export const defaultStoreProfile = {
   tiktokUrl: "",
   pickupNote: "Retirada local mediante confirmação pelo atendimento.",
   shippingNote: "Enviamos para todo o Brasil com cotação por CEP. Algumas regiões podem exigir confirmação de cobertura, prazo, seguro ou taxa adicional pelo WhatsApp.",
-  paymentNote: "Pix, cartão e checkout com atendimento estão disponíveis conforme a modalidade escolhida.",
+  paymentNote: storefrontPaymentNote,
   pixPaymentEnabled: false,
   pixAccountType: "TEMPORARY_PERSONAL",
   pixRecipientName: "",
@@ -124,6 +124,7 @@ export function publicLegalName(profile: StoreProfileView) {
 function cleanPublicSignal(signal: string) {
   const normalized = signal.trim();
   if (!normalized) return "";
+  if (/cart[aã]o|cart[oõ]es|cr[eé]dito|parcelamento/i.test(normalized)) return storefrontPaymentLabel;
   if (/preparacao|prepara\u00e7\u00e3o|teste|simulad/i.test(normalized)) return "";
   if (/cnpj em revisao|cnpj em revisão/i.test(normalized)) return "Dados da loja";
   if (/pedido minimo|pedido mínimo|compra minima|compra mínima/i.test(normalized)) {
@@ -147,8 +148,8 @@ export function storeTrustSignals(profile: StoreProfileView, limit = 4) {
 }
 
 export function publicStoreProfileNotes(profile: StoreProfileView) {
-  const paymentNote = /simulad|teste|preparacao|prepara\u00e7\u00e3o/i.test(profile.paymentNote)
-    ? "Pix, cartão e confirmação pelo atendimento estão disponíveis conforme a modalidade escolhida no checkout."
+  const paymentNote = /simulad|teste|preparacao|prepara\u00e7\u00e3o|cart[aã]o|cart[oõ]es|cr[eé]dito|parcelamento/i.test(profile.paymentNote)
+    ? storefrontPaymentNote
     : profile.paymentNote;
   const launchNote = /simulad|teste|preparacao|prepara\u00e7\u00e3o/i.test(profile.launchNote)
     ? "Confira os dados da loja, canais de atendimento e políticas antes de finalizar sua compra."

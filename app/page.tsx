@@ -8,6 +8,7 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getFeaturedBrands, getHomeProducts, getProductCount } from "@/lib/catalog";
 import { getPublishedGuideArticles } from "@/lib/guide-articles";
 import { money } from "@/lib/money";
+import { storefrontPaymentLabel } from "@/lib/payments";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import { getStoreProfile } from "@/lib/store-profile";
 import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
@@ -42,7 +43,7 @@ export default async function HomePage() {
   const homeTrustSignals = [
     "Atendimento pelo WhatsApp",
     "Entrega para todo o Brasil",
-    "Pix e cartão via Mercado Pago"
+    storefrontPaymentLabel
   ];
   const stats = [
     { value: `${productCount}+`, label: siteConfig.homePromotions.stats.productsLabel },

@@ -142,7 +142,7 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
     throw new OrderError("Preencha todos os dados de endereço.");
   }
   if (paymentMethod === "SIMULATED" && !paymentModeAllowsSimulated(process.env.PAYMENT_MODE)) {
-    throw new OrderError("Pagamento temporariamente indisponível. Escolha Pix ou cartão pelo Mercado Pago.", 503);
+    throw new OrderError("Pagamento temporariamente indisponível. Escolha Pix ou fale com o atendimento pelo WhatsApp.", 503);
   }
 
   return { items, customer, address, freightSeparateAccepted: true, paymentMethod, attribution };

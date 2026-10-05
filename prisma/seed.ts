@@ -4,6 +4,7 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import type { Prisma } from "../src/generated/prisma/client";
 import { BODY_AREA_CATEGORIES, LEGACY_CATEGORY_SLUGS, resolveBodyAreaCategorySlug } from "../lib/category-taxonomy";
 import { infoPages } from "../lib/site-config";
+import { storefrontPaymentNote } from "../lib/payments";
 import { INTERNAL_AVAILABLE_STOCK_QUANTITY } from "../lib/product-stock";
 import { normalizeSubcategoryText, productSubcategorySeeds, subcategorySlug } from "../lib/product-subcategories";
 
@@ -97,7 +98,7 @@ const storeProfile = {
   tiktokUrl: "",
   pickupNote: "Retirada local mediante confirmação pelo atendimento.",
   shippingNote: "Enviamos para todo o Brasil com cotação por CEP. Algumas regiões podem exigir confirmação de cobertura, prazo, seguro ou taxa adicional pelo WhatsApp.",
-  paymentNote: "Pix, cartão e pagamento com atendimento estão preparados para a fase de validação.",
+  paymentNote: storefrontPaymentNote,
   pixPaymentEnabled: false,
   pixAccountType: "TEMPORARY_PERSONAL",
   pixRecipientName: "",
@@ -470,7 +471,7 @@ const legacyStoreProfileCopy = {
   businessHours: "Segunda a sexta, 9h as 18h",
   pickupNote: "Retirada local mediante confirmacao pelo atendimento.",
   shippingNote: "Enviamos para todo o Brasil com cotação por CEP. Algumas regiões podem exigir confirmação de cobertura, prazo, seguro ou taxa adicional pelo WhatsApp.",
-  paymentNote: "Pix, cartao e pagamento simulado estao preparados para a fase de testes.",
+  paymentNote: storefrontPaymentNote,
   exchangeNote: "Trocas e devolucoes seguem politica propria antes da publicacao oficial.",
   launchNote: "Ambiente em preparacao: pedidos e pagamentos desta versao sao simulados."
 } as const;
