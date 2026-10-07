@@ -18,7 +18,7 @@ import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import { getCategories, getProduct, getProductCanonicalSlug, getRecommendationProducts, getRelatedProducts } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
-import { productDetailGalleryState, productDetailServiceCards } from "@/lib/product-detail-standard";
+import { productDetailGalleryState, productDetailPurchaseNotice, productDetailServiceCards } from "@/lib/product-detail-standard";
 import { productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { orderProductDetailImages } from "@/lib/product-package-images";
 import {
@@ -126,6 +126,7 @@ export default async function ProductPage({ params }: PageProps) {
   const wholesaleLines = productWholesaleLines(product);
   const packagePieces = productWholesalePackagePieces(product);
   const packagePriceCents = productWholesalePackagePriceCents(product);
+  const purchaseNotice = productDetailPurchaseNotice({ consultationOnly, packagePieces, packagePriceCents });
   const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces);
   const showBrand = shouldDisplayProductBrand(product.brand.name);
   const priceLabel = consultationOnly
@@ -238,18 +239,13 @@ export default async function ProductPage({ params }: PageProps) {
                 <strong>{siteConfig.productConversion.freightText}</strong>
               </div>
             </div>
-            <p>{siteConfig.productConversion.detailPanelNote}</p>
-            {consultationOnly ? (
-              <div className="fixed-package-note">
-                <strong>Condição de compra sob consulta</strong>
-                <span>Confirme estoque, unidade de venda e composição da embalagem pelo WhatsApp antes do pedido.</span>
-              </div>
-            ) : (
-              <div className="fixed-package-note">
-                <strong>Embalagem fechada do fabricante</strong>
-                <span>As cores e variações vêm na composição original da embalagem. Não é possível escolher cores nem fracionar unidades.</span>
-              </div>
-            )}
+            <p>{packagePieces && packagePriceCents
+              ? "Venda por embalagem fechada. O preço por unidade é uma referência; cores e variações seguem a composição original da embalagem."
+              : siteConfig.productConversion.detailPanelNote}</p>
+            <div className="fixed-package-note">
+              <strong>{purchaseNotice.title}</strong>
+              <span>{purchaseNotice.description}</span>
+            </div>
           </div>
           {editorialDescription ? (
             <section className={buyingStyles.editorialDescription} aria-labelledby="product-description-title">

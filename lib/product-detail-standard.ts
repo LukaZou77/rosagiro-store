@@ -15,6 +15,37 @@ export function productDetailGalleryState(gallery: string[]) {
   };
 }
 
+export function productDetailPurchaseNotice({
+  consultationOnly,
+  packagePieces,
+  packagePriceCents
+}: {
+  consultationOnly: boolean;
+  packagePieces: number | null;
+  packagePriceCents: number | null;
+}) {
+  if (!consultationOnly) {
+    return {
+      title: "Embalagem fechada do fabricante",
+      description: "As cores e variações vêm na composição original da embalagem. Não é possível escolher cores nem fracionar unidades."
+    };
+  }
+
+  if (!packagePieces || packagePieces <= 0) {
+    return {
+      title: "Condição de compra sob consulta",
+      description: "Confirme estoque, unidade de venda e composição da embalagem pelo WhatsApp antes do pedido."
+    };
+  }
+
+  return {
+    title: `Embalagem fechada com ${packagePieces} ${packagePieces === 1 ? "unidade" : "unidades"}`,
+    description: packagePriceCents && packagePriceCents > 0
+      ? "Confirme a disponibilidade em estoque pelo WhatsApp antes do pedido."
+      : "Confirme o valor total da embalagem e a disponibilidade em estoque pelo WhatsApp antes do pedido."
+  };
+}
+
 export function productDetailServiceCards(): ProductDetailServiceCard[] {
   return [
     {
