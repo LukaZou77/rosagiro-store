@@ -47,6 +47,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
   const activeImage = gallery[activeIndex] || "";
   const activeIsPackageImage = isProductPackageImage(activeImage);
   const activeIsSourceBoardImage = isSourceBoardImage(activeImage);
+  const activeIsBoardImage = activeIsPackageImage || activeIsSourceBoardImage;
   const hasCarousel = gallery.length > 1;
 
   const resetZoomTracking = useCallback(() => {
@@ -212,7 +213,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
       resetZoomTracking();
       return;
     }
-    if (isLightboxOpen || activeIsSourceBoardImage) return;
+    if (isLightboxOpen || activeIsBoardImage) return;
     measureZoomBounds();
   }
 
@@ -222,7 +223,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
       return;
     }
     if (isLightboxOpen) return;
-    if (activeIsSourceBoardImage) return;
+    if (activeIsBoardImage) return;
     const bounds = zoomBoundsRef.current || measureZoomBounds();
     if (!bounds || !hoverZoomEnabledRef.current) return;
 
@@ -271,22 +272,17 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
                   : `Ver imagem ${index + 1} de ${productName}`
               }
               aria-pressed={index === activeIndex}
-              className={index === activeIndex ? "active" : ""}
+              className={`${index === activeIndex ? "active" : ""} ${isProductPackageImage(image) || isSourceBoardImage(image) ? "board-thumb" : ""}`}
               key={image}
               onClick={() => selectImage(index)}
               type="button"
             >
               <OptimizedProductImage src={image} alt="" width={72} height={72} sizes="72px" loading="lazy" />
-              {isProductPackageImage(image) ? (
-                <span className="product-gallery-thumb-package" aria-hidden="true">
-                  <PackageCheck size={13} strokeWidth={2.2} />
-                </span>
-              ) : null}
             </button>
           ))}
         </div>
       ) : null}
-      <div className="product-gallery-viewer">
+      <div className={`product-gallery-viewer ${activeIsBoardImage ? "board-viewer" : ""}`}>
         {hasCarousel ? (
           <button
             aria-label="Imagem anterior"
@@ -300,7 +296,7 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
         <div
           aria-label={`Ver imagem ampliada de ${productName}`}
           aria-live="polite"
-          className={`product-gallery-main ${isZooming ? "zooming" : ""} ${activeIsSourceBoardImage ? "source-board-main" : ""}`}
+          className={`product-gallery-main ${isZooming && !activeIsBoardImage ? "zooming" : ""} ${activeIsBoardImage ? "source-board-main" : ""}`}
           onClick={openLightbox}
           onKeyDown={handleMainKeyDown}
           onPointerEnter={handlePointerEnter}
@@ -319,19 +315,22 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
             sizes="(min-width: 960px) 48vw, 100vw"
             src={activeImage}
           />
-          <span className="product-gallery-zoom-hint">Ver maior</span>
-          {activeIsPackageImage ? (
-            <span className="product-gallery-package-badge">
-              <PackageCheck size={15} strokeWidth={2.2} aria-hidden="true" />
-              Embalagem fechada
-            </span>
-          ) : null}
-          {hasCarousel ? <span className="product-gallery-count">{activeIndex + 1}/{gallery.length}</span> : null}
+          {!activeIsBoardImage ? <span className="product-gallery-zoom-hint">Ver maior</span> : null}
+          {hasCarousel && !activeIsBoardImage ? <span className="product-gallery-count">{activeIndex + 1}/{gallery.length}</span> : null}
         </div>
-        {activeIsSourceBoardImage ? (
-          <a className="product-board-original-link" href={activeImage} rel="noreferrer" target="_blank">
-            Abrir imagem HD original
-          </a>
+        {activeIsBoardImage ? (
+          <div className="product-gallery-board-meta">
+            {activeIsPackageImage ? (
+              <span className="product-gallery-package-badge">
+                <PackageCheck size={15} strokeWidth={2.2} aria-hidden="true" />
+                Embalagem fechada
+              </span>
+            ) : null}
+            {hasCarousel ? <span className="product-gallery-count">{activeIndex + 1}/{gallery.length}</span> : null}
+            <a className="product-board-original-link" href={activeImage} rel="noreferrer" target="_blank">
+              Abrir imagem HD original
+            </a>
+          </div>
         ) : null}
         {hasCarousel ? (
           <button
@@ -352,13 +351,13 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
           onClick={closeLightbox}
           role="dialog"
         >
-          <div className="product-lightbox-panel" onClick={(event) => event.stopPropagation()}>
+          <div className={`product-lightbox-panel ${activeIsBoardImage ? "board-lightbox" : ""} ${hasCarousel ? "has-carousel" : ""}`} onClick={(event) => event.stopPropagation()}>
             <div className="product-lightbox-header">
               <div>
                 <strong>{productName}</strong>
                 {activeIsPackageImage ? <span>Embalagem fechada do fabricante</span> : null}
                 {hasCarousel ? <span>Imagem {activeIndex + 1} de {gallery.length}</span> : null}
-                {activeIsSourceBoardImage ? (
+                {activeIsBoardImage ? (
                   <a className="product-board-original-link" href={activeImage} rel="noreferrer" target="_blank">
                     Abrir imagem HD original
                   </a>
@@ -415,17 +414,12 @@ function ProductGalleryCarousel({ gallery, productName }: ProductGalleryCarousel
                         : `Ver imagem ampliada ${index + 1} de ${productName}`
                     }
                     aria-pressed={index === activeIndex}
-                    className={index === activeIndex ? "active" : ""}
+                    className={`${index === activeIndex ? "active" : ""} ${isProductPackageImage(image) || isSourceBoardImage(image) ? "board-thumb" : ""}`}
                     key={image}
                     onClick={() => selectImage(index)}
                     type="button"
                   >
                     <OptimizedProductImage src={image} alt="" width={72} height={72} sizes="72px" loading="lazy" />
-                    {isProductPackageImage(image) ? (
-                      <span className="product-gallery-thumb-package" aria-hidden="true">
-                        <PackageCheck size={13} strokeWidth={2.2} />
-                      </span>
-                    ) : null}
                   </button>
                 ))}
               </div>

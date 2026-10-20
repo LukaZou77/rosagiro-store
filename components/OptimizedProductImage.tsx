@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { isProductPackageImage } from "@/lib/product-package-images";
 
 type OptimizedProductImageProps = {
   src?: string | null;
@@ -61,7 +62,11 @@ export function OptimizedProductImage({
 }: OptimizedProductImageProps) {
   if (!src) return null;
 
-  const imageClassName = [className, isSourceBoardImage(src) ? "source-board-image" : ""].filter(Boolean).join(" ") || undefined;
+  const imageClassName = [
+    className,
+    isSourceBoardImage(src) ? "source-board-image" : "",
+    isProductPackageImage(src) ? "package-board-image" : ""
+  ].filter(Boolean).join(" ") || undefined;
 
   if (!canOptimizeImage(src)) {
     return (
