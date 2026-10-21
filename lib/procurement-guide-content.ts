@@ -1,12 +1,11 @@
 import type { GuideArticleInput } from "@/lib/guide-article-input";
+import { procurementGuideCovers } from "@/lib/guide-covers";
 
 export type ProcurementGuideArticle = Omit<GuideArticleInput, "reviewedAt"> & {
   reviewedAt: string;
 };
 
 const sharedEditorialDetails = {
-  coverImage: "/assets/rosagiro-atacado-hero.webp",
-  coverImageAlt: "Caixas e produtos de beleza organizados em prateleiras de estoque.",
   authorName: "Equipe RosaGiro",
   reviewerName: "RosaGiro",
   reviewedAt: "2026-09-26",
@@ -19,6 +18,7 @@ export const procurementGuideArticles: readonly ProcurementGuideArticle[] = [
   {
     ...sharedEditorialDetails,
     slug: "como-montar-pedido-misto-atacado",
+    ...procurementGuideCovers["como-montar-pedido-misto-atacado"],
     title: "Como montar um pedido misto no atacado",
     excerpt: "Combine produtos e marcas no mesmo carrinho para alcançar o pedido mínimo de R$ 500 em mercadorias.",
     body:
@@ -28,6 +28,7 @@ export const procurementGuideArticles: readonly ProcurementGuideArticle[] = [
   {
     ...sharedEditorialDetails,
     slug: "entenda-caixa-fechada-caixa-master-e-minimo-por-item",
+    ...procurementGuideCovers["entenda-caixa-fechada-caixa-master-e-minimo-por-item"],
     title: "Caixa fechada, caixa master e mínimo por item: como conferir",
     excerpt: "Entenda como conferir a embalagem de venda e por que caixa fechada e caixa master não têm uma quantidade universal.",
     body:
@@ -37,6 +38,7 @@ export const procurementGuideArticles: readonly ProcurementGuideArticle[] = [
   {
     ...sharedEditorialDetails,
     slug: "como-funciona-frete-e-retirada-no-atacado",
+    ...procurementGuideCovers["como-funciona-frete-e-retirada-no-atacado"],
     title: "Frete separado e retirada no atacado: como funciona",
     excerpt: "Veja como o frete é cotado e pago após sua aprovação e como agendar retirada na LA BELLA.",
     body:

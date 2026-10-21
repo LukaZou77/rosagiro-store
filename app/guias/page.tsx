@@ -48,7 +48,7 @@ export default async function GuidesPage() {
                       src={article.coverImage}
                       alt={article.coverImageAlt || article.title}
                       fill
-                      sizes="(min-width: 960px) 30vw, 90vw"
+                      sizes="(min-width: 1440px) 416px, (min-width: 680px) 45vw, 104px"
                     />
                   ) : (
                     <span className="guide-card-placeholder">RG</span>

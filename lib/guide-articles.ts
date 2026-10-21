@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { withGuideCover } from "@/lib/guide-covers";
 import type { GuideArticle } from "@/src/generated/prisma/client";
 
 export {
@@ -24,7 +25,7 @@ export function guideBodyParagraphs(body: string) {
 
 export async function getPublishedGuideArticles(options: { take?: number } = {}) {
   try {
-    return await prisma.guideArticle.findMany({
+    const articles = await prisma.guideArticle.findMany({
       where: { active: true },
       orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }, { updatedAt: "desc" }],
       take: options.take,
@@ -42,6 +43,7 @@ export async function getPublishedGuideArticles(options: { take?: number } = {})
         updatedAt: true
       }
     });
+    return articles.map(withGuideCover);
   } catch {
     return [];
   }
@@ -49,9 +51,10 @@ export async function getPublishedGuideArticles(options: { take?: number } = {})
 
 export async function getGuideArticleBySlug(slug: string) {
   try {
-    return await prisma.guideArticle.findFirst({
+    const article = await prisma.guideArticle.findFirst({
       where: { slug, active: true }
     });
+    return article ? withGuideCover(article) : null;
   } catch {
     return null;
   }

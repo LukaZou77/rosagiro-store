@@ -224,9 +224,9 @@ export default async function HomePage() {
                   {article.coverImage ? (
                     <OptimizedProductImage
                       src={article.coverImage}
-                      alt={article.title}
+                      alt={article.coverImageAlt || article.title}
                       fill
-                      sizes="(min-width: 960px) 28vw, 90vw"
+                      sizes="(min-width: 1440px) 416px, (min-width: 680px) 30vw, 104px"
                     />
                   ) : (
                     <span className="guide-card-placeholder">RG</span>

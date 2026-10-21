@@ -84,7 +84,7 @@ export default async function GuideArticlePage({ params }: PageProps) {
               alt={article.coverImageAlt || article.title}
               fill
               priority
-              sizes="(min-width: 960px) 74vw, 92vw"
+              sizes="(min-width: 960px) 820px, 92vw"
             />
           </div>
         ) : null}

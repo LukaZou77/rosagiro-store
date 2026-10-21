@@ -10,7 +10,7 @@ test("procurement guides identify RosaGiro as the editorially responsible organi
   for (const guide of procurementGuideArticles) {
     const validated = validateGuideArticleInput(guide);
     assert.equal(validated.active, true);
-    assert.equal(validated.coverImage, "/assets/rosagiro-atacado-hero.webp");
+    assert.ok(validated.coverImage.startsWith("/assets/"));
     assert.ok(validated.body.includes("\n\n"));
     assert.equal(validated.reviewerName, "RosaGiro");
     assert.equal(validated.reviewedAt?.toISOString(), "2026-09-26T12:00:00.000Z");
