@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { confirmedPaymentWhere } from "@/lib/order-fulfillment";
 
 function csvCell(value: string | number | null | undefined) {
   const text = value === null || value === undefined ? "" : String(value);
@@ -25,9 +26,9 @@ export async function GET() {
   const conversionName = process.env.GOOGLE_ADS_OFFLINE_CONVERSION_NAME || "Pedido pago RosaGiro";
   const orders = await prisma.order.findMany({
     where: {
-      status: "PAID",
+      status: { in: ["PAID", "FULFILLING", "SHIPPED"] },
       gclid: { not: null },
-      payment: { paidAt: { not: null } }
+      payment: confirmedPaymentWhere
     },
     include: { payment: true },
     orderBy: { createdAt: "desc" }
@@ -35,18 +36,18 @@ export async function GET() {
 
   const lines = [
     ["Google Click ID", "Conversion Name", "Conversion Time", "Conversion Value", "Conversion Currency", "Order ID"].map(csvCell).join(","),
-    ...orders.map((order) =>
-      [
+    ...orders.flatMap((order) => {
+      if (!order.payment?.paidAt) return [];
+      const cells = [
         order.gclid,
         conversionName,
-        brazilConversionTime(order.payment?.paidAt || order.updatedAt),
+        brazilConversionTime(order.payment.paidAt),
         (order.totalCents / 100).toFixed(2),
         "BRL",
         order.orderNumber
-      ]
-        .map(csvCell)
-        .join(",")
-    )
+      ];
+      return [cells.map(csvCell).join(",")];
+    })
   ];
 
   return new Response(`${lines.join("\n")}\n`, {

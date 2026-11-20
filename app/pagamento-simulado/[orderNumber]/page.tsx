@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PixPaymentInfo } from "@/components/PixPaymentInfo";
 import { SimulatePaymentButton } from "@/components/SimulatePaymentButton";
 import { StoreShell } from "@/components/StoreShell";
@@ -9,7 +9,13 @@ import { getCategories } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
 import { hasOrderAccess } from "@/lib/order-access";
-import { paymentMethodLabel } from "@/lib/payments";
+import {
+  canConfirmSimulatedPayment,
+  isPaymentConfirmed,
+  paymentMethodLabel,
+  simulatedPaymentConfirmedStatus,
+  simulatedPaymentEnabled
+} from "@/lib/payments";
 import { noIndexMetadata } from "@/lib/seo";
 import { getPublicPixPaymentAccount, getStoreProfile, pixPaymentAccountFromPayload } from "@/lib/store-profile";
 import { buildOrderPaymentWhatsAppHref, buildWhatsAppBaseHref } from "@/lib/whatsapp";
@@ -54,26 +60,46 @@ export default async function SimulatedPaymentPage({ params }: PageProps) {
   ]);
 
   if (!order) notFound();
+  if (order.payment?.provider === "MERCADO_PAGO") redirect(`/pedido/${encodeURIComponent(orderNumber)}`);
+  const paymentConfirmed = isPaymentConfirmed(order.payment?.status, order.payment?.paidAt, order.payment?.providerStatus);
+  const testConfirmed = order.payment?.providerStatus === simulatedPaymentConfirmedStatus;
+  const canceled = order.status === "CANCELED";
+  const showSimulation = !canceled && !testConfirmed && simulatedPaymentEnabled() && canConfirmSimulatedPayment(order.payment);
   const pixAccount =
     order.payment?.method === "PIX"
       ? pixPaymentAccountFromPayload(order.payment.providerPayload) || getPublicPixPaymentAccount(storeProfile)
       : null;
-  const paymentWhatsAppHref = buildOrderPaymentWhatsAppHref(order.orderNumber, order.totalCents, storeProfile.whatsapp);
+  const pix = order.payment?.method === "PIX";
+  const paymentWhatsAppHref = buildOrderPaymentWhatsAppHref(
+    order.orderNumber,
+    order.totalCents,
+    storeProfile.whatsapp,
+    pixAccount ? "proof" : pix ? "pix_details" : "transfer_details"
+  );
 
   return (
     <StoreShell categories={categories}>
       <section className="confirmation">
         <p className="eyebrow">Confirmação do pedido</p>
-        <h1>Confirme para reservar os itens.</h1>
-        <p>Ao confirmar, o pedido será marcado como pago e o estoque será reservado para acompanhamento.</p>
+        <h1>{canceled ? "Pedido cancelado." : paymentConfirmed ? "Pagamento confirmado." : testConfirmed ? "Pagamento de teste concluído." : "Pedido recebido."}</h1>
+        {showSimulation ? <p>Use este botão para simular o pagamento no ambiente de teste.</p> : null}
+        {!canceled && !paymentConfirmed && !testConfirmed && !showSimulation ? (
+          <p>Aguarde a confirmação do estoque e dos dados de pagamento pelo atendimento no WhatsApp.</p>
+        ) : null}
         <div className="confirmation-card">
           <span>Pedido</span>
           <strong>{order.orderNumber}</strong>
           <small>
-            {paymentMethodLabel(order.payment?.method)} / Total: {money(order.totalCents)}
+            {showSimulation || testConfirmed ? "Pagamento de teste" : paymentMethodLabel(order.payment?.method)} / Total: {money(order.totalCents)}
           </small>
         </div>
-        {pixAccount && order.status !== "PAID" ? (
+        {canceled || paymentConfirmed || testConfirmed ? (
+          <Link className="button primary" href={`/pedido/${order.orderNumber}`}>
+            Acompanhar pedido
+          </Link>
+        ) : showSimulation ? (
+          <SimulatePaymentButton orderNumber={order.orderNumber} />
+        ) : pixAccount ? (
           <>
             <PixPaymentInfo account={pixAccount} orderNumber={order.orderNumber} totalCents={order.totalCents} />
             <WhatsAppLink className="button whatsapp" href={paymentWhatsAppHref}>
@@ -83,7 +109,7 @@ export default async function SimulatedPaymentPage({ params }: PageProps) {
               Acompanhar pedido
             </Link>
           </>
-        ) : order.payment?.method === "PIX" && order.status !== "PAID" ? (
+        ) : pix ? (
           <div className="address-match-card needs-review">
             <span>Pix com atendimento</span>
             <strong>Os dados Pix serão confirmados pelo WhatsApp.</strong>
@@ -92,12 +118,15 @@ export default async function SimulatedPaymentPage({ params }: PageProps) {
               Falar no WhatsApp
             </WhatsAppLink>
           </div>
-        ) : order.status === "PAID" ? (
-          <Link className="button primary" href={`/pedido/${order.orderNumber}`}>
-            Ver pedido confirmado
-          </Link>
         ) : (
-          <SimulatePaymentButton orderNumber={order.orderNumber} />
+          <>
+            <WhatsAppLink className="button whatsapp" href={paymentWhatsAppHref}>
+              Combinar pagamento pelo WhatsApp
+            </WhatsAppLink>
+            <Link className="button secondary" href={`/pedido/${order.orderNumber}`}>
+              Acompanhar pedido
+            </Link>
+          </>
         )}
       </section>
     </StoreShell>

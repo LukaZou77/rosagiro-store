@@ -8,11 +8,20 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories } from "@/lib/catalog";
 import { prisma } from "@/lib/db";
 import { isSeparateFreight, separateFreightNotice } from "@/lib/freight-policy";
+import { mercadoPagoPaymentAwaiting, savedMercadoPagoCheckoutUrl } from "@/lib/mercado-pago-checkout-url";
 import { money } from "@/lib/money";
 import { hasOrderAccess } from "@/lib/order-access";
-import { mercadoPagoReturnMessage, paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
+import {
+  isPaymentConfirmed,
+  mercadoPagoReturnMessage,
+  paymentMethodLabel,
+  paymentModeForEnvironment,
+  paymentProviderLabel,
+  paymentStatusLabel,
+  simulatedPaymentConfirmedStatus,
+  simulatedPaymentPendingStatus
+} from "@/lib/payments";
 import { noIndexMetadata } from "@/lib/seo";
-import { isPaymentConfirmed } from "@/lib/purchase-analytics";
 import { getPublicPixPaymentAccount, getStoreProfile, pixPaymentAccountFromPayload } from "@/lib/store-profile";
 import { buildOrderPaymentWhatsAppHref, buildWhatsAppBaseHref } from "@/lib/whatsapp";
 
@@ -66,7 +75,14 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
   ]);
 
   if (!order) notFound();
+  const paymentConfirmed = isPaymentConfirmed(order.payment?.status, order.payment?.paidAt, order.payment?.providerStatus);
+  const simulated = order.payment?.providerStatus === simulatedPaymentConfirmedStatus;
+  const canceled = order.status === "CANCELED";
+  const displayStatus = !paymentConfirmed && !canceled ? "PENDING_PAYMENT" : order.status;
+  const showTracker = !simulated && order.payment?.providerStatus !== simulatedPaymentPendingStatus;
   const mercadoPagoMessage = mercadoPagoReturnMessage(query.mp);
+  const awaitingMercadoPago = mercadoPagoPaymentAwaiting(order);
+  const canResumeMercadoPago = Boolean(savedMercadoPagoCheckoutUrl(order, paymentModeForEnvironment()));
   const separateFreight = isSeparateFreight(order);
   const pixAccount =
     order.payment?.method === "PIX"
@@ -76,10 +92,10 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
 
   return (
     <StoreShell categories={categories}>
-        <OrderConversionTracker
+        {showTracker ? <OrderConversionTracker
           orderNumber={order.orderNumber}
           orderStatus={order.status}
-          paymentConfirmed={isPaymentConfirmed(order.payment?.status, order.payment?.paidAt)}
+          paymentConfirmed={paymentConfirmed}
           totalCents={order.totalCents}
           items={order.items.map((item) => ({
             productSlug: item.productSlug,
@@ -89,18 +105,18 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
             unitPriceCents: item.unitPriceCents,
             quantity: item.quantity
           }))}
-        />
+        /> : null}
       <section className="confirmation order-confirmation">
         <p className="eyebrow">Pedido RosaGiro</p>
-        <h1>{order.status === "SHIPPED" ? "Pedido enviado." : order.status === "FULFILLING" ? "Pedido em separação." : order.status === "PAID" ? "Compra confirmada." : order.status === "CANCELED" ? "Pedido cancelado." : "Pedido criado."}</h1>
+        <h1>{displayStatus === "SHIPPED" ? "Pedido enviado." : displayStatus === "FULFILLING" ? "Pedido em separação." : displayStatus === "PAID" ? "Compra confirmada." : canceled ? "Pedido cancelado." : simulated ? "Pagamento de teste concluído." : "Pedido criado."}</h1>
         <p>{order.customerName}, acompanhe aqui o status do pedido e confira os dados antes da entrega.</p>
         {mercadoPagoMessage ? <p className="payment-return-note">{mercadoPagoMessage}</p> : null}
         <div className="confirmation-card">
           <span>Número do pedido</span>
           <strong>{order.orderNumber}</strong>
           <small>
-            Status: {order.status.replace("_", " ")} / {paymentProviderLabel(order.payment?.provider)} -{" "}
-            {paymentMethodLabel(order.payment?.method)} / {paymentStatusLabel(order.payment?.status)} / {separateFreight ? "Valor dos produtos" : "Total"}: {money(order.totalCents)}
+            {simulated ? "Pagamento de teste" : `${paymentProviderLabel(order.payment?.provider)} - ${paymentMethodLabel(order.payment?.method)}`} /{" "}
+            {simulated ? "Simulação concluída" : paymentStatusLabel(paymentConfirmed ? "PAID" : order.payment?.status === "FAILED" ? "FAILED" : "PENDING")} / {separateFreight ? "Valor dos produtos" : "Total"}: {money(order.totalCents)}
           </small>
         </div>
         {order.trackingCode ? (
@@ -117,14 +133,26 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
             <small>{separateFreightNotice}</small>
           </div>
         ) : null}
-        {order.payment?.provider === "MERCADO_PAGO" ? (
+        {awaitingMercadoPago ? (
           <div className="address-match-card needs-review">
             <span>Mercado Pago</span>
-            <strong>{order.payment.providerStatus || "Aguardando retorno"}</strong>
-            <small>{order.payment.syncError || "A confirmação do provedor atualizará o pedido automaticamente."}</small>
+            <strong>{canResumeMercadoPago ? "Pagamento disponível" : "Pagamento a conferir"}</strong>
+            <small>Se você já tentou pagar, confira se houve cobrança antes de tentar novamente.</small>
+            {canResumeMercadoPago ? (
+              <a className="button primary" href={`/pedido/${encodeURIComponent(order.orderNumber)}/pagamento`}>
+                Continuar pagamento no Mercado Pago
+              </a>
+            ) : (
+              <WhatsAppLink
+                className="button whatsapp"
+                href={buildOrderPaymentWhatsAppHref(order.orderNumber, order.totalCents, storeProfile.whatsapp, "payment_review")}
+              >
+                Conferir pagamento pelo WhatsApp
+              </WhatsAppLink>
+            )}
           </div>
         ) : null}
-        {pixAccount && order.status === "PENDING_PAYMENT" && !isPaymentConfirmed(order.payment?.status, order.payment?.paidAt) ? (
+        {pixAccount && !canceled && !paymentConfirmed && order.payment?.provider !== "MERCADO_PAGO" ? (
           <>
             <PixPaymentInfo account={pixAccount} orderNumber={order.orderNumber} totalCents={order.totalCents} />
             <WhatsAppLink className="button whatsapp" href={paymentWhatsAppHref}>

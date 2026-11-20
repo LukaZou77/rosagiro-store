@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { simulatedPaymentConfirmedStatus } from "./payments";
 import {
   PURCHASE_DEDUPE_MAX_ENTRIES,
   PURCHASE_DEDUPE_TTL_MS,
@@ -15,9 +16,12 @@ import {
   shouldPollPurchaseConfirmation
 } from "./purchase-analytics";
 
-test("accepts either persisted payment confirmation signal", () => {
-  assert.equal(isPaymentConfirmed("PAID", null), true);
-  assert.equal(isPaymentConfirmed("PENDING", new Date("2026-09-26T12:00:00Z")), true);
+test("requires both persisted payment confirmation signals and excludes test payments", () => {
+  const paidAt = new Date("2026-09-26T12:00:00Z");
+  assert.equal(isPaymentConfirmed("PAID", paidAt), true);
+  assert.equal(isPaymentConfirmed("PAID", paidAt, simulatedPaymentConfirmedStatus), false);
+  assert.equal(isPaymentConfirmed("PAID", null), false);
+  assert.equal(isPaymentConfirmed("PENDING", paidAt), false);
   assert.equal(isPaymentConfirmed("PENDING", null), false);
   assert.equal(isPaymentConfirmed(undefined, undefined), false);
 });

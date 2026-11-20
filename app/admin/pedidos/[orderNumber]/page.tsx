@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { confirmManualPixPaymentAction } from "@/app/admin/actions";
-import { updateOrderStatusAction } from "@/app/admin/order-actions";
+import { confirmManualOrderPaymentAction, updateOrderStatusAction } from "@/app/admin/order-actions";
 import { AdminProductSubmitButton } from "@/components/AdminProductSubmitButton";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
@@ -10,9 +9,11 @@ import { getAdminLocale } from "@/lib/admin-i18n-server";
 import { formatAdminDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/db";
 import { isSeparateFreight, separateFreightNotice } from "@/lib/freight-policy";
+import { mercadoPagoPaymentAwaiting, savedMercadoPagoCheckoutUrl } from "@/lib/mercado-pago-checkout-url";
 import { money } from "@/lib/money";
 import { createAdminOrderSharePath } from "@/lib/order-access";
-import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
+import { orderStatusChoices } from "@/lib/order-fulfillment";
+import { canConfirmManualPayment, isPaymentConfirmed, paymentMethodLabel, paymentModeForEnvironment, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 
 const statusLabels: Record<string, string> = {
   PENDING_PAYMENT: "Aguardando pagamento",
@@ -79,6 +80,13 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
     include: { items: true, payment: true }
   });
   if (!order) notFound();
+  const paymentConfirmed = isPaymentConfirmed(order.payment?.status, order.payment?.paidAt, order.payment?.providerStatus);
+  const manualPayment = canConfirmManualPayment(order.payment) && !paymentConfirmed && order.status !== "CANCELED";
+  const paymentNeedsReview = !paymentConfirmed && (
+    order.payment?.status === "PAID" || (order.status !== "PENDING_PAYMENT" && order.status !== "CANCELED")
+  );
+  const awaitingMercadoPago = mercadoPagoPaymentAwaiting(order);
+  const canResumeMercadoPago = Boolean(savedMercadoPagoCheckoutUrl(order, paymentModeForEnvironment()));
   const separateFreight = isSeparateFreight(order);
   let customerShareUrl: string | null = null;
   try {
@@ -148,9 +156,9 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
             <input type="hidden" name="orderNumber" value={order.orderNumber} />
             <input type="hidden" name="detail" value="1" />
             <select aria-label={t("Status do pedido", "订单状态")} name="status" defaultValue={order.status}>
-              {Object.entries(statusLabels).map(([value, label]) => (
+              {orderStatusChoices(order.status, paymentConfirmed).map((value) => (
                 <option value={value} key={value}>
-                  {localizedStatusLabels[value] || label}
+                  {localizedStatusLabels[value]}
                 </option>
               ))}
             </select>
@@ -164,7 +172,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
               <strong>
                 {paymentProviderLabel(order.payment?.provider)} / {paymentMethodLabel(order.payment?.method)}
               </strong>
-              <small>{paymentStatusLabel(order.payment?.status)}</small>
+              <small>{paymentNeedsReview ? t("Recebimento a conferir", "待核对到账") : paymentStatusLabel(order.payment?.status)}</small>
             </div>
             <div>
               <span>{t("Subtotal", "商品小计")}</span>
@@ -213,16 +221,20 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
               {order.payment.providerPaymentId ? <small>Payment ID: {order.payment.providerPaymentId}</small> : null}
               {order.payment.lastWebhookAt ? <small>Webhook: {formatAdminDateTime(order.payment.lastWebhookAt, t("Sem registro", "未记录"), locale)}</small> : null}
               {order.payment.syncError ? <small>{order.payment.syncError}</small> : null}
+              {awaitingMercadoPago ? (
+                <small>{canResumeMercadoPago
+                  ? t("O cliente pode continuar o pagamento pelo link seguro do pedido.", "客户可以通过订单安全链接继续付款。")
+                  : t("Confira o pedido no Mercado Pago antes de orientar uma nova cobrança.", "请先在 Mercado Pago 核对这笔订单，再指导客户付款。")}</small>
+              ) : null}
             </div>
           ) : null}
-          {order.payment?.method === "PIX" && order.status === "PENDING_PAYMENT" ? (
-            <form action={confirmManualPixPaymentAction} className="address-match-card admin needs-review manual-pix-admin-card">
+          {manualPayment ? (
+            <form action={confirmManualOrderPaymentAction} className="address-match-card admin needs-review manual-pix-admin-card">
               <input type="hidden" name="orderNumber" value={order.orderNumber} />
-              <span>{t("Pix manual", "人工 Pix")}</span>
-              <strong>{t("Confirme somente depois de conferir o comprovante no WhatsApp ou extrato.", "仅在通过 WhatsApp 凭证或银行流水确认到账后操作。")}</strong>
-              <small>{t("Esta ação marca o pedido e o pagamento como pagos. A disponibilidade continua sob controle manual no cadastro do produto.", "此操作会将订单和付款标记为已支付；商品库存仍需在商品资料中人工维护。")}</small>
+              <span>{order.payment?.method === "PIX" ? t("Pix manual", "人工 Pix") : t("Transferência bancária", "银行转账")}</span>
+              <strong>{t("Confirme somente após conferir o recebimento no extrato bancário.", "请在银行流水中核实到账后确认。")}</strong>
               <button className="button primary" type="submit">
-                {t("Confirmar Pix recebido", "确认已收到 Pix")}
+                {t("Confirmar recebimento", "确认到账")}
               </button>
             </form>
           ) : null}

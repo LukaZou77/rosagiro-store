@@ -13,7 +13,6 @@ import { STOREFRONT_CATALOG_CACHE_TAG, STORE_PROFILE_CACHE_TAG } from "@/lib/cac
 import { cleanCustomerName, normalizeBrazilWhatsapp } from "@/lib/customers";
 import { prisma } from "@/lib/db";
 import { brlInputToCents } from "@/lib/money";
-import { markOrderPaid, OrderError } from "@/lib/orders";
 import { whatsAppLeadDedupeKey } from "@/lib/whatsapp-leads";
 import {
   normalizeWhatsAppInquiryReference,
@@ -1192,41 +1191,6 @@ export async function updateWhatsAppLeadStatusAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/analytics");
   revalidatePath("/admin/leads");
-}
-
-export async function confirmManualPixPaymentAction(formData: FormData) {
-  await requireAdmin();
-
-  const orderNumber = field(formData, "orderNumber");
-  const detailPath = `/admin/pedidos/${orderNumber}`;
-  if (!orderNumber) redirectError("/admin/pedidos", "Pedido inválido.");
-
-  const order = await prisma.order.findUnique({
-    where: { orderNumber },
-    include: { payment: true }
-  });
-  if (!order) redirectError("/admin/pedidos", "Pedido não encontrado.");
-  if (order.payment?.method !== "PIX") redirectError(detailPath, "Este pedido não foi criado com Pix.");
-
-  try {
-    await markOrderPaid(orderNumber, {
-      provider: "SIMULATED",
-      providerPaymentId: `manual-pix-${orderNumber}`,
-      providerExternalReference: orderNumber,
-      providerStatus: "manual_pix_confirmed",
-      providerStatusDetail: "Comprovante Pix conferido manualmente no admin.",
-      paidAt: new Date()
-    });
-  } catch (error) {
-    const message = error instanceof OrderError ? error.message : "Não foi possível confirmar o Pix manual.";
-    redirectError(detailPath, message);
-  }
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/pedidos");
-  revalidatePath(detailPath);
-  revalidatePath(`/pedido/${orderNumber}`);
-  redirect(`${detailPath}?saved=1`);
 }
 
 export async function saveStoreProfileAction(formData: FormData) {

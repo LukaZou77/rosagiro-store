@@ -144,14 +144,24 @@ export function buildCartWhatsAppHref(items: CartContactItem[], subtotalCents: n
   );
 }
 
-export function buildOrderPaymentWhatsAppHref(orderNumber: string, totalCents: number, phone?: string | null) {
+export function buildOrderPaymentWhatsAppHref(
+  orderNumber: string,
+  totalCents: number,
+  phone?: string | null,
+  intent: "proof" | "pix_details" | "transfer_details" | "payment_review" = "proof"
+) {
+  const paymentMessages = {
+    proof: ["Vou enviar o comprovante do Pix por aqui.", "Pode conferir para mim, por favor?"],
+    pix_details: ["Podem confirmar o estoque e me enviar os dados para pagar via Pix?"],
+    transfer_details: ["Podem confirmar o estoque e me enviar os dados para transferência bancária?"],
+    payment_review: ["Podem verificar se houve cobrança neste pedido antes de eu tentar pagar novamente?"]
+  };
   return buildHref(
     [
       "Oi, tudo bem? Fiz um pedido no site da RosaGiro e gostaria de confirmar o pagamento.",
       `Pedido: ${orderNumber}`,
       `Total: ${money(totalCents)}`,
-      "Vou enviar o comprovante do Pix por aqui.",
-      "Pode conferir para mim, por favor?"
+      ...paymentMessages[intent]
     ].join("\n"),
     phone
   );

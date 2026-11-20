@@ -15,6 +15,7 @@ import { getAdminLocale } from "@/lib/admin-i18n-server";
 import { formatAdminDateTime } from "@/lib/date-format";
 import { money } from "@/lib/money";
 import { getPaymentDiagnosticSnapshot, type PaymentDiagnosticStatus } from "@/lib/payment-diagnostics";
+import { simulatedPaymentConfirmedStatus } from "@/lib/payments";
 
 function statusClass(status: PaymentDiagnosticStatus) {
   return status.toLowerCase().replace("_", "-");
@@ -40,7 +41,7 @@ export default async function AdminPaymentsPage() {
         <p className="eyebrow">{t("Pagamentos", "支付")}</p>
         <h1>{t("Diagnóstico Mercado Pago", "Mercado Pago 诊断")}</h1>
         <p>
-          {t("Verifique se Pix/cartão estão em modo simulado, sandbox ou live. Esta página é somente leitura e não mostra token, secret, database URL nem payload completo.", "检查 Pix / 银行卡当前使用模拟、沙盒还是正式模式。本页仅供读取，不会显示令牌、密钥、数据库 URL 或完整载荷。")}
+          {t("Confira o modo de pagamento e o registro de recebimento dos pedidos.", "查看付款模式和订单的到账记录。")}
         </p>
         <div className="admin-actions">
           <Link className="button secondary" href="/admin/pedidos" prefetch={false}>
@@ -88,9 +89,9 @@ export default async function AdminPaymentsPage() {
           <small>{t("payments registrados", "条付款记录")}</small>
         </div>
         <div>
-          <span>{t("Simulado", "模拟付款")}</span>
-          <strong>{snapshot.counts.simulatedPayments}</strong>
-          <small>{t("fallback/local", "回退 / 本地")}</small>
+          <span>{t("Pagamentos locais", "本地付款")}</span>
+          <strong>{snapshot.counts.localPayments}</strong>
+          <small>{t("Atendimento e testes", "人工核款和测试")}</small>
         </div>
         <div>
           <span>{t("Pendentes", "待付款")}</span>
@@ -166,8 +167,12 @@ export default async function AdminPaymentsPage() {
                     <small>{adminPaymentProviderLabel(payment.provider, locale)}</small>
                   </td>
                   <td>
-                    <span className={payment.status === "PAID" ? "status-chip success" : "status-chip"}>
-                      {adminPaymentRecordStatusLabel(payment.status, locale)}
+                    <span className={payment.confirmed ? "status-chip success" : "status-chip"}>
+                      {payment.providerStatus === simulatedPaymentConfirmedStatus
+                        ? t("Simulação concluída", "模拟已完成")
+                        : payment.status === "PAID" && !payment.confirmed
+                          ? t("Recebimento a conferir", "待核对到账")
+                          : adminPaymentRecordStatusLabel(payment.status, locale)}
                     </span>
                     <small>{payment.providerStatus || t("Sem provider status", "无服务商状态")}</small>
                     {payment.providerStatusDetail ? <small>{payment.providerStatusDetail}</small> : null}

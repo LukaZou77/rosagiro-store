@@ -4,7 +4,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { isSeparateFreight, separateFreightNotice } from "@/lib/freight-policy";
 import { OrderError, markOrderPaid } from "@/lib/orders";
-import { isMercadoPagoMode, isPaymentModeValue, normalizePaymentMode, type PaymentMethodValue, type PaymentMode } from "@/lib/payments";
+import { isMercadoPagoMode, paymentModeForEnvironment, type PaymentMethodValue, type MercadoPagoMode } from "@/lib/payments";
 import { configuredMercadoPagoInstallments, getStoreProfile } from "@/lib/store-profile";
 import type { Prisma } from "@/src/generated/prisma/client";
 
@@ -103,12 +103,7 @@ export function shouldUseMercadoPago(method: PaymentMethodValue | string | null 
 }
 
 function currentPaymentMode() {
-  return normalizePaymentMode(process.env.PAYMENT_MODE);
-}
-
-function paymentModeIsInvalid() {
-  const raw = cleanText(process.env.PAYMENT_MODE);
-  return Boolean(raw) && !isPaymentModeValue(raw);
+  return paymentModeForEnvironment();
 }
 
 function unavailablePaymentMessage() {
@@ -116,7 +111,6 @@ function unavailablePaymentMessage() {
 }
 
 export function mercadoPagoReady() {
-  if (paymentModeIsInvalid()) return false;
   const mode = currentPaymentMode();
   return (
     isMercadoPagoMode(mode) &&
@@ -126,18 +120,18 @@ export function mercadoPagoReady() {
   );
 }
 
-function mercadoPagoConfig(): { accessToken: string; publicUrl: string; mode: Exclude<PaymentMode, "simulated"> } {
+function mercadoPagoConfig(): { accessToken: string; publicUrl: string; mode: MercadoPagoMode } {
   const mode = currentPaymentMode();
   const accessToken = cleanText(process.env.MERCADO_PAGO_ACCESS_TOKEN);
   const publicUrl = siteUrl();
   const webhookSecret = cleanText(process.env.MERCADO_PAGO_WEBHOOK_SECRET);
-  if (paymentModeIsInvalid() || !isMercadoPagoMode(mode) || !accessToken || !publicUrl || (mode === "mercado_pago_live" && !webhookSecret)) {
+  if (!isMercadoPagoMode(mode) || !accessToken || !publicUrl || (mode === "mercado_pago_live" && !webhookSecret)) {
     throw new MercadoPagoError(unavailablePaymentMessage(), 503);
   }
-  return { accessToken, publicUrl, mode: mode as Exclude<PaymentMode, "simulated"> };
+  return { accessToken, publicUrl, mode };
 }
 
-function simulatedPaymentResult(orderNumber: string): PaymentStartResult {
+function localPaymentResult(orderNumber: string): PaymentStartResult {
   return {
     orderNumber,
     redirectTo: `/pagamento-simulado/${orderNumber}`,
@@ -146,13 +140,17 @@ function simulatedPaymentResult(orderNumber: string): PaymentStartResult {
   };
 }
 
+function canStartOrderPayment(order: {
+  status: string;
+  payment: { status: string; paidAt: Date | null } | null;
+} | null) {
+  return order?.status === "PENDING_PAYMENT" && order.payment !== null &&
+    order.payment.status !== "PAID" && !order.payment.paidAt;
+}
+
 export function assertPaymentCanStart(method: PaymentMethodValue | string | null | undefined) {
   const mode = currentPaymentMode();
-  if (!shouldUseMercadoPago(method)) return;
-  if (paymentModeIsInvalid()) {
-    throw new MercadoPagoError(unavailablePaymentMessage(), 503);
-  }
-  if (mode === "simulated") return;
+  if (!shouldUseMercadoPago(method) || !isMercadoPagoMode(mode)) return;
   if (!mercadoPagoReady()) {
     throw new MercadoPagoError(unavailablePaymentMessage(), 503);
   }
@@ -160,17 +158,21 @@ export function assertPaymentCanStart(method: PaymentMethodValue | string | null
 
 export async function startOrderPayment(orderNumber: string): Promise<PaymentStartResult> {
   const mode = currentPaymentMode();
-  const order = await prisma.order.findUnique({
+  const orderQuery = {
     where: { orderNumber },
     include: { payment: true }
-  });
+  } satisfies Prisma.OrderFindUniqueArgs;
+  const order = await prisma.order.findUnique(orderQuery);
   if (!order || !order.payment) throw new MercadoPagoError("Pedido não encontrado.", 404);
-  if (!shouldUseMercadoPago(order.payment.method)) {
-    return simulatedPaymentResult(order.orderNumber);
-  }
-
-  if (mode === "simulated") {
-    return simulatedPaymentResult(order.orderNumber);
+  const orderResult: PaymentStartResult = {
+    orderNumber,
+    redirectTo: `/pedido/${encodeURIComponent(orderNumber)}`,
+    provider: order.payment.provider,
+    external: false
+  };
+  if (!canStartOrderPayment(order)) return orderResult;
+  if (!shouldUseMercadoPago(order.payment.method) || !isMercadoPagoMode(mode)) {
+    return localPaymentResult(order.orderNumber);
   }
 
   if (!mercadoPagoReady()) {
@@ -244,66 +246,59 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
     }
   };
 
+  // Recheck after preparing the preference, which can await other database reads.
+  if (!canStartOrderPayment(await prisma.order.findUnique(orderQuery))) return orderResult;
   const response = await fetch(`${MERCADO_PAGO_API_BASE}/checkout/preferences`, {
     method: "POST",
+    signal: AbortSignal.timeout(10_000),
     headers: {
       Authorization: `Bearer ${config.accessToken}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify(preferenceBody)
+  }).catch(async (error: unknown) => {
+    if (!canStartOrderPayment(await prisma.order.findUnique(orderQuery))) return null;
+    throw error;
   });
+  if (!response) return orderResult;
   const payload = (await response.json().catch(() => ({}))) as MercadoPagoPreferenceResponse & Record<string, unknown>;
-
-  if (!response.ok) {
-    const message = cleanText(payload.message) || "Não foi possível criar a preferência Mercado Pago.";
-    await prisma.payment.update({
-      where: { orderId: order.id },
-      data: {
-        provider: "MERCADO_PAGO",
-        providerExternalReference: order.orderNumber,
-        providerPayload: toJsonValue(payload),
-        syncError: message
-      }
-    });
-    throw new MercadoPagoError(message);
-  }
-
   const redirectTo =
     config.mode === "mercado_pago_sandbox"
       ? cleanText(payload.sandbox_init_point) || cleanText(payload.init_point)
       : cleanText(payload.init_point);
   const preferenceId = cleanText(payload.id);
-  if (!preferenceId || !redirectTo) {
-    const message = "Mercado Pago não retornou uma URL de checkout.";
-    await prisma.payment.update({
-      where: { orderId: order.id },
+  const preferenceError = !response.ok
+    ? cleanText(payload.message) || "Não foi possível criar a preferência Mercado Pago."
+    : !preferenceId || !redirectTo ? "Mercado Pago não retornou uma URL de checkout." : null;
+
+  const saved = await prisma.$transaction(async (tx) => {
+    // Settlement and administrative status changes acquire this same order lock.
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE "orderNumber" = ${orderNumber} FOR UPDATE`;
+    const current = await tx.order.findUnique(orderQuery);
+    if (!current || !canStartOrderPayment(current)) return false;
+    await tx.payment.update({
+      where: { orderId: current.id },
       data: {
         provider: "MERCADO_PAGO",
-        providerExternalReference: order.orderNumber,
+        providerExternalReference: orderNumber,
         providerPayload: toJsonValue(payload),
-        syncError: message
+        syncError: preferenceError,
+        ...(!preferenceError ? {
+          providerPreferenceId: preferenceId,
+          providerInitPoint: cleanText(payload.init_point) || null,
+          providerSandboxInitPoint: cleanText(payload.sandbox_init_point) || null,
+          providerStatus: "preference_created",
+          providerStatusDetail: null
+        } : {})
       }
     });
-    throw new MercadoPagoError(message);
-  }
-
-  await prisma.payment.update({
-    where: { orderId: order.id },
-    data: {
-      provider: "MERCADO_PAGO",
-      providerPreferenceId: preferenceId,
-      providerExternalReference: order.orderNumber,
-      providerInitPoint: cleanText(payload.init_point) || null,
-      providerSandboxInitPoint: cleanText(payload.sandbox_init_point) || null,
-      providerStatus: "preference_created",
-      providerStatusDetail: null,
-      providerPayload: toJsonValue(payload),
-      syncError: null
-    }
+    return true;
   });
+  if (!saved || !canStartOrderPayment(await prisma.order.findUnique(orderQuery))) return orderResult;
+  if (preferenceError) throw new MercadoPagoError(preferenceError);
 
   return {
-    orderNumber: order.orderNumber,
+    orderNumber,
     redirectTo,
     provider: "MERCADO_PAGO",
     external: true
@@ -384,6 +379,7 @@ function isMercadoPagoSimulatorNotification(input: {
 async function fetchPaymentDetails(paymentId: string) {
   const config = mercadoPagoConfig();
   const response = await fetch(`${MERCADO_PAGO_API_BASE}/v1/payments/${encodeURIComponent(paymentId)}`, {
+    signal: AbortSignal.timeout(10_000),
     headers: {
       Authorization: `Bearer ${config.accessToken}`
     }
@@ -415,6 +411,7 @@ async function applyPaymentDetails(paymentDetails: MercadoPagoPaymentResponse & 
   if (!order || !order.payment) {
     return { status: "ORDER_NOT_FOUND", orderNumber: externalReference };
   }
+  const orderId = order.id;
 
   const receivedAmountCents = amountToCents(paymentDetails.transaction_amount);
   const providerUpdate = {
@@ -427,48 +424,53 @@ async function applyPaymentDetails(paymentDetails: MercadoPagoPaymentResponse & 
     lastWebhookAt: new Date()
   };
 
+  async function recordProviderStatus(syncError: string | null, failed = false) {
+    const updated = await prisma.payment.updateMany({
+      where: { orderId, status: { not: "PAID" } },
+      data: { ...providerUpdate, status: failed ? "FAILED" : undefined, syncError }
+    });
+    if (updated.count === 0 && providerPaymentId) {
+      await prisma.payment.updateMany({
+        where: { orderId, status: "PAID", provider: "MERCADO_PAGO", providerPaymentId },
+        data: { lastWebhookAt: providerUpdate.lastWebhookAt, syncError }
+      });
+    }
+  }
+
   if (receivedAmountCents !== order.totalCents) {
     const message = `Valor Mercado Pago não confere: recebido ${receivedAmountCents ?? "desconhecido"} cents, pedido ${order.totalCents} cents.`;
-    await prisma.payment.update({
-      where: { orderId: order.id },
-      data: {
-        ...providerUpdate,
-        syncError: message
-      }
-    });
+    await recordProviderStatus(message);
     return { status: "AMOUNT_MISMATCH", orderNumber: externalReference };
   }
 
   if (providerStatus === "approved") {
+    if (!providerPaymentId) {
+      await recordProviderStatus("Mercado Pago retornou um pagamento aprovado sem identificação.");
+      return { status: "PAYMENT_ID_MISSING", orderNumber: externalReference };
+    }
     try {
       await markOrderPaid(externalReference, {
         ...providerUpdate,
+        source: "mercado_pago",
+        providerPaymentId,
+        providerStatus,
         paidAt
       });
       return { status: "PAID", orderNumber: externalReference };
     } catch (error) {
-      const message = error instanceof OrderError || error instanceof Error ? error.message : "Falha ao liquidar pedido.";
-      await prisma.payment.update({
-        where: { orderId: order.id },
-        data: {
-          ...providerUpdate,
-          syncError: message
-        }
-      });
+      if (!(error instanceof OrderError)) throw error;
+      await recordProviderStatus(error.message);
       return { status: "SETTLEMENT_FAILED", orderNumber: externalReference };
     }
   }
 
   const failedStatuses = new Set(["rejected", "cancelled", "canceled"]);
   const manualReviewStatuses = new Set(["refunded", "charged_back"]);
-  await prisma.payment.update({
-    where: { orderId: order.id },
-    data: {
-      ...providerUpdate,
-      status: failedStatuses.has(providerStatus) && order.payment.status !== "PAID" ? "FAILED" : order.payment.status,
-      syncError: failedStatuses.has(providerStatus) || manualReviewStatuses.has(providerStatus) ? `Mercado Pago retornou ${providerStatus}.` : null
-    }
-  });
+  const failed = failedStatuses.has(providerStatus);
+  await recordProviderStatus(
+    failed || manualReviewStatuses.has(providerStatus) ? `Mercado Pago retornou ${providerStatus}.` : null,
+    failed
+  );
 
   return { status: providerStatus.toUpperCase(), orderNumber: externalReference };
 }
@@ -524,23 +526,20 @@ export async function processMercadoPagoWebhook(request: Request, payload: Merca
     };
   }
 
-  const event = existing
-    ? await prisma.paymentWebhookEvent.update({
-        where: { dedupeKey },
-        data: { signatureValid: true, payload: payloadJson }
-      })
-    : await prisma.paymentWebhookEvent.create({
-        data: {
-          dedupeKey,
-          providerEventId,
-          requestId,
-          dataId,
-          eventType,
-          action,
-          signatureValid: true,
-          payload: payloadJson
-        }
-      });
+  const event = await prisma.paymentWebhookEvent.upsert({
+    where: { dedupeKey },
+    update: { signatureValid: true, payload: payloadJson },
+    create: {
+      dedupeKey,
+      providerEventId,
+      requestId,
+      dataId,
+      eventType,
+      action,
+      signatureValid: true,
+      payload: payloadJson
+    }
+  });
 
   if (!dataId) {
     await prisma.paymentWebhookEvent.update({

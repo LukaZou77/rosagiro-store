@@ -26,7 +26,7 @@ export function SimulatePaymentButton({ orderNumber }: { orderNumber: string }) 
   return (
     <>
       <button className="button primary" type="button" onClick={pay} disabled={loading}>
-        {loading ? "Confirmando..." : "Confirmar pedido"}
+        {loading ? "Simulando..." : "Simular pagamento"}
       </button>
       {error ? <p className="form-error">{error}</p> : null}
     </>

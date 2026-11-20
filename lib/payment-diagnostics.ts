@@ -7,7 +7,7 @@ import {
   type PaymentDiagnosticSeverity,
   type PaymentDiagnosticStatus
 } from "@/lib/payment-config-diagnostics";
-import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
+import { isPaymentConfirmed, paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 import { configuredMercadoPagoInstallments, getStoreProfile } from "@/lib/store-profile";
 
 export { buildPaymentConfigDiagnostics };
@@ -23,6 +23,7 @@ export type RecentPaymentDiagnostic = {
   method: string;
   methodLabel: string;
   status: string;
+  confirmed: boolean;
   statusLabel: string;
   providerPreferenceId: string | null;
   providerPaymentId: string | null;
@@ -59,7 +60,7 @@ export type PaymentDiagnosticSnapshot = {
   recentWebhookEvents: RecentWebhookDiagnostic[];
   counts: {
     mercadoPagoPayments: number;
-    simulatedPayments: number;
+    localPayments: number;
     pendingPayments: number;
     webhookEvents: number;
     invalidWebhookSignatures: number;
@@ -101,6 +102,7 @@ export async function getPaymentDiagnosticSnapshot(): Promise<PaymentDiagnosticS
       method: payment.method,
       methodLabel: paymentMethodLabel(payment.method),
       status: payment.status,
+      confirmed: isPaymentConfirmed(payment.status, payment.paidAt, payment.providerStatus),
       statusLabel: paymentStatusLabel(payment.status),
       providerPreferenceId: payment.providerPreferenceId,
       providerPaymentId: payment.providerPaymentId,
@@ -125,7 +127,7 @@ export async function getPaymentDiagnosticSnapshot(): Promise<PaymentDiagnosticS
     })),
     counts: {
       mercadoPagoPayments: counts[0],
-      simulatedPayments: counts[1],
+      localPayments: counts[1],
       pendingPayments: counts[2],
       webhookEvents: counts[3],
       invalidWebhookSignatures: counts[4]

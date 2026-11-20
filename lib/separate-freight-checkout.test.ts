@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { after, beforeEach, mock, test } from "node:test";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
+import { checkoutAttemptFromPayload } from "./checkout-attempt";
 
 type ProductFixture = ReturnType<typeof orderableProduct>;
 
 type PaymentMethod = "PIX" | "CREDIT_CARD" | "SIMULATED";
+type PaymentProvider = "SIMULATED" | "MERCADO_PAGO";
 
 type OrderCreateData = {
+  checkoutAttemptId: string;
+  checkoutRequestHash: string;
   totalCents: number;
   subtotalCents: number;
   shippingCents: number;
@@ -20,7 +24,7 @@ type OrderCreateData = {
   cep: string;
   street: string;
   number: string;
-  payment: { create: { method: PaymentMethod; amountCents: number } };
+  payment: { create: { method: PaymentMethod; provider: PaymentProvider; amountCents: number } };
 };
 
 type PreferenceBody = {
@@ -33,6 +37,9 @@ type PreferenceBody = {
 type PersistedOrder = {
   id: string;
   orderNumber: string;
+  status: "PENDING_PAYMENT";
+  checkoutAttemptId?: string;
+  checkoutRequestHash?: string;
   totalCents: number;
   subtotalCents: number;
   shippingCents: number;
@@ -46,6 +53,9 @@ type PersistedOrder = {
   number: string;
   payment: {
     method: PaymentMethod;
+    provider: PaymentProvider;
+    status: "PENDING";
+    initializationStartedAt?: Date | null;
     providerPreferenceId: string | null;
     providerInitPoint: string | null;
     providerSandboxInitPoint: string | null;
@@ -61,6 +71,8 @@ let capturedOrderData: OrderCreateData | null = null;
 let capturedPreferenceBodies: PreferenceBody[] = [];
 let paymentUpdates: Array<Record<string, unknown>> = [];
 let orderCreateCalls = 0;
+type AttemptRow = { id: string; requestHash: string; status: string; error?: string; statusCode?: number };
+const attempts = new Map<string, AttemptRow>();
 
 function orderableProduct(overrides: Record<string, unknown> = {}) {
   return {
@@ -85,7 +97,24 @@ function orderableProduct(overrides: Record<string, unknown> = {}) {
   };
 }
 
-const prisma = {
+const transactionClient = {
+  $queryRaw: async () => [],
+  $executeRaw: async (_sql: TemplateStringsArray, id: string, requestHash: string) => {
+    if (!attempts.has(id)) attempts.set(id, { id, requestHash, status: "OPEN" });
+  },
+  checkoutAttempt: {
+    findUnique: async ({ where }: { where: { id: string } }) => attempts.get(where.id) ?? null,
+    findUniqueOrThrow: async ({ where }: { where: { id: string } }) => {
+      const attempt = attempts.get(where.id);
+      assert.ok(attempt);
+      return attempt;
+    },
+    update: async ({ where, data }: { where: { id: string }; data: Partial<AttemptRow> }) => {
+      const attempt = attempts.get(where.id);
+      assert.ok(attempt);
+      Object.assign(attempt, data);
+    }
+  },
   product: {
     findMany: async () => products
   },
@@ -104,6 +133,9 @@ const prisma = {
       persistedOrder = {
         id: "order-test-1",
         orderNumber: "RG-TEST-1",
+        status: "PENDING_PAYMENT",
+        checkoutAttemptId: data.checkoutAttemptId,
+        checkoutRequestHash: data.checkoutRequestHash,
         totalCents: data.totalCents,
         subtotalCents: data.subtotalCents,
         shippingCents: data.shippingCents,
@@ -117,6 +149,8 @@ const prisma = {
         number: data.number,
         payment: {
           method: data.payment.create.method,
+          provider: data.payment.create.provider,
+          status: "PENDING",
           providerPreferenceId: null,
           providerInitPoint: null,
           providerSandboxInitPoint: null
@@ -124,14 +158,31 @@ const prisma = {
       };
       return { id: persistedOrder.id, orderNumber: persistedOrder.orderNumber, customerName: data.customerName, totalCents: data.totalCents };
     },
-    findUnique: async () => persistedOrder
+    findUnique: async ({ where }: { where: { checkoutAttemptId?: string; orderNumber?: string } }) => {
+      if (where.checkoutAttemptId) return persistedOrder?.checkoutAttemptId === where.checkoutAttemptId ? persistedOrder : null;
+      return persistedOrder?.orderNumber === where.orderNumber ? persistedOrder : null;
+    },
+    findUniqueOrThrow: async () => {
+      assert.ok(persistedOrder);
+      return persistedOrder;
+    }
   },
   payment: {
+    updateMany: async ({ data }: { data: { initializationStartedAt: Date } }) => {
+      if (!persistedOrder || persistedOrder.payment.initializationStartedAt) return { count: 0 };
+      persistedOrder.payment.initializationStartedAt = data.initializationStartedAt;
+      return { count: 1 };
+    },
     update: async (input: Record<string, unknown>) => {
       paymentUpdates.push(input);
       return input;
     }
   }
+};
+
+const prisma = {
+  ...transactionClient,
+  $transaction: async <T>(work: (tx: typeof transactionClient) => Promise<T>): Promise<T> => work(transactionClient)
 };
 
 mock.module(moduleUrl("lib/db.ts"), { exports: { prisma } });
@@ -190,6 +241,7 @@ const originalFetch = globalThis.fetch;
 
 function checkoutPayload(paymentMethod: "PIX" | "CREDIT_CARD" = "PIX") {
   return {
+    checkoutAttemptId: "00000000-0000-4000-8000-000000000001",
     items: [{ slug: "produto-teste", quantity: 200 }],
     customer: {
       name: "Cliente Teste",
@@ -211,6 +263,18 @@ function checkoutPayload(paymentMethod: "PIX" | "CREDIT_CARD" = "PIX") {
   };
 }
 
+function createOrderForPayload(payload: ReturnType<typeof checkoutPayload>) {
+  return createOrder(parseCheckoutPayload(payload), checkoutAttemptFromPayload(payload));
+}
+
+function checkoutRequest(paymentMethod: "PIX" | "CREDIT_CARD" = "PIX") {
+  return new Request("https://example.test/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", origin: "https://example.test" },
+    body: JSON.stringify(checkoutPayload(paymentMethod))
+  });
+}
+
 beforeEach(() => {
   process.env.PAYMENT_MODE = "mercado_pago_live";
   process.env.MERCADO_PAGO_ACCESS_TOKEN = "TEST_ONLY_ACCESS_TOKEN";
@@ -223,6 +287,7 @@ beforeEach(() => {
   capturedPreferenceBodies = [];
   paymentUpdates = [];
   orderCreateCalls = 0;
+  attempts.clear();
   globalThis.fetch = async (input, init) => {
     const url = String(input);
     assert.equal(url, "https://api.mercadopago.com/checkout/preferences", `unexpected network target: ${url}`);
@@ -284,10 +349,11 @@ test("retired quote endpoint explains separate freight without network or orders
 });
 
 test("createOrder rejects consent removed after payload parsing", async () => {
-  const parsed = parseCheckoutPayload(checkoutPayload());
+  const payload = checkoutPayload();
+  const parsed = parseCheckoutPayload(payload);
   const tampered = { ...parsed, freightSeparateAccepted: false as unknown as true };
 
-  await assert.rejects(createOrder(tampered), /frete será combinado e pago separadamente/i);
+  await assert.rejects(createOrder(tampered, checkoutAttemptFromPayload(payload)), /frete será combinado e pago separadamente/i);
   assert.equal(orderCreateCalls, 0);
 });
 
@@ -303,7 +369,7 @@ test("createOrder rejects a wholesale subtotal below R$ 500", async () => {
   const payload = checkoutPayload();
   payload.items[0].quantity = 100;
 
-  await assert.rejects(createOrder(parseCheckoutPayload(payload)), /pedido mínimo.*R\$\s*500,00/i);
+  await assert.rejects(createOrderForPayload(payload), /pedido mínimo.*R\$\s*500,00/i);
   assert.equal(orderCreateCalls, 0);
 });
 
@@ -311,20 +377,19 @@ test("createOrder rejects a quantity that is not a complete wholesale package", 
   const payload = checkoutPayload();
   payload.items[0].quantity = 199;
 
-  await assert.rejects(createOrder(parseCheckoutPayload(payload)), /embalagem fechada com 200 unidades/i);
+  await assert.rejects(createOrderForPayload(payload), /embalagem fechada com 200 unidades/i);
   assert.equal(orderCreateCalls, 0);
 });
 
 test("createOrder rejects insufficient stock", async () => {
   products = [orderableProduct({ inventory: { quantity: 199 } })];
 
-  await assert.rejects(createOrder(parseCheckoutPayload(checkoutPayload())), /não tem estoque suficiente/i);
+  await assert.rejects(createOrderForPayload(checkoutPayload()), /não tem estoque suficiente/i);
   assert.equal(orderCreateCalls, 0);
 });
 
 test("PIX creates and redirects a new order using product total only", async () => {
-  const input = parseCheckoutPayload(checkoutPayload("PIX"));
-  const order = await createOrder(input);
+  const order = await createOrderForPayload(checkoutPayload("PIX"));
   const payment = await startOrderPayment(order.orderNumber);
 
   assert.equal(order.totalCents, 50_000);
@@ -345,17 +410,12 @@ test("PIX creates and redirects a new order using product total only", async () 
 });
 
 test("PIX succeeds end-to-end through the real orders route with product total only", async () => {
-  const request = new Request("https://example.test/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(checkoutPayload("PIX"))
-  });
-
-  const response = await postOrder(request);
+  const response = await postOrder(checkoutRequest());
   const body = await response.json() as Record<string, unknown>;
 
   assert.equal(response.status, 200);
   assert.equal(body.orderNumber, "RG-TEST-1");
+  assert.equal(body.orderCreated, true);
   assert.equal(body.paymentProvider, "MERCADO_PAGO");
   assert.equal(body.externalRedirect, true);
   assert.match(String(body.redirectTo), /TEST-PREFERENCE-1/);
@@ -378,31 +438,22 @@ test("PIX succeeds end-to-end through the real orders route with product total o
 });
 
 test("credit-card checkout is rejected before creating an order or payment preference", async () => {
-  const response = await postOrder(new Request("https://example.test/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(checkoutPayload("CREDIT_CARD"))
-  }));
+  const response = await postOrder(checkoutRequest("CREDIT_CARD"));
   assert.equal(response.status, 400);
   assert.match((await response.json()).error, /forma de pagamento válida/);
   assert.equal(orderCreateCalls, 0);
   assert.equal(capturedPreferenceBodies.length, 0);
 });
 
-test("orders route fails closed before creating an order when SESSION_SECRET is missing", async (context) => {
-  const consoleError = context.mock.method(console, "error", () => undefined);
+test("orders route fails closed before creating an order when SESSION_SECRET is missing", async () => {
   delete process.env.SESSION_SECRET;
-  const request = new Request("https://example.test/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(checkoutPayload("PIX"))
-  });
 
-  const response = await postOrder(request);
+  const response = await postOrder(checkoutRequest());
   assert.equal(response.status, 500);
+  assert.equal(response.headers.get("set-cookie"), null);
+  assert.equal(attempts.size, 0);
   assert.equal(orderCreateCalls, 0);
   assert.equal(capturedPreferenceBodies.length, 0);
-  assert.equal(consoleError.mock.callCount(), 1);
 });
 
 test("live and sandbox Mercado Pago orders cannot be marked paid through simulation", async () => {
@@ -416,6 +467,7 @@ test("live and sandbox Mercado Pago orders cannot be marked paid through simulat
   persistedOrder = {
     id: "sandbox-order-1",
     orderNumber: "RG-SANDBOX-1",
+    status: "PENDING_PAYMENT",
     subtotalCents: 50_000,
     shippingCents: 0,
     totalCents: 50_000,
@@ -429,6 +481,8 @@ test("live and sandbox Mercado Pago orders cannot be marked paid through simulat
     number: "1",
     payment: {
       method: "CREDIT_CARD",
+      provider: "MERCADO_PAGO",
+      status: "PENDING",
       providerPreferenceId: "TEST-PREFERENCE-1",
       providerInitPoint: "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=TEST-PREFERENCE-1",
       providerSandboxInitPoint: null
@@ -446,6 +500,7 @@ test("legacy orders retain their stored freight and total in Mercado Pago", asyn
   persistedOrder = {
     id: "legacy-order-1",
     orderNumber: "RG-LEGACY-1",
+    status: "PENDING_PAYMENT",
     subtotalCents: 50_000,
     shippingCents: 2_500,
     totalCents: 52_500,
@@ -459,6 +514,8 @@ test("legacy orders retain their stored freight and total in Mercado Pago", asyn
     number: "1",
     payment: {
       method: "CREDIT_CARD",
+      provider: "SIMULATED",
+      status: "PENDING",
       providerPreferenceId: null,
       providerInitPoint: null,
       providerSandboxInitPoint: null

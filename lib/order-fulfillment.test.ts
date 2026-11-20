@@ -10,13 +10,22 @@ const originalPaidAt = new Date("2026-09-28T12:00:00Z");
 let authenticated = true;
 let updateCalls = 0;
 let paidMetricCalls = 0;
+let paidNoticeCalls = 0;
 let order = fixture();
 function fixture() {
   return {
     id: "order-1", orderNumber: "RG-TEST-1", status: "PAID", totalCents: 62870,
     fulfillmentCarrier: null as string | null, trackingCode: null as string | null,
     shippingCarrier: "Original quote", items: [],
-    payment: { status: "PAID", paidAt: originalPaidAt, syncError: null as string | null }
+    payment: {
+      status: "PAID",
+      paidAt: originalPaidAt as Date | null,
+      method: "PIX",
+      provider: "MERCADO_PAGO",
+      providerPaymentId: "payment-1",
+      providerStatus: "approved" as string | null,
+      syncError: null as string | null
+    }
   };
 }
 const db = {
@@ -26,12 +35,26 @@ const db = {
     update: async ({ data }: { data: Record<string, unknown> }) => { updateCalls++; Object.assign(order, data); return order; },
     updateMany: async ({ data }: { data: Record<string, unknown> }) => { Object.assign(order, data); return { count: 1 }; }
   },
-  payment: { update: async ({ data }: { data: Record<string, unknown> }) => { Object.assign(order.payment, data); return order.payment; } },
+  payment: {
+    update: async ({ data }: { data: Record<string, unknown> }) => { Object.assign(order.payment, data); return order.payment; },
+    updateMany: async ({ where, data }: {
+      where: { status: string | { not: string }; providerPaymentId?: string };
+      data: Record<string, unknown>;
+    }) => {
+      const matchesStatus = typeof where.status === "string"
+        ? where.status === order.payment.status
+        : where.status.not !== order.payment.status;
+      if (!matchesStatus || (where.providerPaymentId && where.providerPaymentId !== order.payment.providerPaymentId)) return { count: 0 };
+      Object.assign(order.payment, Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)));
+      return { count: 1 };
+    }
+  },
   paymentWebhookEvent: {
     findUnique: async () => null,
-    create: async () => ({ id: "event-1" }),
+    upsert: async () => ({ id: "event-1" }),
     update: async () => ({ id: "event-1" })
   },
+  $queryRaw: async () => [],
   $transaction: async <T>(fn: (tx: unknown) => Promise<T>) => fn(db)
 };
 mock.module("next/cache", { exports: { revalidatePath: () => undefined, unstable_cache: (fn: unknown) => fn } });
@@ -45,15 +68,28 @@ mock.module(moduleUrl("lib/product-daily-metrics.ts"), { exports: {
   recordCreatedOrderProductMetrics: async () => undefined,
   recordPaidOrderProductMetrics: async () => { paidMetricCalls++; }
 } });
-mock.module(moduleUrl("lib/admin-notifications.ts"), { exports: { createOrderNotificationSafely: async () => undefined } });
-const { updateOrderStatusAction } = await import("../app/admin/order-actions");
-const { markOrderPaid } = await import("./orders");
+mock.module(moduleUrl("lib/admin-notifications.ts"), { exports: {
+  createOrderNotificationSafely: async (type: string) => { if (type === "ORDER_PAID") paidNoticeCalls++; }
+} });
+const { confirmManualOrderPaymentAction, updateOrderStatusAction } = await import("../app/admin/order-actions");
+const { markOrderPaid, simulatePayment } = await import("./orders");
+const { simulatedPaymentPendingStatus, simulatedPaymentConfirmedStatus } = await import("./payments");
 const { processMercadoPagoWebhook } = await import("./mercado-pago");
 
 beforeEach(() => {
-  order = fixture(); authenticated = true; updateCalls = 0; paidMetricCalls = 0;
+  order = fixture(); authenticated = true; updateCalls = 0; paidMetricCalls = 0; paidNoticeCalls = 0;
   mock.restoreAll();
 });
+
+function mercadoPagoConfirmation() {
+  return {
+    source: "mercado_pago",
+    provider: "MERCADO_PAGO",
+    providerStatus: "approved",
+    providerPaymentId: "payment-1",
+    providerExternalReference: order.orderNumber
+  } as const;
+}
 
 function shipmentForm() {
   const form = new FormData();
@@ -100,23 +136,76 @@ test("incomplete and overlong shipment details are rejected before writing", asy
   }
 });
 
+test("status form cannot claim payment or advance unpaid orders to fulfillment", async () => {
+  order.status = "PENDING_PAYMENT";
+  order.payment.status = "PENDING";
+  order.payment.paidAt = null;
+  for (const status of ["PAID", "FULFILLING", "SHIPPED"]) {
+    const form = shipmentForm();
+    form.set("status", status);
+    await assert.rejects(updateOrderStatusAction(form), /error=/);
+  }
+  assert.equal(updateCalls, 0);
+  assert.equal(order.status, "PENDING_PAYMENT");
+  assert.equal(order.payment.status, "PENDING");
+});
+
+test("manual transfer confirmation repairs legacy PAID with pending evidence", async () => {
+  order.payment.provider = "SIMULATED";
+  order.payment.method = "SIMULATED";
+  order.payment.providerStatus = null;
+  order.payment.status = "PENDING";
+  order.payment.paidAt = null;
+  const form = new FormData();
+  form.set("orderNumber", order.orderNumber);
+  await assert.rejects(confirmManualOrderPaymentAction(form), /saved=1/);
+  await assert.rejects(confirmManualOrderPaymentAction(form), /saved=1/);
+  assert.equal(order.status, "PAID");
+  assert.equal(order.payment.status, "PAID");
+  assert.ok(order.payment.paidAt);
+  assert.equal(order.payment.providerStatus, "manual_transfer_confirmed");
+  assert.equal(paidMetricCalls, 1);
+  assert.equal(paidNoticeCalls, 1);
+});
+
+test("checkout test payments do not trigger paid metrics or notifications", async () => {
+  process.env.PAYMENT_MODE = "simulated";
+  process.env.ENABLE_SIMULATED_PAYMENTS = "true";
+  Reflect.set(process.env, "NODE_ENV", "test");
+  try {
+    order.status = "PENDING_PAYMENT";
+    Object.assign(order.payment, { provider: "SIMULATED", method: "SIMULATED", providerStatus: null, status: "PENDING", paidAt: null });
+    await assert.rejects(simulatePayment(order.orderNumber), /não está habilitado/);
+    order.payment.providerStatus = simulatedPaymentPendingStatus;
+    await simulatePayment(order.orderNumber);
+    await simulatePayment(order.orderNumber);
+    assert.equal(order.payment.providerStatus, simulatedPaymentConfirmedStatus);
+    assert.equal(paidMetricCalls, 0);
+    assert.equal(paidNoticeCalls, 0);
+  } finally {
+    delete process.env.ENABLE_SIMULATED_PAYMENTS;
+  }
+});
+
 test("repeated payment confirmation preserves fulfillment and original paidAt", async () => {
   for (const status of ["PAID", "FULFILLING", "SHIPPED"]) {
     order.status = status;
-    await markOrderPaid(order.orderNumber, { provider: "MERCADO_PAGO", providerStatus: "approved", paidAt: new Date() });
+    await markOrderPaid(order.orderNumber, { ...mercadoPagoConfirmation(), paidAt: new Date() });
     assert.equal(order.status, status);
     assert.equal(order.payment.paidAt, originalPaidAt);
     assert.equal(order.payment.syncError, null);
   }
   assert.equal(paidMetricCalls, 0);
+  assert.equal(paidNoticeCalls, 0);
 });
 
 test("first payment still settles pending orders", async () => {
   order.status = "PENDING_PAYMENT"; order.payment.status = "PENDING";
-  await markOrderPaid(order.orderNumber, { provider: "MERCADO_PAGO", providerStatus: "approved" });
+  await markOrderPaid(order.orderNumber, mercadoPagoConfirmation());
   assert.equal(order.status, "PAID");
   assert.equal(order.payment.status, "PAID");
   assert.equal(paidMetricCalls, 1);
+  assert.equal(paidNoticeCalls, 1);
 });
 
 test("payment callbacks preserve SHIPPED and paid records", async () => {

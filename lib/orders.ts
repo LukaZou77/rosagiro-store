@@ -1,12 +1,25 @@
 import "server-only";
 
 import { randomInt } from "node:crypto";
+import type { CheckoutAttempt } from "@/lib/checkout-attempt";
+import { checkoutOrderSelect, runCheckoutCreation } from "@/lib/checkout-idempotency";
 import { createOrderNotificationSafely } from "@/lib/admin-notifications";
-import { normalizeBrazilWhatsapp, upsertCustomerFromContact } from "@/lib/customers";
+import { cleanCustomerName, normalizeBrazilWhatsapp, upsertCustomerFromContact } from "@/lib/customers";
 import { prisma } from "@/lib/db";
 import { validateCheckoutAddress } from "@/lib/google-address";
 import { discountCents, money, totalCents } from "@/lib/money";
-import { isPaymentMethod, paymentModeAllowsSimulated, type PaymentMethodValue } from "@/lib/payments";
+import {
+  canConfirmManualPayment,
+  canConfirmSimulatedPayment,
+  isMercadoPagoMode,
+  isPaymentMethod,
+  isPaymentConfirmed,
+  paymentModeForEnvironment,
+  simulatedPaymentConfirmedStatus,
+  simulatedPaymentEnabled,
+  simulatedPaymentPendingStatus,
+  type PaymentMethodValue
+} from "@/lib/payments";
 import { recordCreatedOrderProductMetrics, recordPaidOrderProductMetrics } from "@/lib/product-daily-metrics";
 import {
   productWholesaleLineTotalCents,
@@ -132,6 +145,9 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
   if (!customer.name || !customer.email || !customer.phone || !customer.cpf) {
     throw new OrderError("Preencha todos os dados de contato.");
   }
+  const nameLength = cleanCustomerName(customer.name).length;
+  if (nameLength < 2) throw new OrderError("Informe seu nome para continuar.");
+  if (nameLength > 80) throw new OrderError("Nome muito longo. Use até 80 caracteres.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) {
     throw new OrderError("Informe um e-mail válido.");
   }
@@ -141,10 +157,6 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
   if (!address.state || !address.city || !address.district || !address.street || !address.number) {
     throw new OrderError("Preencha todos os dados de endereço.");
   }
-  if (paymentMethod === "SIMULATED" && !paymentModeAllowsSimulated(process.env.PAYMENT_MODE)) {
-    throw new OrderError("Pagamento temporariamente indisponível. Escolha Pix ou fale com o atendimento pelo WhatsApp.", 503);
-  }
-
   return { items, customer, address, freightSeparateAccepted: true, paymentMethod, attribution };
 }
 
@@ -154,12 +166,18 @@ function makeOrderNumber() {
   return `RG-${stamp}-${suffix}`;
 }
 
-export async function createOrder(input: CheckoutInput) {
+export async function createOrder(input: CheckoutInput, attempt: CheckoutAttempt) {
+  // External/cache lookups must not hold a database transaction connection.
+  const addressMatch = await validateCheckoutAddress(input.address);
+  const gatewayPayment = isMercadoPagoMode(paymentModeForEnvironment()) &&
+    (input.paymentMethod === "PIX" || input.paymentMethod === "CREDIT_CARD");
+  const pixAccount = input.paymentMethod === "PIX" && !gatewayPayment ? getPublicPixPaymentAccount(await getStoreProfile()) : null;
+  const result = await runCheckoutCreation(attempt, async (tx) => {
   if (!hasAcceptedSeparateFreight(input.freightSeparateAccepted)) {
     throw new OrderError("Confirme que o frete será combinado e pago separadamente, fora do site.");
   }
   const slugs = input.items.map((item) => item.slug);
-  const products = await prisma.product.findMany({
+  const products = await tx.product.findMany({
     where: { slug: { in: slugs }, active: true, deletedAt: null },
     include: {
       brand: true,
@@ -216,14 +234,14 @@ export async function createOrder(input: CheckoutInput) {
   const discount = discountCents();
   const shippingQuote = separateFreightForOrder();
   const total = totalCents(subtotal, discount, shippingQuote.shippingCents);
-  const addressMatch = await validateCheckoutAddress(input.address);
-  const customer = await upsertCustomerFromContact(input.customer.name, input.customer.phone);
-  const pixAccount = input.paymentMethod === "PIX" ? getPublicPixPaymentAccount(await getStoreProfile()) : null;
+  const customer = await upsertCustomerFromContact(input.customer.name, input.customer.phone, tx);
 
-  const order = await prisma.order.create({
+  const order = await tx.order.create({
     data: {
       customerId: customer.id,
       orderNumber: makeOrderNumber(),
+      checkoutAttemptId: attempt.id,
+      checkoutRequestHash: attempt.requestHash,
       customerName: input.customer.name,
       customerEmail: input.customer.email,
       customerPhone: input.customer.phone,
@@ -286,117 +304,118 @@ export async function createOrder(input: CheckoutInput) {
       payment: {
         create: {
           method: input.paymentMethod,
+          provider: gatewayPayment ? "MERCADO_PAGO" : "SIMULATED",
           amountCents: total,
-          providerStatus: pixAccount ? "manual_pix_pending" : null,
+          providerStatus: gatewayPayment ? "initialization_pending" : pixAccount ? "manual_pix_pending" : input.paymentMethod === "SIMULATED" && simulatedPaymentEnabled() ? simulatedPaymentPendingStatus : null,
           providerStatusDetail: pixAccount ? "Aguardando comprovante Pix pelo atendimento." : null,
           providerPayload: pixAccount ? (pixAccount satisfies Prisma.InputJsonValue) : undefined
         }
       }
     },
-    select: { id: true, orderNumber: true, customerName: true, totalCents: true }
+    select: checkoutOrderSelect
   });
-
-  await createOrderNotificationSafely("NEW_ORDER", order);
-  await recordCreatedOrderProductMetrics(order.id).catch(() => undefined);
-
   return order;
+  }, (error) => error instanceof OrderError ? { message: error.message, status: error.status } : null);
+  if (result.created) {
+    await createOrderNotificationSafely("NEW_ORDER", result.order);
+    await recordCreatedOrderProductMetrics(result.order.id).catch(() => undefined);
+  }
+  return result.order;
 }
 
-type PaidOrderPaymentUpdate = {
-  provider?: "SIMULATED" | "MERCADO_PAGO";
-  providerPaymentId?: string | null;
-  providerExternalReference?: string | null;
-  providerStatus?: string | null;
+type MercadoPagoConfirmation = {
+  source: "mercado_pago";
+  provider: "MERCADO_PAGO";
+  providerPaymentId: string;
+  providerExternalReference: string;
+  providerStatus: "approved";
   providerStatusDetail?: string | null;
   providerPayload?: Prisma.InputJsonValue;
   lastWebhookAt?: Date;
   paidAt?: Date;
 };
 
-export async function markOrderPaid(orderNumber: string, paymentUpdate: PaidOrderPaymentUpdate = {}) {
-  let newlyPaid = false;
-  const order = await prisma.$transaction(async (tx) => {
+type PaymentConfirmation = MercadoPagoConfirmation | { source: "manual" } | { source: "simulation" };
+
+export async function markOrderPaid(orderNumber: string, confirmation: PaymentConfirmation) {
+  if (confirmation.source === "simulation" && !simulatedPaymentEnabled()) {
+    throw new OrderError("Pagamento simulado não está disponível neste ambiente.", 403);
+  }
+  const { order, newlyPaid } = await prisma.$transaction(async (tx) => {
+    // Order status and payment evidence share the same lock across all confirmation paths.
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE "orderNumber" = ${orderNumber} FOR UPDATE`;
     const order = await tx.order.findUnique({
       where: { orderNumber },
       include: { items: true, payment: true }
     });
     if (!order) throw new OrderError("Pedido não encontrado.", 404);
-    if (order.payment?.status === "PAID" || order.status === "PAID") {
-      const shouldRefreshProvider =
-        paymentUpdate.provider === "MERCADO_PAGO" ||
-        Boolean(paymentUpdate.providerPaymentId || paymentUpdate.providerStatus || paymentUpdate.lastWebhookAt);
-      if (order.payment && shouldRefreshProvider) {
-        await tx.payment.update({
-          where: { orderId: order.id },
-          data: {
-            provider: paymentUpdate.provider,
-            providerPaymentId: paymentUpdate.providerPaymentId,
-            providerExternalReference: paymentUpdate.providerExternalReference,
-            providerStatus: paymentUpdate.providerStatus,
-            providerStatusDetail: paymentUpdate.providerStatusDetail,
-            providerPayload: paymentUpdate.providerPayload,
-            lastWebhookAt: paymentUpdate.lastWebhookAt,
-            syncError: null
-          }
-        });
-      }
-      return order;
+    const payment = order.payment;
+    if (!payment) throw new OrderError("Pagamento do pedido não encontrado.", 404);
+    if (confirmation.source === "manual" && !canConfirmManualPayment(payment)) {
+      throw new OrderError("Este pedido exige a confirmação pelo provedor de pagamento.", 403);
     }
-    if (order.status !== "PENDING_PAYMENT") throw new OrderError("Este pedido não pode ser pago.");
+    if (confirmation.source === "simulation" && !canConfirmSimulatedPayment(payment)) {
+      throw new OrderError("Este pedido não está habilitado para testes de pagamento.", 403);
+    }
 
-    const claimed = await tx.order.updateMany({
-      where: { id: order.id, status: "PENDING_PAYMENT" },
-      data: { status: "PAID" }
-    });
-    if (claimed.count !== 1) {
-      const currentOrder = await tx.order.findUnique({
+    const alreadyConfirmed = confirmation.source === "simulation"
+      ? payment.status === "PAID" && Boolean(payment.paidAt) && payment.providerStatus === simulatedPaymentConfirmedStatus
+      : isPaymentConfirmed(payment.status, payment.paidAt, payment.providerStatus);
+    if (order.status === "CANCELED" && !alreadyConfirmed) throw new OrderError("Este pedido está cancelado.");
+
+    let paymentData: Prisma.PaymentUpdateInput = {};
+    if (confirmation.source === "mercado_pago" && (!alreadyConfirmed || (
+      payment.provider === "MERCADO_PAGO" && payment.providerPaymentId === confirmation.providerPaymentId
+    ))) {
+      paymentData = {
+        provider: confirmation.provider,
+        providerPaymentId: confirmation.providerPaymentId,
+        providerExternalReference: confirmation.providerExternalReference,
+        providerStatus: confirmation.providerStatus,
+        providerStatusDetail: confirmation.providerStatusDetail,
+        providerPayload: confirmation.providerPayload,
+        lastWebhookAt: confirmation.lastWebhookAt,
+        syncError: null
+      };
+    } else if (confirmation.source === "manual" && !alreadyConfirmed) {
+      const isPix = payment.method === "PIX";
+      paymentData = {
+        providerPaymentId: `manual-${isPix ? "pix" : "transfer"}-${orderNumber}`,
+        providerExternalReference: orderNumber,
+        providerStatus: isPix ? "manual_pix_confirmed" : "manual_transfer_confirmed",
+        providerStatusDetail: isPix ? "Recebimento do Pix conferido no admin." : "Recebimento da transferência conferido no admin.",
+        syncError: null
+      };
+    } else if (confirmation.source === "simulation" && !alreadyConfirmed) {
+      paymentData = { providerStatus: simulatedPaymentConfirmedStatus, syncError: null };
+    }
+
+    if (!alreadyConfirmed) {
+      paymentData.status = "PAID";
+      paymentData.paidAt = (confirmation.source === "mercado_pago" && confirmation.paidAt) || new Date();
+    }
+    if (Object.keys(paymentData).length) {
+      await tx.payment.update({ where: { orderId: order.id }, data: paymentData });
+    }
+    if (order.status === "PENDING_PAYMENT") {
+      await tx.order.update({ where: { id: order.id }, data: { status: "PAID" } });
+    }
+    return {
+      order: await tx.order.findUniqueOrThrow({
         where: { id: order.id },
         include: { items: true, payment: true }
-      });
-      if (currentOrder?.payment?.status === "PAID" || currentOrder?.status === "PAID") return currentOrder;
-      throw new OrderError("Este pedido não pode ser pago.");
-    }
-    newlyPaid = true;
-
-    await tx.payment.update({
-      where: { orderId: order.id },
-      data: {
-        status: "PAID",
-        paidAt: paymentUpdate.paidAt || new Date(),
-        provider: paymentUpdate.provider,
-        providerPaymentId: paymentUpdate.providerPaymentId,
-        providerExternalReference: paymentUpdate.providerExternalReference,
-        providerStatus: paymentUpdate.providerStatus,
-        providerStatusDetail: paymentUpdate.providerStatusDetail,
-        providerPayload: paymentUpdate.providerPayload,
-        lastWebhookAt: paymentUpdate.lastWebhookAt,
-        syncError: null
-      }
-    });
-
-    return tx.order.findUniqueOrThrow({
-      where: { id: order.id },
-      include: { items: true, payment: true }
-    });
+      }),
+      newlyPaid: !alreadyConfirmed && confirmation.source !== "simulation"
+    };
   });
 
-  await createOrderNotificationSafely("ORDER_PAID", order);
-  if (newlyPaid) await recordPaidOrderProductMetrics(order.id).catch(() => undefined);
+  if (newlyPaid) {
+    await createOrderNotificationSafely("ORDER_PAID", order);
+    await recordPaidOrderProductMetrics(order.id).catch(() => undefined);
+  }
   return order;
 }
 
 export async function simulatePayment(orderNumber: string) {
-  const paymentMode = String(process.env.PAYMENT_MODE || "simulated").trim();
-  if (!paymentModeAllowsSimulated(paymentMode)) {
-    throw new OrderError("Pagamento simulado não está disponível neste ambiente.", 403);
-  }
-  const order = await prisma.order.findUnique({
-    where: { orderNumber },
-    select: { payment: { select: { method: true } } }
-  });
-  if (!order) throw new OrderError("Pedido não encontrado.", 404);
-  if (paymentMode === "mercado_pago_sandbox" && order.payment?.method !== "SIMULATED") {
-    throw new OrderError("Este pedido deve ser confirmado pelo Mercado Pago.", 403);
-  }
-  return markOrderPaid(orderNumber, { provider: "SIMULATED" });
+  return markOrderPaid(orderNumber, { source: "simulation" });
 }

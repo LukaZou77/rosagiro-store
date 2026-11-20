@@ -36,8 +36,29 @@ const exchangeRoute = await import("../app/pedido/acesso/[orderNumber]/route");
 
 beforeEach(() => {
   process.env.SESSION_SECRET = secret;
+  Reflect.set(process.env, "NODE_ENV", "test");
+  process.env.PAYMENT_MODE = "simulated";
+  process.env.ENABLE_SIMULATED_PAYMENTS = "true";
   adminAuthenticated = false;
   simulatePaymentCalls = 0;
+});
+
+test("the simulation route remains disabled in production even with valid access and a test opt-in", async () => {
+  process.env.VERCEL_ENV = "production";
+  try {
+    for (const mode of [undefined, "invalid", "simulated", "mercado_pago_sandbox"]) {
+      if (mode === undefined) delete process.env.PAYMENT_MODE;
+      else process.env.PAYMENT_MODE = mode;
+      const orderNumber = "RG-ORDER-1";
+      const response = await simulateRoute.POST(requestFor(orderNumber, orderCookie(orderNumber)), {
+        params: Promise.resolve({ orderNumber })
+      });
+      assert.equal(response.status, 403);
+    }
+    assert.equal(simulatePaymentCalls, 0);
+  } finally {
+    delete process.env.VERCEL_ENV;
+  }
 });
 
 function requestFor(orderNumber: string, cookie?: string, origin = "https://example.test") {

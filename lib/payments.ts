@@ -2,8 +2,15 @@ export const mercadoPagoInstallmentOptions = [3, 6, 9, 12] as const;
 export type MercadoPagoInstallments = (typeof mercadoPagoInstallmentOptions)[number];
 export const defaultMercadoPagoInstallments: MercadoPagoInstallments = 6;
 
-export const paymentModeValues = ["simulated", "mercado_pago_sandbox", "mercado_pago_live"] as const;
+export const paymentModeValues = ["manual", "simulated", "mercado_pago_sandbox", "mercado_pago_live"] as const;
 export type PaymentMode = (typeof paymentModeValues)[number];
+export type MercadoPagoMode = Extract<PaymentMode, `mercado_pago_${string}`>;
+type PaymentRuntimeEnv = Partial<Pick<NodeJS.ProcessEnv,
+  "NODE_ENV" | "PAYMENT_MODE" | "ENABLE_SIMULATED_PAYMENTS" | "VERCEL_ENV" | "VERCEL_TARGET_ENV"
+>>;
+
+export const simulatedPaymentPendingStatus = "test_simulation_pending";
+export const simulatedPaymentConfirmedStatus = "test_simulation_confirmed";
 
 export const storefrontPaymentLabel = "Pix e transferência bancária";
 export const storefrontPaymentNote = "Aceitamos Pix e transferência bancária. Antes de pagar, aguarde a confirmação do estoque e dos dados de pagamento pelo atendimento no WhatsApp.";
@@ -26,7 +33,7 @@ export type PaymentMethodValue = (typeof basePaymentMethods)[number]["value"] | 
 
 export function normalizePaymentMode(value: unknown): PaymentMode {
   const cleaned = String(value || "").trim();
-  return paymentModeValues.includes(cleaned as PaymentMode) ? (cleaned as PaymentMode) : "simulated";
+  return paymentModeValues.includes(cleaned as PaymentMode) ? (cleaned as PaymentMode) : "manual";
 }
 
 export function isPaymentModeValue(value: unknown): value is PaymentMode {
@@ -34,15 +41,57 @@ export function isPaymentModeValue(value: unknown): value is PaymentMode {
   return paymentModeValues.includes(cleaned as PaymentMode);
 }
 
-export function isMercadoPagoMode(value: unknown) {
-  const mode = normalizePaymentMode(value);
-  return mode === "mercado_pago_sandbox" || mode === "mercado_pago_live";
+export function isMercadoPagoMode(value: unknown): value is MercadoPagoMode {
+  return value === "mercado_pago_sandbox" || value === "mercado_pago_live";
 }
 
-export function paymentModeAllowsSimulated(value: unknown) {
-  const cleaned = String(value || "").trim();
-  if (!cleaned) return true;
-  return cleaned === "simulated" || cleaned === "mercado_pago_sandbox";
+export function isProductionPaymentEnvironment(env: PaymentRuntimeEnv = process.env) {
+  if (env.VERCEL_ENV === "production" || env.VERCEL_TARGET_ENV === "production") return true;
+  if (env.VERCEL_ENV === "preview" || env.VERCEL_ENV === "development") return false;
+  return env.NODE_ENV === "production";
+}
+
+export function simulatedPaymentEnabled(env: PaymentRuntimeEnv = process.env) {
+  if (isProductionPaymentEnvironment(env) || env.ENABLE_SIMULATED_PAYMENTS !== "true") return false;
+  const nonProductionEnvironment = env.VERCEL_ENV
+    ? env.VERCEL_ENV === "preview" || env.VERCEL_ENV === "development"
+    : env.NODE_ENV === "development" || env.NODE_ENV === "test";
+  const mode = normalizePaymentMode(env.PAYMENT_MODE);
+  return nonProductionEnvironment && (mode === "simulated" || mode === "mercado_pago_sandbox");
+}
+
+export function paymentModeForEnvironment(env: PaymentRuntimeEnv = process.env): PaymentMode {
+  const mode = normalizePaymentMode(env.PAYMENT_MODE);
+  if (mode === "simulated" && !simulatedPaymentEnabled(env)) return "manual";
+  if (mode === "mercado_pago_sandbox" && isProductionPaymentEnvironment(env)) return "manual";
+  return mode;
+}
+
+export function canConfirmSimulatedPayment(payment: {
+  provider: string;
+  method: string;
+  providerStatus: string | null;
+} | null | undefined) {
+  return payment?.provider === "SIMULATED" && payment.method === "SIMULATED" &&
+    (payment.providerStatus === simulatedPaymentPendingStatus || payment.providerStatus === simulatedPaymentConfirmedStatus);
+}
+
+export function canConfirmManualPayment(payment: {
+  provider: string;
+  method: string;
+  providerStatus: string | null;
+} | null | undefined) {
+  return payment?.provider === "SIMULATED" &&
+    (payment.method === "PIX" || payment.method === "SIMULATED") &&
+    payment.providerStatus !== simulatedPaymentPendingStatus;
+}
+
+export function isPaymentConfirmed(
+  paymentStatus: string | null | undefined,
+  paidAt: Date | string | null | undefined,
+  providerStatus?: string | null
+) {
+  return paymentStatus === "PAID" && Boolean(paidAt) && providerStatus !== simulatedPaymentConfirmedStatus;
 }
 
 export function isMercadoPagoInstallments(value: unknown): value is MercadoPagoInstallments {
@@ -55,9 +104,12 @@ export function normalizeMercadoPagoInstallments(value: unknown, fallback: Merca
   return isMercadoPagoInstallments(parsed) ? parsed : fallback;
 }
 
-export function paymentMethodsForCheckout(options: { includeSimulated?: boolean } = {}) {
-  return basePaymentMethods
-    .filter((method) => options.includeSimulated !== false || method.value !== "SIMULATED");
+export function paymentMethodsForCheckout(options: { testPayments?: boolean } = {}) {
+  if (!options.testPayments) return basePaymentMethods;
+  return [
+    basePaymentMethods[0],
+    { value: "SIMULATED", label: "Pagamento de teste", description: "Simule a confirmação em um ambiente de teste." }
+  ] as const;
 }
 
 export const paymentMethods = paymentMethodsForCheckout();

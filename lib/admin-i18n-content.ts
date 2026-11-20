@@ -133,20 +133,25 @@ function paymentCheckMessageZh(check: PaymentCheck, mode: string) {
     case "payment-mode":
       if (mode === "mercado_pago_live") return "PAYMENT_MODE 已设为正式付款模式。";
       if (mode === "mercado_pago_sandbox") return "PAYMENT_MODE 已设为沙盒测试模式。";
-      if (mode === "simulated") return "PAYMENT_MODE 当前为模拟模式，Pix 和银行卡使用本地流程。";
+      if (mode === "simulated") return "测试订单可以在此环境模拟确认。";
+      if (mode === "manual") {
+        return check.status === "ACTION_REQUIRED"
+          ? "PAYMENT_MODE 无法识别，Pix 和转账仍由人工核实到账。"
+          : "Pix 和转账由人工核实到账。";
+      }
       return "PAYMENT_MODE 的值无法被系统识别。";
     case "access-token":
       if (check.status === "READY") return "当前环境已配置令牌，具体值不会显示。";
       if (check.status === "ACTION_REQUIRED") return "尚未配置 MERCADO_PAGO_ACCESS_TOKEN。";
-      return "模拟付款模式不需要访问令牌。";
+      return "仅 Checkout Pro 需要访问令牌。";
     case "webhook-secret":
       if (check.status === "READY") return "已配置用于校验 x-signature 的密钥，具体值不会显示。";
       if (check.status === "ACTION_REQUIRED") return "处理 Webhook 前必须配置 MERCADO_PAGO_WEBHOOK_SECRET。";
-      return "模拟付款模式不需要 Webhook 密钥。";
+      return "仅 Checkout Pro 需要 Webhook 密钥。";
     case "public-url":
       if (check.status === "READY") return "NEXT_PUBLIC_SITE_URL 是公开地址，Mercado Pago 可以访问 Webhook。";
       if (check.status === "ACTION_REQUIRED") return "NEXT_PUBLIC_SITE_URL 仍为空、本地地址或未使用公开 HTTPS。";
-      return "模拟付款模式下公开 URL 不是必需项。";
+      return "Checkout Pro 通过公开 HTTPS 地址接收 Webhook。";
     default:
       return check.message;
   }
@@ -165,17 +170,24 @@ export function adminPaymentModeLabel(mode: string, locale: AdminLocale) {
   if (locale !== "zh-CN") return mode;
   if (mode === "mercado_pago_live") return "正式模式";
   if (mode === "mercado_pago_sandbox") return "沙盒模式";
+  if (mode === "manual") return "人工核款";
   return "模拟模式";
 }
 
 export function adminPaymentStatusLabel(status: string, mode: string, locale: AdminLocale) {
   if (locale !== "zh-CN") {
     if (status === "READY") return mode === "mercado_pago_live" ? "Live pronto" : "Sandbox pronto";
-    if (status === "WARNING") return mode === "simulated" ? "Modo simulado" : "Revisar configuração";
+    if (status === "WARNING") {
+      if (mode === "manual") return "Atendimento manual";
+      return mode === "simulated" ? "Ambiente de teste" : "Revisar configuração";
+    }
     return "Ação necessária";
   }
   if (status === "READY") return mode === "mercado_pago_live" ? "正式付款已就绪" : "沙盒环境已就绪";
-  if (status === "WARNING") return mode === "simulated" ? "当前为模拟模式" : "需要复核配置";
+  if (status === "WARNING") {
+    if (mode === "manual") return "人工核款";
+    return mode === "simulated" ? "当前为模拟模式" : "需要复核配置";
+  }
   return "必须完成配置";
 }
 
@@ -187,7 +199,10 @@ export function adminPaymentFallbackMessage(
   locale: AdminLocale
 ) {
   if (locale !== "zh-CN") return fallback;
-  if (mode === "simulated") return "结账当前为模拟模式，Pix 和银行卡不会在此环境打开 Mercado Pago。";
+  if (mode === "simulated") return "测试订单可以在此环境模拟确认。";
+  if (mode === "manual") return status === "ACTION_REQUIRED"
+    ? "请检查 PAYMENT_MODE。Pix 和转账仍由人工核实到账。"
+    : "Pix 和转账等待人工核实到账。";
   const blockers = checks.filter((item) => item.status === "ACTION_REQUIRED");
   if (blockers.length) {
     return `完成以下项目后才能使用 Mercado Pago：${blockers.map((item) => paymentCheckLabelsZh[item.key] || item.label).join("、")}。`;

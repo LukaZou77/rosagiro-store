@@ -11,6 +11,7 @@ import {
   parseCustomerSessionPayload
 } from "@/lib/customer-session";
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/src/generated/prisma/client";
 
 export {
   type CustomerSessionIntent,
@@ -58,10 +59,10 @@ export async function upsertCustomerSession(input: {
   return customer;
 }
 
-export async function upsertCustomerFromContact(name: string, whatsapp: string) {
+export async function upsertCustomerFromContact(name: string, whatsapp: string, client: Pick<Prisma.TransactionClient, "customer"> = prisma) {
   const parsed = parseCustomerSessionPayload({ name, whatsapp, intent: "checkout" });
   const now = new Date();
-  return prisma.customer.upsert({
+  return client.customer.upsert({
     where: { whatsappDigits: parsed.whatsappDigits },
     update: {
       name: parsed.name,

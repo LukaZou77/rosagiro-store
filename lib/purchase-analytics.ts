@@ -1,3 +1,5 @@
+export { isPaymentConfirmed } from "@/lib/payments";
+
 export type PurchaseAnalyticsChannel = "purchase" | "google_ads";
 
 export type PurchaseDedupeEntry = {
@@ -12,10 +14,6 @@ export const PURCHASE_DEDUPE_MAX_ENTRIES = 64;
 
 const PURCHASE_STATUS_POLL_DELAYS_MS = [2_000, 3_000, 5_000, 8_000, 13_000, 21_000, 34_000, 55_000, 60_000, 60_000, 60_000] as const;
 const PURCHASE_TRACKING_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000, 4_000, 8_000] as const;
-
-export function isPaymentConfirmed(paymentStatus: string | null | undefined, paidAt: Date | string | null | undefined) {
-  return paymentStatus === "PAID" || Boolean(paidAt);
-}
 
 export function isPurchaseQualifiedOrder(status: string, paymentConfirmed: boolean) {
   return paymentConfirmed && (status === "PAID" || status === "FULFILLING" || status === "SHIPPED");

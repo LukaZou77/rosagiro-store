@@ -1,4 +1,4 @@
-import { isMercadoPagoMode, normalizePaymentMode, type PaymentMode } from "@/lib/payments";
+import { isMercadoPagoMode, isPaymentModeValue, paymentModeForEnvironment, type PaymentMode } from "@/lib/payments";
 
 export type PaymentDiagnosticStatus = "READY" | "WARNING" | "ACTION_REQUIRED";
 export type PaymentDiagnosticSeverity = "low" | "medium" | "high";
@@ -33,7 +33,11 @@ function check(input: PaymentDiagnosticCheck): PaymentDiagnosticCheck {
 
 function statusLabel(status: PaymentDiagnosticStatus, mode: PaymentMode) {
   if (status === "READY") return mode === "mercado_pago_live" ? "Live pronto" : "Sandbox pronto";
-  if (status === "WARNING") return mode === "simulated" ? "Modo simulado" : "Revisar configuração";
+  if (status === "WARNING") {
+    if (mode === "manual") return "Atendimento manual";
+    if (mode === "simulated") return "Ambiente de teste";
+    return "Revisar configuração";
+  }
   return "Ação necessária";
 }
 
@@ -44,7 +48,10 @@ function buildFallbackMessage(mode: PaymentMode, checks: PaymentDiagnosticCheck[
   }
 
   if (mode === "simulated") {
-    return "Checkout está em modo simulado; Pix e cartão não abrem Mercado Pago neste ambiente.";
+    return "A confirmação simulada está disponível para pedidos de teste.";
+  }
+  if (mode === "manual") {
+    return "Pix e transferência bancária aguardam confirmação de recebimento pelo atendimento.";
   }
 
   const blocking = checks.filter((item) => item.status === "ACTION_REQUIRED");
@@ -58,7 +65,8 @@ function buildFallbackMessage(mode: PaymentMode, checks: PaymentDiagnosticCheck[
 
 function buildConfigChecks(env: NodeJS.ProcessEnv): PaymentDiagnosticCheck[] {
   const rawPaymentMode = clean(env.PAYMENT_MODE);
-  const paymentMode = normalizePaymentMode(rawPaymentMode);
+  const paymentMode = paymentModeForEnvironment(env);
+  const invalidMode = Boolean(rawPaymentMode) && !isPaymentModeValue(rawPaymentMode);
   const mercadoPagoMode = isMercadoPagoMode(paymentMode);
   const hasAccessToken = Boolean(clean(env.MERCADO_PAGO_ACCESS_TOKEN));
   const hasWebhookSecret = Boolean(clean(env.MERCADO_PAGO_WEBHOOK_SECRET));
@@ -68,21 +76,20 @@ function buildConfigChecks(env: NodeJS.ProcessEnv): PaymentDiagnosticCheck[] {
     check({
       key: "payment-mode",
       label: "Modo de pagamento",
-      status:
-        paymentMode === "mercado_pago_sandbox" || paymentMode === "mercado_pago_live"
-          ? "READY"
-          : rawPaymentMode === "simulated" || !rawPaymentMode
-            ? "WARNING"
-            : "ACTION_REQUIRED",
+      status: mercadoPagoMode ? "READY" : invalidMode ? "ACTION_REQUIRED" : "WARNING",
       severity: paymentMode === "mercado_pago_live" ? "high" : paymentMode === "mercado_pago_sandbox" ? "medium" : "high",
       message:
         paymentMode === "mercado_pago_live"
           ? "PAYMENT_MODE está configurado para live."
           : paymentMode === "mercado_pago_sandbox"
           ? "PAYMENT_MODE está configurado para sandbox."
-          : rawPaymentMode === "simulated" || !rawPaymentMode
-            ? "PAYMENT_MODE está em modo simulado; Pix/cartão usam fluxo local."
-            : "PAYMENT_MODE tem valor não reconhecido para esta integração."
+          : paymentMode === "simulated"
+            ? "A simulação está habilitada neste ambiente de teste."
+            : invalidMode
+              ? "PAYMENT_MODE tem valor não reconhecido. Pix e transferência seguem com confirmação manual."
+              : rawPaymentMode === "mercado_pago_sandbox"
+                ? "O sandbox está desabilitado em produção. Pix e transferência seguem com confirmação manual."
+                : "Pix e transferência seguem com confirmação manual."
     }),
     check({
       key: "access-token",
@@ -93,7 +100,7 @@ function buildConfigChecks(env: NodeJS.ProcessEnv): PaymentDiagnosticCheck[] {
         ? "Token existe no ambiente atual; valor não é exibido."
         : mercadoPagoMode
           ? "MERCADO_PAGO_ACCESS_TOKEN ainda não foi configurado."
-          : "Token não é necessário enquanto PAYMENT_MODE estiver simulado."
+          : "Token exigido somente para Checkout Pro."
     }),
     check({
       key: "webhook-secret",
@@ -104,7 +111,7 @@ function buildConfigChecks(env: NodeJS.ProcessEnv): PaymentDiagnosticCheck[] {
         ? "Secret existe para validar x-signature; valor não é exibido."
         : mercadoPagoMode
           ? "MERCADO_PAGO_WEBHOOK_SECRET é obrigatório para processar webhooks."
-          : "Webhook secret não é necessário enquanto PAYMENT_MODE estiver simulado."
+          : "Webhook secret exigido somente para Checkout Pro."
     }),
     check({
       key: "public-url",
@@ -115,14 +122,14 @@ function buildConfigChecks(env: NodeJS.ProcessEnv): PaymentDiagnosticCheck[] {
         ? `NEXT_PUBLIC_SITE_URL parece público; Mercado Pago pode chamar ${webhookEndpointPath}.`
         : mercadoPagoMode
           ? "NEXT_PUBLIC_SITE_URL ainda parece local, vazio ou sem HTTPS público."
-          : "URL pública é opcional enquanto PAYMENT_MODE estiver simulado."
+          : "O Checkout Pro usa uma URL pública HTTPS para receber webhooks."
     })
   ];
 }
 
 export function buildPaymentConfigDiagnostics(env: NodeJS.ProcessEnv = process.env) {
   const configChecks = buildConfigChecks(env);
-  const mode = normalizePaymentMode(env.PAYMENT_MODE);
+  const mode = paymentModeForEnvironment(env);
   const hasActionRequired = configChecks.some((item) => item.status === "ACTION_REQUIRED");
   const status: PaymentDiagnosticStatus = configChecks.every((item) => item.status === "READY")
     ? "READY"
@@ -134,7 +141,7 @@ export function buildPaymentConfigDiagnostics(env: NodeJS.ProcessEnv = process.e
     status,
     statusLabel: statusLabel(status, mode),
     fallbackMessage: buildFallbackMessage(mode, configChecks),
-    modeLabel: clean(env.PAYMENT_MODE) || "simulated",
+    modeLabel: mode,
     webhookEndpointPath,
     configChecks
   };

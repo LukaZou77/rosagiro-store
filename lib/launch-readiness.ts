@@ -80,7 +80,7 @@ export function buildLaunchReadinessSnapshot(input: BuildSnapshotInput): LaunchR
     hasPublicUrl(env.NEXT_PUBLIC_SITE_URL) && Boolean(env.SESSION_SECRET?.trim()) && Boolean(env.DATABASE_URL?.trim());
   const hasGoogleMaps = Boolean(env.GOOGLE_MAPS_API_KEY?.trim());
   const hasSeoPublicBase = hasPublicUrl(env.NEXT_PUBLIC_SITE_URL);
-  const paymentMode = env.PAYMENT_MODE?.trim() || "simulated";
+  const paymentMode = paymentDiagnostics.modeLabel;
   const livePaymentReady = paymentDiagnostics.status === "READY" && paymentMode === "mercado_pago_live";
   const sandboxPaymentReady = paymentDiagnostics.status === "READY" && paymentMode === "mercado_pago_sandbox";
 

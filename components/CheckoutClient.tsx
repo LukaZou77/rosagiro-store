@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type FocusEvent, type FormEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { cartLineKey, useCart, writeCart } from "@/components/CartCount";
+import { cartLineKey, readCart, useCart, writeCart } from "@/components/CartCount";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { useCustomerSession } from "@/components/CustomerSession";
 import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
@@ -11,6 +11,15 @@ import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
 import type { CartSummary } from "@/lib/cart-summary";
+import {
+  cartAfterCheckout,
+  getCheckoutRecovery,
+  getServerCheckoutRecovery,
+  saveCheckoutRecovery,
+  submitCheckoutAttempt,
+  subscribeCheckoutRecovery,
+  type CheckoutAttempt
+} from "@/lib/checkout-attempt-client";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
 import { money } from "@/lib/money";
 import { paymentMethodsForCheckout, type PaymentMethodValue } from "@/lib/payments";
@@ -38,6 +47,9 @@ type AddressState = {
   district: string;
   city: string;
 };
+
+const emptyAddress: AddressState = { cep: "", state: "", street: "", number: "", complement: "", district: "", city: "" };
+const emptyContact = { name: "", phone: "", email: "", cpf: "" };
 
 type AutoFillField = "state" | "street" | "district" | "city";
 
@@ -96,31 +108,23 @@ function stepIndex(step: CheckoutStep) {
 
 export function CheckoutClient({
   trustSignals,
-  includeSimulatedPayment
+  testPayments
 }: {
   trustSignals: string[];
-  includeSimulatedPayment: boolean;
+  testPayments: boolean;
 }) {
   const whatsappPhone = useWhatsAppPhone();
   const router = useRouter();
   const cart = useCart();
   const cartKey = useMemo(() => JSON.stringify(cart), [cart]);
   const { customer, requireCustomerSession } = useCustomerSession();
-  const [contact, setContact] = useState({ name: "", phone: "", email: "", cpf: "" });
+  const [contact, setContact] = useState(emptyContact);
   const [contactTouched, setContactTouched] = useState({ name: false, phone: false });
   const [activeStep, setActiveStep] = useState<CheckoutStep>("contact");
   const [stepError, setStepError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("PIX");
   const [freightSeparateAccepted, setFreightSeparateAccepted] = useState(false);
-  const [address, setAddress] = useState<AddressState>({
-    cep: "",
-    state: "",
-    street: "",
-    number: "",
-    complement: "",
-    district: "",
-    city: ""
-  });
+  const [address, setAddress] = useState(emptyAddress);
   const [cepStatus, setCepStatus] = useState<CepStatus>("idle");
   const [cepMessage, setCepMessage] = useState(manualCepMessage);
   const [addressSearch, setAddressSearch] = useState("");
@@ -131,13 +135,27 @@ export function CheckoutClient({
   const [mobileFieldFocused, setMobileFieldFocused] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [paymentPendingMessage, setPaymentPendingMessage] = useState("");
+  const [cartCleanupFailed, setCartCleanupFailed] = useState(false);
+  const { recovery, persisted: recoveryPersisted, ready: recoveryReady } = useSyncExternalStore(
+    subscribeCheckoutRecovery, getCheckoutRecovery, getServerCheckoutRecovery
+  );
   const [summaryState, setSummaryState] = useState<{ key: string; data: CartSummary } | null>(null);
   const [summaryError, setSummaryError] = useState<{ key: string; message: string } | null>(null);
   const addressSessionToken = useRef(makeAddressSessionToken());
   const formRef = useRef<HTMLFormElement>(null);
+  const recoveryHeadingRef = useRef<HTMLHeadingElement>(null);
+  const submittingRef = useRef(false);
+  const restoredCep = useRef("");
   const skipNextAddressSearch = useRef(false);
   const lastAutofilledCep = useRef("");
   const autofilledFields = useRef<Record<AutoFillField, boolean>>({ ...emptyAutofillFields });
+  const recoveryStatus = recovery?.status;
+  const canRetryCheckout = recovery?.status === "pending" && !recovery.conflict;
+
+  useEffect(() => {
+    if (recoveryStatus) recoveryHeadingRef.current?.focus();
+  }, [recoveryStatus, canRetryCheckout]);
 
   useEffect(() => {
     if (!cart.length) {
@@ -177,8 +195,8 @@ export function CheckoutClient({
   const packageReady = summary?.packageReady ?? false;
   const recommendations = summary?.recommendations || [];
   const checkoutPaymentMethods = useMemo(
-    () => paymentMethodsForCheckout({ includeSimulated: includeSimulatedPayment }),
-    [includeSimulatedPayment]
+    () => paymentMethodsForCheckout({ testPayments }),
+    [testPayments]
   );
   const total = subtotal;
   const emptyCheckoutWhatsAppHref = useMemo(() => buildGeneralWhatsAppHref("checkout sem itens", whatsappPhone), [whatsappPhone]);
@@ -278,9 +296,9 @@ export function CheckoutClient({
   }, []);
 
   useEffect(() => {
-    if (!items.length || !minimumReached || !packageReady || customer) return;
+    if (!recoveryReady || recovery || !items.length || !minimumReached || !packageReady || customer) return;
     requireCustomerSession({ intent: "checkout", onSuccess: prefillContactFromCustomer });
-  }, [customer, items.length, minimumReached, packageReady, prefillContactFromCustomer, requireCustomerSession]);
+  }, [customer, items.length, minimumReached, packageReady, prefillContactFromCustomer, recovery, recoveryReady, requireCustomerSession]);
 
   function updateContact(field: ContactField, value: string) {
     setContact((current) => ({ ...current, [field]: value }));
@@ -430,6 +448,7 @@ export function CheckoutClient({
     if (field === "cep") {
       const formattedCep = formatCep(value);
       const digits = cepDigits(formattedCep);
+      restoredCep.current = "";
 
       if (!digits) {
         setCepStatus("idle");
@@ -646,7 +665,7 @@ export function CheckoutClient({
 
   useEffect(() => {
     const digits = cepDigits(address.cep);
-    if (digits.length !== 8) return;
+    if (digits.length !== 8 || digits === restoredCep.current) return;
 
     const controller = new AbortController();
     let active = true;
@@ -702,34 +721,100 @@ export function CheckoutClient({
     };
   }, [address.cep, clearAutofilledAddress]);
 
-  async function submit(formData: FormData) {
+  async function submitAttempt(attempt: CheckoutAttempt) {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     setError("");
-    if (!packageReady) {
+
+    try {
+      saveCheckoutRecovery({ status: "pending", attempt });
+      const result = await submitCheckoutAttempt(attempt);
+
+      if (result.status === "unknown") return;
+      if (result.status === "conflict") {
+        saveCheckoutRecovery({ status: "pending", attempt, conflict: true });
+        return;
+      }
+      if (result.status === "rejected") {
+        restoredCep.current = cepDigits(attempt.address.cep);
+        setContact(attempt.customer);
+        setContactTouched({ name: true, phone: true });
+        setAddress({ ...attempt.address, complement: attempt.address.complement || "" });
+        setCepStatus("idle");
+        setCepMessage(manualCepMessage);
+        setPaymentMethod(attempt.paymentMethod);
+        setFreightSeparateAccepted(attempt.freightSeparateAccepted);
+        setActiveStep("payment");
+        setError(result.message);
+        saveCheckoutRecovery(null);
+        return;
+      }
+
+      setPaymentPendingMessage(result.message || "");
+      setContact(emptyContact);
+      setContactTouched({ name: false, phone: false });
+      setAddress(emptyAddress);
+      setAddressSearch("");
+      setFreightSeparateAccepted(false);
+      setPaymentMethod("PIX");
+      setActiveStep("contact");
+      saveCheckoutRecovery({ status: "confirmed", order: result.order });
+      try {
+        const currentCart = readCart();
+        const remainingCart = cartAfterCheckout(currentCart, attempt.items);
+        if (remainingCart.length < currentCart.length) writeCart(remainingCart);
+      } catch {
+        setCartCleanupFailed(true);
+      }
+
+      // The confirmation still offers the order link if browser navigation cannot start.
+      if (result.order.paymentPending) return;
+      try {
+        if (result.order.externalRedirect) window.location.assign(result.order.redirectTo);
+        else router.push(result.order.redirectTo);
+      } catch {
+        // The order was already confirmed above.
+      }
+    } finally {
+      submittingRef.current = false;
       setSubmitting(false);
+    }
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!recoveryReady || submittingRef.current || getCheckoutRecovery().recovery) return;
+    setError("");
+    if (!packageReady) {
       setError("Todos os produtos devem ser comprados em embalagens fechadas completas.");
       return;
     }
     if (!minimumReached) {
-      setSubmitting(false);
       setError(`Complete o pedido mínimo de ${money(siteConfig.wholesale.minimumOrderCents)} antes de finalizar.`);
       return;
     }
     for (const step of checkoutStepOrder) {
-      if (!validateCheckoutStep(step)) {
-        setSubmitting(false);
-        return;
-      }
+      if (!validateCheckoutStep(step)) return;
     }
 
     if (!customer) {
-      setSubmitting(false);
       setError("Entre via WhatsApp para continuar o checkout.");
       requireCustomerSession({ intent: "checkout", onSuccess: prefillContactFromCustomer });
       return;
     }
 
-    const payload = {
+    let checkoutAttemptId: string;
+    try {
+      checkoutAttemptId = crypto.randomUUID();
+    } catch {
+      setError("Não foi possível iniciar o pedido neste navegador. Abra o site em um navegador atualizado ou fale com o atendimento.");
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    void submitAttempt({
+      checkoutAttemptId,
       items: cart,
       customer: {
         name: String(formData.get("name") || ""),
@@ -746,30 +831,80 @@ export function CheckoutClient({
         district: String(formData.get("district") || ""),
         city: String(formData.get("city") || "")
       },
-      freightSeparateAccepted,
+      freightSeparateAccepted: true,
       paymentMethod,
       attribution: readAttribution()
-    };
-
-    const response = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
     });
-    const result = (await response.json()) as { orderNumber?: string; redirectTo?: string; externalRedirect?: boolean; error?: string };
-    setSubmitting(false);
+  }
 
-    if (!response.ok || !result.orderNumber || !result.redirectTo) {
-      setError(result.error || "Não foi possível criar o pedido.");
-      return;
-    }
+  function verifyPendingCheckout() {
+    const pending = getCheckoutRecovery().recovery;
+    if (pending?.status === "pending" && !pending.conflict) void submitAttempt(pending.attempt);
+  }
 
-    writeCart([]);
-    if (result.externalRedirect) {
-      window.location.assign(result.redirectTo);
-      return;
-    }
-    router.push(result.redirectTo);
+  if (recovery) {
+    const order = recovery.status === "confirmed" ? recovery.order : null;
+    const orderHref = order ? `/pedido/${order.orderNumber}` : "";
+    return (
+      <section className="checkout-shell empty-checkout-shell">
+        <div className="cart-panel empty-checkout-card" aria-busy={submitting}>
+          <p className="eyebrow">Checkout RosaGiro</p>
+          {order ? (
+            <>
+              <h1 ref={recoveryHeadingRef} tabIndex={-1}>Pedido {order.orderNumber} criado.</h1>
+              <p role="status">
+                {order.paymentPending
+                  ? paymentPendingMessage || "Seu pedido foi salvo. A abertura do pagamento está pendente. Acompanhe pelo link abaixo."
+                  : "Use o link abaixo para acompanhar seu pedido."}
+              </p>
+              {cartCleanupFailed ? <p role="alert">O carrinho ainda pode mostrar os itens deste pedido. Confira antes de fazer outra compra.</p> : null}
+              <div className="empty-actions">
+                <Link className="button primary" href={orderHref}>
+                  Acompanhar pedido
+                </Link>
+                {!order.paymentPending && order.redirectTo !== orderHref ? (
+                  <a className="button secondary" href={order.redirectTo}>
+                    Continuar para pagamento
+                  </a>
+                ) : null}
+                {cart.length ? (
+                  <button type="button" className="button secondary" onClick={() => saveCheckoutRecovery(null)}>
+                    Iniciar outro pedido
+                  </button>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <>
+              <h1 ref={recoveryHeadingRef} tabIndex={-1}>Pedido aguardando confirmação.</h1>
+              <p role="status">
+                {submitting
+                  ? "Estamos processando a solicitação. Aguarde um momento."
+                  : canRetryCheckout
+                    ? "Ainda não conseguimos confirmar se o pedido foi criado. Verifique o mesmo pedido usando os dados já enviados."
+                    : "Precisamos verificar este pedido com o atendimento. Fale pelo WhatsApp antes de enviar outro pedido."}
+              </p>
+              <div className="empty-actions">
+                {canRetryCheckout ? (
+                  <button type="button" className="button primary" disabled={submitting} onClick={verifyPendingCheckout}>
+                    {submitting ? "Verificando..." : "Verificar pedido"}
+                  </button>
+                ) : null}
+                <WhatsAppLink className="button whatsapp" href={emptyCheckoutWhatsAppHref}>
+                  Falar no WhatsApp
+                </WhatsAppLink>
+              </div>
+            </>
+          )}
+          {!recoveryPersisted ? (
+            <p role="alert">O navegador não conseguiu guardar os dados de recuperação. Se você atualizar ou fechar esta página, talvez precise falar com o atendimento.</p>
+          ) : null}
+        </div>
+        <aside className="summary-panel">
+          <StoreTrustSignals signals={trustSignals} compact />
+        </aside>
+      </section>
+    );
   }
 
   if (summaryLoading) {
@@ -902,7 +1037,7 @@ export function CheckoutClient({
   return (
     <section className="checkout-shell">
       <form
-        action={submit}
+        onSubmit={submit}
         className="checkout-form"
         id="checkout-form"
         ref={formRef}
@@ -951,6 +1086,7 @@ export function CheckoutClient({
                 autoComplete="name"
                 value={contactValue.name}
                 onChange={(event) => updateContact("name", event.target.value)}
+                maxLength={80}
                 required
               />
             </label>
@@ -1149,7 +1285,7 @@ export function CheckoutClient({
               <button
                 className="button primary wide"
                 type="submit"
-                disabled={submitting || !items.length || !minimumReached || !packageReady || !freightSeparateAccepted}
+                disabled={!recoveryReady || submitting || !items.length || !minimumReached || !packageReady || !freightSeparateAccepted}
               >
                 {submitting ? "Criando pedido..." : siteConfig.checkout.finalCta}
               </button>
@@ -1211,6 +1347,7 @@ export function CheckoutClient({
           className="button primary"
           type="button"
           disabled={
+            !recoveryReady ||
             submitting ||
             !items.length ||
             !minimumReached ||

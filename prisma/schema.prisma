@@ -449,10 +449,22 @@ model AdminNotification {
   @@index([notificationType, createdAt])
 }
 
+model CheckoutAttempt {
+  id          String   @id @db.VarChar(36)
+  requestHash String   @db.VarChar(64)
+  status      String   @default("OPEN")
+  error       String?
+  statusCode  Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Order {
   id                      String         @id @default(cuid())
   customerId              String?
   orderNumber             String         @unique
+  checkoutAttemptId       String?        @unique @db.VarChar(36)
+  checkoutRequestHash      String?        @db.VarChar(64)
   status                  OrderStatus    @default(PENDING_PAYMENT)
   customerName            String
   customerEmail           String
@@ -544,6 +556,7 @@ model Payment {
   amountCents               Int
   paidAt                    DateTime?
   providerPreferenceId      String?         @unique
+  initializationStartedAt   DateTime?
   providerPaymentId         String?         @unique
   providerExternalReference String?
   providerInitPoint         String?

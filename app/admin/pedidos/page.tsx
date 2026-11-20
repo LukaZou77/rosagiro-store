@@ -9,12 +9,13 @@ import { getAdminLocale } from "@/lib/admin-i18n-server";
 import { formatAdminDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
-import { paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
+import { confirmedPaymentWhere, orderStatuses, orderStatusChoices } from "@/lib/order-fulfillment";
+import { isPaymentConfirmed, paymentMethodLabel, paymentProviderLabel, paymentStatusLabel } from "@/lib/payments";
 
 type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 const pageSize = 50;
-const statuses = ["PENDING_PAYMENT", "PAID", "FULFILLING", "SHIPPED", "CANCELED"] as const;
+const statuses = orderStatuses;
 const paymentMethods = ["SIMULATED", "PIX", "CREDIT_CARD"] as const;
 const statusLabels: Record<(typeof statuses)[number], string> = {
   PENDING_PAYMENT: "Aguardando pagamento",
@@ -85,7 +86,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
     prisma.order.count({ where }),
     prisma.order.aggregate({ where, _sum: { totalCents: true } }),
     prisma.order.count({ where: { status: "PENDING_PAYMENT" } }),
-    prisma.order.count({ where: { payment: { status: "PAID" } } })
+    prisma.order.count({ where: { payment: confirmedPaymentWhere } })
   ]);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const page = Math.min(requestedPage, totalPages);
@@ -136,23 +137,29 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
           <table className="admin-data-table admin-orders-table">
             <thead><tr><th>{t("Pedido", "订单")}</th><th>{t("Cliente", "客户")}</th><th>{t("Pagamento", "付款")}</th><th>{t("Status", "状态")}</th><th>{t("Itens", "商品")}</th><th>{t("Total", "总额")}</th><th>{t("Atualizar", "更新")}</th></tr></thead>
             <tbody>
-              {orders.map((order) => (
+              {orders.map((order) => {
+                const paymentConfirmed = isPaymentConfirmed(order.payment?.status, order.payment?.paidAt, order.payment?.providerStatus);
+                const paymentNeedsReview = !paymentConfirmed && (
+                  order.payment?.status === "PAID" || (order.status !== "PENDING_PAYMENT" && order.status !== "CANCELED")
+                );
+                return (
                 <tr key={order.id}>
                   <td><Link href={`/admin/pedidos/${order.orderNumber}`} prefetch={false}>{order.orderNumber}</Link><small>{formatAdminDateTime(order.createdAt, t("Sem registro", "未记录"), locale)}</small></td>
                   <td><strong>{order.customerName}</strong><small>{order.customerPhone}</small></td>
-                  <td><span>{paymentProviderLabel(order.payment?.provider)} / {paymentMethodLabel(order.payment?.method)}</span><small>{paymentStatusLabel(order.payment?.status)}</small></td>
+                  <td><span>{paymentProviderLabel(order.payment?.provider)} / {paymentMethodLabel(order.payment?.method)}</span><small>{paymentNeedsReview ? t("Recebimento a conferir", "待核对到账") : paymentStatusLabel(order.payment?.status)}</small></td>
                   <td><span className={`admin-status-dot status-${order.status.toLowerCase()}`}>{localizedStatusLabels[order.status]}</span></td>
                   <td>{order._count.items}</td>
                   <td><strong>{money(order.totalCents)}</strong></td>
                   <td>
                     <form action={updateOrderStatusAction} className="admin-inline-status-form">
                       <input type="hidden" name="orderNumber" value={order.orderNumber} />
-                      <select name="status" defaultValue={order.status}>{statuses.map((item) => <option value={item} key={item}>{localizedStatusLabels[item]}</option>)}</select>
+                      <select name="status" defaultValue={order.status}>{orderStatusChoices(order.status, paymentConfirmed).map((item) => <option value={item} key={item}>{localizedStatusLabels[item]}</option>)}</select>
                       <button type="submit">{t("Salvar", "保存")}</button>
                     </form>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           {!orders.length ? <div className="admin-empty-compact">{t("Nenhum pedido corresponde aos filtros.", "没有符合筛选条件的订单。")}</div> : null}
