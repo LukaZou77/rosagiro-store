@@ -2,11 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { closeStoreDialog, trapStoreDialogFocus } from "@/components/storeDialog";
 
 const CUSTOMER_SESSION_KEY = "bela-viva-customer-session";
 
 type CustomerSessionIntent = "add_to_cart" | "checkout" | "manual";
+
+type CustomerSessionOptions = {
+  intent: CustomerSessionIntent;
+  onSuccess?: (customer: CustomerSession) => void;
+  trigger?: HTMLElement;
+};
 
 export type CustomerSession = {
   id: string;
@@ -22,7 +29,7 @@ type StoredCustomerSession = {
 
 type CustomerSessionContextValue = {
   customer: CustomerSession | null;
-  requireCustomerSession: (options: { intent: CustomerSessionIntent; onSuccess?: (customer: CustomerSession) => void }) => boolean;
+  requireCustomerSession: (options: CustomerSessionOptions) => boolean;
 };
 
 const CustomerSessionContext = createContext<CustomerSessionContextValue | null>(null);
@@ -54,7 +61,10 @@ function cleanPhoneInput(value: string) {
 }
 
 export function CustomerSessionProvider({ children }: { children: React.ReactNode }) {
-  const pendingAction = useRef<{ intent: CustomerSessionIntent; onSuccess?: (customer: CustomerSession) => void } | null>(null);
+  const pendingAction = useRef<CustomerSessionOptions | null>(null);
+  const pendingRequest = useRef<AbortController | null>(null);
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [customer, setCustomer] = useState<CustomerSession | null>(() => (typeof window === "undefined" ? null : readStoredCustomer()));
   const [open, setOpen] = useState(false);
@@ -69,12 +79,22 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (open) window.setTimeout(() => nameInputRef.current?.focus(), 0);
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    if (!open || !dialog || dialog.open) return;
+    dialog.showModal();
+    nameInputRef.current?.focus({ preventScroll: true });
   }, [open]);
 
-  const requireCustomerSession = useCallback((options: { intent: CustomerSessionIntent; onSuccess?: (customer: CustomerSession) => void }) => {
+  useEffect(() => () => {
+    pendingRequest.current?.abort();
+    pendingRequest.current = null;
+  }, []);
+
+  const requireCustomerSession = useCallback((options: CustomerSessionOptions) => {
     if (customer) return true;
+    if (pendingAction.current) return false;
+    openerRef.current = options.trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     pendingAction.current = options;
     setError("");
     setOpen(true);
@@ -82,29 +102,37 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
   }, [customer]);
 
   function closeModal() {
+    pendingRequest.current?.abort();
+    pendingRequest.current = null;
     pendingAction.current = null;
     setError("");
+    setSubmitting(false);
     setOpen(false);
+    closeStoreDialog(dialogRef.current, openerRef.current);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    const action = pendingAction.current;
+    if (!action || pendingRequest.current) return;
+    const controller = new AbortController();
+    pendingRequest.current = controller;
     setSubmitting(true);
     setError("");
 
     try {
-      const intent = pendingAction.current?.intent || "manual";
       const response = await fetch("/api/customers/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           name,
           whatsapp: `+55 ${whatsapp}`,
-          intent
+          intent: action.intent
         })
       });
       const result = (await response.json()) as { customer?: CustomerSession; error?: string };
+      if (pendingRequest.current !== controller) return;
 
       if (!response.ok || !result.customer) {
         setError(result.error || "Não foi possível entrar agora.");
@@ -115,14 +143,16 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
       setCustomer(result.customer);
       setName(result.customer.name);
       setWhatsapp(result.customer.whatsapp.replace("+55", "").trim());
-      setOpen(false);
-      const action = pendingAction.current;
-      pendingAction.current = null;
-      action?.onSuccess?.(result.customer);
+      pendingRequest.current = null;
+      closeModal();
+      action.onSuccess?.(result.customer);
     } catch {
-      setError("Não foi possível entrar agora. Tente novamente.");
+      if (pendingRequest.current === controller) setError("Não foi possível entrar agora. Tente novamente.");
     } finally {
-      setSubmitting(false);
+      if (pendingRequest.current === controller) {
+        pendingRequest.current = null;
+        setSubmitting(false);
+      }
     }
   }
 
@@ -137,38 +167,52 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
   return (
     <CustomerSessionContext.Provider value={contextValue}>
       {children}
-      <div className={open ? "customer-login-shell open" : "customer-login-shell"} aria-hidden={!open}>
-        <button className="customer-login-overlay" type="button" onClick={closeModal} aria-label="Fechar area do login" />
-        <form className="customer-login-modal" onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="customer-login-title">
+      <dialog
+        className="customer-login-shell"
+        aria-labelledby="customer-login-title"
+        ref={dialogRef}
+        onCancel={(event) => {
+          event.preventDefault();
+          closeModal();
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeModal();
+        }}
+        onKeyDown={trapStoreDialogFocus}
+      >
+        <form className="customer-login-modal" onSubmit={submit}>
           <header>
             <h2 id="customer-login-title">Entrar via WhatsApp</h2>
             <button type="button" onClick={closeModal} aria-label="Fechar login">
-              x
+              ×
             </button>
           </header>
           <label>
-            Seu Nome <span>*</span>
+              <span>Seu nome <span aria-hidden="true">*</span></span>
             <input
               name="customerName"
               ref={nameInputRef}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Seu Nome"
+              placeholder="Seu nome"
+              autoComplete="name"
               required
             />
           </label>
           <div className="customer-login-field">
             <label htmlFor="customer-whatsapp">
-              Seu WhatsApp <span>*</span>
+              <span>Seu WhatsApp <span aria-hidden="true">*</span></span>
             </label>
             <div className="whatsapp-input-row">
               <span aria-hidden="true">BR +55</span>
               <input
                 id="customer-whatsapp"
                 name="customerWhatsapp"
+                type="tel"
                 value={whatsapp}
                 onChange={(event) => setWhatsapp(cleanPhoneInput(event.target.value))}
                 inputMode="tel"
+                autoComplete="tel-national"
                 placeholder="11 99999-9999"
                 required
               />
@@ -190,7 +234,7 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
             </button>
           </footer>
         </form>
-      </div>
+      </dialog>
     </CustomerSessionContext.Provider>
   );
 }
@@ -227,9 +271,9 @@ export function CustomerCheckoutButton({
       className={className}
       disabled={disabled}
       type="button"
-      onClick={() => {
+      onClick={(event) => {
         if (disabled) return;
-        if (requireCustomerSession({ intent: "checkout", onSuccess: proceed })) proceed();
+        if (requireCustomerSession({ intent: "checkout", onSuccess: proceed, trigger: event.currentTarget })) proceed();
       }}
     >
       {children}

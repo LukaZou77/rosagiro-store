@@ -142,6 +142,7 @@ test("keeps legacy package parsing and active-SKU stock fallback with the reduce
   assert.equal(response.status, 200);
   assert.equal(body.lines[0].packagePieces, 36);
   assert.equal(body.lines[0].packagePriceCents, 37_350);
+  assert.equal(body.lines[0].priceCents, 1_038);
   assert.equal(body.lines[0].stockQuantity, 36);
   assert.equal(body.lines[0].available, true);
   assert.equal(body.lines[0].lineTotalCents, 37_350);
@@ -238,8 +239,8 @@ test("preserves the complete cart response while selecting only fields used by w
         packageCount: 1,
         active: true,
         available: false,
-        warning: "Produto sem estoque.",
-        lineTotalCents: 1_000
+        warning: "Sem embalagens completas em estoque.",
+        lineTotalCents: 0
       },
       {
         slug: "inativo",
@@ -257,7 +258,7 @@ test("preserves the complete cart response while selecting only fields used by w
         active: false,
         available: false,
         warning: "Produto indisponível.",
-        lineTotalCents: 1_000
+        lineTotalCents: 0
       },
       {
         slug: "consulta",
@@ -274,7 +275,7 @@ test("preserves the complete cart response while selecting only fields used by w
         packageCount: 1,
         active: true,
         available: false,
-        warning: "Produto sem estoque.",
+        warning: "Estoque, embalagem e preço sob consulta com o atendimento.",
         lineTotalCents: 0
       },
       {
@@ -289,7 +290,7 @@ test("preserves the complete cart response while selecting only fields used by w
         packagePieces: 4,
         packagePriceCents: 1_000,
         packageValid: false,
-        packageCount: 1,
+        packageCount: 0,
         active: true,
         available: true,
         warning: "Este produto é vendido somente em embalagem fechada com 4 unidades.",
@@ -310,6 +311,7 @@ test("preserves the complete cart response while selecting only fields used by w
         brandName: "Marca Teste",
         image: "/recomendacao-categoria.webp",
         priceCents: 200,
+        packagePriceCents: 1_000,
         stockQuantity: 40,
         packagePieces: 4,
         reason: "Ajuda a fechar o mínimo"
@@ -320,6 +322,7 @@ test("preserves the complete cart response while selecting only fields used by w
         brandName: "Marca Teste",
         image: "/recomendacao-destaque.webp",
         priceCents: 100,
+        packagePriceCents: 1_000,
         stockQuantity: 40,
         packagePieces: 4,
         reason: "Ajuda a fechar o mínimo"

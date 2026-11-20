@@ -50,3 +50,21 @@ test("source inquiry distinguishes price per package from whole-box quote withou
   assert.doesNotMatch(message, /Disponibilidade: em estoque|Volume:/);
   assert.equal(new URL(href).pathname, "/5511970792390");
 });
+
+test("product inquiry uses the package price and its rounded unit reference", () => {
+  const href = buildProductWhatsAppHref({
+    slug: "produto-legado",
+    name: "Produto legado",
+    brand: { name: "Marca" },
+    priceCents: 945,
+    inventory: { quantity: 35 },
+    baseBoxPieces: 36,
+    descriptionPt: "Preço unitário: 9,45; Embalagem para atacado: 328,50c/36pçs.",
+    wholesalePackage: "Embalagem fechada com 36 unidades: R$ 340,20."
+  });
+  const message = new URL(href).searchParams.get("text") || "";
+  assert.match(message, /Preço unitário aproximado: R\$\s*9,13/);
+  assert.match(message, /Embalagem fechada com 36 unidades por R\$\s*328,50/);
+  assert.match(message, /Disponibilidade: sob consulta/);
+  assert.doesNotMatch(message, /R\$\s*340,20|R\$\s*9,45/);
+});

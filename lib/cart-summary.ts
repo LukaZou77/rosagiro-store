@@ -28,6 +28,7 @@ export type CartSummary = {
   remainingToMinimumCents: number;
   minimumReached: boolean;
   packageReady: boolean;
+  orderLimitNotice?: string;
   recommendations: CartCompletionRecommendation[];
   error?: string;
 };

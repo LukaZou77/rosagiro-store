@@ -5,9 +5,9 @@ import {
   currentQuickPurchaseSummaryState,
   isCurrentQuickPurchaseRequest,
   shouldFetchQuickPurchaseSummary,
-  wrappedDialogFocusTarget,
   type QuickPurchaseSummaryState
 } from "./QuickPurchaseDrawerState";
+import { wrappedDialogFocusTarget } from "./storeDialog";
 
 const drawerSource = readFileSync(new URL("./QuickPurchaseDrawer.tsx", import.meta.url), "utf8");
 

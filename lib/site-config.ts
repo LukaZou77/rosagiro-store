@@ -185,7 +185,7 @@ export const siteConfig = {
     ]
   },
   productConversion: {
-    priceLabel: "Preço unitário no atacado",
+    priceLabel: "Preço unitário aproximado",
     minimumLabel: "Pedido mínimo",
     minimumNote: "Pode combinar produtos diferentes; cada item é vendido em embalagem fechada.",
     stockLabel: "Disponibilidade",
@@ -232,7 +232,7 @@ export const siteConfig = {
     steps: {
       contact: {
         title: "Contato",
-        summary: "Nome, e-mail, CPF e WhatsApp para atendimento."
+        summary: "Nome ou razão social, e-mail, WhatsApp e CPF ou CNPJ."
       },
       address: {
         title: "Endereço de entrega",
@@ -244,10 +244,9 @@ export const siteConfig = {
       }
     },
     validation: {
-      name: "Informe seu nome completo para continuar.",
+      name: "Informe seu nome ou razão social para continuar.",
       email: "Informe um e-mail válido.",
       phone: "Informe seu WhatsApp com DDD.",
-      cpf: "Informe CPF com 11 dígitos.",
       cep: "Informe um CEP com 8 dígitos.",
       state: "Escolha o estado.",
       city: "Informe a cidade.",

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { parseBrazilianDocument } from "@/lib/brazilian-document";
 import { prisma } from "@/lib/db";
 import { isSeparateFreight, separateFreightNotice } from "@/lib/freight-policy";
 import { OrderError, markOrderPaid } from "@/lib/orders";
@@ -195,6 +196,12 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
   const config = mercadoPagoConfig();
   const payerName = splitName(order.customerName);
   const payerPhone = splitPhone(order.customerPhone);
+  const payerDocument = parseBrazilianDocument(order.customerCpf);
+  // Checkout Pro can collect identification itself. Its preference API does not document
+  // alphanumeric CNPJ prefill, so include only validated numeric documents as prefill.
+  const identification = payerDocument && (payerDocument.type === "CPF" || !payerDocument.alphanumeric)
+    ? { type: payerDocument.type, number: payerDocument.number }
+    : undefined;
   const baseOrderUrl = `${config.publicUrl}/pedido/${encodeURIComponent(order.orderNumber)}`;
   const maxInstallments = configuredMercadoPagoInstallments(await getStoreProfile());
   const preferenceBody = {
@@ -216,10 +223,7 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
         area_code: payerPhone.areaCode,
         number: payerPhone.number
       },
-      identification: {
-        type: "CPF",
-        number: digits(order.customerCpf)
-      },
+      identification,
       address: {
         zip_code: digits(order.cep),
         street_name: order.street,

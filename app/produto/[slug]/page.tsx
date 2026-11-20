@@ -33,6 +33,7 @@ import { siteConfig } from "@/lib/site-config";
 import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
+import { wholesaleReferenceUnitPriceCents } from "@/lib/wholesale-order";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -116,7 +117,6 @@ export default async function ProductPage({ params }: PageProps) {
   const stockLabel = productStockLabel(product);
   const stockTone = productStockTone(product);
   const activeSkus = product.skus.filter((sku) => sku.active).sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
-  const displayPrice = product.priceCents;
   const whatsappHref = buildProductWhatsAppHref(product, storeProfile.whatsapp);
   const trustSignals = storeTrustSignals(storeProfile);
   const skuImages = activeSkus.map((sku) => sku.image).filter((image): image is string => Boolean(image));
@@ -127,7 +127,10 @@ export default async function ProductPage({ params }: PageProps) {
   const packagePieces = productWholesalePackagePieces(product);
   const packagePriceCents = productWholesalePackagePriceCents(product);
   const purchaseNotice = productDetailPurchaseNotice({ consultationOnly, packagePieces, packagePriceCents });
-  const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces);
+  const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces && packagePriceCents);
+  const displayPrice = !consultationOnly && packagePieces && packagePriceCents
+    ? wholesaleReferenceUnitPriceCents(packagePriceCents, packagePieces)
+    : product.priceCents;
   const showBrand = shouldDisplayProductBrand(product.brand.name);
   const priceLabel = consultationOnly
     ? sourceCatalogPriceLabel(product.wholesalePackage)
@@ -198,6 +201,7 @@ export default async function ProductPage({ params }: PageProps) {
               packagePieces={packagePieces}
               packagePriceCents={packagePriceCents}
               unitPriceCents={displayPrice}
+              unitPriceLabel={consultationOnly ? priceLabel : undefined}
             />
             <div className={`purchase-panel-actions ${buyingStyles.purchaseActions}`}>
               {consultationOnly ? (
@@ -214,13 +218,14 @@ export default async function ProductPage({ params }: PageProps) {
                   }}
                   slug={product.slug}
                   quantity={packagePieces}
+                  stockQuantity={quantity}
                   label={`Adicionar 1 embalagem (${packagePieces} un.)`}
                   disabled={!available}
                   wide
                 />
               ) : (
                 <span className="button primary wide disabled" aria-disabled="true">
-                  Embalagem sob consulta
+                  {packagePieces && packagePriceCents ? "Sem embalagem completa" : "Embalagem sob consulta"}
                 </span>
               )}
               <WhatsAppLink href={whatsappHref} className="button whatsapp">

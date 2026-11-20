@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Download, Filter, Search } from "lucide-react";
 import { updateOrderStatusAction } from "@/app/admin/order-actions";
 import { AdminShell } from "@/components/AdminShell";
+import { AdminProductSubmitButton } from "@/components/AdminProductSubmitButton";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminTranslator } from "@/lib/admin-i18n";
 import { getAdminLocale } from "@/lib/admin-i18n-server";
@@ -111,8 +112,9 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
         <h1>{t("Pedidos", "订单")}</h1>
         <p>{t("Busque clientes, confira pagamentos e atualize a etapa operacional sem alterar o estoque automaticamente.", "搜索客户、核对付款并更新订单状态；系统不会自动修改库存。")}</p>
         <div className="admin-actions">
-          <Link className="button secondary" href="/admin/pedidos/exportar-conversoes" prefetch={false}><Download size={15} />{t("Exportar conversões pagas", "导出已付款转化")}</Link>
+          <Link className="button secondary" href="/admin/pedidos/exportar-conversoes" prefetch={false}><Download size={15} />{t("CSV Google Ads (histórico pago)", "Google Ads CSV（历史实收）")}</Link>
         </div>
+        <p>{t("O CSV inclui o histórico pago com identificador Google, sem os filtros desta lista. O download não envia dados à plataforma.", "CSV 包含带 Google 点击标识的历史实收订单，不采用本页筛选；下载不会向广告平台发送数据。")}</p>
       </div>
 
       <div className="metric-grid compact admin-order-metrics">
@@ -131,6 +133,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
         <button className="button primary" type="submit"><Filter size={15} />{t("Aplicar", "应用")}</button>
         <Link className="button secondary" href="/admin/pedidos" prefetch={false}>{t("Limpar", "清除")}</Link>
       </form>
+      <p>{t("Datas por criação do pedido, no horário de São Paulo; a data final inclui o dia inteiro. Os cartões de aguardando pagamento e pagos mostram o total geral.", "日期按订单创建时间及圣保罗时区筛选，结束日期含当天；待付款和已付款卡片显示全局总数。")}</p>
 
       <section className="admin-panel admin-orders-table-panel">
         <div className="admin-compact-table-wrap">
@@ -144,7 +147,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
                 );
                 return (
                 <tr key={order.id}>
-                  <td><Link href={`/admin/pedidos/${order.orderNumber}`} prefetch={false}>{order.orderNumber}</Link><small>{formatAdminDateTime(order.createdAt, t("Sem registro", "未记录"), locale)}</small></td>
+                  <td><Link href={`/admin/pedidos/${order.orderNumber}?${new URLSearchParams({ returnTo: pageHref(preserved, page) })}`} prefetch={false}>{order.orderNumber}</Link><small>{formatAdminDateTime(order.createdAt, t("Sem registro", "未记录"), locale)}</small></td>
                   <td><strong>{order.customerName}</strong><small>{order.customerPhone}</small></td>
                   <td><span>{paymentProviderLabel(order.payment?.provider)} / {paymentMethodLabel(order.payment?.method)}</span><small>{paymentNeedsReview ? t("Recebimento a conferir", "待核对到账") : paymentStatusLabel(order.payment?.status)}</small></td>
                   <td><span className={`admin-status-dot status-${order.status.toLowerCase()}`}>{localizedStatusLabels[order.status]}</span></td>
@@ -153,8 +156,9 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
                   <td>
                     <form action={updateOrderStatusAction} className="admin-inline-status-form">
                       <input type="hidden" name="orderNumber" value={order.orderNumber} />
-                      <select name="status" defaultValue={order.status}>{orderStatusChoices(order.status, paymentConfirmed).map((item) => <option value={item} key={item}>{localizedStatusLabels[item]}</option>)}</select>
-                      <button type="submit">{t("Salvar", "保存")}</button>
+                      <input type="hidden" name="returnTo" value={pageHref(preserved, page)} />
+                      <select aria-label={t(`Status do pedido ${order.orderNumber}`, `订单 ${order.orderNumber} 的状态`)} name="status" defaultValue={order.status}>{orderStatusChoices(order.status, paymentConfirmed).map((item) => <option value={item} key={item}>{localizedStatusLabels[item]}</option>)}</select>
+                      <AdminProductSubmitButton className="" label={t("Salvar", "保存")} />
                     </form>
                   </td>
                 </tr>

@@ -4,6 +4,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { after, afterEach, before, beforeEach, describe, mock, test } from "node:test";
 import type { Prisma } from "@/src/generated/prisma/client";
 import { orderAccessCookieName, verifyOrderAccessGrant } from "./order-access-core";
+import { MAX_WHOLESALE_LINE_QUANTITY } from "./wholesale-order";
 
 const checkoutOrigin = "https://checkout.example.test";
 const preferenceEndpoint = "https://api.mercadopago.com/checkout/preferences";
@@ -270,7 +271,7 @@ describe("checkout API with isolated PostgreSQL", {
     return {
       checkoutAttemptId,
       items: [{ slug: prefix, quantity }],
-      customer: { name: prefix, email: customerEmail, phone, cpf: "00000000000" },
+      customer: { name: prefix, email: customerEmail, phone, cpf: "28001238938" },
       address: {
         cep: "01001000",
         state: "SP",
@@ -320,6 +321,10 @@ describe("checkout API with isolated PostgreSQL", {
       assert.equal(freight.collectedOnWebsiteCents, 0);
       assert.equal(order.items.length, 1);
       assert.equal(order.items[0].quantity, 200);
+      assert.equal(order.items[0].packagePieces, 200);
+      assert.equal(order.items[0].packageCount, 1);
+      assert.equal(order.items[0].packagePriceCents, 50_000);
+      assert.equal(order.items[0].unitPriceCents, 250);
       assert.equal(order.items[0].lineTotalCents, 50_000);
       assert.equal(order.payment?.amountCents, 50_000);
       assert.equal(order.payment?.status, "PENDING");
@@ -528,6 +533,81 @@ describe("checkout API with isolated PostgreSQL", {
       assert.equal(corrected.status, 200);
       assertGrantedOrder(corrected);
       assert.equal((await orders()).length, 1);
+    });
+  });
+
+  test("summary and checkout agree on complete packages above 999 units and preserve the sale terms", async () => {
+    await withFixture(async ({ productId, payload, orders }) => {
+      await prisma.product.update({ where: { id: productId }, data: { baseBoxPriceCents: 50_001 } });
+      const request = payload(1_000);
+      const { POST: summarizeCart } = await import("../app/api/cart/summary/route");
+      const summaryResponse = await summarizeCart(new Request(`${checkoutOrigin}/api/cart/summary`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ items: request.items })
+      }));
+      assert.equal(summaryResponse.status, 200);
+      const summary = await summaryResponse.json();
+      assert.equal(summary.packageReady, true);
+      assert.equal(summary.lines.length, 1);
+      assert.equal(summary.lines[0].quantity, 1_000);
+      assert.equal(summary.lines[0].stockQuantity, 1_000);
+      assert.equal(summary.lines[0].packagePriceCents, 50_001);
+      assert.equal(summary.lines[0].priceCents, 250);
+      assert.equal(summary.totalCents, 250_005);
+
+      await assertBusinessRejection(payload(1_200), /não tem estoque suficiente/i);
+      const result = await post(request);
+      assert.equal(result.status, 200);
+      assertGrantedOrder(result);
+      await prisma.product.update({
+        where: { id: productId },
+        data: { baseBoxPieces: 100, baseBoxPriceCents: 35_000 }
+      });
+      const [order] = await orders();
+      assert.equal(order.totalCents, summary.totalCents);
+      assert.equal(order.payment?.amountCents, summary.totalCents);
+      assert.equal(order.items[0].quantity, 1_000);
+      assert.equal(order.items[0].packagePieces, 200);
+      assert.equal(order.items[0].packageCount, 5);
+      assert.equal(order.items[0].packagePriceCents, 50_001);
+      assert.equal(order.items[0].unitPriceCents, 250);
+      assert.equal(order.items[0].lineTotalCents, summary.totalCents);
+      assert.equal((await prisma.inventory.findUnique({ where: { productId } }))?.quantity, 1_000);
+    });
+  });
+
+  test("malformed and out-of-range cart rows cannot create a partial or rounded order", async () => {
+    await withFixture(async ({ productId, payload, orders }) => {
+      const invalidRows = [
+        { quantity: 200.5 },
+        { quantity: MAX_WHOLESALE_LINE_QUANTITY + 1 },
+        { quantity: true },
+        null
+      ];
+      for (const invalid of invalidRows) {
+        const request = payload();
+        const [line] = request.items;
+        await assertBusinessRejection({
+          ...request,
+          items: [line, invalid === null ? null : { ...line, ...invalid }]
+        }, /revise os itens do carrinho/i);
+      }
+      const overflow = payload(MAX_WHOLESALE_LINE_QUANTITY);
+      await assertBusinessRejection({
+        ...overflow,
+        items: [...overflow.items, { ...overflow.items[0], quantity: 1 }]
+      }, /quantidade de um produto ultrapassa o limite/i);
+      assert.equal((await orders()).length, 0);
+      assert.equal(preferences.length, 0);
+
+      const legacy = payload();
+      const [line] = legacy.items;
+      const valid = await post({ ...legacy, items: [{ ...line, quantity: "200" }] });
+      assert.equal(valid.status, 200);
+      assertGrantedOrder(valid);
+      assert.equal((await orders())[0].items[0].quantity, 200);
+      assert.equal((await prisma.inventory.findUnique({ where: { productId } }))?.quantity, 1_000);
     });
   });
 

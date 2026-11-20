@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { simulatedPaymentConfirmedStatus } from "@/lib/payments";
 import {
   normalizeWhatsAppInquiryReference,
   paidLinkedOrderSummary,
@@ -125,20 +126,35 @@ test("WON requires a matching phone and confirmed paid order", () => {
       hasOrder: true,
       requestedStatus: "WON",
       paymentStatus: "PAID",
+      paidAt: new Date("2026-09-26T12:00:00Z"),
+      paymentProviderStatus: simulatedPaymentConfirmedStatus
+    }),
+    "WON_REQUIRES_PAID_ORDER"
+  );
+  assert.equal(
+    whatsAppOrderLinkError({
+      leadWhatsappDigits: "5511999999999",
+      orderWhatsappDigits: "5511999999999",
+      hasOrder: true,
+      requestedStatus: "WON",
+      paymentStatus: "PAID",
+      paymentProviderStatus: "manual_transfer_confirmed",
       paidAt: new Date("2026-09-26T12:00:00Z")
     }),
     null
   );
 });
 
-test("paid linked revenue is distinct from raw lead rows", () => {
+test("paid linked revenue counts distinct confirmed orders and excludes simulation", () => {
   const paidAt = new Date("2026-09-26T12:00:00Z");
   assert.deepEqual(
     paidLinkedOrderSummary([
-      { orderId: "order-1", orderPayment: { status: "PAID", paidAt, amountCents: 12990 } },
-      { orderId: "order-1", orderPayment: { status: "PAID", paidAt, amountCents: 12990 } },
-      { orderId: "order-2", orderPayment: { status: "PENDING", paidAt: null, amountCents: 9900 } }
+      { orderId: "order-1", orderPayment: { status: "PAID", paidAt, providerStatus: "approved", amountCents: 12990 } },
+      { orderId: "order-1", orderPayment: { status: "PAID", paidAt, providerStatus: "approved", amountCents: 12990 } },
+      { orderId: "order-2", orderPayment: { status: "PENDING", paidAt: null, providerStatus: null, amountCents: 9900 } },
+      { orderId: "order-3", orderPayment: { status: "PAID", paidAt, providerStatus: simulatedPaymentConfirmedStatus, amountCents: 9900 } },
+      { orderId: "order-4", orderPayment: { status: "PAID", paidAt, providerStatus: "manual_transfer_confirmed", amountCents: 50000 } }
     ]),
-    { orderCount: 1, revenueCents: 12990 }
+    { orderCount: 2, revenueCents: 62990 }
   );
 });

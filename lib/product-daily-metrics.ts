@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { isPaymentConfirmed } from "@/lib/payments";
 import { eventDateFromKey, brazilDateKey } from "@/lib/site-analytics-core";
 
 type ProductMetricSeed = {
@@ -55,7 +56,7 @@ async function orderMetricSeed(orderId: string) {
     select: {
       id: true,
       createdAt: true,
-      payment: { select: { status: true, paidAt: true } },
+      payment: { select: { status: true, paidAt: true, providerStatus: true } },
       items: {
         select: {
           productId: true,
@@ -116,7 +117,7 @@ export async function recordCreatedOrderProductMetrics(orderId: string, directio
 
 export async function recordPaidOrderProductMetrics(orderId: string) {
   const order = await orderMetricSeed(orderId);
-  if (!order?.payment?.paidAt || order.payment.status !== "PAID") return;
+  if (!order?.payment?.paidAt || !isPaymentConfirmed(order.payment.status, order.payment.paidAt, order.payment.providerStatus)) return;
   const eventDate = eventDateFromKey(brazilDateKey(order.payment.paidAt));
   const seeds = groupOrderItems(order.items);
   await prisma.$transaction(

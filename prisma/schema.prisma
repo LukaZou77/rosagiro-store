@@ -539,6 +539,9 @@ model OrderItem {
   unitPriceCents Int
   quantity       Int
   lineTotalCents Int
+  packagePieces  Int?
+  packageCount   Int?
+  packagePriceCents Int?
   order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   productSku     ProductSku? @relation(fields: [productSkuId], references: [id], onDelete: SetNull)

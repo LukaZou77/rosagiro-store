@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { build } from "esbuild";
 import { chromium } from "playwright";
 
@@ -30,34 +31,58 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
 
 const number = "RG-TESTE-1001";
 const cart = [{ slug: "produto-teste", quantity: 12 }];
+const companyDocument = "12.abc.345/01de-35";
+const emailAddress = "teste@example.test";
+const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
-async function fillCheckout(form) {
-  await form.locator('[name="email"]').fill("teste@example.test");
-  await form.locator('[name="cpf"]').fill("12345678909");
-  await form.locator('[name="cep"]').fill("01001-000");
-  await form.locator('[name="state"]').selectOption("SP");
-  await form.locator('[name="city"]').fill("São Paulo");
-  await form.locator('[name="street"]').fill("Praça da Sé");
-  await form.locator('[name="number"]').fill("1");
-  await form.locator('[name="district"]').fill("Sé");
-  await form.locator('[name="freightSeparateAccepted"]').check();
+function checkoutStep(form, name) {
+  return form.locator(`[data-checkout-step="${name}"]`);
+}
+
+async function advanceToPayment(form) {
+  await checkoutStep(form, "contact").getByRole("button", { name: "Continuar", exact: true }).click();
+  const address = checkoutStep(form, "address");
+  await address.locator('[name="cep"]').fill("01001-000");
+  await address.locator('[name="state"]').selectOption("SP");
+  await address.locator('[name="city"]').fill("São Paulo");
+  await address.locator('[name="street"]').fill("Praça da Sé");
+  await address.locator('[name="number"]').fill("1");
+  await address.locator('[name="district"]').fill("Sé");
+  await address.getByRole("button", { name: "Continuar", exact: true }).click();
+  await checkoutStep(form, "payment").locator('[name="freightSeparateAccepted"]').check();
+  assert.equal(await form.locator('[data-checkout-step="payment"].is-active').count(), 1);
 }
 
 try {
   const page = await browser.newPage();
   const requests = [];
   const pageErrors = [];
+  let failNextSummary = false;
   let mockResponse = "non-json";
   page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.route("**/*", async (route) => {
     const { origin, pathname: path } = new URL(route.request().url());
     if (origin !== "http://127.0.0.1:9242") return route.abort();
-    if (path === "/") return route.fulfill({ contentType: "text/html", body: `<div id="root"></div><script src="/checkout-bundle.js"></script>` });
+    if (path === "/") return route.fulfill({ contentType: "text/html", body: `<link rel="stylesheet" href="/checkout.css"><div id="root"></div><script src="/checkout-bundle.js"></script>` });
+    if (path === "/checkout.css") return route.fulfill({ contentType: "text/css", body: css });
     if (path === "/checkout-bundle.js") return route.fulfill({ contentType: "text/javascript", body: bundle.outputFiles[0].text });
-    if (path === "/api/cart/summary") return route.fulfill({ json: {
-      lines: [{ ...cart[0], name: "Produto Teste", brandName: "Marca", available: true, packageValid: true, packagePieces: 12, packageCount: 1, lineTotalCents: 60_000 }],
-      subtotalCents: 60_000, totalCents: 60_000, minimumReached: true, packageReady: true, recommendations: []
-    } });
+    if (path === "/api/cart/summary") {
+      if (failNextSummary) {
+        failNextSummary = false;
+        return route.fulfill({ status: 503, json: { error: "Resumo temporariamente indisponível." } });
+      }
+      const { items } = route.request().postDataJSON();
+      const lines = items.map((item) => ({
+        ...item,
+        name: "Produto Teste", brandName: "Marca", available: true, packageValid: true,
+        priceCents: 5_000, packagePriceCents: 60_000, packagePieces: 12, packageCount: item.quantity / 12,
+        lineTotalCents: item.quantity * 5_000
+      }));
+      const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
+      return route.fulfill({ json: {
+        lines, subtotalCents, totalCents: subtotalCents, minimumReached: true, packageReady: true, recommendations: []
+      } });
+    }
     if (path === "/api/cep/01001000") return route.fulfill({ status: 404, json: {} });
     if (path === "/api/orders") {
       requests.push(route.request().postDataJSON());
@@ -77,14 +102,49 @@ try {
 
   await page.goto("http://127.0.0.1:9242/");
   const form = page.locator("#checkout-form");
-  await fillCheckout(form);
+  const email = form.getByRole("textbox", { name: "E-mail", exact: true });
+  const document = form.getByRole("textbox", { name: "CPF ou CNPJ", exact: true });
+  const continueContact = checkoutStep(form, "contact").getByRole("button", { name: "Continuar", exact: true });
+
+  await email.fill("teste");
+  await continueContact.click();
+  assert.equal(await email.getAttribute("aria-invalid"), "true");
+  assert.equal(await email.getAttribute("aria-describedby"), "checkout-step-error");
+  await email.fill(emailAddress);
+  await document.fill("12.ABC.345/01DE-36");
+  await continueContact.click();
+  assert.equal(await document.getAttribute("aria-invalid"), "true");
+  assert.equal(await document.getAttribute("aria-describedby"), "checkout-document-help checkout-step-error");
+  await document.fill(companyDocument);
+  await document.evaluate((input) => {
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true }));
+    input.form.requestSubmit();
+  });
+  assert.equal(await form.locator('[data-checkout-step="contact"].is-active').count(), 1);
+
+  failNextSummary = true;
+  const changedCart = [{ ...cart[0], quantity: 24 }];
+  await page.evaluate((items) => {
+    localStorage.setItem("bela-viva-cart", JSON.stringify(items));
+    window.dispatchEvent(new Event("bela-viva-cart-changed"));
+  }, changedCart);
+  await page.getByRole("heading", { name: "Resumo indisponível." }).waitFor();
+  await page.getByRole("button", { name: "Tentar novamente" }).click();
+  await form.waitFor();
+  assert.equal(page.url(), "http://127.0.0.1:9242/");
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("bela-viva-cart"))), changedCart);
+  assert.equal(await email.inputValue(), emailAddress);
+  assert.equal(await document.inputValue(), companyDocument);
+  assert.equal(requests.length, 0);
+  await advanceToPayment(form);
   await form.evaluate((node) => { node.requestSubmit(); node.requestSubmit(); });
 
   const verify = page.getByRole("button", { name: "Verificar pedido", exact: true });
   await verify.waitFor();
   assert.equal(await verify.isEnabled(), true);
   assert.equal(requests.length, 1);
-  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("bela-viva-cart"))[0].quantity), 12);
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("bela-viva-cart"))[0].quantity), 24);
+  assert.equal(requests[0].customer.cpf, companyDocument);
   assert.match(requests[0].checkoutAttemptId, /^[0-9a-f-]{36}$/);
   await page.reload();
   await verify.waitFor();
@@ -94,7 +154,7 @@ try {
   await verify.click();
   await page.getByRole("alert").filter({ hasText: "Confira o endereço." }).waitFor();
   assert.deepEqual(requests[1], requests[0]);
-  assert.equal(await form.locator('[name="email"]').inputValue(), "teste@example.test");
+  assert.equal(await form.locator('[name="email"]').inputValue(), emailAddress);
   assert.equal(await form.locator('[name="street"]').inputValue(), "Praça da Sé");
   assert.equal(await form.locator('[name="freightSeparateAccepted"]').isChecked(), true);
   assert.equal(await page.evaluate(() => sessionStorage.getItem("rosagiro:checkout-recovery:v1")), null);
@@ -106,7 +166,7 @@ try {
   assert.notEqual(requests[2].checkoutAttemptId, requests[0].checkoutAttemptId);
   assert.equal(await page.evaluate(() => localStorage.getItem("bela-viva-cart")), "[]");
   const confirmedRecord = await page.evaluate(() => sessionStorage.getItem("rosagiro:checkout-recovery:v1"));
-  assert.doesNotMatch(confirmedRecord, /teste@example.test|12345678909|Praça da Sé/);
+  assert.doesNotMatch(confirmedRecord, /teste@example.test|12\.abc\.345\/01de-35|Praça da Sé/);
   await page.reload();
   await page.getByRole("link", { name: "Acompanhar pedido" }).waitFor();
 
@@ -123,7 +183,9 @@ try {
     };
   });
   mockResponse = "non-json";
-  await fillCheckout(form);
+  await email.fill(emailAddress);
+  await document.fill("280.012.389-38");
+  await advanceToPayment(form);
   await form.evaluate((node) => node.requestSubmit());
   await page.getByRole("alert").filter({ hasText: "não conseguiu guardar os dados de recuperação" }).waitFor();
   assert.equal(await page.evaluate(() => sessionStorage.getItem("rosagiro:checkout-recovery:v1")), null);
@@ -136,7 +198,7 @@ try {
   assert.equal(await page.getByRole("link", { name: "Acompanhar pedido" }).getAttribute("href"), `/pedido/${number}`);
   assert.equal(await page.evaluate(() => localStorage.getItem("bela-viva-cart")), "[]");
   assert.deepEqual(pageErrors, []);
-  console.log("Browser verification passed for same-tick duplicate submission, exact retry after reload, editable validation error, 202 confirmation, storage denial, cart retention and cleanup, private snapshot cleanup, and navigation failure recovery.");
+  console.log("Browser verification passed for CPF and alphanumeric CNPJ, linked field errors, composition Enter, in-place summary retry with form retention, same-tick duplicate submission, exact retry after reload, editable validation error, 202 confirmation, storage denial, cart cleanup, private snapshot cleanup, and navigation failure recovery.");
 } finally {
   await browser.close();
 }

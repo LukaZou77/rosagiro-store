@@ -12,6 +12,7 @@ import {
   adminQualityStatusMessage
 } from "@/lib/admin-i18n-content";
 import { getAdminLocale } from "@/lib/admin-i18n-server";
+import { productListReturnPath } from "@/lib/admin-product-navigation";
 import { prisma } from "@/lib/db";
 import { evaluateProductQuality, productQualityGroupLabels } from "@/lib/product-quality";
 
@@ -45,6 +46,7 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
 
   const error = single(query.error);
   const saved = single(query.saved);
+  const returnTo = productListReturnPath(single(query.returnTo));
 
   if (product.deletedAt) {
     return (
@@ -95,7 +97,7 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
         <h1>{product.name}</h1>
         <p>{t("Edite a ficha completa que alimenta a vitrine, filtros, importação e checkout.", "编辑用于前台展示、筛选、导入和结账的完整商品资料。")}</p>
         <div className="admin-actions">
-          <Link className="button secondary" href="/admin/produtos" prefetch={false}>
+          <Link className="button secondary" href={returnTo} prefetch={false}>
             {t("Voltar para produtos", "返回商品列表")}
           </Link>
           <Link className="button secondary" href={`/produto/${product.slug}`} prefetch={false}>
@@ -142,7 +144,7 @@ export default async function AdminProductDetailPage({ params, searchParams }: P
         </div>
       </section>
 
-      <AdminProductForm action={updateProductDetailAction} brands={brands} categories={categories} locale={locale} mode="edit" product={product} />
+      <AdminProductForm action={updateProductDetailAction} brands={brands} categories={categories} locale={locale} mode="edit" product={product} returnTo={returnTo} />
     </AdminShell>
   );
 }

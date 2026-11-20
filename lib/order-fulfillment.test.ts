@@ -112,11 +112,22 @@ test("shipment state and tracking save together without changing quote or paymen
   assert.equal(order.totalCents, 62870);
 });
 
-test("expired session blocks writes and carries order return path", async () => {
+test("expired session blocks both detail writes and preserves the safe order list context", async () => {
   authenticated = false;
-  await assert.rejects(updateOrderStatusAction(shipmentForm()), /admin\/login\?returnTo=.*RG-TEST-1.*error=session/);
+  const detailPath = `/admin/pedidos/${order.orderNumber}`;
+  const list = "/admin/pedidos?q=Rosa+%26+Bela&status=PAID&page=3";
+  const detailWithList = `${detailPath}?${new URLSearchParams({ returnTo: list })}`;
+  for (const action of [updateOrderStatusAction, confirmManualOrderPaymentAction]) {
+    const form = shipmentForm();
+    form.set("returnTo", list);
+    await assert.rejects(action(form), { message: `REDIRECT:${adminLoginPath(detailWithList, "session")}` });
+    form.set("returnTo", "https://example.test/admin/pedidos?status=SHIPPED");
+    await assert.rejects(action(form), { message: `REDIRECT:${adminLoginPath(detailPath, "session")}` });
+  }
   assert.equal(updateCalls, 0);
   assert.equal(order.status, "PAID");
+  assert.equal(paidMetricCalls, 0);
+  assert.equal(paidNoticeCalls, 0);
 });
 
 test("list status update preserves already-saved tracking", async () => {

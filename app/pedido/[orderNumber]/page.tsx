@@ -178,8 +178,19 @@ export default async function OrderPage({ params, searchParams }: PageProps) {
           {order.items.map((item) => (
             <div key={item.id}>
               <span>
-                {item.quantity}x {item.productName}
+                {item.productName}
                 {item.productSkuName ? ` - ${item.productSkuName}` : ""}
+                <br />
+                <small>
+                  {item.packagePieces && item.packageCount && item.packagePriceCents ? (
+                    <>
+                      {item.packageCount} {item.packageCount === 1 ? "embalagem" : "embalagens"} de {item.packagePieces} {item.packagePieces === 1 ? "unidade" : "unidades"}
+                      {" · "}{money(item.packagePriceCents)} por embalagem
+                    </>
+                  ) : (
+                    <>{item.quantity} {item.quantity === 1 ? "unidade" : "unidades"}</>
+                  )}
+                </small>
               </span>
               <strong>{money(item.lineTotalCents)}</strong>
             </div>

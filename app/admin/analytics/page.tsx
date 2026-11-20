@@ -110,7 +110,7 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
           <div><span>{t("Cliques totais", "总点击数")}</span><strong>{analytics.current.whatsappClicks}</strong><small>{t("Saídas registradas no site", "网站记录的跳转次数")}</small></div>
           <div><span>{t("Sessões com clique", "发生点击的会话")}</span><strong>{analytics.current.whatsappSessions}</strong><small>{t("Visitantes com intenção", "有咨询意向的访客")}</small></div>
           <div><span>{t("Leads qualificados", "有效询盘")}</span><strong>{analytics.current.qualifiedLeads}</strong><small>{t("Conversas reais registradas", "已登记的真实沟通")}</small></div>
-          <div><span>{t("Taxa clique → lead", "点击 → 询盘转化率")}</span><strong>{analytics.funnel.whatsappClickToLeadRate === null ? "—" : `${analytics.funnel.whatsappClickToLeadRate}%`}</strong><small>{t("Clique não equivale a conversa", "点击不等于真实沟通")}</small></div>
+          <div><span>{t("Leads / sessões no período", "同期询盘数 / 点击会话数")}</span><strong>{analytics.funnel.whatsappClickToLeadRate === null ? "—" : `${analytics.funnel.whatsappClickToLeadRate}%`}</strong><small>{t("Totais do período; não é atribuição por visitante", "同周期总量比值，并非逐访客归因转化率")}</small></div>
         </section>
 
         <section className="admin-work-surface admin-comparison-summary">
@@ -133,7 +133,7 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
 
       <div className="admin-method-note">
         <strong>{t("Como os números são calculados", "统计口径")}</strong>
-        <p>{t("Receita e vendas usam apenas pagamentos aprovados. Pedidos criados, cliques no WhatsApp e leads qualificados permanecem indicadores separados. Quando não existe base comparável, o relatório não inventa porcentagem.", "收入和成交仅统计已批准付款。创建订单、WhatsApp 点击和有效询盘分别统计；没有可比基数时不会虚构百分比。")}</p>
+        <p>{t("Estatísticas internas do site, sem envio de conversões ao Google ou à Meta. Receita e vendas usam pagamentos confirmados com data de recebimento e excluem simulações de teste. Pedidos criados, cliques no WhatsApp e leads qualificados são indicadores separados; a relação entre totais do período não comprova a origem de cada venda. Sem base comparável, não exibimos porcentagem de variação.", "仅站内统计，不向 Google 或 Meta 发送转化。收入和成交要求付款确认及到账时间，排除模拟测试。创建订单、WhatsApp 点击和有效询盘分别统计；同期总量比值不能证明每笔成交的来源。没有可比基数时不显示变化百分比。")}</p>
       </div>
     </AdminShell>
   );

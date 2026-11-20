@@ -8,7 +8,8 @@ import { addWholesalePackageQuantity } from "@/lib/wholesale-order";
 
 export function AddToCartButton({
   slug,
-  quantity = 1,
+  quantity,
+  stockQuantity,
   label = "Adicionar",
   confirmationLabel = "Adicionado",
   unavailableLabel = "Sem estoque",
@@ -17,7 +18,8 @@ export function AddToCartButton({
   analyticsItem
 }: {
   slug: string;
-  quantity?: number;
+  quantity: number;
+  stockQuantity: number;
   label?: string;
   confirmationLabel?: string;
   unavailableLabel?: string;
@@ -26,7 +28,7 @@ export function AddToCartButton({
   analyticsItem?: { name?: string; brand?: string; category?: string; priceCents?: number };
 }) {
   const { requireCustomerSession } = useCustomerSession();
-  const [added, setAdded] = useState(false);
+  const [feedback, setFeedback] = useState("");
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -38,16 +40,18 @@ export function AddToCartButton({
   function addItem() {
     const cart = readCart();
     const existing = cart.find((item) => sameCartLine(item, slug));
-    const nextQuantity = addWholesalePackageQuantity(existing?.quantity || 0, quantity);
-    if (nextQuantity <= 0 || nextQuantity === existing?.quantity) return;
-    if (existing) existing.quantity = nextQuantity;
-    else cart.push({ slug, quantity: nextQuantity });
-    writeCart(cart);
-    trackProductEvent({ type: "ADD_TO_CART", slug, skuId: null, quantity, item: analyticsItem });
+    const currentQuantity = existing?.quantity ?? 0;
+    const nextQuantity = addWholesalePackageQuantity(currentQuantity, quantity, stockQuantity);
+    if (nextQuantity > currentQuantity) {
+      if (existing) existing.quantity = nextQuantity;
+      else cart.push({ slug, quantity: nextQuantity });
+      writeCart(cart);
+      trackProductEvent({ type: "ADD_TO_CART", slug, skuId: null, quantity: nextQuantity - currentQuantity, item: analyticsItem });
+    }
+    setFeedback(nextQuantity > currentQuantity ? confirmationLabel : "Limite disponível no pedido");
     notifyQuickPurchaseOpen();
-    setAdded(true);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setAdded(false), 1300);
+    timeoutRef.current = setTimeout(() => setFeedback(""), 1300);
   }
 
   return (
@@ -56,12 +60,12 @@ export function AddToCartButton({
       className={wide ? "button primary wide" : undefined}
       disabled={disabled}
       type="button"
-      onClick={() => {
+      onClick={(event) => {
         if (disabled) return;
-        if (requireCustomerSession({ intent: "add_to_cart", onSuccess: addItem })) addItem();
+        if (requireCustomerSession({ intent: "add_to_cart", onSuccess: addItem, trigger: event.currentTarget })) addItem();
       }}
     >
-      {disabled ? unavailableLabel : added ? confirmationLabel : label}
+      {disabled ? unavailableLabel : feedback || label}
     </button>
   );
 }

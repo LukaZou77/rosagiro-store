@@ -12,7 +12,7 @@ test("renders the supplied package total with a separate unit reference", () => 
   assert.match(html, /Total da embalagem/);
   assert.match(html, /R\$\s*328,50/);
   assert.match(html, /36 unidades/);
-  assert.match(html, /R\$\s*9,13 por unidade/);
+  assert.match(html, /aprox\. R\$\s*9,13 por unidade/);
   assert.doesNotMatch(html, /R\$\s*328,68/);
 });
 

@@ -1,16 +1,26 @@
 import { money } from "@/lib/money";
-import { productWholesaleWhatsAppLines, type WholesaleProductDetails } from "@/lib/product-wholesale";
+import {
+  productWholesalePackagePieces,
+  productWholesalePackagePriceCents,
+  productWholesaleStockQuantity,
+  productWholesaleWhatsAppLines,
+  type WholesaleProductDetails
+} from "@/lib/product-wholesale";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
+import { wholesaleReferenceUnitPriceCents } from "@/lib/wholesale-order";
 
 type ProductContact = {
   slug: string;
   name: string;
   priceCents: number;
+  baseBoxPriceCents?: number | null;
+  descriptionPt?: string | null;
   stockStatus?: string;
   volume?: string;
   brand: { name: string };
   inventory?: { quantity: number } | null;
+  skus?: Array<{ quantity: number; active: boolean }>;
 } & WholesaleProductDetails;
 
 type CartContactItem = {
@@ -90,15 +100,28 @@ export function buildCatalogWhatsAppHref(categoryLabel: string, productCount: nu
 
 export function buildProductWhatsAppHref(product: ProductContact, phone?: string | null) {
   const consultationOnly = isSourceCatalogConsultationProduct(product);
-  const quantity = consultationOnly ? 0 : product.inventory?.quantity ?? null;
-  const priceLabel = consultationOnly ? sourceCatalogPriceLabel(product.wholesalePackage) : "Preço unitário no site";
-  const wholesaleLines = productWholesaleWhatsAppLines(product);
+  const packagePieces = consultationOnly ? null : productWholesalePackagePieces(product);
+  const packagePriceCents = packagePieces ? productWholesalePackagePriceCents(product) : null;
+  const stockQuantity = product.inventory || product.skus
+    ? productWholesaleStockQuantity(product)
+    : null;
+  const quantity = consultationOnly || (stockQuantity !== null && packagePieces && stockQuantity < packagePieces)
+    ? 0
+    : stockQuantity;
+  const priceLabel = consultationOnly ? sourceCatalogPriceLabel(product.wholesalePackage) : siteConfig.productConversion.priceLabel;
+  const displayedUnitPrice = packagePieces && packagePriceCents
+    ? wholesaleReferenceUnitPriceCents(packagePriceCents, packagePieces)
+    : product.priceCents;
+  const wholesaleLines = productWholesaleWhatsAppLines(packagePieces && packagePriceCents ? {
+    ...product,
+    wholesalePackage: `Embalagem fechada com ${packagePieces} ${packagePieces === 1 ? "unidade" : "unidades"} por ${money(packagePriceCents)}.`
+  } : product);
   return buildHref(
     [
       siteConfig.whatsapp.messages.productGreeting,
       `Produto: ${product.name}`,
       `Marca: ${product.brand.name}`,
-      `${priceLabel}: ${money(product.priceCents)}`,
+      `${priceLabel}: ${money(displayedUnitPrice)}`,
       product.volume ? `${consultationOnly ? "Especificações" : "Volume"}: ${product.volume}` : "",
       stockAvailabilityLabel(quantity),
       ...wholesaleLines,

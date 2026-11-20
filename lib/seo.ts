@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
 import { productQuantity } from "@/lib/product-conversion";
-import { productWholesalePackagePieces, productWholesalePackagePriceCents } from "@/lib/product-wholesale";
+import { productEditorialDescription, productWholesalePackagePieces, productWholesalePackagePriceCents } from "@/lib/product-wholesale";
 import { productDisplayName, shouldDisplayProductBrand } from "@/lib/display-text";
 import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import type { StoreProfileView } from "@/lib/store-profile-public";
 import { storeSocialLinks } from "@/lib/store-profile-public";
+import { wholesaleReferenceUnitPriceCents } from "@/lib/wholesale-order";
 
 type BreadcrumbEntry = {
   name: string;
@@ -315,7 +316,7 @@ export function productJsonLd(product: CatalogProduct, canonicalSlug = product.s
   const consultationOnly = isSourceCatalogConsultationProduct(product);
   const packagePieces = productWholesalePackagePieces(product);
   const packagePrice = productWholesalePackagePriceCents(product);
-  const inStock = productQuantity(product) > 0;
+  const inStock = packagePieces !== null && productQuantity(product) >= packagePieces;
   const images = Array.from(
     new Set(
       [product.image, ...product.gallery, ...product.skus.filter((sku) => sku.active).map((sku) => sku.image)]
@@ -329,7 +330,7 @@ export function productJsonLd(product: CatalogProduct, canonicalSlug = product.s
     "@id": siteUrl(`/produto/${canonicalSlug}#product`),
     url,
     name: productDisplayName(product.name, product.brand.name),
-    description: compactText(product.descriptionPt, 300),
+    description: compactText(productEditorialDescription(product.descriptionPt) || productMetaDescription(product), 300),
     image: images.length ? images : [absoluteImageUrl(product.image)],
     brand: shouldDisplayProductBrand(product.brand.name) ? {
       "@type": "Brand",
@@ -364,23 +365,30 @@ export function productJsonLd(product: CatalogProduct, canonicalSlug = product.s
 
 export function productMetaDescription(product: CatalogProduct) {
   const consultationOnly = isSourceCatalogConsultationProduct(product);
-  const priceLabel = consultationOnly
-    ? sourceCatalogPriceLabel(product.wholesalePackage).toLocaleLowerCase("pt-BR")
-    : "preço unitário";
   const displayName = productDisplayName(product.name, product.brand.name);
   const nameIncludesBrand = displayName.toLocaleLowerCase("pt-BR").includes(product.brand.name.toLocaleLowerCase("pt-BR"));
   const productName = nameIncludesBrand || !shouldDisplayProductBrand(product.brand.name) ? displayName : `${displayName} da ${product.brand.name}`;
   if (consultationOnly) {
+    const priceLabel = sourceCatalogPriceLabel(product.wholesalePackage).toLocaleLowerCase("pt-BR");
     return compactText(
       `${productName} no atacado. ${priceLabel}: ${money(product.priceCents)}; estoque e embalagem via WhatsApp; mínimo ${siteConfig.wholesale.minimumOrderLabel}.`,
       META_DESCRIPTION_MAX_LENGTH
     );
   }
-  const stock = (product.inventory?.quantity || 0) > 0 ? "em estoque" : "disponibilidade sob consulta";
-  return compactText(
-    `${productName} no atacado. Pedido mínimo ${siteConfig.wholesale.minimumOrderLabel}; preço unitário ${money(product.priceCents)}; embalagem fechada; ${stock}.`,
-    META_DESCRIPTION_MAX_LENGTH
-  );
+  const minimum = `Pedido mínimo ${siteConfig.wholesale.minimumOrderLabel}.`;
+  const packagePieces = productWholesalePackagePieces(product);
+  const packagePrice = productWholesalePackagePriceCents(product);
+  if (!packagePieces || !packagePrice) {
+    return compactText(`${productName} no atacado. Embalagem e preço via WhatsApp. ${minimum}`, META_DESCRIPTION_MAX_LENGTH);
+  }
+  const stock = productQuantity(product) >= packagePieces ? "em estoque" : "sem embalagem completa em estoque";
+  const price = `${money(packagePrice)} por embalagem`;
+  const reference = `aprox. ${money(wholesaleReferenceUnitPriceCents(packagePrice, packagePieces))}/un.`;
+  const descriptionWithReference = `${productName} no atacado. ${price} (${reference}), ${stock}. ${minimum}`;
+  if (packagePieces > 1 && descriptionWithReference.length <= META_DESCRIPTION_MAX_LENGTH) {
+    return descriptionWithReference;
+  }
+  return compactText(`${productName} no atacado. ${price}, ${stock}. ${minimum}`, META_DESCRIPTION_MAX_LENGTH);
 }
 
 export function categoryMetadataTitle(label: string, isAllCategory = false, page = 1) {

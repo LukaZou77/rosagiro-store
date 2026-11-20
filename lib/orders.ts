@@ -1,6 +1,7 @@
 import "server-only";
 
 import { randomInt } from "node:crypto";
+import { invalidBrazilianDocumentMessage, parseBrazilianDocument } from "@/lib/brazilian-document";
 import type { CheckoutAttempt } from "@/lib/checkout-attempt";
 import { checkoutOrderSelect, runCheckoutCreation } from "@/lib/checkout-idempotency";
 import { createOrderNotificationSafely } from "@/lib/admin-notifications";
@@ -22,8 +23,8 @@ import {
 } from "@/lib/payments";
 import { recordCreatedOrderProductMetrics, recordPaidOrderProductMetrics } from "@/lib/product-daily-metrics";
 import {
-  productWholesaleLineTotalCents,
   productWholesalePackagePieces,
+  productWholesalePackagePriceCents,
   productWholesaleStockQuantity
 } from "@/lib/product-wholesale";
 import { isSourceCatalogConsultationProduct } from "@/lib/source-catalog-product";
@@ -31,8 +32,11 @@ import { hasAcceptedSeparateFreight, separateFreightForOrder } from "@/lib/freig
 import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
 import { siteConfig } from "@/lib/site-config";
 import {
-  normalizeWholesaleLineQuantity,
-  wholesaleMinimumRemainingCents
+  MAX_WHOLESALE_LINE_QUANTITY,
+  MAX_WHOLESALE_ORDER_TOTAL_CENTS,
+  wholesaleMinimumRemainingCents,
+  wholesaleOrderTotalLimitNotice,
+  wholesaleReferenceUnitPriceCents
 } from "@/lib/wholesale-order";
 import type { OrderAttribution } from "@/lib/commerce-analytics";
 import type { Prisma } from "@/src/generated/prisma/client";
@@ -97,17 +101,27 @@ function parseAttribution(value: unknown): OrderAttribution {
   };
 }
 
+function readCheckoutQuantity(value: unknown) {
+  const quantity = typeof value === "string" && /^\d+$/.test(value.trim()) ? Number(value) : value;
+  return typeof quantity === "number" && Number.isSafeInteger(quantity) &&
+    quantity > 0 && quantity <= MAX_WHOLESALE_LINE_QUANTITY ? quantity : null;
+}
+
 export function parseCheckoutPayload(payload: unknown): CheckoutInput {
-  const data = payload as Partial<CheckoutInput>;
+  const data = (payload && typeof payload === "object" ? payload : {}) as Partial<CheckoutInput>;
   const itemsBySlug = new Map<string, CartInput>();
   if (Array.isArray(data.items)) {
     for (const item of data.items) {
-      const slug = cleanText(item.slug);
-      const quantity = normalizeWholesaleLineQuantity(item.quantity);
-      if (!slug || quantity <= 0) continue;
-      const existing = itemsBySlug.get(slug);
-      if (existing) existing.quantity = normalizeWholesaleLineQuantity(existing.quantity + quantity);
-      else itemsBySlug.set(slug, { slug, quantity });
+      const slug = typeof item?.slug === "string" ? item.slug.trim() : "";
+      const quantity = readCheckoutQuantity(item?.quantity);
+      if (!slug || quantity === null) {
+        throw new OrderError("Revise os itens do carrinho. Cada produto deve ter uma quantidade inteira positiva dentro do limite aceito.");
+      }
+      const totalQuantity = (itemsBySlug.get(slug)?.quantity ?? 0) + quantity;
+      if (totalQuantity > MAX_WHOLESALE_LINE_QUANTITY) {
+        throw new OrderError("A quantidade de um produto ultrapassa o limite aceito no site.");
+      }
+      itemsBySlug.set(slug, { slug, quantity: totalQuantity });
     }
   }
   const items = Array.from(itemsBySlug.values());
@@ -115,10 +129,9 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
   const phone = cleanText(data.customer?.phone);
   const normalizedPhone = normalizeBrazilWhatsapp(phone);
   const customer = {
-    name: cleanText(data.customer?.name),
+    name: cleanCustomerName(cleanText(data.customer?.name)),
     email: cleanText(data.customer?.email).toLowerCase(),
-    phone: normalizedPhone?.whatsapp || phone,
-    cpf: cleanText(data.customer?.cpf)
+    phone: normalizedPhone?.whatsapp || phone
   };
 
   const address = {
@@ -142,22 +155,22 @@ export function parseCheckoutPayload(payload: unknown): CheckoutInput {
   const attribution = parseAttribution(data.attribution);
 
   if (!items.length) throw new OrderError("Seu carrinho está vazio.");
-  if (!customer.name || !customer.email || !customer.phone || !customer.cpf) {
+  if (!customer.name || !customer.email || !customer.phone) {
     throw new OrderError("Preencha todos os dados de contato.");
   }
-  const nameLength = cleanCustomerName(customer.name).length;
-  if (nameLength < 2) throw new OrderError("Informe seu nome para continuar.");
-  if (nameLength > 80) throw new OrderError("Nome muito longo. Use até 80 caracteres.");
+  if (customer.name.length < 2) throw new OrderError("Informe seu nome ou razão social para continuar.");
+  if (customer.name.length > 80) throw new OrderError("Use até 80 caracteres para o nome ou razão social.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) {
     throw new OrderError("Informe um e-mail válido.");
   }
-  if (digits(customer.cpf).length !== 11) throw new OrderError("CPF deve ter 11 dígitos.");
+  const document = parseBrazilianDocument(data.customer?.cpf);
+  if (!document) throw new OrderError(invalidBrazilianDocumentMessage);
   if (!normalizedPhone) throw new OrderError("WhatsApp deve ser do Brasil e ter DDD.");
   if (digits(address.cep).length !== 8) throw new OrderError("CEP deve ter 8 dígitos.");
   if (!address.state || !address.city || !address.district || !address.street || !address.number) {
     throw new OrderError("Preencha todos os dados de endereço.");
   }
-  return { items, customer, address, freightSeparateAccepted: true, paymentMethod, attribution };
+  return { items, customer: { ...customer, cpf: document.number }, address, freightSeparateAccepted: true, paymentMethod, attribution };
 }
 
 function makeOrderNumber() {
@@ -194,37 +207,34 @@ export async function createOrder(input: CheckoutInput, attempt: CheckoutAttempt
     if (isSourceCatalogConsultationProduct(product)) {
       throw new OrderError(`${product.name}: confirme estoque, preço e embalagem pelo WhatsApp antes de finalizar.`);
     }
-    const availableQuantity = productWholesaleStockQuantity(product);
-    if (availableQuantity < item.quantity) {
-      throw new OrderError(`${product.name} não tem estoque suficiente.`);
-    }
-    return {
-      product,
-      quantity: item.quantity,
-      priceCents: product.priceCents,
-      lineTotalCents: productWholesaleLineTotalCents(product, item.quantity),
-      weightGrams: product.weightGrams,
-      categorySlug: product.category.slug
-    };
-  });
-
-  const quantityByProductId = new Map<string, number>();
-  for (const line of lines) {
-    quantityByProductId.set(line.product.id, (quantityByProductId.get(line.product.id) || 0) + line.quantity);
-  }
-  for (const product of products) {
-    const orderedQuantity = quantityByProductId.get(product.id) || 0;
-    if (!orderedQuantity) continue;
     const packagePieces = productWholesalePackagePieces(product);
     if (!packagePieces) {
       throw new OrderError(`${product.name}: confirme a embalagem fechada pelo WhatsApp antes de finalizar.`);
     }
-    if (orderedQuantity % packagePieces !== 0) {
+    if (!Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity % packagePieces !== 0) {
       throw new OrderError(`${product.name} é vendido em embalagem fechada com ${packagePieces} unidades.`);
     }
-  }
+    if (productWholesaleStockQuantity(product) < item.quantity) {
+      throw new OrderError(`${product.name} não tem estoque suficiente de embalagens completas para esta quantidade.`);
+    }
+    const packagePriceCents = productWholesalePackagePriceCents(product);
+    if (!packagePriceCents) {
+      throw new OrderError(`${product.name}: confirme o valor da embalagem pelo WhatsApp antes de finalizar.`);
+    }
+    const packageCount = item.quantity / packagePieces;
+    return {
+      product,
+      quantity: item.quantity,
+      packagePieces,
+      packageCount,
+      packagePriceCents,
+      priceCents: wholesaleReferenceUnitPriceCents(packagePriceCents, packagePieces),
+      lineTotalCents: packagePriceCents * packageCount
+    };
+  });
 
   const subtotal = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
+  if (subtotal > MAX_WHOLESALE_ORDER_TOTAL_CENTS) throw new OrderError(wholesaleOrderTotalLimitNotice);
   const remainingToMinimum = wholesaleMinimumRemainingCents(subtotal, siteConfig.wholesale.minimumOrderCents);
   if (remainingToMinimum > 0) {
     throw new OrderError(
@@ -298,6 +308,9 @@ export async function createOrder(input: CheckoutInput, attempt: CheckoutAttempt
           productSkuCode: null,
           unitPriceCents: line.priceCents,
           quantity: line.quantity,
+          packagePieces: line.packagePieces,
+          packageCount: line.packageCount,
+          packagePriceCents: line.packagePriceCents,
           lineTotalCents: line.lineTotalCents
         }))
       },

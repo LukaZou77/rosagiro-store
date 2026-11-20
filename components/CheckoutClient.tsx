@@ -10,6 +10,7 @@ import { MinimumOrderNotice } from "@/components/MinimumOrderNotice";
 import { StoreTrustSignals } from "@/components/StoreTrustSignals";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
+import { invalidBrazilianDocumentMessage, parseBrazilianDocument } from "@/lib/brazilian-document";
 import type { CartSummary } from "@/lib/cart-summary";
 import {
   cartAfterCheckout,
@@ -21,6 +22,7 @@ import {
   type CheckoutAttempt
 } from "@/lib/checkout-attempt-client";
 import { cepDigits, formatCep, lookupCep } from "@/lib/cep";
+import { cleanCustomerName, normalizeBrazilWhatsapp } from "@/lib/customer-session";
 import { money } from "@/lib/money";
 import { paymentMethodsForCheckout, type PaymentMethodValue } from "@/lib/payments";
 import { separateFreightNotice } from "@/lib/freight-policy";
@@ -31,6 +33,7 @@ import { readAttribution, trackCommerceOnce } from "@/lib/commerce-analytics";
 const states = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
 const manualCepMessage = "Preencha manualmente se o CEP não trouxer todos os dados.";
 const checkoutStepOrder = ["contact", "address", "payment"] as const;
+const summaryUnavailableMessage = "Não foi possível carregar o resumo do pedido.";
 
 type CheckoutStep = (typeof checkoutStepOrder)[number];
 type ContactField = "name" | "phone" | "email" | "cpf";
@@ -94,10 +97,6 @@ function addressSearchReadiness(value: string, address: Pick<AddressState, "stat
   return "";
 }
 
-function cleanDigits(value: string) {
-  return value.replace(/\D/g, "");
-}
-
 function emailLooksValid(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
@@ -121,7 +120,7 @@ export function CheckoutClient({
   const [contact, setContact] = useState(emptyContact);
   const [contactTouched, setContactTouched] = useState({ name: false, phone: false });
   const [activeStep, setActiveStep] = useState<CheckoutStep>("contact");
-  const [stepError, setStepError] = useState("");
+  const [stepError, setStepError] = useState<{ message: string; fieldName?: string } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("PIX");
   const [freightSeparateAccepted, setFreightSeparateAccepted] = useState(false);
   const [address, setAddress] = useState(emptyAddress);
@@ -142,10 +141,13 @@ export function CheckoutClient({
   );
   const [summaryState, setSummaryState] = useState<{ key: string; data: CartSummary } | null>(null);
   const [summaryError, setSummaryError] = useState<{ key: string; message: string } | null>(null);
+  const [summaryRetry, setSummaryRetry] = useState(0);
   const addressSessionToken = useRef(makeAddressSessionToken());
   const formRef = useRef<HTMLFormElement>(null);
   const recoveryHeadingRef = useRef<HTMLHeadingElement>(null);
   const submittingRef = useRef(false);
+  const composingRef = useRef(false);
+  const compositionEnterRef = useRef(false);
   const restoredCep = useRef("");
   const skipNextAddressSearch = useRef(false);
   const lastAutofilledCep = useRef("");
@@ -170,18 +172,23 @@ export function CheckoutClient({
       signal: controller.signal
     })
       .then(async (response) => {
-        const data = (await response.json()) as CartSummary;
-        if (!response.ok) throw new Error(data.error || "Não foi possível carregar o resumo do pedido.");
+        const data = await response.json().catch(() => null) as CartSummary | null;
+        if (controller.signal.aborted) return;
+        if (!response.ok || !Array.isArray(data?.lines)) {
+          const message = typeof data?.error === "string" && data.error ? data.error : summaryUnavailableMessage;
+          setSummaryError({ key: cartKey, message });
+          return;
+        }
         setSummaryState({ key: cartKey, data });
         setSummaryError(null);
       })
-      .catch((fetchError: Error) => {
-        if (fetchError.name === "AbortError") return;
-        setSummaryError({ key: cartKey, message: fetchError.message || "Não foi possível carregar o resumo do pedido." });
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setSummaryError({ key: cartKey, message: summaryUnavailableMessage });
       });
 
     return () => controller.abort();
-  }, [cart, cartKey]);
+  }, [cart, cartKey, summaryRetry]);
 
   const summary = cart.length && summaryState?.key === cartKey ? summaryState.data : null;
   const summaryLoadError = cart.length && summaryError?.key === cartKey ? summaryError.message : "";
@@ -227,11 +234,13 @@ export function CheckoutClient({
     }),
     [contact, contactTouched, customer]
   );
+  const contactNameLength = cleanCustomerName(contactValue.name).length;
+  const contactDocument = parseBrazilianDocument(contactValue.cpf);
+  const contactWhatsApp = normalizeBrazilWhatsapp(contactValue.phone);
   const contactComplete =
-    contactValue.name.trim().length >= 2 &&
+    contactNameLength >= 2 && contactNameLength <= 80 &&
     emailLooksValid(contactValue.email) &&
-    cleanDigits(contactValue.phone).length >= 10 &&
-    cleanDigits(contactValue.cpf).length >= 11;
+    Boolean(contactWhatsApp && contactDocument);
   const addressFieldsComplete =
     cepDigits(address.cep).length === 8 &&
     Boolean(address.state) &&
@@ -322,7 +331,7 @@ export function CheckoutClient({
 
   function failStep(step: CheckoutStep, message: string, fieldName?: string) {
     setActiveStep(step);
-    setStepError(message);
+    setStepError({ message, fieldName });
     window.setTimeout(() => {
       if (fieldName) {
         focusCheckoutField(fieldName);
@@ -331,6 +340,27 @@ export function CheckoutClient({
       scrollToCheckoutStep(step);
     }, 0);
     return false;
+  }
+
+  function fieldErrorAttributes(name: string, hintId?: string) {
+    const invalid = stepError?.fieldName === name;
+    return {
+      "aria-invalid": invalid || undefined,
+      "aria-describedby": [hintId, invalid ? "checkout-step-error" : null].filter(Boolean).join(" ") || undefined
+    };
+  }
+
+  function handleCheckoutChange(event: FormEvent<HTMLFormElement>) {
+    const target = event.target as HTMLInputElement | HTMLSelectElement;
+    if (stepError?.fieldName === target.name) setStepError(null);
+  }
+
+  function captureCheckoutKeyDown(event: KeyboardEvent<HTMLFormElement>) {
+    const composingEnter = event.key === "Enter" && (composingRef.current || event.nativeEvent.isComposing);
+    if (!composingEnter && event.keyCode !== 229) return;
+    // Let the IME commit the text, but ignore an implicit submit from that key event.
+    compositionEnterRef.current = true;
+    window.setTimeout(() => { compositionEnterRef.current = false; }, 0);
   }
 
   function handleCheckoutFocus(event: FocusEvent<HTMLFormElement>) {
@@ -361,10 +391,11 @@ export function CheckoutClient({
 
   function validateCheckoutStep(step: CheckoutStep) {
     if (step === "contact") {
-      if (contactValue.name.trim().length < 2) return failStep("contact", siteConfig.checkout.validation.name, "name");
+      if (contactNameLength < 2) return failStep("contact", siteConfig.checkout.validation.name, "name");
+      if (contactNameLength > 80) return failStep("contact", "Use até 80 caracteres para o nome ou razão social.", "name");
       if (!emailLooksValid(contactValue.email)) return failStep("contact", siteConfig.checkout.validation.email, "email");
-      if (cleanDigits(contactValue.phone).length < 10) return failStep("contact", siteConfig.checkout.validation.phone, "phone");
-      if (cleanDigits(contactValue.cpf).length < 11) return failStep("contact", siteConfig.checkout.validation.cpf, "cpf");
+      if (!contactWhatsApp) return failStep("contact", siteConfig.checkout.validation.phone, "phone");
+      if (!contactDocument) return failStep("contact", invalidBrazilianDocumentMessage, "cpf");
     }
 
     if (step === "address") {
@@ -383,7 +414,7 @@ export function CheckoutClient({
       }
     }
 
-    setStepError("");
+    setStepError(null);
     return true;
   }
 
@@ -398,7 +429,7 @@ export function CheckoutClient({
       return;
     }
 
-    setStepError("");
+    setStepError(null);
     setActiveStep(step);
     window.setTimeout(() => scrollToCheckoutStep(step), 0);
   }
@@ -645,6 +676,13 @@ export function CheckoutClient({
   }
 
   function handleAddressSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (composingRef.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const suggestion = addressSuggestions[activeSuggestionIndex];
+      if (suggestion) void selectAddressSuggestion(suggestion);
+      return;
+    }
     if (!addressSuggestions.length) return;
 
     if (event.key === "ArrowDown") {
@@ -653,10 +691,6 @@ export function CheckoutClient({
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       setActiveSuggestionIndex((current) => (current <= 0 ? addressSuggestions.length - 1 : current - 1));
-    } else if (event.key === "Enter") {
-      event.preventDefault();
-      const suggestion = addressSuggestions[activeSuggestionIndex];
-      if (suggestion) void selectAddressSuggestion(suggestion);
     } else if (event.key === "Escape") {
       setAddressSuggestions([]);
       setActiveSuggestionIndex(-1);
@@ -745,9 +779,13 @@ export function CheckoutClient({
         setCepMessage(manualCepMessage);
         setPaymentMethod(attempt.paymentMethod);
         setFreightSeparateAccepted(attempt.freightSeparateAccepted);
-        setActiveStep("payment");
-        setError(result.message);
         saveCheckoutRecovery(null);
+        if (result.message === invalidBrazilianDocumentMessage) {
+          failStep("contact", result.message, "cpf");
+        } else {
+          setActiveStep("payment");
+          setError(result.message);
+        }
         return;
       }
 
@@ -784,10 +822,14 @@ export function CheckoutClient({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!recoveryReady || submittingRef.current || getCheckoutRecovery().recovery) return;
+    if (composingRef.current || compositionEnterRef.current || !recoveryReady || submittingRef.current || getCheckoutRecovery().recovery) return;
+    if (activeStep !== "payment") {
+      goToNextStep();
+      return;
+    }
     setError("");
     if (!packageReady) {
-      setError("Todos os produtos devem ser comprados em embalagens fechadas completas.");
+      setError(summary?.orderLimitNotice || "Todos os produtos devem ser comprados em embalagens fechadas completas.");
       return;
     }
     if (!minimumReached) {
@@ -913,7 +955,7 @@ export function CheckoutClient({
         <div className="cart-panel empty-checkout-card">
           <p className="eyebrow">Checkout RosaGiro</p>
           <h1>Carregando seu pedido.</h1>
-          <p>Estamos conferindo preços, embalagens e disponibilidade antes de abrir o checkout.</p>
+          <p role="status">Estamos conferindo preços, embalagens e disponibilidade antes de abrir o checkout.</p>
           <MinimumOrderNotice subtotalCents={0} />
         </div>
         <aside className="summary-panel">
@@ -929,9 +971,15 @@ export function CheckoutClient({
         <div className="cart-panel empty-checkout-card">
           <p className="eyebrow">Checkout RosaGiro</p>
           <h1>Resumo indisponível.</h1>
-          <p>{summaryLoadError}</p>
+          <p role="alert">{summaryLoadError}</p>
           <div className="empty-actions">
-            <Link className="button primary" href="/carrinho">
+            <button className="button primary" type="button" onClick={() => {
+              setSummaryError(null);
+              setSummaryRetry((current) => current + 1);
+            }}>
+              Tentar novamente
+            </button>
+            <Link className="button secondary" href="/carrinho">
               Voltar ao carrinho
             </Link>
             <WhatsAppLink className="button whatsapp" href={emptyCheckoutWhatsAppHref}>
@@ -951,14 +999,14 @@ export function CheckoutClient({
       <section className="checkout-shell empty-checkout-shell">
         <div className="cart-panel empty-checkout-card">
           <p className="eyebrow">Pedido de atacado</p>
-          <h1>Ajuste as embalagens do pedido.</h1>
-          <p>Os produtos são vendidos somente na embalagem fechada original, sem escolha de cores. Revise as quantidades antes de continuar.</p>
+          <h1>{summary.orderLimitNotice ? "Revise o valor do pedido." : "Ajuste as embalagens do pedido."}</h1>
+          <p>{summary.orderLimitNotice || "Os produtos são vendidos somente na embalagem fechada original, sem escolha de cores. Revise as quantidades antes de continuar."}</p>
           <div className="empty-actions">
             <Link className="button primary" href="/carrinho">
               Revisar pedido
             </Link>
             <WhatsAppLink className="button whatsapp" href={checkoutWhatsAppHref}>
-              Confirmar embalagem no WhatsApp
+              {summary.orderLimitNotice ? "Falar no WhatsApp" : "Confirmar embalagem no WhatsApp"}
             </WhatsAppLink>
           </div>
         </div>
@@ -1043,6 +1091,10 @@ export function CheckoutClient({
         ref={formRef}
         onFocus={handleCheckoutFocus}
         onBlur={handleCheckoutBlur}
+        onChange={handleCheckoutChange}
+        onKeyDownCapture={captureCheckoutKeyDown}
+        onCompositionStart={() => { composingRef.current = true; }}
+        onCompositionEnd={() => { composingRef.current = false; }}
         noValidate
       >
         <p className="eyebrow">Pedido de atacado RosaGiro</p>
@@ -1069,8 +1121,8 @@ export function CheckoutClient({
           ))}
         </ol>
         {stepError ? (
-          <div className="checkout-step-error" role="alert">
-            {stepError}
+          <div className="checkout-step-error" id="checkout-step-error" role="alert">
+            {stepError.message}
           </div>
         ) : null}
         <fieldset className={checkoutStepClass("contact")} data-checkout-step="contact">
@@ -1080,47 +1132,58 @@ export function CheckoutClient({
           </legend>
           <div className="checkout-step-body">
             <label>
-              Nome completo{" "}
+              <span className="checkout-field-label">Nome ou razão social</span>
               <input
                 name="name"
                 autoComplete="name"
                 value={contactValue.name}
                 onChange={(event) => updateContact("name", event.target.value)}
                 maxLength={80}
+                {...fieldErrorAttributes("name")}
                 required
               />
             </label>
             <label>
-              E-mail{" "}
+              <span className="checkout-field-label">E-mail</span>
               <input
                 name="email"
                 type="email"
                 autoComplete="email"
                 value={contactValue.email}
                 onChange={(event) => updateContact("email", event.target.value)}
+                {...fieldErrorAttributes("email")}
                 required
               />
             </label>
             <label>
-              WhatsApp{" "}
+              <span className="checkout-field-label">WhatsApp</span>
               <input
                 name="phone"
+                type="tel"
+                autoComplete="tel"
                 placeholder="(11) 99999-9999"
                 value={contactValue.phone}
                 onChange={(event) => updateContact("phone", event.target.value)}
+                {...fieldErrorAttributes("phone")}
                 required
               />
             </label>
             <label>
-              CPF{" "}
+              <span className="checkout-field-label" id="checkout-document-label">CPF ou CNPJ</span>
               <input
                 name="cpf"
-                placeholder="000.000.000-00"
-                inputMode="numeric"
+                inputMode="text"
+                autoCapitalize="characters"
+                spellCheck={false}
                 value={contactValue.cpf}
                 onChange={(event) => updateContact("cpf", event.target.value)}
+                aria-labelledby="checkout-document-label"
+                {...fieldErrorAttributes("cpf", "checkout-document-help")}
                 required
               />
+              <small className="checkout-field-hint" id="checkout-document-help">
+                CPF com 11 dígitos ou CNPJ com 14 caracteres. O CNPJ pode conter letras.
+              </small>
             </label>
             <div className="checkout-step-actions">
               <button className="button primary" type="button" onClick={goToNextStep}>
@@ -1145,12 +1208,13 @@ export function CheckoutClient({
                   inputMode="numeric"
                   value={address.cep}
                   onChange={(event) => updateAddress("cep", event.target.value)}
+                  {...fieldErrorAttributes("cep", "checkout-cep-status")}
                   required
                 />
               </label>
               <label>
                 Estado
-                <select name="state" value={address.state} onChange={(event) => updateAddress("state", event.target.value)} required>
+                <select name="state" value={address.state} onChange={(event) => updateAddress("state", event.target.value)} {...fieldErrorAttributes("state")} required>
                   <option value="">UF</option>
                   {states.map((state) => (
                     <option key={state} value={state}>
@@ -1160,11 +1224,11 @@ export function CheckoutClient({
                 </select>
               </label>
             </div>
-            <p className={`cep-status ${cepStatus}`} aria-live="polite">
+            <p className={`cep-status ${cepStatus}`} id="checkout-cep-status" aria-live="polite">
               {cepMessage}
             </p>
             <label>
-              Cidade <input name="city" autoComplete="address-level2" value={address.city} onChange={(event) => updateAddress("city", event.target.value)} required />
+              Cidade <input name="city" autoComplete="address-level2" value={address.city} onChange={(event) => updateAddress("city", event.target.value)} {...fieldErrorAttributes("city")} required />
             </label>
             <div className="address-search">
               <label htmlFor="address-search-input">Buscar rua pelo ViaCEP</label>
@@ -1179,7 +1243,7 @@ export function CheckoutClient({
                   role="combobox"
                   aria-autocomplete="list"
                   aria-expanded={addressSuggestions.length > 0}
-                  aria-controls="address-suggestions"
+                  aria-controls={addressSuggestions.length > 0 ? "address-suggestions" : undefined}
                   aria-activedescendant={activeSuggestionIndex >= 0 ? `address-suggestion-${activeSuggestionIndex}` : undefined}
                   autoComplete="off"
                 />
@@ -1215,11 +1279,11 @@ export function CheckoutClient({
               </p>
             </div>
             <label>
-              Rua <input name="street" autoComplete="address-line1" value={address.street} onChange={(event) => updateAddress("street", event.target.value)} required />
+              Rua <input name="street" autoComplete="address-line1" value={address.street} onChange={(event) => updateAddress("street", event.target.value)} {...fieldErrorAttributes("street")} required />
             </label>
             <div className="form-grid compact-mobile-grid number-complement-grid">
               <label>
-                Número <input name="number" autoComplete="address-line2" value={address.number} onChange={(event) => updateAddress("number", event.target.value)} required />
+                Número <input name="number" autoComplete="address-line2" value={address.number} onChange={(event) => updateAddress("number", event.target.value)} {...fieldErrorAttributes("number")} required />
               </label>
               <label>
                 Complemento <input name="complement" value={address.complement} onChange={(event) => updateAddress("complement", event.target.value)} />
@@ -1227,7 +1291,7 @@ export function CheckoutClient({
             </div>
             <div className="form-grid">
               <label>
-                Bairro <input name="district" value={address.district} onChange={(event) => updateAddress("district", event.target.value)} required />
+                Bairro <input name="district" value={address.district} onChange={(event) => updateAddress("district", event.target.value)} {...fieldErrorAttributes("district")} required />
               </label>
             </div>
             <div className="checkout-step-actions">
@@ -1255,6 +1319,7 @@ export function CheckoutClient({
                   type="checkbox"
                   checked={freightSeparateAccepted}
                   onChange={(event) => setFreightSeparateAccepted(event.target.checked)}
+                  {...fieldErrorAttributes("freightSeparateAccepted")}
                   required
                 />
                 <span>Li, entendi e concordo que o pagamento no site não inclui o frete.</span>
@@ -1315,11 +1380,14 @@ export function CheckoutClient({
         </WhatsAppLink>
         <div className="summary-block">
           <h2>Resumo</h2>
-            {items.map((item) => (
-              <div key={cartLineKey({ slug: item.slug })}>
-                <span>
-                  {item.packageCount} {item.packageCount === 1 ? "embalagem" : "embalagens"} · {item.quantity} un. · {item.name}
-                </span>
+          {items.map((item) => (
+            <div key={cartLineKey({ slug: item.slug })}>
+              <span>
+                {item.packageCount} {item.packageCount === 1 ? "embalagem" : "embalagens"} · {item.quantity} un. · {item.name}
+                {item.packagePriceCents !== null ? (
+                  <><br /><small>{money(item.packagePriceCents)} por embalagem</small></>
+                ) : null}
+              </span>
               <strong>{money(item.lineTotalCents)}</strong>
             </div>
           ))}

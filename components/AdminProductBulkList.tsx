@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminLanguage } from "@/components/AdminLanguageProvider";
+import { productEditorPath } from "@/lib/admin-product-navigation";
 
 export type AdminProductListRow = {
   id: string;
@@ -26,15 +27,27 @@ type ProductTrashAction = (formData: FormData) => void | Promise<void>;
 
 export function AdminProductBulkList({
   products,
-  action
+  action,
+  returnTo
 }: {
   products: AdminProductListRow[];
   action: ProductTrashAction;
+  returnTo: string;
 }) {
   const { t } = useAdminLanguage();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [previousProducts, setPreviousProducts] = useState(products);
+  if (products !== previousProducts) {
+    setPreviousProducts(products);
+    const visibleIds = new Set(products.map((product) => product.id));
+    setSelectedIds((current) => current.filter((id) => visibleIds.has(id)));
+  }
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const allSelected = products.length > 0 && selectedIds.length === products.length;
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = selectedIds.length > 0 && !allSelected;
+  }, [allSelected, selectedIds.length]);
 
   function toggleProduct(id: string) {
     setSelectedIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -63,11 +76,11 @@ export function AdminProductBulkList({
       ))}
       <div className="admin-bulk-toolbar">
         <label className="checkbox-line">
-          <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+          <input ref={selectAllRef} type="checkbox" checked={allSelected} onChange={toggleAll} />
           {t("Selecionar todos", "全选")}
         </label>
         <span>{selectedIds.length} {t("selecionado(s)", "项已选择")}</span>
-        <input name="deleteNote" placeholder={t("Observação opcional para a lixeira", "回收站备注（选填）")} />
+        <input name="deleteNote" aria-label={t("Observação opcional para a lixeira", "回收站备注（选填）")} placeholder={t("Observação opcional para a lixeira", "回收站备注（选填）")} />
         <button className="button secondary danger" type="submit">
           {t("Mover para lixeira", "移入回收站")}
         </button>
@@ -107,7 +120,7 @@ export function AdminProductBulkList({
               <Link className="button secondary" href={`/produto/${product.slug}`} prefetch={false}>
                 {t("Ver loja", "查看前台")}
               </Link>
-              <Link className="button primary" href={`/admin/produtos/${product.slug}`} prefetch={false}>
+              <Link className="button primary" href={productEditorPath(`/admin/produtos/${product.slug}`, returnTo)} prefetch={false}>
                 {t("Editar ficha", "编辑资料")}
               </Link>
             </div>

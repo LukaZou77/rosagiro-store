@@ -29,6 +29,7 @@ type OrderCreateData = {
 
 type PreferenceBody = {
   items: Array<{ unit_price: number; description?: string }>;
+  payer: { identification?: { type: "CPF" | "CNPJ"; number: string } };
   metadata: { payment_method_requested: string };
   payment_methods: { installments: number };
   back_urls: { success: string; pending: string; failure: string };
@@ -403,10 +404,43 @@ test("PIX creates and redirects a new order using product total only", async () 
   assert.match(payment.redirectTo, /mercadopago\.com\.br/);
   assert.equal(capturedPreferenceBodies.length, 1);
   assert.equal(capturedPreferenceBodies[0].items[0].unit_price, 500);
+  assert.deepEqual(capturedPreferenceBodies[0].payer.identification, { type: "CPF", number: "11144477735" });
   assert.equal(capturedPreferenceBodies[0].items[0].description, separateFreightNotice);
   assert.equal(capturedPreferenceBodies[0].metadata.payment_method_requested, "PIX");
   assert.equal(capturedPreferenceBodies[0].payment_methods.installments, 12);
   assert.equal(paymentUpdates.length, 1);
+});
+
+test("a numeric CNPJ is saved and prefilled in Checkout Pro as CNPJ", async () => {
+  const payload = checkoutPayload();
+  payload.customer.name = "  Comércio   de Teste Ltda.  ";
+  payload.customer.cpf = "12.345.678/0001-95";
+  const order = await createOrderForPayload(payload);
+  const payment = await startOrderPayment(order.orderNumber);
+
+  assert.equal(capturedOrderData?.customerName, "Comércio de Teste Ltda.");
+  assert.equal(capturedOrderData?.customerCpf, "12345678000195");
+  assert.equal(payment.external, true);
+  assert.deepEqual(capturedPreferenceBodies[0].payer.identification, { type: "CNPJ", number: "12345678000195" });
+});
+
+test("an alphanumeric CNPJ is preserved on the order and left for Checkout Pro to collect", async () => {
+  const payload = checkoutPayload();
+  payload.customer.cpf = "12.abc.345/01de-35";
+  const order = await createOrderForPayload(payload);
+  const payment = await startOrderPayment(order.orderNumber);
+
+  assert.equal(capturedOrderData?.customerCpf, "12ABC34501DE35");
+  assert.equal(payment.external, true);
+  assert.equal(Object.hasOwn(capturedPreferenceBodies[0].payer, "identification"), false);
+});
+
+test("an invalid fiscal document is rejected before creating an order", () => {
+  const payload = checkoutPayload();
+  payload.customer.cpf = "12.ABC.345/01DE-36";
+
+  assert.throws(() => parseCheckoutPayload(payload), /Informe um CPF ou CNPJ válido/);
+  assert.equal(orderCreateCalls, 0);
 });
 
 test("PIX succeeds end-to-end through the real orders route with product total only", async () => {

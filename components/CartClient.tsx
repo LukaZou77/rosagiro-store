@@ -31,6 +31,7 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
   const cartKey = useMemo(() => JSON.stringify(cart), [cart]);
   const [summaryState, setSummaryState] = useState<CartSummaryState | null>(null);
   const [errorState, setErrorState] = useState<{ key: string; message: string } | null>(null);
+  const [summaryAttempt, setSummaryAttempt] = useState(0);
 
   useEffect(() => {
     if (!cart.length) {
@@ -47,16 +48,17 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
       .then(async (response) => {
         const data = (await response.json()) as CartSummary;
         if (!response.ok) throw new Error(data.error || "Não foi possível carregar o resumo.");
+        if (controller.signal.aborted) return;
         setSummaryState({ key: cartKey, data });
         setErrorState(null);
       })
-      .catch((fetchError: Error) => {
-        if (fetchError.name === "AbortError") return;
-        setErrorState({ key: cartKey, message: fetchError.message || "Não foi possível carregar o resumo." });
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setErrorState({ key: cartKey, message: "Não foi possível carregar o resumo. Seus itens continuam no carrinho." });
       });
 
     return () => controller.abort();
-  }, [cart, cartKey]);
+  }, [cart, cartKey, summaryAttempt]);
 
   const summary = cart.length && summaryState?.key === cartKey ? summaryState.data : null;
   const error = cart.length && errorState?.key === cartKey ? errorState.message : "";
@@ -90,6 +92,10 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
     writeCart(cleanCart(next));
   }
 
+  function updateQuantity(slug: string, quantity: number) {
+    update(cart.map((item) => sameCartLine(item, slug) ? { ...item, quantity } : item));
+  }
+
   return (
     <section className="checkout-shell">
       <div className="cart-panel">
@@ -110,102 +116,97 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
             </div>
           </div>
         ) : loading ? (
-          <div className="empty-state">
+          <div className="empty-state" role="status">
             <strong>Carregando resumo</strong>
             <p>Estamos conferindo preços, embalagens e disponibilidade dos itens do seu pedido.</p>
           </div>
         ) : error ? (
           <div className="empty-state">
             <strong>Resumo indisponível</strong>
-            <p>{error}</p>
+            <p role="status">{error}</p>
             <div className="empty-actions">
+              <button
+                type="button"
+                className="button primary"
+                onClick={() => {
+                  setErrorState(null);
+                  setSummaryAttempt((attempt) => attempt + 1);
+                }}
+              >
+                Tentar novamente
+              </button>
               <Link className="button secondary" href="/categoria/all">
                 Voltar ao catálogo
               </Link>
             </div>
           </div>
         ) : lines.length ? (
-          lines.map((line) => (
-            <article className={line.available ? "cart-row" : "cart-row muted"} key={cartLineKey({ slug: line.slug })}>
-              {line.image ? (
-                <OptimizedProductImage src={line.image} alt={line.name} width={80} height={96} sizes="80px" />
-              ) : (
-                <div className="quick-line-placeholder" aria-hidden="true" />
-              )}
-              <div>
-                <span>{line.brandName}</span>
-                <strong>{line.name}</strong>
-                <small>{money(line.priceCents)} por unidade</small>
-                {line.packagePieces ? (
-                  <small>
-                    {line.packageValid
-                      ? `${line.packageCount} ${line.packageCount === 1 ? "embalagem" : "embalagens"} fechada${line.packageCount === 1 ? "" : "s"} · ${line.requestedQuantity} unidades`
-                      : `Embalagem fechada: ${line.packagePieces} unidades`}
-                  </small>
-                ) : null}
-                {line.packagePieces ? <small>Cores e variações conforme a composição original da embalagem.</small> : null}
-                {line.warning ? <em>{line.warning}</em> : null}
-              </div>
-              {line.packagePieces && !line.packageValid ? (
-                <button
-                  type="button"
-                  className="button secondary"
-                  onClick={() =>
-                    update(
-                      cart.map((item) =>
-                        sameCartLine(item, line.slug)
-                          ? { ...item, quantity: roundUpToWholesalePackage(item.quantity, line.packagePieces) }
-                          : item
-                      )
-                    )
-                  }
-                >
-                  Ajustar para embalagem fechada
-                </button>
-              ) : (
-                <div className="qty-control">
-                  <button
-                    type="button"
-                    aria-label="Diminuir uma embalagem"
-                    onClick={() =>
-                      update(cart.map((item) =>
-                        sameCartLine(item, line.slug)
-                          ? { ...item, quantity: item.quantity - (line.packagePieces || 1) }
-                          : item
-                      ))
-                    }
-                  >
-                    -
-                  </button>
-                  <span>{line.packageCount} emb.</span>
-                  <button
-                    type="button"
-                    aria-label="Aumentar uma embalagem"
-                    onClick={() =>
-                      update(cart.map((item) =>
-                        sameCartLine(item, line.slug)
-                          ? {
-                              ...item,
-                              quantity: addWholesalePackageQuantity(
-                                item.quantity,
-                                line.packagePieces || 1,
-                                line.stockQuantity
-                              )
-                            }
-                          : item
-                      ))
-                    }
-                    disabled={!line.available || line.requestedQuantity + (line.packagePieces || 1) > line.stockQuantity}
-                  >
-                    +
-                  </button>
+          lines.map((line) => {
+            const packagePieces = line.packagePieces ?? 0;
+            const adjustedQuantity = line.active && line.packagePriceCents
+              ? roundUpToWholesalePackage(line.requestedQuantity, packagePieces, line.stockQuantity)
+              : 0;
+            const nextQuantity = addWholesalePackageQuantity(line.requestedQuantity, packagePieces, line.stockQuantity);
+            const canAdjust = (!line.available || !line.packageValid) &&
+              adjustedQuantity > 0 && adjustedQuantity !== line.requestedQuantity;
+
+            return (
+              <article className={line.available ? "cart-row" : "cart-row muted"} key={cartLineKey({ slug: line.slug })}>
+                {line.image ? (
+                  <OptimizedProductImage src={line.image} alt={line.name} width={80} height={96} sizes="80px" />
+                ) : (
+                  <div className="quick-line-placeholder" aria-hidden="true" />
+                )}
+                <div>
+                  <span>{line.brandName}</span>
+                  <strong>{line.name}</strong>
+                  {line.packagePriceCents && packagePieces ? (
+                    <small>{money(line.packagePriceCents)} por embalagem · aprox. {money(line.priceCents)} por unidade</small>
+                  ) : null}
+                  {packagePieces ? (
+                    <small>
+                      {line.packageValid
+                        ? `${line.packageCount} ${line.packageCount === 1 ? "embalagem" : "embalagens"} fechada${line.packageCount === 1 ? "" : "s"} · ${line.requestedQuantity} unidades`
+                        : `Embalagem fechada com ${packagePieces} ${packagePieces === 1 ? "unidade" : "unidades"}`}
+                    </small>
+                  ) : null}
+                  {line.packagePieces ? <small>Cores e variações conforme a composição original da embalagem.</small> : null}
+                  {line.warning ? <em>{line.warning}</em> : null}
                 </div>
-              )}
-              <button type="button" className="remove-button" onClick={() => update(cart.filter((item) => !sameCartLine(item, line.slug)))}>
-                Remover
-              </button>
-            </article>
-          ))
+                {canAdjust ? (
+                  <button
+                    type="button"
+                    className="button secondary"
+                    onClick={() => updateQuantity(line.slug, adjustedQuantity)}
+                  >
+                    {adjustedQuantity < line.requestedQuantity ? "Ajustar ao estoque disponível" : "Ajustar para embalagem fechada"}
+                  </button>
+                ) : line.available && line.packageValid ? (
+                  <div className="qty-control">
+                    <button
+                      type="button"
+                      aria-label="Diminuir uma embalagem"
+                      onClick={() => updateQuantity(line.slug, line.requestedQuantity - packagePieces)}
+                    >
+                      -
+                    </button>
+                    <span>{line.packageCount} emb.</span>
+                    <button
+                      type="button"
+                      aria-label="Aumentar uma embalagem"
+                      onClick={() => updateQuantity(line.slug, nextQuantity)}
+                      disabled={nextQuantity <= line.requestedQuantity}
+                    >
+                      +
+                    </button>
+                  </div>
+                ) : null}
+                <button type="button" className="remove-button" onClick={() => update(cart.filter((item) => !sameCartLine(item, line.slug)))}>
+                  Remover
+                </button>
+              </article>
+            );
+          })
         ) : (
           <div className="empty-state">
             <strong>Nenhum item disponível</strong>
@@ -232,6 +233,7 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
             {siteConfig.wholesale.nationalDeliveryText} {siteConfig.wholesale.nationalDeliveryNote}
           </p>
           <p>O site recebe somente o valor dos produtos. O atendimento confirma o frete e o prazo pelo WhatsApp; a cobrança do frete é separada, após sua aprovação.</p>
+          {summary?.orderLimitNotice ? <p role="status">{summary.orderLimitNotice}</p> : null}
         </div>
         <div className="delivery-note">
           {siteConfig.wholesale.deliveryModes.map((mode) => (
@@ -254,7 +256,7 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
         ) : null}
         {hasValidLines ? (
           <CustomerCheckoutButton className="button primary wide" disabled={!minimumReached || !packageReady}>
-            {!packageReady ? "Ajuste as embalagens" : minimumReached ? "Continuar pedido" : "Complete o pedido mínimo"}
+            {summary?.orderLimitNotice ? "Reduza a quantidade" : !packageReady ? "Ajuste o pedido" : minimumReached ? "Continuar pedido" : "Complete o pedido mínimo"}
           </CustomerCheckoutButton>
         ) : (
           <Link className="button primary wide disabled" href="/categoria/all">

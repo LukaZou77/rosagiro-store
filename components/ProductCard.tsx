@@ -21,6 +21,7 @@ import {
 import { siteConfig } from "@/lib/site-config";
 import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
+import { wholesaleReferenceUnitPriceCents } from "@/lib/wholesale-order";
 
 function normalizedLabel(value: string) {
   return value
@@ -56,11 +57,13 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
   const stockTone = productStockTone(product);
   const shortStockLabel = productShortStockLabel(product);
   const whatsappHref = buildProductWhatsAppHref(product, whatsappPhone);
-  const displayPrice = product.priceCents;
   const infoTags = productCardTags(product);
   const packagePieces = productWholesalePackagePieces(product);
   const packagePriceCents = productWholesalePackagePriceCents(product);
-  const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces);
+  const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces && packagePriceCents);
+  const displayPrice = !consultationOnly && packagePieces && packagePriceCents
+    ? wholesaleReferenceUnitPriceCents(packagePriceCents, packagePieces)
+    : product.priceCents;
   const showBrand = shouldDisplayProductBrand(product.brand.name);
   const priceLabel = consultationOnly
     ? sourceCatalogPriceLabel(product.wholesalePackage)
@@ -103,13 +106,12 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
               className={`${buyingStyles.packagePrice} ${buyingStyles.cardPackagePrice}`}
               packagePieces={packagePieces}
               packagePriceCents={packagePriceCents}
-              unitPriceCents={displayPrice}
             />
             {consultationOnly ? (
               <button type="button" disabled>
                 Estoque sob consulta
               </button>
-            ) : !packagePieces ? (
+            ) : !packagePieces || !packagePriceCents ? (
               <Link className="button secondary" href={`/produto/${product.slug}`}>
                 Consultar embalagem
               </Link>
@@ -127,6 +129,7 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
                 }}
                 slug={product.slug}
                 quantity={packagePieces}
+                stockQuantity={quantity}
                 label="Adicionar 1 embalagem"
                 disabled={!available}
               />

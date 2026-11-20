@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { cartLineKey, readCart, sameCartLine, subscribeQuickPurchaseOpen, useCart, writeCart } from "@/components/CartCount";
 import { CartCompletionRecommendations } from "@/components/CartCompletionRecommendations";
 import { CustomerCheckoutButton } from "@/components/CustomerSession";
@@ -11,9 +11,9 @@ import {
   currentQuickPurchaseSummaryState,
   isCurrentQuickPurchaseRequest,
   shouldFetchQuickPurchaseSummary,
-  wrappedDialogFocusTarget,
   type QuickPurchaseSummaryState
 } from "@/components/QuickPurchaseDrawerState";
+import { closeStoreDialog, trapStoreDialogFocus } from "@/components/storeDialog";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { useWhatsAppPhone } from "@/components/WhatsAppProvider";
 import type { CartSummary, CartSummaryLine } from "@/lib/cart-summary";
@@ -33,9 +33,9 @@ function removeLine(slug: string) {
   writeCart(readCart().filter((item) => !sameCartLine(item, slug)));
 }
 
-function lineSummaryLabel(line: Pick<CartSummaryLine, "available" | "warning" | "priceCents">) {
-  if (!line.available) return line.warning || "Indisponível";
-  return `${money(line.priceCents)} / Em estoque`;
+function lineSummaryLabel(line: Pick<CartSummaryLine, "available" | "packagePriceCents" | "priceCents">) {
+  if (line.packagePriceCents !== null) return `${money(line.packagePriceCents)} por embalagem`;
+  return line.available ? money(line.priceCents) : "Indisponível";
 }
 
 export function QuickPurchaseDrawer() {
@@ -43,7 +43,7 @@ export function QuickPurchaseDrawer() {
   const whatsappPhone = useWhatsAppPhone();
   const cart = useCart();
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const drawerRef = useRef<HTMLElement | null>(null);
+  const drawerRef = useRef<HTMLDialogElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const activeRequestRef = useRef(0);
   const [open, setOpen] = useState(false);
@@ -60,59 +60,31 @@ export function QuickPurchaseDrawer() {
     const candidate = opener || activeElement;
     // Adding another item inside an already-open drawer must not replace the
     // external return-focus target with a control that will be hidden on close.
-    if (!candidate || !drawerRef.current?.contains(candidate)) {
+    if (!drawerRef.current?.open) {
       openerRef.current = candidate && candidate !== document.body && candidate !== document.documentElement ? candidate : null;
     }
     setRequestCycle((current) => current + 1);
     setOpen(true);
-    window.setTimeout(() => closeButtonRef.current?.focus({ preventScroll: true }), 0);
   }, [drawerDisabled]);
 
-  const closeDrawer = useCallback(() => {
+  function closeDrawer() {
     setOpen(false);
-    window.setTimeout(() => {
-      const opener = openerRef.current;
-      const fallback = document.getElementById("conteudo-principal");
-      const target = opener?.isConnected && !opener.hasAttribute("disabled") ? opener : fallback;
-      target?.focus({ preventScroll: true });
-    }, 0);
-  }, []);
+  }
 
   useEffect(() => {
     return subscribeQuickPurchaseOpen(() => openDrawer());
   }, [openDrawer]);
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeDrawer();
-        return;
-      }
-      if (event.key !== "Tab") return;
-
-      const drawer = drawerRef.current;
-      if (!drawer) return;
-      const focusableElements = Array.from(
-        drawer.querySelectorAll<HTMLElement>(
-          "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
-        )
-      ).filter((element) => !element.hasAttribute("disabled"));
-      const activeElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      const target = wrappedDialogFocusTarget({
-        elements: focusableElements,
-        activeElement,
-        activeInside: Boolean(activeElement && drawer.contains(activeElement)),
-        shiftKey: event.shiftKey
-      });
-      if (!target) return;
-      event.preventDefault();
-      target.focus({ preventScroll: true });
+  useLayoutEffect(() => {
+    const drawer = drawerRef.current;
+    if (!drawer) return;
+    if (!drawerOpen) {
+      closeStoreDialog(drawer, openerRef.current);
+    } else if (!drawer.open) {
+      drawer.showModal();
+      closeButtonRef.current?.focus({ preventScroll: true });
     }
-
-    if (drawerOpen) window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [closeDrawer, drawerOpen]);
+  }, [drawerOpen]);
 
   useEffect(() => {
     if (!shouldFetchQuickPurchaseSummary({ drawerOpen, cartLength: cart.length })) return;
@@ -173,6 +145,7 @@ export function QuickPurchaseDrawer() {
         .map((line) => ({
           quantity: line.quantity,
           packagePieces: line.packagePieces,
+          lineTotalCents: line.lineTotalCents,
           product: {
             name: line.name,
             priceCents: line.priceCents,
@@ -202,10 +175,11 @@ export function QuickPurchaseDrawer() {
 
   return (
     <>
-      {count > 0 && !drawerOpen && !hideFloatingEntry ? (
+      {count > 0 && !hideFloatingEntry ? (
         <button
           className="quick-purchase-fab"
           type="button"
+          hidden={drawerOpen}
           onClick={(event) => openDrawer(event.currentTarget)}
           aria-label="Abrir pedido rápido"
         >
@@ -213,9 +187,20 @@ export function QuickPurchaseDrawer() {
           <strong>{count}</strong>
         </button>
       ) : null}
-      <div className={drawerOpen ? "quick-drawer-shell open" : "quick-drawer-shell"} aria-hidden={!drawerOpen}>
-        <button className="quick-drawer-overlay" type="button" onClick={closeDrawer} aria-label="Fechar painel de pedido" />
-        <aside className="quick-drawer" aria-label="Pedido rápido" aria-modal="true" ref={drawerRef} role="dialog">
+      <dialog
+        className="quick-drawer-shell"
+        aria-label="Pedido rápido"
+        ref={drawerRef}
+        onCancel={(event) => {
+          event.preventDefault();
+          closeDrawer();
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeDrawer();
+        }}
+        onKeyDown={trapStoreDialogFocus}
+      >
+        <aside className="quick-drawer">
           <header className="quick-drawer-header">
             <div>
               <span>Pedido rápido</span>
@@ -231,7 +216,7 @@ export function QuickPurchaseDrawer() {
               <div className="quick-empty">
                 <strong>Pedido vazio</strong>
                 <p>Adicione produtos para montar sua compra de atacado.</p>
-                <Link className="button secondary wide" href="/categoria/all" onClick={() => setOpen(false)}>
+                <Link className="button secondary wide" href="/categoria/all" onClick={closeDrawer}>
                   Ver catálogo
                 </Link>
               </div>
@@ -260,8 +245,15 @@ export function QuickPurchaseDrawer() {
                 </section>
 
                 <div className="quick-lines">
-                    {summary.lines.map((line) => (
-                      <article className={line.available ? "quick-line" : "quick-line muted"} key={cartLineKey({ slug: line.slug })}>
+                  {summary.lines.map((line) => {
+                    const packagePieces = line.packagePieces || 1;
+                    const adjustedQuantity = line.active && line.packagePriceCents && (!line.packageValid || !line.available)
+                      ? roundUpToWholesalePackage(line.requestedQuantity, packagePieces, line.stockQuantity)
+                      : 0;
+                    const nextQuantity = addWholesalePackageQuantity(line.requestedQuantity, packagePieces, line.stockQuantity);
+
+                    return (
+                      <article className={line.available ? "quick-line" : "quick-line muted"} key={cartLineKey(line)}>
                         {line.image ? (
                           <OptimizedProductImage src={line.image} alt={line.name} width={72} height={86} sizes="72px" />
                         ) : (
@@ -278,53 +270,46 @@ export function QuickPurchaseDrawer() {
                                 : `Embalagem fechada: ${line.packagePieces} unidades`}
                             </small>
                           ) : null}
-                        {line.warning ? <em>{line.warning}</em> : null}
-                      </div>
-                      <div className="quick-line-actions">
-                        {line.packagePieces && !line.packageValid ? (
-                          <button
-                            className="button secondary"
-                            type="button"
-                            onClick={() => syncQuantity(line.slug, roundUpToWholesalePackage(line.requestedQuantity, line.packagePieces))}
-                          >
-                            Ajustar embalagem
-                          </button>
-                        ) : (
-                          <div className="qty-control compact">
+                          {line.warning ? <em>{line.warning}</em> : null}
+                        </div>
+                        <div className="quick-line-actions">
+                          {adjustedQuantity > 0 ? (
+                            <button className="button secondary" type="button" onClick={() => syncQuantity(line.slug, adjustedQuantity)}>
+                              Ajustar embalagem
+                            </button>
+                          ) : line.available && line.packageValid ? (
+                            <div className="qty-control compact">
                               <button
                                 type="button"
-                                onClick={() => syncQuantity(line.slug, line.requestedQuantity - (line.packagePieces || 1))}
+                                onClick={() => syncQuantity(line.slug, line.requestedQuantity - packagePieces)}
                                 aria-label={`Diminuir uma embalagem de ${line.name}`}
                               >
-                              -
-                            </button>
-                            <span>{line.packageCount} emb.</span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                syncQuantity(
-                                  line.slug,
-                                  addWholesalePackageQuantity(
-                                    line.requestedQuantity,
-                                    line.packagePieces || 1,
-                                    line.stockQuantity
-                                  )
-                                )
-                              }
-                              disabled={!line.available || line.requestedQuantity + (line.packagePieces || 1) > line.stockQuantity}
-                              aria-label={`Aumentar uma embalagem de ${line.name}`}
-                            >
-                              +
-                            </button>
-                          </div>
-                        )}
-                        <strong>{money(line.lineTotalCents)}</strong>
-                          <button className="remove-button compact" type="button" onClick={() => removeLine(line.slug)}>
-                          Remover
-                        </button>
-                      </div>
-                    </article>
-                  ))}
+                                −
+                              </button>
+                              <span>{line.packageCount} emb.</span>
+                              <button
+                                type="button"
+                                onClick={() => syncQuantity(line.slug, nextQuantity)}
+                                disabled={nextQuantity <= line.requestedQuantity}
+                                aria-label={`Aumentar uma embalagem de ${line.name}`}
+                              >
+                                +
+                              </button>
+                            </div>
+                          ) : null}
+                          {line.lineTotalCents > 0 ? <strong>{money(line.lineTotalCents)}</strong> : null}
+                          <button
+                            className="remove-button compact"
+                            type="button"
+                            aria-label={`Remover ${line.name}`}
+                            onClick={() => removeLine(line.slug)}
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
 
                 <CartCompletionRecommendations
@@ -343,6 +328,7 @@ export function QuickPurchaseDrawer() {
                 />
 
                 <section className="quick-summary" aria-label="Resumo do pedido">
+                  {summary.orderLimitNotice ? <p role="status">{summary.orderLimitNotice}</p> : null}
                   <div>
                     <span>Subtotal</span>
                     <strong>{money(summary.subtotalCents)}</strong>
@@ -370,21 +356,21 @@ export function QuickPurchaseDrawer() {
               <CustomerCheckoutButton
                 className="button primary wide"
                 disabled={!summary?.minimumReached || !summary?.packageReady}
-                onProceed={() => setOpen(false)}
+                onProceed={closeDrawer}
               >
-                {!summary?.packageReady ? "Ajuste as embalagens" : summary.minimumReached ? "Continuar pedido" : "Complete o pedido mínimo"}
+                {summary?.orderLimitNotice ? "Reduza a quantidade" : !summary?.packageReady ? "Ajuste o pedido" : summary.minimumReached ? "Continuar pedido" : "Complete o pedido mínimo"}
               </CustomerCheckoutButton>
             ) : (
               <span className="button primary wide disabled" aria-disabled="true">
                 Continuar pedido
               </span>
             )}
-            <Link className="button secondary wide" href="/carrinho" onClick={() => setOpen(false)}>
+            <Link className="button secondary wide" href="/carrinho" onClick={closeDrawer}>
               Ver pedido completo
             </Link>
           </footer>
         </aside>
-      </div>
+      </dialog>
     </>
   );
 }

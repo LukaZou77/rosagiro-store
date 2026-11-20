@@ -5,6 +5,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminTranslator } from "@/lib/admin-i18n";
 import { getAdminLocale } from "@/lib/admin-i18n-server";
+import { productListReturnPath } from "@/lib/admin-product-navigation";
 import { prisma } from "@/lib/db";
 
 type PageProps = {
@@ -28,6 +29,7 @@ export default async function AdminNewProductPage({ searchParams }: PageProps) {
   ]);
   const t = createAdminTranslator(locale);
   const error = single(query.error);
+  const returnTo = productListReturnPath(single(query.returnTo));
   const hasCatalogSetup = brands.length > 0 && categories.some((category) => category.subcategories.length > 0);
 
   return (
@@ -37,7 +39,7 @@ export default async function AdminNewProductPage({ searchParams }: PageProps) {
         <h1>{t("Cadastrar produto manualmente", "手动创建商品")}</h1>
         <p>{t("Crie uma ficha completa para publicar um novo item sem importar CSV.", "无需导入 CSV，直接填写完整资料并创建新商品。")}</p>
         <div className="admin-actions">
-          <Link className="button secondary" href="/admin/produtos" prefetch={false}>
+          <Link className="button secondary" href={returnTo} prefetch={false}>
             {t("Voltar para produtos", "返回商品列表")}
           </Link>
           <Link className="button secondary" href="/admin/marcas" prefetch={false}>
@@ -73,7 +75,7 @@ export default async function AdminNewProductPage({ searchParams }: PageProps) {
         </p>
       </section>
 
-      <AdminProductForm action={createProductAction} brands={brands} categories={categories} locale={locale} mode="create" />
+      <AdminProductForm action={createProductAction} brands={brands} categories={categories} locale={locale} mode="create" returnTo={returnTo} />
     </AdminShell>
   );
 }

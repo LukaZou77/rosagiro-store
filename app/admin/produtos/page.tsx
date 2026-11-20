@@ -9,6 +9,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminTranslator } from "@/lib/admin-i18n";
 import { getAdminLocale } from "@/lib/admin-i18n-server";
+import { productEditorPath } from "@/lib/admin-product-navigation";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
 import { isSourceCatalogConsultationProduct, SOURCE_CATALOG_CONSULTATION_STATUS } from "@/lib/source-catalog-product";
@@ -184,6 +185,8 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   if (category !== "all") preserved.set("category", category);
   if (status !== "all") preserved.set("status", status);
   if (stock !== "all") preserved.set("stock", stock);
+  const returnTo = productPageHref(preserved, page);
+  const newProductHref = productEditorPath("/admin/produtos/novo", returnTo);
 
   return (
     <AdminShell adminName={admin.name}>
@@ -197,7 +200,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
               {t("Atualizar catálogo público", "刷新网站目录")}
             </button>
           </form>
-          <Link className="button primary" href="/admin/produtos/novo" prefetch={false}>
+          <Link className="button primary" href={newProductHref} prefetch={false}>
             {t("Novo produto", "新建商品")}
           </Link>
         </div>
@@ -401,14 +404,14 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         </Link>
       </form>
 
-      {productRows.length ? <AdminProductBulkList products={productRows} action={moveProductsToTrashAction} /> : null}
+      {productRows.length ? <AdminProductBulkList products={productRows} action={moveProductsToTrashAction} returnTo={returnTo} /> : null}
       <div className="admin-list">
         {!products.length ? (
           <div className="empty-state">
             <strong>{t("Nenhum produto encontrado", "未找到商品")}</strong>
             <p>{t("Limpe os filtros, importe uma planilha ou cadastre um produto manualmente.", "请清除筛选条件、导入表格或手动新建商品。")}</p>
             <div className="admin-actions">
-              <Link className="button primary" href="/admin/produtos/novo" prefetch={false}>
+              <Link className="button primary" href={newProductHref} prefetch={false}>
                 {t("Novo produto", "新建商品")}
               </Link>
               <Link className="button secondary" href="/admin/importar-produtos" prefetch={false}>

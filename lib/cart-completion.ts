@@ -1,4 +1,5 @@
 import {
+  productWholesaleLineTotalCents,
   productWholesalePackagePieces,
   productWholesalePackagePriceCents,
   productWholesaleStockQuantity
@@ -13,6 +14,8 @@ export type CartCompletionProduct = {
   baseBoxPriceCents?: number | null;
   baseBoxPieces?: number | null;
   wholesalePackage?: string | null;
+  descriptionPt?: string | null;
+  stockStatus?: string | null;
   badges: string[];
   active: boolean;
   rating?: number;
@@ -34,6 +37,7 @@ export type CartCompletionRecommendation = {
   brandName: string;
   image: string;
   priceCents: number;
+  packagePriceCents: number;
   stockQuantity: number;
   packagePieces: number;
   reason: string;
@@ -48,13 +52,7 @@ type RecommendationOptions = {
   cartSubtotalCents?: number;
 };
 
-function productStock(product: Pick<CartCompletionProduct, "inventory"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
-  return productWholesaleStockQuantity(product);
-}
-
-function recommendationReason(product: CartCompletionProduct, remainingCents: number, preferredCategories: Set<string>) {
-  const packagePieces = productWholesalePackagePieces(product) || 1;
-  const packagePrice = productWholesalePackagePriceCents(product) || product.priceCents * packagePieces;
+function recommendationReason(product: CartCompletionProduct, packagePrice: number, remainingCents: number, preferredCategories: Set<string>) {
   if (remainingCents > 0 && packagePrice <= remainingCents) return "Ajuda a fechar o mínimo";
   if (preferredCategories.has(product.category.slug)) return "Combina com sua lista";
   if (/mais vendido|favorito|destaque|novo/i.test(product.badges.join(" "))) return "Boa saída para reposição";
@@ -74,7 +72,7 @@ export function getCartCompletionRecommendations(
     options.cartSubtotalCents ??
     cart.reduce((sum, item) => {
       const product = productBySlug.get(item.slug);
-      return product ? sum + product.priceCents * Math.max(0, Math.floor(item.quantity || 0)) : sum;
+      return product ? sum + productWholesaleLineTotalCents(product, item.quantity) : sum;
     }, 0);
   const remainingCents = Math.max(0, minimumOrderCents - cartSubtotal);
   const preferredCategories = new Set<string>();
@@ -89,19 +87,15 @@ export function getCartCompletionRecommendations(
   }
 
   return products
-    .filter((product) => {
-      if (!product.active || product.slug === options.excludeSlug) return false;
-      if (cartQuantityBySlug.has(product.slug)) return false;
+    .flatMap((product) => {
+      if (!product.active || product.slug === options.excludeSlug || cartQuantityBySlug.has(product.slug)) return [];
       const packagePieces = productWholesalePackagePieces(product);
-      return Boolean(packagePieces && productStock(product) >= packagePieces);
-    })
-    .map((product) => {
-      const stock = productStock(product);
+      const packagePrice = productWholesalePackagePriceCents(product);
+      const stock = productWholesaleStockQuantity(product);
+      if (!packagePieces || !packagePrice || stock < packagePieces) return [];
+
       const sameCategory = preferredCategories.has(product.category.slug);
       const badgeBoost = /mais vendido|favorito|destaque|novo/i.test(product.badges.join(" ")) ? 1 : 0;
-      const effectivePrice = product.priceCents;
-      const packagePieces = productWholesalePackagePieces(product) || 1;
-      const packagePrice = productWholesalePackagePriceCents(product) || effectivePrice * packagePieces;
       const fitsGap = remainingCents > 0 && packagePrice <= remainingCents;
       const nearGap = remainingCents > 0 ? Math.max(0, 30 - Math.floor(Math.abs(packagePrice - remainingCents) / 1000)) : 0;
       const score =
@@ -112,22 +106,25 @@ export function getCartCompletionRecommendations(
         Math.min(stock, 18) +
         Math.min(product.reviewCount || 0, 20) / 4;
 
-      return {
+      return [{
         product,
         score,
-        stock
-      };
+        stock,
+        packagePieces,
+        packagePrice
+      }];
     })
-    .sort((a, b) => b.score - a.score || a.product.priceCents - b.product.priceCents || a.product.name.localeCompare(b.product.name))
+    .sort((a, b) => b.score - a.score || a.packagePrice - b.packagePrice || a.product.name.localeCompare(b.product.name))
     .slice(0, limit)
-    .map(({ product, stock }) => ({
+    .map(({ product, stock, packagePieces, packagePrice }) => ({
       slug: product.slug,
       name: product.name,
       brandName: product.brand.name,
       image: product.image,
       priceCents: product.priceCents,
+      packagePriceCents: packagePrice,
       stockQuantity: stock,
-      packagePieces: productWholesalePackagePieces(product) || 1,
-      reason: recommendationReason(product, remainingCents, preferredCategories)
+      packagePieces,
+      reason: recommendationReason(product, packagePrice, remainingCents, preferredCategories)
     }));
 }

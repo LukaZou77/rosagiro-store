@@ -58,6 +58,18 @@ type SearchResults = {
 
 const emptySearchResults: SearchResults = { products: [], orders: [], customers: [] };
 type NotificationPayload = { notifications?: AdminNotificationItem[]; unreadCount: number };
+type NotificationError = "load" | "write" | "refresh";
+
+async function fetchNotifications(summaryOnly = false) {
+  const response = await fetch(`/api/admin/notifications${summaryOnly ? "?summary=1" : ""}`, { cache: "no-store" });
+  if (!response.ok) throw new Error("Notifications unavailable");
+  const data = await response.json() as NotificationPayload;
+  if (!Number.isInteger(data.unreadCount) || data.unreadCount < 0 || (!summaryOnly && !Array.isArray(data.notifications))) {
+    throw new Error("Invalid notification response");
+  }
+  return data;
+}
+
 function isActivePath(pathname: string, item: NavItem) {
   return item.matchPaths.some((path) => pathname === path || (!item.exact && pathname.startsWith(`${path}/`)));
 }
@@ -108,6 +120,10 @@ export function AdminShellClient({
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [unreadCount, setUnreadCount] = useState(initialUnreadNotificationCount);
+  const [notificationError, setNotificationError] = useState<NotificationError | null>(null);
+  const [notificationSaving, setNotificationSaving] = useState(false);
+  const notificationWritePending = useRef(false);
+  const notificationWriteVersion = useRef(0);
   const notificationTime = useMemo(() => new Intl.DateTimeFormat(locale, {
     timeZone: "America/Sao_Paulo",
     day: "2-digit",
@@ -195,12 +211,14 @@ export function AdminShellClient({
 
   useEffect(() => {
     let active = true;
+    let latestRequest = 0;
     async function refreshNotificationSummary() {
+      if (notificationWritePending.current) return;
+      const version = notificationWriteVersion.current;
+      const request = ++latestRequest;
       try {
-        const response = await fetch("/api/admin/notifications?summary=1", { cache: "no-store" });
-        if (!response.ok) return;
-        const data = (await response.json()) as NotificationPayload;
-        if (!active) return;
+        const data = await fetchNotifications(true);
+        if (!active || request !== latestRequest || version !== notificationWriteVersion.current) return;
         setUnreadCount(data.unreadCount);
       } catch {
         // Keep the last successful unread count.
@@ -221,16 +239,19 @@ export function AdminShellClient({
   }, []);
 
   useEffect(() => {
-    if (!notificationOpen) return;
+    if (!notificationOpen || notificationWritePending.current) return;
     let active = true;
-    fetch("/api/admin/notifications", { cache: "no-store" })
-      .then(async (response) => response.ok ? await response.json() as NotificationPayload : null)
+    const version = notificationWriteVersion.current;
+    fetchNotifications()
       .then((data) => {
-        if (!active || !data) return;
+        if (!active || version !== notificationWriteVersion.current) return;
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount);
+        setNotificationError(null);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (active && version === notificationWriteVersion.current) setNotificationError("load");
+      });
     return () => {
       active = false;
     };
@@ -307,16 +328,37 @@ export function AdminShellClient({
     }, 220);
   }
 
-  function markNotificationsRead(id?: string) {
-    const now = new Date().toISOString();
-    setNotifications((current) => current.map((item) => (!id || item.id === id ? { ...item, readAt: item.readAt || now } : item)));
-    setUnreadCount((current) => id ? Math.max(0, current - (notifications.find((item) => item.id === id && !item.readAt) ? 1 : 0)) : 0);
-    fetch("/api/admin/notifications/read", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(id ? { id } : { all: true }),
-      keepalive: true
-    }).catch(() => undefined);
+  async function markNotificationsRead(id?: string) {
+    if (notificationWritePending.current) return;
+    notificationWritePending.current = true;
+    notificationWriteVersion.current += 1;
+    setNotificationSaving(true);
+    setNotificationError(null);
+    let confirmed = false;
+    try {
+      const response = await fetch("/api/admin/notifications/read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(id ? { id } : { all: true }),
+        keepalive: true
+      });
+      if (!response.ok) throw new Error("Notification update failed");
+      const result = await response.json() as { ok?: boolean };
+      if (!result.ok) throw new Error("Notification update not confirmed");
+      confirmed = true;
+      const now = new Date().toISOString();
+      setNotifications((current) => current.map((item) => (!id || item.id === id ? { ...item, readAt: item.readAt || now } : item)));
+      const decrement = notifications.some((item) => item.id === id && !item.readAt) ? 1 : 0;
+      setUnreadCount((current) => id ? Math.max(0, current - decrement) : 0);
+      const data = await fetchNotifications();
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount);
+    } catch {
+      setNotificationError(confirmed ? "refresh" : "write");
+    } finally {
+      notificationWritePending.current = false;
+      setNotificationSaving(false);
+    }
   }
 
   return (
@@ -392,8 +434,8 @@ export function AdminShellClient({
               <Search size={17} /><span>{t("Buscar no admin", "搜索后台")}</span>
             </button>
             <AdminLanguageSwitch compact />
-            <button className="admin-icon-button admin-notification-trigger" type="button" aria-label={t("Notificações", "通知")} title={t("Notificações", "通知")} onClick={() => { setNotificationOpen((value) => !value); setSearchOpen(false); }}>
-              <Bell size={19} />{unreadCount ? <small>{Math.min(unreadCount, 99)}</small> : null}
+            <button className="admin-icon-button admin-notification-trigger" type="button" aria-label={t(`Notificações: ${unreadCount} não lidas`, `通知：${unreadCount} 条未读`)} title={t("Notificações", "通知")} onClick={() => { setNotificationOpen((value) => !value); setSearchOpen(false); }}>
+              <Bell size={19} />{unreadCount ? <small>{unreadCount > 99 ? "99+" : unreadCount}</small> : null}
             </button>
             <div className="admin-user-menu">
               <span className="admin-user-avatar">{adminName.slice(0, 1).toUpperCase()}</span>
@@ -413,7 +455,7 @@ export function AdminShellClient({
           <section className="admin-command-dialog" role="dialog" aria-modal="true" aria-label={t("Busca global", "全局搜索")} ref={searchDialogRef}>
             <div className="admin-command-input-row">
               <Search size={19} />
-              <input value={searchQuery} onChange={(event) => handleSearch(event.target.value)} placeholder={t("Produto, modelo, pedido, cliente ou WhatsApp", "商品、型号、订单、客户或 WhatsApp")} autoFocus />
+              <input aria-label={t("Buscar no admin", "搜索后台")} value={searchQuery} onChange={(event) => handleSearch(event.target.value)} placeholder={t("Produto, modelo, pedido, cliente ou WhatsApp", "商品、型号、订单、客户或 WhatsApp")} autoFocus />
               {searchLoading ? <LoaderCircle className="admin-spin" size={18} /> : <button type="button" aria-label={t("Fechar busca", "关闭搜索")} title={t("Fechar", "关闭")} onClick={closeSearch}><X size={17} /></button>}
             </div>
             <div className="admin-command-results">
@@ -432,12 +474,19 @@ export function AdminShellClient({
           <button className="admin-notification-backdrop" type="button" aria-label={t("Fechar notificações", "关闭通知")} onClick={() => setNotificationOpen(false)} />
           <aside className="admin-notification-drawer" aria-label={t("Central de notificações", "通知中心")} ref={notificationDrawerRef}>
             <div className="admin-notification-heading"><div><span>{t("Operação", "运营")}</span><h2>{t("Notificações", "通知")}</h2></div><button className="admin-icon-button" type="button" aria-label={t("Fechar notificações", "关闭通知")} title={t("Fechar", "关闭")} onClick={() => setNotificationOpen(false)}><X size={17} /></button></div>
-            {unreadCount ? <button className="admin-mark-all" type="button" onClick={() => markNotificationsRead()}><CheckCheck size={16} />{t("Marcar todas como lidas", "全部标为已读")}</button> : null}
+            {notificationError ? <p role="alert">{
+              notificationError === "write"
+                ? t("Não foi possível confirmar a leitura. Tente novamente.", "未能确认已读状态。请重试。")
+                : notificationError === "refresh"
+                  ? t("A leitura foi registrada. Reabra as notificações para atualizar a lista.", "已读状态已保存。重新打开通知即可更新列表。")
+                  : t("Não foi possível carregar as notificações. Feche e abra novamente para tentar de novo.", "未能加载通知。请关闭后重新打开重试。")
+            }</p> : null}
+            {unreadCount ? <button className="admin-mark-all" type="button" disabled={notificationSaving} onClick={() => void markNotificationsRead()}><CheckCheck size={16} />{notificationSaving ? t("Salvando...", "正在保存……") : t("Marcar todas como lidas", "全部标为已读")}</button> : null}
             <div className="admin-notification-list">
               {notifications.map((notification) => {
                 const copy = localizedNotificationCopy(notification, locale);
                 return (
-                  <Link className={notification.readAt ? "" : "is-unread"} href={notification.actionHref} prefetch={false} onClick={() => markNotificationsRead(notification.id)} key={notification.id}>
+                  <Link className={notification.readAt ? "" : "is-unread"} href={notification.actionHref} prefetch={false} onClick={() => { if (!notification.readAt) void markNotificationsRead(notification.id); }} key={notification.id}>
                     <span className={notification.notificationType === "ORDER_PAID" ? "is-paid" : "is-order"}>{notification.notificationType === "ORDER_PAID" ? <CircleDollarSign size={18} /> : <ShoppingBag size={18} />}</span>
                     <div><strong>{copy.title}</strong><p>{copy.message}</p><small>{notificationTime.format(new Date(notification.createdAt))}</small></div>
                   </Link>

@@ -84,7 +84,7 @@ test("builds category intro copy for the rendered shelf", () => {
 test("builds natural product metadata for wholesale product pages", () => {
   const description = productMetaDescription(sampleProduct);
   assert.match(description, /Ruby Rose/i);
-  assert.match(description, /preço/i);
+  assert.match(description, /R\$\s*9,75 por embalagem/i);
   assert.match(description, /em estoque/i);
   assert.match(description, /pedido mínimo R\$ 500,00/i);
   assert.doesNotMatch(description, mojibakePattern);
@@ -166,12 +166,23 @@ test("omits commerce offers for source products that require consultation", () =
   assert.doesNotMatch(description, /\.\.\.$/);
 });
 
-test("uses the exact package total in the offer, not a rounded unit price", () => {
-  const product = { ...sampleProduct, priceCents: 333, baseBoxPieces: 3, baseBoxPriceCents: 1000 };
+test("uses the exact package total and requires stock of a whole package", () => {
+  const product = {
+    ...sampleProduct,
+    name: "Batom Ruby Rose",
+    priceCents: 347,
+    baseBoxPieces: 3,
+    baseBoxPriceCents: 1000,
+    inventory: { quantity: 2 }
+  };
   const data = productJsonLd(product);
   assert.equal(data.offers?.price, "10.00");
+  assert.equal(data.offers?.availability, "https://schema.org/OutOfStock");
   assert.ok(data.additionalProperty.some((entry) => entry.name === "Unidades por embalagem" && entry.value === "3"));
-  assert.equal(product.priceCents, 333);
+  assert.match(productMetaDescription(product), /R\$\s*10,00 por embalagem, sem embalagem completa em estoque/i);
+  const available = { ...product, inventory: { quantity: 3 } };
+  assert.equal(productJsonLd(available).offers?.availability, "https://schema.org/InStock");
+  assert.match(productMetaDescription(available), /R\$\s*10,00 por embalagem \(aprox\. R\$\s*3,33\/un\.\), em estoque/i);
 });
 
 test("does not invent an offer or brand when commercial information is missing", () => {

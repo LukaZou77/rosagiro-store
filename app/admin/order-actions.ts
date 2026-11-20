@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
+import { orderDetailFeedbackPath, orderListReturnPath } from "@/lib/admin-order-navigation";
 import { prisma } from "@/lib/db";
 import { canUpdateOrderStatus, orderStatuses } from "@/lib/order-fulfillment";
 import { markOrderPaid, OrderError } from "@/lib/orders";
@@ -10,10 +11,16 @@ import { isPaymentConfirmed } from "@/lib/payments";
 import { recordCreatedOrderProductMetrics } from "@/lib/product-daily-metrics";
 import type { OrderStatus } from "@/src/generated/prisma/client";
 
+function orderDetailLoginReturnPath(detailPath: string, returnTo: FormDataEntryValue | null) {
+  const listPath = orderListReturnPath(returnTo);
+  return listPath === "/admin/pedidos" ? detailPath : `${detailPath}?${new URLSearchParams({ returnTo: listPath })}`;
+}
+
 export async function updateOrderStatusAction(formData: FormData) {
   const orderNumber = String(formData.get("orderNumber") || "").trim();
   const detailPath = `/admin/pedidos/${encodeURIComponent(orderNumber)}`;
-  await requireAdmin(orderNumber ? detailPath : "/admin/pedidos");
+  const returnTo = formData.get("returnTo");
+  await requireAdmin(orderNumber ? orderDetailLoginReturnPath(detailPath, returnTo) : "/admin/pedidos");
 
   const status = String(formData.get("status") || "") as OrderStatus;
   if (!orderNumber || !orderStatuses.includes(status)) {
@@ -23,7 +30,7 @@ export async function updateOrderStatusAction(formData: FormData) {
   const fulfillmentCarrier = String(formData.get("fulfillmentCarrier") || "").trim();
   const trackingCode = String(formData.get("trackingCode") || "").trim();
   if (hasShipment && (Boolean(fulfillmentCarrier) !== Boolean(trackingCode) || fulfillmentCarrier.length > 100 || trackingCode.length > 120)) {
-    redirect(`${detailPath}?error=${encodeURIComponent("Preencha a transportadora e o código de rastreio. / 请同时填写快递公司和物流单号。")}`);
+    redirect(orderDetailFeedbackPath(detailPath, "error", "Preencha a transportadora e o código de rastreio. / 请同时填写快递公司和物流单号。", returnTo));
   }
 
   const update = await prisma.$transaction(async (tx) => {
@@ -46,7 +53,7 @@ export async function updateOrderStatusAction(formData: FormData) {
     });
     return { current } as const;
   });
-  if ("error" in update) redirect(`${detailPath}?error=${encodeURIComponent(update.error || "")}`);
+  if ("error" in update) redirect(orderDetailFeedbackPath(detailPath, "error", update.error || "", returnTo));
 
   const nextCanceled = status === "CANCELED";
   if (nextCanceled !== (update.current.status === "CANCELED")) {
@@ -56,20 +63,21 @@ export async function updateOrderStatusAction(formData: FormData) {
   revalidatePath("/admin/pedidos");
   revalidatePath(detailPath);
   revalidatePath(`/pedido/${encodeURIComponent(orderNumber)}`);
-  if (formData.get("detail") === "1") redirect(`${detailPath}?saved=1`);
+  if (formData.get("detail") === "1") redirect(orderDetailFeedbackPath(detailPath, "saved", "1", returnTo));
 }
 
 export async function confirmManualOrderPaymentAction(formData: FormData) {
   const orderNumber = String(formData.get("orderNumber") || "").trim();
   const detailPath = `/admin/pedidos/${encodeURIComponent(orderNumber)}`;
-  await requireAdmin(orderNumber ? detailPath : "/admin/pedidos");
+  const returnTo = formData.get("returnTo");
+  await requireAdmin(orderNumber ? orderDetailLoginReturnPath(detailPath, returnTo) : "/admin/pedidos");
   if (!orderNumber) redirect("/admin/pedidos?error=1");
 
   try {
     await markOrderPaid(orderNumber, { source: "manual" });
   } catch (error) {
     const message = error instanceof OrderError ? error.message : "Não foi possível confirmar o recebimento.";
-    redirect(`${detailPath}?error=${encodeURIComponent(message)}`);
+    redirect(orderDetailFeedbackPath(detailPath, "error", message, returnTo));
   }
 
   revalidatePath("/admin");
@@ -78,5 +86,5 @@ export async function confirmManualOrderPaymentAction(formData: FormData) {
   revalidatePath(detailPath);
   revalidatePath(`/pedido/${encodeURIComponent(orderNumber)}`);
   revalidatePath(`/pagamento-simulado/${encodeURIComponent(orderNumber)}`);
-  redirect(`${detailPath}?saved=1`);
+  redirect(orderDetailFeedbackPath(detailPath, "saved", "1", returnTo));
 }

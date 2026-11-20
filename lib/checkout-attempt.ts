@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { parseBrazilianDocument } from "./brazilian-document";
 
 export type CheckoutAttempt = { id: string; requestHash: string };
 
@@ -24,6 +25,8 @@ export function checkoutAttemptFromPayload(payload: unknown): CheckoutAttempt {
     throw new CheckoutAttemptError("Atualize o checkout antes de enviar o pedido. Seu carrinho foi mantido.", 400);
   }
   const customer = record(data.customer);
+  // Keep the prior hash for CPF attempts, including saved attempts with an older document format.
+  const documentNumber = parseBrazilianDocument(customer.cpf)?.number ?? digits(customer.cpf);
   const address = record(data.address);
   const items = Array.isArray(data.items) ? data.items.map((value) => {
     const item = record(value);
@@ -33,7 +36,7 @@ export function checkoutAttemptFromPayload(payload: unknown): CheckoutAttempt {
     items,
     customer: {
       name: text(customer.name), email: text(customer.email).toLowerCase(),
-      phone: digits(customer.phone), cpf: digits(customer.cpf)
+      phone: digits(customer.phone), cpf: documentNumber
     },
     address: {
       cep: digits(address.cep), state: text(address.state).toUpperCase(),

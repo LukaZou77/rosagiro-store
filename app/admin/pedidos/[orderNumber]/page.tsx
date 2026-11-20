@@ -4,6 +4,7 @@ import { confirmManualOrderPaymentAction, updateOrderStatusAction } from "@/app/
 import { AdminProductSubmitButton } from "@/components/AdminProductSubmitButton";
 import { AdminShell } from "@/components/AdminShell";
 import { requireAdmin } from "@/lib/auth";
+import { orderListReturnPath } from "@/lib/admin-order-navigation";
 import { createAdminTranslator } from "@/lib/admin-i18n";
 import { getAdminLocale } from "@/lib/admin-i18n-server";
 import { formatAdminDateTime } from "@/lib/date-format";
@@ -73,6 +74,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
   const localizedAddressLabels = locale === "zh-CN" ? addressMatchLabelsZh : addressMatchLabels;
   const { orderNumber } = await params;
   const query = searchParams ? await searchParams : {};
+  const returnTo = orderListReturnPath(single(query.returnTo));
   const saved = single(query.saved);
   const error = single(query.error);
   const order = await prisma.order.findUnique({
@@ -100,6 +102,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
       <div className="admin-heading">
         <p className="eyebrow">{t("Pedido", "订单")}</p>
         <h1>{order.orderNumber}</h1>
+        <Link href={returnTo} prefetch={false}>{t("Voltar aos pedidos", "返回订单列表")}</Link>
       </div>
       {saved ? (
         <div className="admin-notice success" role="status">
@@ -116,7 +119,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           <h2>{t("Cliente", "客户")}</h2>
           <p>{order.customerName}</p>
           <p>{order.customerEmail}</p>
-          <p>{order.customerPhone} / CPF {order.customerCpf}</p>
+          <p>{order.customerPhone} / CPF ou CNPJ {order.customerCpf}</p>
           <p>
             {order.street}, {order.number} {order.complement ? `- ${order.complement}` : ""}
           </p>
@@ -155,6 +158,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           <form action={updateOrderStatusAction} className="status-form detail-status-form">
             <input type="hidden" name="orderNumber" value={order.orderNumber} />
             <input type="hidden" name="detail" value="1" />
+            <input type="hidden" name="returnTo" value={returnTo} />
             <select aria-label={t("Status do pedido", "订单状态")} name="status" defaultValue={order.status}>
               {orderStatusChoices(order.status, paymentConfirmed).map((value) => (
                 <option value={value} key={value}>
@@ -231,6 +235,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           {manualPayment ? (
             <form action={confirmManualOrderPaymentAction} className="address-match-card admin needs-review manual-pix-admin-card">
               <input type="hidden" name="orderNumber" value={order.orderNumber} />
+              <input type="hidden" name="returnTo" value={returnTo} />
               <span>{order.payment?.method === "PIX" ? t("Pix manual", "人工 Pix") : t("Transferência bancária", "银行转账")}</span>
               <strong>{t("Confirme somente após conferir o recebimento no extrato bancário.", "请在银行流水中核实到账后确认。")}</strong>
               <button className="button primary" type="submit">
@@ -249,9 +254,15 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
               <span>{item.productBrand}</span>
               <strong>{item.productName}</strong>
               {item.productSkuName ? <small>{item.productSkuName} #{item.productSkuCode}</small> : null}
-              <small>
-                {item.quantity} x {money(item.unitPriceCents)}
-              </small>
+              {item.packagePieces && item.packageCount && item.packagePriceCents ? (
+                <small>
+                  {item.packageCount} {item.packageCount === 1 ? t("embalagem", "包") : t("embalagens", "包")}
+                  {" · "}{item.packagePieces} {t("un. por embalagem", "件／包")}
+                  {" · "}{money(item.packagePriceCents)} {t("por embalagem", "／包")}
+                </small>
+              ) : (
+                <small>{item.quantity} {t("un.", "件")} · {t("Preço unitário registrado", "记录单价")} {money(item.unitPriceCents)}</small>
+              )}
             </div>
             <strong>{money(item.lineTotalCents)}</strong>
           </article>

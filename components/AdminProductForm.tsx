@@ -1,5 +1,6 @@
 import type { Prisma } from "@/src/generated/prisma/client";
 import { AdminCategorySubcategorySelect } from "@/components/AdminCategorySubcategorySelect";
+import { AdminProductEditorForm, type ProductEditorAction } from "@/components/AdminProductEditorForm";
 import { AdminProductGalleryManager } from "@/components/AdminProductGalleryManager";
 import { AdminProductSubmitButton } from "@/components/AdminProductSubmitButton";
 import { AdminSkuManager } from "@/components/AdminSkuManager";
@@ -11,14 +12,13 @@ type AdminProductFormProduct = Prisma.ProductGetPayload<{
   include: { brand: true; category: true; inventory: true; skus: true };
 }>;
 
-type ProductFormAction = (formData: FormData) => void | Promise<void>;
-
 type AdminProductFormProps = {
-  action: ProductFormAction;
+  action: ProductEditorAction;
   brands: Array<{ id: string; name: string }>;
   categories: Array<{ id: string; label: string; subcategories: Array<{ id: string; label: string }> }>;
   mode: "create" | "edit";
   locale: AdminLocale;
+  returnTo: string;
   product?: AdminProductFormProduct;
 };
 
@@ -30,7 +30,7 @@ function numberValue(value: number | null | undefined, fallback: number | string
   return value ?? fallback;
 }
 
-export function AdminProductForm({ action, brands, categories, mode, locale, product }: AdminProductFormProps) {
+export function AdminProductForm({ action, brands, categories, mode, locale, returnTo, product }: AdminProductFormProps) {
   const t = createAdminTranslator(locale);
   const isEdit = mode === "edit";
   const gallery = product ? normalizeProductGallery(product.image, product.gallery) : [];
@@ -41,7 +41,8 @@ export function AdminProductForm({ action, brands, categories, mode, locale, pro
     : null;
 
   return (
-    <form action={action} className="admin-detail-grid product-editor">
+    <AdminProductEditorForm action={action} failureMessage={t("Não foi possível salvar o produto. Confira a conexão e tente novamente.", "暂时无法保存商品。请检查网络连接后重试。")}>
+      <input type="hidden" name="returnTo" value={returnTo} />
       {isEdit && product ? <input type="hidden" name="productId" value={product.id} /> : null}
       <section className="import-panel">
         <div className="product-editor-main-image">
@@ -255,6 +256,6 @@ export function AdminProductForm({ action, brands, categories, mode, locale, pro
 
         <AdminProductSubmitButton label={submitLabel} />
       </section>
-    </form>
+    </AdminProductEditorForm>
   );
 }

@@ -1,9 +1,17 @@
-export const MAX_WHOLESALE_LINE_QUANTITY = 999;
+// OrderItem.quantity is a PostgreSQL integer. Stock limits purchase quantity.
+export const MAX_WHOLESALE_LINE_QUANTITY = 2_147_483_647;
+export const MAX_WHOLESALE_ORDER_TOTAL_CENTS = 2_147_483_647;
+export const wholesaleOrderTotalLimitNotice =
+  "O valor deste pedido ultrapassa o limite aceito no site. Reduza a quantidade ou fale com o atendimento.";
 
 export function normalizeWholesaleLineQuantity(value: unknown) {
-  const quantity = Math.floor(Number(value) || 0);
-  if (quantity <= 0) return 0;
+  const quantity = Math.floor(Number(value));
+  if (!Number.isFinite(quantity) || quantity <= 0) return 0;
   return Math.min(MAX_WHOLESALE_LINE_QUANTITY, quantity);
+}
+
+export function wholesaleReferenceUnitPriceCents(packagePriceCents: number, packagePieces: number) {
+  return Math.round(packagePriceCents / packagePieces);
 }
 
 export function wholesaleMinimumRemainingCents(subtotalCents: number, minimumOrderCents: number) {
@@ -14,13 +22,16 @@ export function wholesaleMinimumReached(subtotalCents: number, minimumOrderCents
   return wholesaleMinimumRemainingCents(subtotalCents, minimumOrderCents) === 0;
 }
 
-export function roundUpToWholesalePackage(quantity: unknown, packagePieces: unknown) {
+export function roundUpToWholesalePackage(
+  quantity: unknown,
+  packagePieces: unknown,
+  maximumQuantity: unknown = MAX_WHOLESALE_LINE_QUANTITY
+) {
   const normalizedQuantity = normalizeWholesaleLineQuantity(quantity);
-  const normalizedPackage = Math.floor(Number(packagePieces) || 0);
+  const normalizedPackage = normalizeWholesaleLineQuantity(packagePieces);
   if (normalizedQuantity <= 0 || normalizedPackage <= 0) return 0;
 
-  const maximumCompleteQuantity = Math.floor(MAX_WHOLESALE_LINE_QUANTITY / normalizedPackage) * normalizedPackage;
-  if (maximumCompleteQuantity <= 0) return 0;
+  const maximumCompleteQuantity = Math.floor(normalizeWholesaleLineQuantity(maximumQuantity) / normalizedPackage) * normalizedPackage;
 
   return Math.min(
     Math.ceil(normalizedQuantity / normalizedPackage) * normalizedPackage,
@@ -34,14 +45,11 @@ export function addWholesalePackageQuantity(
   maximumQuantity: unknown = MAX_WHOLESALE_LINE_QUANTITY
 ) {
   const normalizedCurrent = normalizeWholesaleLineQuantity(currentQuantity);
-  const normalizedPackage = Math.floor(Number(packagePieces) || 0);
-  const normalizedMaximum = normalizeWholesaleLineQuantity(maximumQuantity);
-  if (normalizedPackage <= 0 || normalizedMaximum < normalizedPackage) return 0;
+  const normalizedPackage = normalizeWholesaleLineQuantity(packagePieces);
+  if (!normalizedPackage) return normalizedCurrent;
 
-  const maximumCompleteQuantity = Math.floor(normalizedMaximum / normalizedPackage) * normalizedPackage;
-  const nextQuantity = normalizedCurrent <= 0
-    ? normalizedPackage
-    : Math.ceil((normalizedCurrent + normalizedPackage) / normalizedPackage) * normalizedPackage;
-
-  return Math.min(nextQuantity, maximumCompleteQuantity);
+  return Math.max(
+    normalizedCurrent,
+    roundUpToWholesalePackage(normalizedCurrent + normalizedPackage, normalizedPackage, maximumQuantity)
+  );
 }

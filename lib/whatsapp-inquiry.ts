@@ -1,3 +1,5 @@
+import { isPaymentConfirmed } from "@/lib/payments";
+
 const WHATSAPP_HOSTS = new Set(["wa.me", "api.whatsapp.com", "web.whatsapp.com"]);
 const INQUIRY_REFERENCE_PREFIX = "RGWA-";
 const INQUIRY_REFERENCE_LINE = /(?:^|\n)Refer[eê]ncia do atendimento:\s*(RGWA-[A-Z0-9_-]{12,96})(?=\s|$)/i;
@@ -97,27 +99,29 @@ export function whatsAppOrderLinkError(input: {
   hasOrder: boolean;
   paymentStatus?: string | null;
   paidAt?: Date | null;
+  paymentProviderStatus?: string | null;
 }): WhatsAppOrderLinkError | null {
   if (input.hasOrder && input.leadWhatsappDigits !== input.orderWhatsappDigits) return "PHONE_MISMATCH";
   if (input.requestedStatus !== "WON") return null;
   if (!input.hasOrder) return "WON_REQUIRES_ORDER";
-  if (input.paymentStatus !== "PAID" || !input.paidAt) return "WON_REQUIRES_PAID_ORDER";
+  if (!isPaymentConfirmed(input.paymentStatus, input.paidAt, input.paymentProviderStatus)) return "WON_REQUIRES_PAID_ORDER";
   return null;
 }
 
 export function paidLinkedOrderSummary(
   leads: Array<{
     orderId: string | null;
-    orderPayment: { status: string; paidAt: Date | null; amountCents: number } | null;
+    orderPayment: { status: string; paidAt: Date | null; providerStatus: string | null; amountCents: number } | null;
   }>
 ) {
   const paidOrderIds = new Set<string>();
   let revenueCents = 0;
   for (const lead of leads) {
     if (!lead.orderId || paidOrderIds.has(lead.orderId)) continue;
-    if (lead.orderPayment?.status !== "PAID" || !lead.orderPayment.paidAt) continue;
+    const payment = lead.orderPayment;
+    if (!payment || !isPaymentConfirmed(payment.status, payment.paidAt, payment.providerStatus)) continue;
     paidOrderIds.add(lead.orderId);
-    revenueCents += lead.orderPayment.amountCents;
+    revenueCents += payment.amountCents;
   }
   return { orderCount: paidOrderIds.size, revenueCents };
 }

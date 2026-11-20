@@ -6,6 +6,7 @@ import {
   shiftDateKey
 } from "@/lib/admin-analytics-core";
 import { prisma } from "@/lib/db-client";
+import { confirmedPaymentWhere } from "@/lib/order-fulfillment";
 import { analyticsRetentionCutoff } from "@/lib/site-analytics-core";
 
 type ProductRollup = {
@@ -187,7 +188,7 @@ export async function rebuildProductDailyMetrics(from?: Date) {
       }
     }),
     prisma.payment.findMany({
-      where: { status: "PAID", paidAt: dateTimeFilter || { not: null } },
+      where: { ...confirmedPaymentWhere, paidAt: dateTimeFilter || { not: null } },
       select: {
         paidAt: true,
         order: {
@@ -315,7 +316,7 @@ export async function rebuildAnalyticsPeriodAggregates(now = new Date(), from?: 
   const earliestRows = await Promise.all([
     prisma.analyticsVisitorDay.findFirst({ orderBy: { eventDate: "asc" }, select: { eventDate: true } }),
     prisma.order.findFirst({ orderBy: { createdAt: "asc" }, select: { createdAt: true } }),
-    prisma.payment.findFirst({ where: { paidAt: { not: null } }, orderBy: { paidAt: "asc" }, select: { paidAt: true } }),
+    prisma.payment.findFirst({ where: confirmedPaymentWhere, orderBy: { paidAt: "asc" }, select: { paidAt: true } }),
     prisma.whatsAppLead.findFirst({ orderBy: { qualifiedAt: "asc" }, select: { qualifiedAt: true } })
   ]);
   const earliestKey = earliestRows

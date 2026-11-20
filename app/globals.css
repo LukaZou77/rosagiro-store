@@ -3993,7 +3993,7 @@ dd {
 
 .qty-control {
   display: inline-grid;
-  grid-template-columns: 36px 34px 36px;
+  grid-template-columns: 44px minmax(34px, auto) 44px;
   grid-column: 2;
   width: max-content;
   overflow: hidden;
@@ -4003,20 +4003,29 @@ dd {
 
 .qty-control button,
 .remove-button {
+  min-width: 44px;
+  min-height: 44px;
   border: 0;
   background: white;
+}
+
+.qty-control button:focus-visible {
+  outline-offset: -3px;
 }
 
 .qty-control span {
   display: grid;
   place-items: center;
+  padding-inline: 5px;
   color: var(--ink);
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .remove-button {
   grid-column: 2;
   justify-self: start;
+  padding-inline: 8px;
   color: var(--rose-deep);
   font-weight: 800;
 }
@@ -4123,28 +4132,29 @@ dd {
   font-size: 0.82rem;
 }
 
-.quick-drawer-shell {
+.quick-purchase-fab[hidden],
+.quick-drawer-shell:not([open]),
+.customer-login-shell:not([open]) {
+  display: none;
+}
+
+.quick-drawer-shell,
+.customer-login-shell {
   position: fixed;
   inset: 0;
-  z-index: 90;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.quick-drawer-shell.open {
-  visibility: visible;
-  pointer-events: auto;
-}
-
-.quick-drawer-overlay {
-  position: absolute;
-  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
   border: 0;
-  background: rgba(var(--ink-rgb), 0);
-  transition: background 200ms var(--ease-out);
+  background: transparent;
+  color: inherit;
 }
 
-.quick-drawer-shell.open .quick-drawer-overlay {
+.quick-drawer-shell::backdrop {
   background: rgba(var(--ink-rgb), 0.36);
 }
 
@@ -4159,12 +4169,8 @@ dd {
   border-left: 1px solid var(--line);
   background: var(--surface);
   box-shadow: -24px 0 48px rgba(var(--ink-rgb), 0.18);
-  transform: translateX(102%);
-  transition: transform 220ms var(--ease-out);
-}
-
-.quick-drawer-shell.open .quick-drawer {
   transform: translateX(0);
+  transition: transform 220ms var(--ease-out);
 }
 
 .quick-drawer-header,
@@ -4194,7 +4200,7 @@ dd {
 }
 
 .quick-drawer-header button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -4339,18 +4345,22 @@ dd {
 
 .qty-control.compact {
   grid-column: auto;
-  grid-template-columns: 32px 32px 32px;
+}
+
+.qty-control.compact span {
+  font-size: 0.82rem;
 }
 
 .remove-button.compact {
   grid-column: 1 / -1;
-  padding: 0;
+  padding-inline: 8px;
   font-size: 0.78rem;
 }
 
 .quick-line-actions > strong {
   justify-self: end;
   color: var(--promo-deep);
+  text-align: right;
 }
 
 .quick-summary {
@@ -4500,7 +4510,7 @@ dd {
   grid-column: 1 / -1;
   display: inline-grid;
   place-items: center;
-  min-height: 38px;
+  min-height: 44px;
   padding: 0 12px;
   border: 0;
   border-radius: 8px;
@@ -4532,30 +4542,12 @@ dd {
 }
 
 .customer-login-shell {
-  position: fixed;
-  inset: 0;
-  z-index: 120;
   display: grid;
   place-items: center;
   padding: 14px;
-  visibility: hidden;
-  pointer-events: none;
 }
 
-.customer-login-shell.open {
-  visibility: visible;
-  pointer-events: auto;
-}
-
-.customer-login-overlay {
-  position: absolute;
-  inset: 0;
-  border: 0;
-  background: rgba(var(--ink-rgb), 0);
-  transition: background 180ms var(--ease-out);
-}
-
-.customer-login-shell.open .customer-login-overlay {
+.customer-login-shell::backdrop {
   background: rgba(var(--ink-rgb), 0.48);
 }
 
@@ -4572,12 +4564,18 @@ dd {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow-strong);
-  transform: translateY(12px) scale(0.98);
+  transform: translateY(0) scale(1);
   transition: transform 180ms var(--ease-out);
 }
 
-.customer-login-shell.open .customer-login-modal {
-  transform: translateY(0) scale(1);
+@starting-style {
+  .quick-drawer-shell[open] .quick-drawer {
+    transform: translateX(102%);
+  }
+
+  .customer-login-shell[open] .customer-login-modal {
+    transform: translateY(12px) scale(0.98);
+  }
 }
 
 .customer-login-modal header,
@@ -4600,8 +4598,8 @@ dd {
 
 .customer-login-modal header button {
   display: grid;
-  width: 36px;
-  height: 36px;
+  flex: 0 0 44px;
+  height: 44px;
   place-items: center;
   border: 0;
   border-radius: 8px;
@@ -4619,7 +4617,7 @@ dd {
   font-weight: 850;
 }
 
-.customer-login-modal label span {
+.customer-login-modal label span[aria-hidden] {
   color: var(--promo);
 }
 
@@ -7247,7 +7245,9 @@ a.readiness-signal:focus-visible {
 
   .checkout-stepper button {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
     justify-items: center;
+    height: 100%;
     min-height: 52px;
     gap: 5px;
     padding: 7px 6px;
@@ -7256,9 +7256,12 @@ a.readiness-signal:focus-visible {
 
   .checkout-stepper strong {
     max-width: 100%;
+    overflow: visible;
+    overflow-wrap: anywhere;
     font-size: 0.74rem;
     line-height: 1.1;
-    white-space: nowrap;
+    white-space: normal;
+    text-wrap: balance;
   }
 
   .checkout-stepper small {
@@ -7569,6 +7572,12 @@ a.readiness-signal:focus-visible {
     padding: 12px;
   }
 
+}
+
+@media (max-width: 400px) {
+  .quick-line-actions {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (min-width: 680px) {

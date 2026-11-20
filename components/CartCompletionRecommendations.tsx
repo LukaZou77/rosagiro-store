@@ -79,15 +79,15 @@ export function CartCompletionRecommendations({
                   <strong>{recommendation.name}</strong>
                 </Link>
                 <small>{recommendation.brandName} / Em estoque</small>
-                <small>Embalagem fechada: {recommendation.packagePieces} unidades</small>
+                <small>Embalagem fechada com {recommendation.packagePieces} {recommendation.packagePieces === 1 ? "unidade" : "unidades"}</small>
                 <div className="completion-price">
-                  <b>{money(recommendation.priceCents)}</b>
+                  <b>{money(recommendation.packagePriceCents)} por embalagem</b>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (requireCustomerSession({ intent: "add_to_cart", onSuccess: () => addRecommendation(recommendation) })) {
+                onClick={(event) => {
+                  if (requireCustomerSession({ intent: "add_to_cart", onSuccess: () => addRecommendation(recommendation), trigger: event.currentTarget })) {
                     addRecommendation(recommendation);
                   }
                 }}

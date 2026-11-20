@@ -6,8 +6,9 @@ import {
   clearSuccessfulAdminLoginAttempt,
   consumeAdminLoginAttempt
 } from "@/lib/admin-login-rate-limit";
-import { clearAdminSession, hashPassword, rememberAdminEmail, requireAdmin, setAdminSession, verifyPassword } from "@/lib/auth";
+import { clearAdminSession, getAdmin, hashPassword, rememberAdminEmail, requireAdmin, setAdminSession, verifyPassword } from "@/lib/auth";
 import { adminLoginPath, adminReturnPath } from "@/lib/admin-login-return";
+import { productEditorPath } from "@/lib/admin-product-navigation";
 import { saoPauloDateTime } from "@/lib/admin-analytics-core";
 import { STOREFRONT_CATALOG_CACHE_TAG, STORE_PROFILE_CACHE_TAG } from "@/lib/cache-tags";
 import { cleanCustomerName, normalizeBrazilWhatsapp } from "@/lib/customers";
@@ -194,7 +195,6 @@ export async function saveProductPriceAdjustmentAction(formData: FormData) {
 }
 
 type ProductFormPreparationOptions = {
-  detailPath: string;
   productSlug: string;
   existingImage?: string;
   existingGallery?: string[];
@@ -202,6 +202,13 @@ type ProductFormPreparationOptions = {
   existingKitRecommendation?: string | null;
   existingBaseBoxPriceCents?: number | null;
   existingBaseBoxPieces?: number | null;
+};
+
+class ProductFormError extends Error {}
+
+const productFormLoginRequired = {
+  error: "A sessão expirou. Entre novamente para salvar o produto.",
+  loginRequired: true
 };
 
 type ProductSkuInput = {
@@ -223,7 +230,7 @@ function optionalPositiveInt(formData: FormData, key: string) {
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : null;
 }
 
-function parseProductSkuInputs(formData: FormData, detailPath: string) {
+function parseProductSkuInputs(formData: FormData) {
   const rowKeys = Array.from(new Set(formData.getAll("skuRowKey").map((value) => String(value || "").trim()).filter(Boolean)));
   const deletedIds = Array.from(new Set(formData.getAll("skuDeleteId").map((value) => String(value || "").trim()).filter(Boolean)));
   const rows: ProductSkuInput[] = [];
@@ -242,9 +249,9 @@ function parseProductSkuInputs(formData: FormData, detailPath: string) {
     const hasAnyValue = Boolean(id || name || code || image || priceCents > 0 || (Number.isFinite(quantityValue) && quantityValue > 0));
 
     if (!hasAnyValue) continue;
-    if (!name || !code) redirectError(detailPath, "Preencha nome e código de todas as variações SKU.");
+    if (!name || !code) throw new ProductFormError("Preencha nome e código de todas as variações SKU.");
     if (image && !isAllowedProductImage(image)) {
-      redirectError(detailPath, "A imagem do SKU deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
+      throw new ProductFormError("A imagem do SKU deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
     }
 
     const quantity =
@@ -252,7 +259,7 @@ function parseProductSkuInputs(formData: FormData, detailPath: string) {
       (quantityRaw ? Math.max(0, Math.floor(quantityValue || 0)) : INTERNAL_AVAILABLE_STOCK_QUANTITY);
     const sortOrder = Number.isFinite(Number(sortRaw)) ? Math.max(0, Math.floor(Number(sortRaw))) : index * 10;
     const codeKey = code.toLowerCase();
-    if (codeKeys.has(codeKey)) redirectError(detailPath, "Cada SKU precisa ter um código único dentro do produto.");
+    if (codeKeys.has(codeKey)) throw new ProductFormError("Cada SKU precisa ter um código único dentro do produto.");
     codeKeys.add(codeKey);
 
     rows.push({
@@ -330,19 +337,19 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
   const reviewCount = positiveInt(formData, "reviewCount");
   const featuredRank = positiveInt(formData, "featuredRank", 1000);
   const active = formData.get("active") === "on";
-  const skuInput = parseProductSkuInputs(formData, options.detailPath);
+  const skuInput = parseProductSkuInputs(formData);
 
   if (!name || !brandId || !categoryId || !subcategoryId || !descriptionPt || priceCents <= 0) {
-    redirectError(options.detailPath, "Preencha os campos obrigatórios do produto.");
+    throw new ProductFormError("Preencha os campos obrigatórios do produto.");
   }
   if (image && !isAllowedProductImage(image)) {
-    redirectError(options.detailPath, "A imagem deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
+    throw new ProductFormError("A imagem deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
   }
   if (trayImage && !isAllowedProductImage(trayImage)) {
-    redirectError(options.detailPath, "A imagem interna da bandeja deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
+    throw new ProductFormError("A imagem interna da bandeja deve usar /assets/..., /uploads/products/..., /placeholder... ou URL http(s).");
   }
   if (gtin && !isValidGtin(gtin)) {
-    redirectError(options.detailPath, "GTIN/EAN inválido. Confira o código de barras da embalagem ou deixe o campo vazio.");
+    throw new ProductFormError("GTIN/EAN inválido. Confira o código de barras da embalagem ou deixe o campo vazio.");
   }
 
   const [brand, category, subcategory] = await Promise.all([
@@ -350,10 +357,10 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
     prisma.category.findUnique({ where: { id: categoryId } }),
     prisma.productSubcategory.findUnique({ where: { id: subcategoryId } })
   ]);
-  if (!brand || !category) redirectError(options.detailPath, "Marca ou categoria inválida.");
+  if (!brand || !category) throw new ProductFormError("Marca ou categoria inválida.");
 
   if (!subcategory || subcategory.categoryId !== category.id) {
-    redirectError(options.detailPath, "Selecione uma subcategoria válida para a categoria escolhida.");
+    throw new ProductFormError("Selecione uma subcategoria válida para a categoria escolhida.");
   }
 
   const priceAdjustment = await getSavedPriceAdjustmentConfig();
@@ -365,13 +372,13 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
     baseBoxPriceCents: options.existingBaseBoxPriceCents,
     baseBoxPieces: options.existingBaseBoxPieces
   });
-  if (!adjustedPricing.ok) redirectError(options.detailPath, adjustedPricing.reason);
+  if (!adjustedPricing.ok) throw new ProductFormError(adjustedPricing.reason);
 
   const adjustedSkus = skuInput.rows.map((sku) => {
     if (!sku.basePriceCents) return sku;
     const adjustedSkuPrice = adjustPriceCents(sku.basePriceCents, priceAdjustment);
     if (!adjustedSkuPrice) {
-      redirectError(options.detailPath, `O ajuste deixaria o preço do SKU ${sku.code} abaixo de R$ 0,01.`);
+      throw new ProductFormError(`O ajuste deixaria o preço do SKU ${sku.code} abaixo de R$ 0,01.`);
     }
     return { ...sku, priceCents: adjustedSkuPrice };
   });
@@ -394,11 +401,11 @@ async function prepareProductFormPayload(formData: FormData, options: ProductFor
     uploadedImages = await saveProductImageUploads(options.productSlug, uploadFiles);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível salvar as imagens enviadas.";
-    redirectError(options.detailPath, message);
+    throw new ProductFormError(message);
   }
 
   const gallery = normalizeProductGallery("", [...baseGallery, ...uploadedImages]);
-  if (!gallery.length) redirectError(options.detailPath, "Cadastre pelo menos uma imagem do produto.");
+  if (!gallery.length) throw new ProductFormError("Cadastre pelo menos uma imagem do produto.");
 
   const firstUploadAsPrimary = formData.get("firstUploadAsPrimary") === "on";
   const primaryUploadIndexInput = field(formData, "primaryUploadIndex");
@@ -581,8 +588,26 @@ export async function updateProductAction(formData: FormData) {
   revalidatePath("/admin/produtos");
 }
 
+async function prepareProductForm(formData: FormData, options: ProductFormPreparationOptions) {
+  try {
+    return await prepareProductFormPayload(formData, options);
+  } catch (error) {
+    if (error instanceof ProductFormError) return { error: error.message };
+    throw error;
+  }
+}
+
+async function cleanupProductFormImages(slug: string, images: string[]) {
+  if (!images.length) return;
+  try {
+    await deleteProductImages(slug, images);
+  } catch (error) {
+    console.error("Could not remove unused product editor images", error instanceof Error ? error.name : "Unknown error");
+  }
+}
+
 export async function updateProductDetailAction(formData: FormData) {
-  await requireAdmin();
+  if (!(await getAdmin())) return productFormLoginRequired;
 
   const productId = field(formData, "productId");
   const product = productId
@@ -599,11 +624,10 @@ export async function updateProductDetailAction(formData: FormData) {
         }
       })
     : null;
-  if (!product) redirectError("/admin/produtos", "Produto não encontrado.");
+  if (!product) return { error: "Produto não encontrado." };
 
   const detailPath = `/admin/produtos/${product.slug}`;
-  const prepared = await prepareProductFormPayload(formData, {
-    detailPath,
+  const prepared = await prepareProductForm(formData, {
     productSlug: product.slug,
     existingImage: product.image,
     existingGallery: product.gallery,
@@ -612,6 +636,7 @@ export async function updateProductDetailAction(formData: FormData) {
     existingBaseBoxPriceCents: product.baseBoxPriceCents,
     existingBaseBoxPieces: product.baseBoxPieces
   });
+  if ("error" in prepared) return prepared;
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -631,34 +656,30 @@ export async function updateProductDetailAction(formData: FormData) {
       });
     });
   } catch {
-    await deleteProductImages(product.slug, prepared.uploadedImages);
-    redirectError(detailPath, "Não foi possível salvar o produto. Tente novamente.");
+    await cleanupProductFormImages(product.slug, prepared.uploadedImages);
+    return { error: "Não foi possível salvar o produto. Tente novamente." };
   }
 
-  await deleteProductImages(product.slug, prepared.removedImages.filter((galleryImage) => !prepared.gallery.includes(galleryImage)));
+  await cleanupProductFormImages(product.slug, prepared.removedImages.filter((galleryImage) => !prepared.gallery.includes(galleryImage)));
   revalidateCatalog(product.slug);
-  redirect(`${detailPath}?saved=1`);
+  redirect(productEditorPath(detailPath, formData.get("returnTo"), true));
 }
 
 export async function createProductAction(formData: FormData) {
-  await requireAdmin();
+  if (!(await getAdmin())) return productFormLoginRequired;
 
   const name = field(formData, "name");
   const requestedSlug = field(formData, "slug");
   const slug = slugify(requestedSlug || name);
-  const detailPath = "/admin/produtos/novo";
-
-  if (!name || !slug) redirectError(detailPath, "Informe o nome do produto para gerar o slug.");
+  if (!name || !slug) return { error: "Informe o nome do produto para gerar o slug." };
   const existingProduct = await prisma.product.findUnique({ where: { slug }, select: { id: true, deletedAt: true } });
   if (existingProduct?.deletedAt) {
-    redirectError(detailPath, "Este slug está na lixeira. Restaure o produto antes de usar o mesmo identificador.");
+    return { error: "Este slug está na lixeira. Restaure o produto antes de usar o mesmo identificador." };
   }
-  if (existingProduct) redirectError(detailPath, "Este slug já existe. Use outro identificador para o produto.");
+  if (existingProduct) return { error: "Este slug já existe. Use outro identificador para o produto." };
 
-  const prepared = await prepareProductFormPayload(formData, {
-    detailPath,
-    productSlug: slug,
-  });
+  const prepared = await prepareProductForm(formData, { productSlug: slug });
+  if ("error" in prepared) return prepared;
 
   let product: { slug: string };
   try {
@@ -682,12 +703,12 @@ export async function createProductAction(formData: FormData) {
       return createdProduct;
     });
   } catch {
-    await deleteProductImages(slug, prepared.uploadedImages);
-    redirectError(detailPath, "Não foi possível criar o produto. Verifique os dados e tente novamente.");
+    await cleanupProductFormImages(slug, prepared.uploadedImages);
+    return { error: "Não foi possível criar o produto. Verifique os dados e tente novamente." };
   }
 
   revalidateCatalog(product.slug);
-  redirect(`/admin/produtos/${product.slug}?saved=1`);
+  redirect(productEditorPath(`/admin/produtos/${product.slug}`, formData.get("returnTo"), true));
 }
 
 export async function moveProductsToTrashAction(formData: FormData) {
@@ -1117,7 +1138,7 @@ export async function updateWhatsAppLeadStatusAction(formData: FormData) {
             id: true,
             orderNumber: true,
             customerPhone: true,
-            payment: { select: { status: true, paidAt: true } }
+            payment: { select: { status: true, paidAt: true, providerStatus: true } }
           }
         })
       : Promise.resolve(null),
@@ -1152,7 +1173,8 @@ export async function updateWhatsAppLeadStatusAction(formData: FormData) {
     requestedStatus,
     hasOrder: Boolean(order),
     paymentStatus: order?.payment?.status,
-    paidAt: order?.payment?.paidAt
+    paidAt: order?.payment?.paidAt,
+    paymentProviderStatus: order?.payment?.providerStatus
   });
   if (orderLinkError === "PHONE_MISMATCH") {
     redirectError("/admin/leads", "O WhatsApp do pedido não corresponde ao WhatsApp deste lead.");

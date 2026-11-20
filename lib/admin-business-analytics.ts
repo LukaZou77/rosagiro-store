@@ -11,6 +11,7 @@ import {
   type AdminAnalyticsPeriod
 } from "@/lib/admin-analytics-core";
 import { prisma } from "@/lib/db-client";
+import { confirmedPaymentWhere } from "@/lib/order-fulfillment";
 import { rankProductMetricRows } from "@/lib/admin-product-rankings";
 import { unstable_cache } from "next/cache";
 
@@ -155,7 +156,7 @@ async function collectWindowMetrics(start: Date, end: Date): Promise<WindowMetri
       select: { status: true }
     }),
     prisma.payment.findMany({
-      where: { status: "PAID", paidAt: { gte: start, lt: end } },
+      where: { ...confirmedPaymentWhere, paidAt: { gte: start, lt: end } },
       select: { amountCents: true }
     }),
     prisma.whatsAppClickEvent.findMany({
@@ -210,7 +211,7 @@ async function collectTrendWindow(start: Date, end: Date, bucket: AdminAnalytics
       : Promise.resolve([]),
     prisma.order.findMany({ where: { createdAt: { gte: start, lt: end } }, select: { createdAt: true, status: true } }),
     prisma.payment.findMany({
-      where: { status: "PAID", paidAt: { gte: start, lt: end } },
+      where: { ...confirmedPaymentWhere, paidAt: { gte: start, lt: end } },
       select: { paidAt: true, amountCents: true }
     }),
     prisma.whatsAppClickEvent.findMany({
@@ -419,7 +420,7 @@ async function metricStartDates() {
     prisma.analyticsVisitorDay.findFirst({ orderBy: { eventDate: "asc" }, select: { eventDate: true } }),
     prisma.whatsAppSessionDay.findFirst({ orderBy: { firstSeenAt: "asc" }, select: { firstSeenAt: true } }),
     prisma.order.findFirst({ orderBy: { createdAt: "asc" }, select: { createdAt: true } }),
-    prisma.payment.findFirst({ where: { paidAt: { not: null } }, orderBy: { paidAt: "asc" }, select: { paidAt: true } }),
+    prisma.payment.findFirst({ where: confirmedPaymentWhere, orderBy: { paidAt: "asc" }, select: { paidAt: true } }),
     prisma.whatsAppLead.findFirst({ orderBy: { qualifiedAt: "asc" }, select: { qualifiedAt: true } })
   ]);
   return {

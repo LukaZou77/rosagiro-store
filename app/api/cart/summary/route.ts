@@ -4,13 +4,18 @@ import type { CartSummary } from "@/lib/cart-summary";
 import { prisma } from "@/lib/db";
 import { discountCents, totalCents } from "@/lib/money";
 import {
-  productWholesaleLineTotalCents,
   productWholesalePackagePieces,
   productWholesalePackagePriceCents,
   productWholesaleStockQuantity
 } from "@/lib/product-wholesale";
 import { siteConfig } from "@/lib/site-config";
-import { normalizeWholesaleLineQuantity } from "@/lib/wholesale-order";
+import { isSourceCatalogConsultationProduct } from "@/lib/source-catalog-product";
+import {
+  MAX_WHOLESALE_ORDER_TOTAL_CENTS,
+  normalizeWholesaleLineQuantity,
+  wholesaleOrderTotalLimitNotice,
+  wholesaleReferenceUnitPriceCents
+} from "@/lib/wholesale-order";
 import type { Prisma } from "@/src/generated/prisma/client";
 
 type CartSummaryItem = {
@@ -85,37 +90,36 @@ export async function POST(request: Request) {
       : Promise.resolve([]);
     const [products, recommendationProducts] = await Promise.all([productsPromise, recommendationProductsPromise]);
     const productMap = new Map(products.map((product) => [product.slug, product]));
-    const requestedQuantityBySlug = new Map<string, number>();
-    for (const item of requestedItems) {
-      requestedQuantityBySlug.set(item.slug, (requestedQuantityBySlug.get(item.slug) || 0) + item.quantity);
-    }
-
     const lines = requestedItems.map((item) => {
       const product = productMap.get(item.slug);
       const stockQuantity = product ? productWholesaleStockQuantity(product) : 0;
       const packagePieces = product ? productWholesalePackagePieces(product) : null;
       const packagePriceCents = product ? productWholesalePackagePriceCents(product) : null;
-      const requestedProductQuantity = requestedQuantityBySlug.get(item.slug) || item.quantity;
-      const packageValid = Boolean(packagePieces && requestedProductQuantity % packagePieces === 0);
-      const packageCount = packagePieces ? Math.floor(requestedProductQuantity / packagePieces) : 0;
+      const packageValid = Boolean(packagePieces && item.quantity % packagePieces === 0);
+      const packageCount = packagePieces && packageValid ? item.quantity / packagePieces : 0;
       const active = Boolean(product?.active);
-      const available = active && stockQuantity >= item.quantity && Boolean(packagePieces);
+      const available = Boolean(active && packagePieces && packagePriceCents &&
+        stockQuantity >= packagePieces && stockQuantity >= item.quantity);
       const acceptedQuantity = product ? item.quantity : 0;
-      const priceCents = product?.priceCents || 0;
-      const lineTotalCents = product ? productWholesaleLineTotalCents(product, acceptedQuantity) : 0;
+      const priceCents = product && !isSourceCatalogConsultationProduct(product) && packagePieces && packagePriceCents
+        ? wholesaleReferenceUnitPriceCents(packagePriceCents, packagePieces)
+        : product?.priceCents || 0;
+      const lineTotalCents = available && packagePriceCents ? packageCount * packagePriceCents : 0;
       const warning = !product
         ? "Produto não encontrado."
         : !active
           ? "Produto indisponível."
-          : !packagePieces
-            ? "Embalagem fechada sob consulta. Fale com o atendimento."
-            : stockQuantity <= 0
-              ? "Produto sem estoque."
-              : item.quantity > stockQuantity
-                ? "Não há embalagens completas suficientes para esta quantidade."
-                : !packageValid
-                  ? `Este produto é vendido somente em embalagem fechada com ${packagePieces} unidades.`
-                : "";
+          : isSourceCatalogConsultationProduct(product)
+            ? "Estoque, embalagem e preço sob consulta com o atendimento."
+            : !packagePieces || !packagePriceCents
+              ? "Embalagem ou preço sob consulta. Fale com o atendimento."
+              : stockQuantity < packagePieces
+                ? "Sem embalagens completas em estoque."
+                : item.quantity > stockQuantity
+                  ? "Não há embalagens completas suficientes para esta quantidade."
+                  : !packageValid
+                    ? `Este produto é vendido somente em embalagem fechada com ${packagePieces} unidades.`
+                    : "";
 
       return {
         slug: item.slug,
@@ -137,8 +141,9 @@ export async function POST(request: Request) {
       };
     });
     const validLines = lines.filter((line) => line.quantity > 0 && line.available && line.packageValid);
-    const packageReady = lines.length > 0 && lines.every((line) => line.available && line.packageValid);
     const subtotal = validLines.reduce((sum, line) => sum + line.lineTotalCents, 0);
+    const orderLimitNotice = subtotal > MAX_WHOLESALE_ORDER_TOTAL_CENTS ? wholesaleOrderTotalLimitNotice : undefined;
+    const packageReady = !orderLimitNotice && lines.length > 0 && validLines.length === lines.length;
     const discount = discountCents();
     const total = totalCents(subtotal, discount, 0);
     const minimumOrderCents = siteConfig.wholesale.minimumOrderCents;
@@ -160,6 +165,7 @@ export async function POST(request: Request) {
       remainingToMinimumCents,
       minimumReached: remainingToMinimumCents === 0,
       packageReady,
+      orderLimitNotice,
       recommendations
     };
 

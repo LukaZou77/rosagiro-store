@@ -7,6 +7,7 @@ import { getAdminLocale } from "@/lib/admin-i18n-server";
 import { formatAdminDateTime } from "@/lib/date-format";
 import { prisma } from "@/lib/db";
 import { money } from "@/lib/money";
+import { confirmedPaymentWhere } from "@/lib/order-fulfillment";
 import { paidLinkedOrderSummary } from "@/lib/whatsapp-inquiry";
 
 type PageProps = {
@@ -63,10 +64,10 @@ export default async function AdminWhatsAppLeadsPage({ searchParams }: PageProps
   );
   const linkedOrders = linkedOrderIds.length
     ? await prisma.order.findMany({
-        where: { id: { in: linkedOrderIds } },
+        where: { id: { in: linkedOrderIds }, payment: confirmedPaymentWhere },
         select: {
           id: true,
-          payment: { select: { status: true, paidAt: true, amountCents: true } }
+          payment: { select: { status: true, paidAt: true, providerStatus: true, amountCents: true } }
         }
       })
     : [];
@@ -131,7 +132,6 @@ export default async function AdminWhatsAppLeadsPage({ searchParams }: PageProps
               <tbody>
                 {leads.map((lead) => {
                   const payment = lead.orderId ? orderPaymentById.get(lead.orderId) : null;
-                  const isPaidOrder = payment?.status === "PAID" && Boolean(payment.paidAt);
                   return <tr key={lead.id}>
                     <td><strong>{lead.contactName}</strong><small>{lead.whatsapp}</small></td>
                     <td>{formatAdminDateTime(lead.occurredAt, t("Sem registro", "未记录"), locale)}</td>
@@ -152,7 +152,7 @@ export default async function AdminWhatsAppLeadsPage({ searchParams }: PageProps
                         <button type="submit">{t("Salvar", "保存")}</button>
                       </form>
                     </td>
-                    <td>{isPaidOrder && payment ? <><strong>{money(payment.amountCents)}</strong><small>{lead.orderNumberSnapshot}</small></> : <><strong>—</strong><small>{lead.orderNumberSnapshot || t("Sem pedido", "无订单")}</small></>}</td>
+                    <td>{payment ? <><strong>{money(payment.amountCents)}</strong><small>{lead.orderNumberSnapshot}</small></> : <><strong>—</strong><small>{lead.orderNumberSnapshot || t("Sem pedido", "无订单")}</small></>}</td>
                     <td>{lead.createdByAdminEmail}</td>
                   </tr>;
                 })}
