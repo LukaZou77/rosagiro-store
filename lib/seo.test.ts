@@ -126,7 +126,7 @@ test("builds truthful merchant product data without invented reviews", () => {
   } as unknown as Parameters<typeof productJsonLd>[0];
   const data = productJsonLd(product);
 
-  assert.ok(data.offers);
+  assert.ok(data);
   assert.equal(data.url, "http://localhost:3000/produto/batom-duo-lip-twice-ruby-rose-hb-l6203");
   assert.equal(data.offers.availability, "https://schema.org/OutOfStock");
   assert.equal(data.offers.price, "9.75");
@@ -145,11 +145,11 @@ test("builds truthful merchant product data without invented reviews", () => {
     inventory: { quantity: 12 },
     skus: product.skus.map((sku) => ({ ...sku, quantity: 0 }))
   });
-  assert.ok(availablePackageData.offers);
+  assert.ok(availablePackageData);
   assert.equal(availablePackageData.offers.availability, "https://schema.org/InStock");
 });
 
-test("omits commerce offers for source products that require consultation", () => {
+test("omits Product structured data for source products that require consultation", () => {
   const product = {
     ...sampleProduct,
     stockStatus: "Sob consulta",
@@ -159,8 +159,7 @@ test("omits commerce offers for source products that require consultation", () =
   const data = productJsonLd(product);
   const description = productMetaDescription(product);
 
-  assert.equal("offers" in data, false);
-  assert.doesNotMatch(JSON.stringify(data), /InStock|OutOfStock/);
+  assert.equal(data, null);
   assert.match(description, /preço por pacote/i);
   assert.match(description, /estoque e embalagem via WhatsApp/i);
   assert.doesNotMatch(description, /\.\.\.$/);
@@ -176,29 +175,42 @@ test("uses the exact package total and requires stock of a whole package", () =>
     inventory: { quantity: 2 }
   };
   const data = productJsonLd(product);
-  assert.equal(data.offers?.price, "10.00");
-  assert.equal(data.offers?.availability, "https://schema.org/OutOfStock");
+  assert.ok(data);
+  assert.equal(data.offers.price, "10.00");
+  assert.equal(data.offers.availability, "https://schema.org/OutOfStock");
   assert.ok(data.additionalProperty.some((entry) => entry.name === "Unidades por embalagem" && entry.value === "3"));
   assert.match(productMetaDescription(product), /R\$\s*10,00 por embalagem, sem embalagem completa em estoque/i);
   const available = { ...product, inventory: { quantity: 3 } };
-  assert.equal(productJsonLd(available).offers?.availability, "https://schema.org/InStock");
+  assert.equal(productJsonLd(available)?.offers.availability, "https://schema.org/InStock");
   assert.match(productMetaDescription(available), /R\$\s*10,00 por embalagem \(aprox\. R\$\s*3,33\/un\.\), em estoque/i);
 });
 
-test("does not invent an offer or brand when commercial information is missing", () => {
-  const product = { ...sampleProduct, name: "Marca não informada Paleta MYJ-0920", brand: { ...sampleProduct.brand, name: "Marca não informada" }, baseBoxPieces: null, baseBoxPriceCents: null };
+test("omits Product structured data when the package cannot support an offer", () => {
+  const product = { ...sampleProduct, baseBoxPieces: null, baseBoxPriceCents: null };
   const data = productJsonLd(product);
+  assert.equal(data, null);
+});
+
+test("omits a placeholder brand from eligible Product structured data", () => {
+  const product = {
+    ...sampleProduct,
+    name: "Marca não informada Paleta MYJ-0920",
+    brand: { ...sampleProduct.brand, name: "Marca não informada" }
+  };
+  const data = productJsonLd(product);
+
+  assert.ok(data);
   assert.equal(data.name, "Paleta MYJ-0920");
   assert.equal(data.brand, undefined);
-  assert.equal(data.offers, undefined);
   assert.doesNotMatch(productMetaDescription(product), /marca não informada/i);
 });
 
 test("uses the resolved canonical consistently in product and offer URLs", () => {
   const data = productJsonLd(sampleProduct, "canonical-product");
+  assert.ok(data);
   assert.equal(data.url, "http://localhost:3000/produto/canonical-product");
   assert.equal(data["@id"], `${data.url}#product`);
-  assert.equal(data.offers?.url, data.url);
+  assert.equal(data.offers.url, data.url);
 });
 
 test("links the published Brazil return policy without duplicating editable rules", () => {

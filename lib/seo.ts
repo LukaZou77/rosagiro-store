@@ -316,7 +316,9 @@ export function productJsonLd(product: CatalogProduct, canonicalSlug = product.s
   const consultationOnly = isSourceCatalogConsultationProduct(product);
   const packagePieces = productWholesalePackagePieces(product);
   const packagePrice = productWholesalePackagePriceCents(product);
-  const inStock = packagePieces !== null && productQuantity(product) >= packagePieces;
+  if (consultationOnly || !packagePieces || !packagePrice) return null;
+
+  const inStock = productQuantity(product) >= packagePieces;
   const images = Array.from(
     new Set(
       [product.image, ...product.gallery, ...product.skus.filter((sku) => sku.active).map((sku) => sku.image)]
@@ -340,7 +342,7 @@ export function productJsonLd(product: CatalogProduct, canonicalSlug = product.s
     sku: product.mpn || undefined,
     mpn: product.mpn || undefined,
     gtin: product.gtin || undefined,
-    ...(consultationOnly || !packagePieces || !packagePrice ? {} : { offers: {
+    offers: {
       "@type": "Offer",
       url,
       priceCurrency: "BRL",
@@ -353,9 +355,9 @@ export function productJsonLd(product: CatalogProduct, canonicalSlug = product.s
       seller: {
         "@id": siteUrl("/#store")
       }
-    } }),
+    },
     additionalProperty: [
-      ...(packagePieces ? [{ "@type": "PropertyValue", name: "Unidades por embalagem", value: String(packagePieces) }] : []),
+      { "@type": "PropertyValue", name: "Unidades por embalagem", value: String(packagePieces) },
       { "@type": "PropertyValue", name: "Volume", value: product.volume },
       { "@type": "PropertyValue", name: "Acabamento", value: product.finish },
       ...(product.weightGrams ? [{ "@type": "PropertyValue", name: "Peso", value: `${product.weightGrams} g` }] : [])

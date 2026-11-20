@@ -23,7 +23,15 @@ mock.module(pathToFileURL(resolve(import.meta.dirname, "db.ts")).href, {
   }
 });
 
-const { productSitemapEntries } = await import("./sitemaps");
+const { productSitemapEntries, sitemapIndexXml } = await import("./sitemaps");
+
+test("lists child sitemaps without a fabricated modification time", () => {
+  const xml = sitemapIndexXml(["/sitemaps/static.xml", "/sitemaps/products.xml"]);
+
+  assert.match(xml, /<loc>[^<]+\/sitemaps\/static\.xml<\/loc>/);
+  assert.match(xml, /<loc>[^<]+\/sitemaps\/products\.xml<\/loc>/);
+  assert.doesNotMatch(xml, /<lastmod>/);
+});
 
 test("includes the verified canonical source page even without a legacy description", async () => {
   const entries = await productSitemapEntries();

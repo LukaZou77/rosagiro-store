@@ -136,6 +136,7 @@ export default async function ProductPage({ params }: PageProps) {
     ? sourceCatalogPriceLabel(product.wholesalePackage)
     : siteConfig.productConversion.priceLabel;
   const editorialDescription = productEditorialDescription(product.descriptionPt);
+  const productStructuredData = productJsonLd(product, canonicalSlug);
 
   return (
     <StoreShell categories={categories}>
@@ -150,7 +151,7 @@ export default async function ProductPage({ params }: PageProps) {
       />
       <StructuredData
         data={[
-          productJsonLd(product, canonicalSlug),
+          ...(productStructuredData ? [productStructuredData] : []),
           breadcrumbJsonLd([
             { name: "Início", path: "/" },
             { name: product.category.label, path: `/categoria/${product.category.slug}` },

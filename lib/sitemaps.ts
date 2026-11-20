@@ -33,8 +33,7 @@ export function sitemapXml(entries: SitemapEntry[]) {
 }
 
 export function sitemapIndexXml(paths: string[]) {
-  const now = new Date().toISOString();
-  const body = paths.map((path) => `<sitemap><loc>${escapeXml(siteUrl(path))}</loc><lastmod>${now}</lastmod></sitemap>`).join("");
+  const body = paths.map((path) => `<sitemap><loc>${escapeXml(siteUrl(path))}</loc></sitemap>`).join("");
   return `<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${body}</sitemapindex>`;
 }
 
