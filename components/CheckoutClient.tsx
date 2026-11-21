@@ -34,6 +34,7 @@ const states = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT"
 const manualCepMessage = "Preencha manualmente se o CEP não trouxer todos os dados.";
 const checkoutStepOrder = ["contact", "address", "payment"] as const;
 const summaryUnavailableMessage = "Não foi possível carregar o resumo do pedido.";
+const checkoutEditingFieldSelector = 'input:not([type="checkbox"]):not([type="radio"]), select, textarea';
 
 type CheckoutStep = (typeof checkoutStepOrder)[number];
 type ContactField = "name" | "phone" | "email" | "cpf";
@@ -366,7 +367,7 @@ export function CheckoutClient({
   }
 
   function handleCheckoutFocus(event: FocusEvent<HTMLFormElement>) {
-    if (event.target instanceof HTMLElement && event.target.matches("input, select, textarea")) {
+    if (event.target instanceof HTMLElement && event.target.matches(checkoutEditingFieldSelector)) {
       setMobileFieldFocused(true);
     }
   }
@@ -376,7 +377,7 @@ export function CheckoutClient({
     if (
       nextTarget instanceof HTMLElement &&
       event.currentTarget.contains(nextTarget) &&
-      nextTarget.matches("input, select, textarea")
+      nextTarget.matches(checkoutEditingFieldSelector)
     ) {
       return;
     }
@@ -386,7 +387,7 @@ export function CheckoutClient({
       setMobileFieldFocused(
         activeElement instanceof HTMLElement &&
           Boolean(formRef.current?.contains(activeElement)) &&
-          activeElement.matches("input, select, textarea")
+          activeElement.matches(checkoutEditingFieldSelector)
       );
     }, 0);
   }
