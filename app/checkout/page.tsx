@@ -5,6 +5,7 @@ import { getCategories } from "@/lib/catalog";
 import { noIndexMetadata } from "@/lib/seo";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { simulatedPaymentEnabled } from "@/lib/payments";
+import { mercadoPagoReady } from "@/lib/mercado-pago";
 
 export const metadata: Metadata = noIndexMetadata("Checkout", "Checkout de compra RosaGiro.");
 
@@ -15,6 +16,7 @@ export default async function CheckoutPage() {
       <CheckoutClient
         trustSignals={storeTrustSignals(storeProfile)}
         testPayments={simulatedPaymentEnabled()}
+        allowCreditCard={mercadoPagoReady()}
       />
     </StoreShell>
   );

@@ -151,6 +151,9 @@ function canStartOrderPayment(order: {
 
 export function assertPaymentCanStart(method: PaymentMethodValue | string | null | undefined) {
   const mode = currentPaymentMode();
+  if (method === "CREDIT_CARD" && !isMercadoPagoMode(mode)) {
+    throw new MercadoPagoError(unavailablePaymentMessage(), 503);
+  }
   if (!shouldUseMercadoPago(method) || !isMercadoPagoMode(mode)) return;
   if (!mercadoPagoReady()) {
     throw new MercadoPagoError(unavailablePaymentMessage(), 503);
@@ -172,6 +175,7 @@ export async function startOrderPayment(orderNumber: string): Promise<PaymentSta
     external: false
   };
   if (!canStartOrderPayment(order)) return orderResult;
+  assertPaymentCanStart(order.payment.method);
   if (!shouldUseMercadoPago(order.payment.method) || !isMercadoPagoMode(mode)) {
     return localPaymentResult(order.orderNumber);
   }

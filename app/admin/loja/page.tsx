@@ -226,7 +226,7 @@ export default async function AdminStoreProfilePage({ searchParams }: PageProps)
             <div>
               <h3>{t("Cartão de crédito / parcelamento", "银行卡 / 分期")}</h3>
               <p className="table-note">
-                {t("Define o máximo de parcelas enviado ao Checkout Pro do Mercado Pago. O checkout mostra “até Xx”, sem prometer juros zero.", "设置发送给 Mercado Pago Checkout Pro 的最大分期期数。结账页显示“最多 X 期”，不会承诺免息。")}
+                {t("Define o máximo de parcelas enviado ao Checkout Pro do Mercado Pago. O cliente confere as parcelas disponíveis, os valores e as taxas na página de pagamento.", "设置发送给 Mercado Pago Checkout Pro 的最大分期期数。客户在付款页确认可选期数、每期金额及费用。")}
               </p>
             </div>
             <label>

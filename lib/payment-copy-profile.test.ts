@@ -3,20 +3,21 @@ import test from "node:test";
 import { storefrontPaymentLabel, storefrontPaymentNote } from "@/lib/payments";
 import { defaultStoreProfile, publicStoreProfileNotes, storeTrustSignals } from "@/lib/store-profile";
 
-test("cached legacy payment notes cannot keep advertising card payments", () => {
-  for (const paymentNote of ["Pix e cartão via Mercado Pago", "Cartao em 12x", "Cartões de crédito", "Pagamento simulado"]) {
+test("cached payment notes use the current credit-card installment policy", () => {
+  for (const paymentNote of ["Pix e transferência bancária", "Pix e cartão via Mercado Pago", "Cartao em 12x", "Cartões de crédito", "Pagamento simulado"]) {
     assert.equal(publicStoreProfileNotes({ ...defaultStoreProfile, paymentNote }).paymentNote, storefrontPaymentNote);
   }
 });
 
-test("footer and trust badges replace legacy card copy while preserving unrelated signals", () => {
+test("footer and trust badges show card installments while preserving unrelated signals", () => {
   const signals = storeTrustSignals({ ...defaultStoreProfile, trustBadges: ["Atendimento pelo WhatsApp", "Pix e cartão via Mercado Pago", "Envio para todo o Brasil"] });
   assert.ok(signals.includes(storefrontPaymentLabel));
   assert.ok(signals.includes("Atendimento pelo WhatsApp"));
   assert.ok(signals.includes("Envio para todo o Brasil"));
-  assert.doesNotMatch(signals.join(" "), /cartão|crédito|parcelamento/i);
+  assert.match(signals.join(" "), /cartão de crédito com parcelamento/i);
+  assert.doesNotMatch(signals.join(" "), /sem juros|taxa zero|em 1x/i);
 });
 
-test("current bank-transfer instructions remain unchanged", () => {
+test("the current payment note remains unchanged", () => {
   assert.equal(publicStoreProfileNotes({ ...defaultStoreProfile, paymentNote: storefrontPaymentNote }).paymentNote, storefrontPaymentNote);
 });

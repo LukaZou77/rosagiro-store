@@ -97,7 +97,7 @@ export const siteConfig = {
   homePromotions: {
     promoBar: {
       label: "Destaques no atacado",
-      text: `Pedido mínimo ${wholesaleMinimumOrderLabel}, venda por embalagem fechada, Pix, entrega para todo o Brasil e suporte no WhatsApp.`,
+      text: `Pedido mínimo ${wholesaleMinimumOrderLabel}, venda por embalagem fechada, Pix e cartão de crédito com parcelamento, entrega para todo o Brasil e suporte no WhatsApp.`,
       cta: "Ver destaques",
       href: "/promocoes"
     },
@@ -110,7 +110,7 @@ export const siteConfig = {
     trustPoints: [
       `Pedido mínimo ${wholesaleMinimumOrderLabel} e embalagem fechada sinalizados em toda compra`,
       "Pedido multimarcas em um carrinho",
-      "Pix e transferência bancária com confirmação pelo atendimento",
+      "Pix, cartão de crédito com parcelamento e transferência bancária com atendimento",
       "Entrega nacional com frete combinado e pago separadamente",
       "WhatsApp para dúvidas de estoque e entrega"
     ],
@@ -240,7 +240,7 @@ export const siteConfig = {
       },
       payment: {
         title: "Pagamento",
-        summary: "Pix ou transferência bancária com confirmação pelo atendimento."
+        summary: "Pix ou cartão de crédito com parcelamento pelo Mercado Pago; transferência bancária com atendimento."
       }
     },
     validation: {

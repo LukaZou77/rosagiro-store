@@ -12,14 +12,19 @@ type PaymentRuntimeEnv = Partial<Pick<NodeJS.ProcessEnv,
 export const simulatedPaymentPendingStatus = "test_simulation_pending";
 export const simulatedPaymentConfirmedStatus = "test_simulation_confirmed";
 
-export const storefrontPaymentLabel = "Pix e transferência bancária";
-export const storefrontPaymentNote = "Aceitamos Pix e transferência bancária. Antes de pagar, aguarde a confirmação do estoque e dos dados de pagamento pelo atendimento no WhatsApp.";
+export const storefrontPaymentLabel = "Pix, cartão de crédito com parcelamento e transferência bancária";
+export const storefrontPaymentNote = "Aceitamos Pix e cartão de crédito com parcelamento pelo Mercado Pago. As parcelas disponíveis, os valores, as taxas e a aprovação são exibidos na página de pagamento. Para transferência bancária, confirme os dados com o atendimento pelo WhatsApp. Confirme a disponibilidade dos produtos antes de pagar.";
 
 const basePaymentMethods = [
   {
     value: "PIX",
     label: "Pix",
-    description: "Aguarde a confirmação do estoque e dos dados de pagamento pelo atendimento antes de fazer o Pix."
+    description: "Pague pelo Mercado Pago após confirmar a disponibilidade dos produtos."
+  },
+  {
+    value: "CREDIT_CARD",
+    label: "Cartão de crédito",
+    description: "Pague à vista ou parcele pelo Mercado Pago. Confira as parcelas disponíveis, os valores e as taxas na página de pagamento."
   },
   {
     value: "SIMULATED",
@@ -28,8 +33,7 @@ const basePaymentMethods = [
   }
 ] as const;
 
-// Retain the legacy type for existing orders, but do not accept it for new checkout requests.
-export type PaymentMethodValue = (typeof basePaymentMethods)[number]["value"] | "CREDIT_CARD";
+export type PaymentMethodValue = (typeof basePaymentMethods)[number]["value"];
 
 export function normalizePaymentMode(value: unknown): PaymentMode {
   const cleaned = String(value || "").trim();
@@ -104,10 +108,11 @@ export function normalizeMercadoPagoInstallments(value: unknown, fallback: Merca
   return isMercadoPagoInstallments(parsed) ? parsed : fallback;
 }
 
-export function paymentMethodsForCheckout(options: { testPayments?: boolean } = {}) {
-  if (!options.testPayments) return basePaymentMethods;
+export function paymentMethodsForCheckout(options: { testPayments?: boolean; allowCreditCard?: boolean } = {}) {
+  const methods = basePaymentMethods.filter((method) => options.allowCreditCard !== false || method.value !== "CREDIT_CARD");
+  if (!options.testPayments) return methods;
   return [
-    basePaymentMethods[0],
+    ...methods.filter((method) => method.value !== "SIMULATED"),
     { value: "SIMULATED", label: "Pagamento de teste", description: "Simule a confirmação em um ambiente de teste." }
   ] as const;
 }

@@ -7,31 +7,44 @@ import {
   paymentMethodLabel,
   paymentMethodsForCheckout,
   paymentModeForEnvironment,
+  normalizeMercadoPagoInstallments,
   simulatedPaymentEnabled,
   simulatedPaymentPendingStatus,
   storefrontPaymentLabel,
   storefrontPaymentNote
 } from "@/lib/payments";
 
-test("checkout offers Pix and assisted bank transfer without card or installment promises", () => {
+test("checkout offers Pix, credit card installments and assisted bank transfer", () => {
   const methods = paymentMethodsForCheckout();
-  assert.deepEqual(methods.map((method) => method.value), ["PIX", "SIMULATED"]);
-  assert.match(methods[1].description, /transferência bancária/);
-  assert.doesNotMatch(JSON.stringify(methods), /cartão|crédito|parcel|Mercado Pago/);
-  assert.match(storefrontPaymentLabel, /Pix e transferência bancária/);
-  assert.match(storefrontPaymentNote, /confirmação do estoque/);
+  assert.deepEqual(methods.map((method) => method.value), ["PIX", "CREDIT_CARD", "SIMULATED"]);
+  assert.match(methods[1].label, /Cartão de crédito/);
+  assert.match(methods[2].description, /transferência bancária/);
+  assert.match(methods[1].description, /parcelas disponíveis, os valores e as taxas/);
+  assert.doesNotMatch(JSON.stringify(methods), /sem juros|taxa zero|em 1x/i);
+  assert.match(storefrontPaymentLabel, /cartão de crédito com parcelamento/);
+  assert.match(storefrontPaymentNote, /disponibilidade dos produtos/);
 });
 
 test("the test option is labeled separately from assisted transfer", () => {
-  assert.deepEqual(paymentMethodsForCheckout({ testPayments: true }).map((method) => method.label), ["Pix", "Pagamento de teste"]);
+  assert.deepEqual(paymentMethodsForCheckout({ testPayments: true }).map((method) => method.label), ["Pix", "Cartão de crédito", "Pagamento de teste"]);
 });
 
-test("new checkout payloads reject credit cards without relabeling historical card orders", () => {
-  assert.equal(isPaymentMethod("CREDIT_CARD"), false);
+test("new checkout payloads accept credit cards and preserve the historical label", () => {
+  assert.equal(isPaymentMethod("CREDIT_CARD"), true);
   assert.equal(isPaymentMethod("PIX"), true);
   assert.equal(isPaymentMethod("SIMULATED"), true);
   assert.equal(isPaymentMethod("BANK_TRANSFER"), false);
   assert.equal(paymentMethodLabel("CREDIT_CARD"), "Cartão de crédito");
+});
+
+test("an unavailable gateway hides cards while keeping Pix and assisted transfer", () => {
+  assert.deepEqual(paymentMethodsForCheckout({ allowCreditCard: false }).map((method) => method.value), ["PIX", "SIMULATED"]);
+});
+
+test("supported installment settings include the existing twelve-payment configuration", () => {
+  assert.equal(normalizeMercadoPagoInstallments(12), 12);
+  assert.equal(normalizeMercadoPagoInstallments("9"), 9);
+  assert.equal(normalizeMercadoPagoInstallments("invalid"), 6);
 });
 
 test("missing, invalid and legacy simulated modes keep assisted payment as the safe default", () => {

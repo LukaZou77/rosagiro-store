@@ -471,10 +471,23 @@ test("PIX succeeds end-to-end through the real orders route with product total o
   });
 });
 
-test("credit-card checkout is rejected before creating an order or payment preference", async () => {
+test("credit-card checkout creates a preference with the configured installment limit and product total only", async () => {
   const response = await postOrder(checkoutRequest("CREDIT_CARD"));
-  assert.equal(response.status, 400);
-  assert.match((await response.json()).error, /forma de pagamento válida/);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).externalRedirect, true);
+  assert.equal(orderCreateCalls, 1);
+  assert.equal(capturedOrderData?.payment.create.method, "CREDIT_CARD");
+  assert.equal(capturedOrderData?.totalCents, 50_000);
+  assert.equal(capturedPreferenceBodies.length, 1);
+  assert.equal(capturedPreferenceBodies[0].items[0].unit_price, 500);
+  assert.equal(capturedPreferenceBodies[0].metadata.payment_method_requested, "CREDIT_CARD");
+  assert.deepEqual(capturedPreferenceBodies[0].payment_methods, { installments: 12 });
+});
+
+test("credit-card checkout cannot fall back to assisted payment without a gateway", async () => {
+  process.env.PAYMENT_MODE = "manual";
+  const response = await postOrder(checkoutRequest("CREDIT_CARD"));
+  assert.equal(response.status, 503);
   assert.equal(orderCreateCalls, 0);
   assert.equal(capturedPreferenceBodies.length, 0);
 });

@@ -107,10 +107,12 @@ function stepIndex(step: CheckoutStep) {
 
 export function CheckoutClient({
   trustSignals,
-  testPayments
+  testPayments,
+  allowCreditCard = true
 }: {
   trustSignals: string[];
   testPayments: boolean;
+  allowCreditCard?: boolean;
 }) {
   const whatsappPhone = useWhatsAppPhone();
   const router = useRouter();
@@ -202,8 +204,8 @@ export function CheckoutClient({
   const packageReady = summary?.packageReady ?? false;
   const recommendations = summary?.recommendations || [];
   const checkoutPaymentMethods = useMemo(
-    () => paymentMethodsForCheckout({ testPayments }),
-    [testPayments]
+    () => paymentMethodsForCheckout({ testPayments, allowCreditCard }),
+    [testPayments, allowCreditCard]
   );
   const total = subtotal;
   const emptyCheckoutWhatsAppHref = useMemo(() => buildGeneralWhatsAppHref("checkout sem itens", whatsappPhone), [whatsappPhone]);

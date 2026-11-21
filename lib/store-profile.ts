@@ -124,7 +124,7 @@ export function publicLegalName(profile: StoreProfileView) {
 function cleanPublicSignal(signal: string) {
   const normalized = signal.trim();
   if (!normalized) return "";
-  if (/cart[aã]o|cart[oõ]es|cr[eé]dito|parcelamento/i.test(normalized)) return storefrontPaymentLabel;
+  if (/pix|transfer[eê]ncia banc[aá]ria|cart[aã]o|cart[oõ]es|cr[eé]dito|parcelamento/i.test(normalized)) return storefrontPaymentLabel;
   if (/preparacao|prepara\u00e7\u00e3o|teste|simulad/i.test(normalized)) return "";
   if (/cnpj em revisao|cnpj em revisão/i.test(normalized)) return "Dados da loja";
   if (/pedido minimo|pedido mínimo|compra minima|compra mínima/i.test(normalized)) {
@@ -148,7 +148,7 @@ export function storeTrustSignals(profile: StoreProfileView, limit = 4) {
 }
 
 export function publicStoreProfileNotes(profile: StoreProfileView) {
-  const paymentNote = /simulad|teste|preparacao|prepara\u00e7\u00e3o|cart[aã]o|cart[oõ]es|cr[eé]dito|parcelamento/i.test(profile.paymentNote)
+  const paymentNote = /simulad|teste|preparacao|prepara\u00e7\u00e3o|pix|transfer[eê]ncia banc[aá]ria|cart[aã]o|cart[oõ]es|cr[eé]dito|parcelamento/i.test(profile.paymentNote)
     ? storefrontPaymentNote
     : profile.paymentNote;
   const launchNote = /simulad|teste|preparacao|prepara\u00e7\u00e3o/i.test(profile.launchNote)
