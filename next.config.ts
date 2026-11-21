@@ -57,7 +57,8 @@ const contentSecurityPolicy = [
     "https://*.public.blob.vercel-storage.com",
     "https://*.mercadopago.com",
     "https://*.mercadolivre.com",
-    "https://api.mercadopago.com"
+    "https://api.mercadopago.com",
+    "https://viacep.com.br"
   ].join(" "),
   [
     "frame-src",

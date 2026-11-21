@@ -843,7 +843,7 @@ export function CheckoutClient({
     }
 
     if (!customer) {
-      setError("Entre via WhatsApp para continuar o checkout.");
+      setError("Informe seu nome e número de WhatsApp para continuar a compra aqui no site.");
       requireCustomerSession({ intent: "checkout", onSuccess: prefillContactFromCustomer });
       return;
     }
@@ -934,7 +934,7 @@ export function CheckoutClient({
                     {submitting ? "Verificando..." : "Verificar pedido"}
                   </button>
                 ) : null}
-                <WhatsAppLink className="button whatsapp" href={emptyCheckoutWhatsAppHref}>
+                <WhatsAppLink className="button secondary" href={emptyCheckoutWhatsAppHref}>
                   Falar no WhatsApp
                 </WhatsAppLink>
               </div>
@@ -984,7 +984,7 @@ export function CheckoutClient({
             <Link className="button secondary" href="/carrinho">
               Voltar ao carrinho
             </Link>
-            <WhatsAppLink className="button whatsapp" href={emptyCheckoutWhatsAppHref}>
+            <WhatsAppLink className="button secondary" href={emptyCheckoutWhatsAppHref}>
               Falar no WhatsApp
             </WhatsAppLink>
           </div>
@@ -1007,7 +1007,7 @@ export function CheckoutClient({
             <Link className="button primary" href="/carrinho">
               Revisar pedido
             </Link>
-            <WhatsAppLink className="button whatsapp" href={checkoutWhatsAppHref}>
+            <WhatsAppLink className="button secondary" href={checkoutWhatsAppHref}>
               {summary.orderLimitNotice ? "Falar no WhatsApp" : "Confirmar embalagem no WhatsApp"}
             </WhatsAppLink>
           </div>
@@ -1037,7 +1037,7 @@ export function CheckoutClient({
             <Link className="button secondary" href="/promocoes">
               Ver destaques
             </Link>
-            <WhatsAppLink className="button whatsapp" href={emptyCheckoutWhatsAppHref}>
+            <WhatsAppLink className="button secondary" href={emptyCheckoutWhatsAppHref}>
               Falar no WhatsApp
             </WhatsAppLink>
           </div>
@@ -1072,7 +1072,7 @@ export function CheckoutClient({
             <Link className="button secondary" href="/carrinho">
               Voltar ao pedido
             </Link>
-            <WhatsAppLink className="button whatsapp" href={checkoutWhatsAppHref}>
+            <WhatsAppLink className="button secondary" href={checkoutWhatsAppHref}>
               Pedir ajuda no WhatsApp
             </WhatsAppLink>
           </div>
@@ -1377,9 +1377,6 @@ export function CheckoutClient({
               : siteConfig.productConversion.completionBody
           }
         />
-        <WhatsAppLink href={checkoutWhatsAppHref} className="button whatsapp wide">
-          {siteConfig.whatsapp.cartCta}
-        </WhatsAppLink>
         <div className="summary-block">
           <h2>Resumo</h2>
           {items.map((item) => (
@@ -1407,6 +1404,9 @@ export function CheckoutClient({
             <strong>{money(total)}</strong>
           </div>
         </div>
+        <WhatsAppLink href={checkoutWhatsAppHref} className="button secondary wide">
+          {siteConfig.whatsapp.cartCta}
+        </WhatsAppLink>
       </aside>
       <div className={mobileFieldFocused ? "mobile-checkout-bar editing" : "mobile-checkout-bar"} aria-label="Resumo rápido do checkout">
         <div>

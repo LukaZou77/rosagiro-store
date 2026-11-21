@@ -50,7 +50,7 @@ export const siteConfig = {
     serviceLabel: "Atendimento WhatsApp",
     productCta: "Consultar no WhatsApp",
     productSecondaryCta: "Tirar dúvida",
-    cartCta: "Enviar lista pelo WhatsApp",
+    cartCta: "Ajuda pelo WhatsApp",
     messages: {
       generalGreeting: "Oi, tudo bem? Vi a RosaGiro e gostaria de comprar cosméticos no atacado.",
       generalQuestion: "Pode me ajudar a ver os produtos em estoque e a melhor forma de entrega ou retirada?",

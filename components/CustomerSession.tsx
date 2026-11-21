@@ -135,7 +135,7 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
       if (pendingRequest.current !== controller) return;
 
       if (!response.ok || !result.customer) {
-        setError(result.error || "Não foi possível entrar agora.");
+        setError(result.error || "Não foi possível continuar agora.");
         return;
       }
 
@@ -147,7 +147,7 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
       closeModal();
       action.onSuccess?.(result.customer);
     } catch {
-      if (pendingRequest.current === controller) setError("Não foi possível entrar agora. Tente novamente.");
+      if (pendingRequest.current === controller) setError("Não foi possível continuar agora. Tente novamente.");
     } finally {
       if (pendingRequest.current === controller) {
         pendingRequest.current = null;
@@ -182,8 +182,8 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
       >
         <form className="customer-login-modal" onSubmit={submit}>
           <header>
-            <h2 id="customer-login-title">Entrar via WhatsApp</h2>
-            <button type="button" onClick={closeModal} aria-label="Fechar login">
+            <h2 id="customer-login-title">Informe seus dados para continuar</h2>
+            <button type="button" onClick={closeModal} aria-label="Fechar identificação">
               ×
             </button>
           </header>
@@ -219,7 +219,7 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
             </div>
           </div>
           <p className="customer-login-note">
-            Usamos nome e WhatsApp para atendimento, pedido e compra no atacado. Não criamos senha nesta fase.{" "}
+            Informe seu nome e número de WhatsApp para continuar a compra aqui no site. Usaremos esses dados para identificar e acompanhar seu pedido.{" "}
             <Link href="/politica-de-privacidade">Privacidade</Link>
           </p>
           <div className="form-error" role="alert">
@@ -230,7 +230,7 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
               Cancelar
             </button>
             <button className="button primary" type="submit" disabled={submitting}>
-              {submitting ? "Entrando..." : "Continuar"}
+              {submitting ? "Continuando..." : "Continuar no site"}
             </button>
           </footer>
         </form>

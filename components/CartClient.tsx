@@ -245,11 +245,6 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
           />
         ) : null}
         {hasValidLines ? (
-          <WhatsAppLink href={whatsappHref} className="button whatsapp wide">
-            {siteConfig.whatsapp.cartCta}
-          </WhatsAppLink>
-        ) : null}
-        {hasValidLines ? (
           <CustomerCheckoutButton className="button primary wide" disabled={!minimumReached || !packageReady}>
             {summary?.orderLimitNotice ? "Reduza a quantidade" : !packageReady ? "Ajuste o pedido" : minimumReached ? "Continuar pedido" : "Complete o pedido mínimo"}
           </CustomerCheckoutButton>
@@ -258,6 +253,11 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
             Montar pedido
           </Link>
         )}
+        {hasValidLines ? (
+          <WhatsAppLink href={whatsappHref} className="button secondary wide">
+            {siteConfig.whatsapp.cartCta}
+          </WhatsAppLink>
+        ) : null}
       </aside>
     </section>
   );

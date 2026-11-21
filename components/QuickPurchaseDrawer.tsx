@@ -344,15 +344,6 @@ export function QuickPurchaseDrawer() {
 
           <footer className="quick-drawer-footer">
             {hasValidLines ? (
-              <WhatsAppLink href={whatsappHref} className="button whatsapp wide">
-                {siteConfig.whatsapp.cartCta}
-              </WhatsAppLink>
-            ) : (
-              <span className="button whatsapp wide disabled" aria-disabled="true">
-                {siteConfig.whatsapp.cartCta}
-              </span>
-            )}
-            {hasValidLines ? (
               <CustomerCheckoutButton
                 className="button primary wide"
                 disabled={!summary?.minimumReached || !summary?.packageReady}
@@ -368,6 +359,15 @@ export function QuickPurchaseDrawer() {
             <Link className="button secondary wide" href="/carrinho" onClick={closeDrawer}>
               Ver pedido completo
             </Link>
+            {hasValidLines ? (
+              <WhatsAppLink href={whatsappHref} className="button secondary wide">
+                {siteConfig.whatsapp.cartCta}
+              </WhatsAppLink>
+            ) : (
+              <span className="button secondary wide disabled" aria-disabled="true">
+                {siteConfig.whatsapp.cartCta}
+              </span>
+            )}
           </footer>
         </aside>
       </dialog>
