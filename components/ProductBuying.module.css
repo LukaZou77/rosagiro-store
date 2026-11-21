@@ -28,23 +28,41 @@
   line-height: 1.35;
 }
 
-.cardPackagePrice {
+.cardPrice {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
   padding: 8px 9px;
+  border: 1px solid rgba(var(--promo-deep-rgb), 0.2);
+  border-radius: 8px;
   background: var(--paper);
-}
-
-.cardPackagePrice span {
-  font-size: 0.64rem;
-}
-
-.cardPackagePrice strong {
-  font-size: 1.18rem;
-  font-weight: 950;
   font-variant-numeric: tabular-nums;
 }
 
-.cardPackagePrice small {
-  font-size: 0.7rem;
+.cardUnitPrice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 5px;
+}
+
+.cardUnitPrice strong {
+  color: var(--promo-deep);
+  font-size: 1.35rem;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.cardUnitPrice span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.cardPrice > small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
 }
 
 .purchaseActions {

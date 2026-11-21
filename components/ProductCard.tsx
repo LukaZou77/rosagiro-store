@@ -3,7 +3,6 @@ import { AddToCartButton } from "@/components/AddToCartButton";
 import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 import { shouldDisplayProductBrand } from "@/components/ProductBrandDisplay";
 import buyingStyles from "@/components/ProductBuying.module.css";
-import { ProductPackagePrice } from "@/components/ProductPackagePrice";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import type { CatalogCardProduct } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
@@ -97,12 +96,15 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
         ) : null}
         <div className="product-card-bottom">
           {!consultationOnly && packagePieces && packagePriceCents ? (
-            <ProductPackagePrice
-              className={`${buyingStyles.packagePrice} ${buyingStyles.cardPackagePrice}`}
-              packagePieces={packagePieces}
-              packagePriceCents={packagePriceCents}
-              unitPriceCents={displayPrice}
-            />
+            <div className={buyingStyles.cardPrice}>
+              <div className={buyingStyles.cardUnitPrice}>
+                <strong>{money(displayPrice)}</strong>
+                <span>/ un. (aprox.)</span>
+              </div>
+              <small>
+                {packagePieces} {packagePieces === 1 ? "unidade" : "unidades"} · {money(packagePriceCents)} por embalagem
+              </small>
+            </div>
           ) : (
             <div className="price-stack">
               <small>{priceLabel}</small>
