@@ -223,22 +223,17 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
           </div>
           <div>
             <span>Frete</span>
-            <strong>Não incluído no subtotal</strong>
+            <strong>Cobrado separadamente</strong>
           </div>
           <div className="summary-total">
             <span>Total sem frete</span>
             <strong>{money(total)}</strong>
           </div>
-          <p>
-            {siteConfig.wholesale.nationalDeliveryText} {siteConfig.wholesale.nationalDeliveryNote}
-          </p>
-          <p>O site recebe somente o valor dos produtos. O atendimento confirma o frete e o prazo pelo WhatsApp; a cobrança do frete é separada, após sua aprovação.</p>
+          <p>Você paga os produtos no site. O atendimento informa o frete e o prazo pelo WhatsApp; o frete é pago separadamente, após sua aprovação.</p>
           {summary?.orderLimitNotice ? <p role="status">{summary.orderLimitNotice}</p> : null}
         </div>
         <div className="delivery-note">
-          {siteConfig.wholesale.deliveryModes.map((mode) => (
-            <span key={mode}>{mode}</span>
-          ))}
+          <Link href="/entrega">Entrega, retirada e outras opções</Link>
         </div>
         <StoreTrustSignals signals={trustSignals} compact />
         {hasValidLines ? (

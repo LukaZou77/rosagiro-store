@@ -38,7 +38,9 @@
 }
 
 .cardPackagePrice strong {
-  font-size: 1rem;
+  font-size: 1.18rem;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
 }
 
 .cardPackagePrice small {

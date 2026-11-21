@@ -50,29 +50,16 @@ export default async function HomePage() {
     { value: `${categories.length}`, label: siteConfig.homePromotions.stats.categoriesLabel },
     { value: `${brands.length}+`, label: siteConfig.homePromotions.stats.brandsLabel }
   ];
-  const wholesaleBandTrustPoints = siteConfig.homePromotions.trustPoints.filter(
-    (point) => !point.toLowerCase().includes("entrega para todo o brasil")
-  );
+  const wholesaleBandTrustPoints = siteConfig.homePromotions.trustPoints;
   const wholesaleBandDeliveryModes = siteConfig.wholesale.deliveryModes;
 
   return (
     <StoreShell categories={categories}>
-      <section className="promo-strip" aria-label="Campanha atual">
-        <span>{siteConfig.homePromotions.promoBar.label}</span>
-        <p>{siteConfig.homePromotions.promoBar.text}</p>
-        <Link href={siteConfig.homePromotions.promoBar.href}>{siteConfig.homePromotions.promoBar.cta}</Link>
-      </section>
-
       <section className="hero promo-hero">
         <div className="hero-copy">
           <p className="eyebrow">{siteConfig.hero.eyebrow}</p>
           <h1>{siteConfig.hero.title}</h1>
           <p>{siteConfig.hero.body}</p>
-          <div className="wholesale-signal-row" aria-label="Sinais de compra no atacado">
-            {siteConfig.wholesale.shelfSignals.map((signal) => (
-              <span key={signal}>{signal}</span>
-            ))}
-          </div>
         </div>
         <div className="hero-shop-actions">
           <form className="home-search" action="/categoria/all">
@@ -91,11 +78,6 @@ export default async function HomePage() {
             <Link className="button secondary" href="/promocoes">
               Ver destaques
             </Link>
-            {heroProduct ? (
-              <Link className="button secondary" href={`/produto/${heroProduct.slug}`}>
-                {siteConfig.hero.secondaryCta}
-              </Link>
-            ) : null}
           </div>
           <div className="home-quick-links" aria-label="Atalhos para comprar por categoria">
             <span>Comprar por:</span>
@@ -167,8 +149,9 @@ export default async function HomePage() {
       <section className="home-trust-section" aria-label="Loja confiável">
         <StoreTrustSignals
           signals={homeTrustSignals}
-          title="Dados da loja, atendimento humano e compra acompanhada"
-          body="Veja os canais oficiais, políticas, entrega e formas de atendimento antes de montar seu pedido."
+          title="Atendimento e informações da loja"
+          compact
+          showLink={false}
         />
         <div className="home-trust-shortcuts">
           <Link href="/informacoes-da-loja">Dados da loja</Link>

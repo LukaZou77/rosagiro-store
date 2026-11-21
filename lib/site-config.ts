@@ -76,15 +76,13 @@ export const siteConfig = {
       "Frete calculado pelo atendimento e cobrado separadamente após sua aprovação",
       "Retirada local mediante confirmação",
       "Transportadora própria ou excursão sob consulta"
-    ],
-    shelfSignals: [`Pedido mínimo ${wholesaleMinimumOrderShortLabel}`, "Venda por embalagem fechada", "Envio para todo o Brasil", "Atendimento no WhatsApp"]
+    ]
   },
   hero: {
     eyebrow: "Atacado de cosméticos em São Paulo",
     title: "Cosméticos no atacado para revenda",
-    body: `Maquiagens, skincare, perfumes, produtos para cabelo e acessórios no atacado para lojistas e revendedores, vendidos por embalagem fechada, com pedido mínimo de ${wholesaleMinimumOrderLabel} e atendimento pelo WhatsApp.`,
-    primaryCta: "Ver catálogo",
-    secondaryCta: "Comprar destaque"
+    body: "Maquiagens, skincare, perfumes, produtos para cabelo e acessórios para abastecer sua loja.",
+    primaryCta: "Ver catálogo"
   },
   homeSections: {
     categoriesEyebrow: "Categorias",
@@ -95,12 +93,6 @@ export const siteConfig = {
     featuredTitle: "Produtos com boa saída para testar pedidos"
   },
   homePromotions: {
-    promoBar: {
-      label: "Destaques no atacado",
-      text: `Pedido mínimo ${wholesaleMinimumOrderLabel}, venda por embalagem fechada, Pix e cartão de crédito com parcelamento, entrega para todo o Brasil e suporte no WhatsApp.`,
-      cta: "Ver destaques",
-      href: "/promocoes"
-    },
     searchPlaceholder: "Buscar serum, batom, perfume, pincel...",
     stats: {
       productsLabel: "produtos ativos",
@@ -108,11 +100,8 @@ export const siteConfig = {
       brandsLabel: "marcas no catálogo"
     },
     trustPoints: [
-      `Pedido mínimo ${wholesaleMinimumOrderLabel} e embalagem fechada sinalizados em toda compra`,
-      "Pedido multimarcas em um carrinho",
-      "Pix, cartão de crédito com parcelamento e transferência bancária com atendimento",
-      "Entrega nacional com frete combinado e pago separadamente",
-      "WhatsApp para dúvidas de estoque e entrega"
+      "Embalagens fechadas, sem escolha de cores ou fracionamento",
+      "Pix, cartão de crédito com parcelamento e transferência bancária"
     ],
     quickActions: [
       {
@@ -138,8 +127,8 @@ export const siteConfig = {
     ],
     wholesaleBand: {
       eyebrow: "Compra com volume",
-      title: "Compra mínima clara, WhatsApp rápido e entrega para todo o Brasil.",
-      body: "A vitrine orienta pedido mínimo, disponibilidade, Pix e entrega para todo o Brasil, com frete calculado e cobrado separadamente pelo atendimento após a aprovação do cliente.",
+      title: "Monte seu pedido multimarcas",
+      body: "Combine produtos de diferentes marcas em um só pedido. Confirme a disponibilidade com o atendimento antes de comprar.",
       primaryCta: "Ver todos os produtos",
       secondaryCta: "Falar no WhatsApp"
     },

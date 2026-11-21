@@ -96,17 +96,21 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
           </div>
         ) : null}
         <div className="product-card-bottom">
-          <div className="price-stack">
-            <small>{priceLabel}</small>
-            <strong>{money(displayPrice)}</strong>
-            <small className="wholesale-package-hint">{productWholesalePackageLabel(product)}</small>
-          </div>
-          <div className="product-card-actions">
+          {!consultationOnly && packagePieces && packagePriceCents ? (
             <ProductPackagePrice
               className={`${buyingStyles.packagePrice} ${buyingStyles.cardPackagePrice}`}
               packagePieces={packagePieces}
               packagePriceCents={packagePriceCents}
+              unitPriceCents={displayPrice}
             />
+          ) : (
+            <div className="price-stack">
+              <small>{priceLabel}</small>
+              <strong>{money(displayPrice)}</strong>
+              <small className="wholesale-package-hint">{productWholesalePackageLabel(product)}</small>
+            </div>
+          )}
+          <div className="product-card-actions">
             {consultationOnly ? (
               <button type="button" disabled>
                 Estoque sob consulta
