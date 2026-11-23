@@ -1,11 +1,17 @@
 import type { CatalogProduct } from "@/lib/catalog";
-import { productWholesaleStockQuantity } from "@/lib/product-wholesale";
-import { isSourceCatalogConsultationProduct } from "@/lib/source-catalog-product";
+import { productWholesaleOrderQuantityLimit, productWholesalePackagePieces, productWholesalePackagePriceCents, productWholesaleStockQuantity } from "@/lib/product-wholesale";
+import { INVENTORY_MANAGEMENT_ENABLED } from "@/lib/inventory-policy";
+import { isProductStockConsultationRequired } from "@/lib/source-catalog-product";
 
 export type ProductStockTone = "ready" | "low" | "out" | "consultation";
 
 type StockSource = Pick<CatalogProduct, "inventory"> & {
   stockStatus?: string | null;
+  priceCents?: number;
+  baseBoxPieces?: number | null;
+  baseBoxPriceCents?: number | null;
+  wholesalePackage?: string | null;
+  descriptionPt?: string | null;
   skus?: Array<{ quantity: number; active: boolean }>;
 };
 
@@ -13,27 +19,42 @@ export function productQuantity(product: StockSource) {
   return productWholesaleStockQuantity(product);
 }
 
+export function productOrderQuantityLimit(product: StockSource) {
+  return productWholesaleOrderQuantityLimit(product);
+}
+
 export function productStockTone(product: StockSource): ProductStockTone {
-  if (isSourceCatalogConsultationProduct(product)) return "consultation";
+  if (!INVENTORY_MANAGEMENT_ENABLED) {
+    const pieces = productWholesalePackagePieces(product);
+    const price = productWholesalePackagePriceCents({ ...product, priceCents: product.priceCents || 0 });
+    return pieces && price ? "ready" : "consultation";
+  }
+  if (isProductStockConsultationRequired(product)) return "consultation";
   const quantity = productQuantity(product);
   if (quantity <= 0) return "out";
   return "ready";
 }
 
 export function productStockLabel(product: StockSource) {
-  if (isSourceCatalogConsultationProduct(product)) return "Estoque sob consulta";
+  if (!INVENTORY_MANAGEMENT_ENABLED) {
+    return productStockTone(product) === "ready" ? "Disponível para pedido" : "Embalagem ou preço sob consulta";
+  }
+  if (isProductStockConsultationRequired(product)) return "Estoque sob consulta";
   const quantity = productQuantity(product);
   if (quantity <= 0) return "Sem estoque";
   return "Em estoque";
 }
 
 export function productShortStockLabel(product: StockSource) {
-  if (isSourceCatalogConsultationProduct(product)) return "Sob consulta";
+  if (!INVENTORY_MANAGEMENT_ENABLED) {
+    return productStockTone(product) === "ready" ? "Disponível" : "Embalagem sob consulta";
+  }
+  if (isProductStockConsultationRequired(product)) return "Sob consulta";
   return productStockLabel(product);
 }
 
 export function productHeroBadge(product: Pick<CatalogProduct, "badges" | "inventory" | "stockStatus"> & { skus?: Array<{ quantity: number; active: boolean }> }) {
-  if (isSourceCatalogConsultationProduct(product)) return "Sob consulta";
+  if (isProductStockConsultationRequired(product)) return "Sob consulta";
   if (productStockTone(product) === "out") return "Sem estoque";
   return product.badges.find((badge) => !/^em estoque$/i.test(badge.trim())) || "";
 }

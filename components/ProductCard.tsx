@@ -13,12 +13,12 @@ import {
   productWholesalePackagePriceCents
 } from "@/lib/product-wholesale";
 import {
-  productQuantity,
+  productOrderQuantityLimit,
   productShortStockLabel,
   productStockTone
 } from "@/lib/product-conversion";
 import { siteConfig } from "@/lib/site-config";
-import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
+import { isProductStockConsultationRequired, isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 import { wholesaleReferenceUnitPriceCents } from "@/lib/wholesale-order";
 
@@ -49,9 +49,8 @@ function productCardTags(product: CatalogCardProduct) {
 }
 
 export function ProductCard({ product, whatsappPhone }: { product: CatalogCardProduct; whatsappPhone?: string | null }) {
-  const quantity = productQuantity(product);
-  const consultationOnly = isSourceCatalogConsultationProduct(product);
-  const available = !consultationOnly && quantity > 0;
+  const quantity = productOrderQuantityLimit(product);
+  const consultationOnly = isProductStockConsultationRequired(product);
   const heroBadge = product.badges.map(customerDisplayText).find(isSpecialCardBadge) || "";
   const stockTone = productStockTone(product);
   const shortStockLabel = productShortStockLabel(product);
@@ -59,12 +58,13 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
   const infoTags = productCardTags(product);
   const packagePieces = productWholesalePackagePieces(product);
   const packagePriceCents = productWholesalePackagePriceCents(product);
-  const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces && packagePriceCents);
+  const available = Boolean(!consultationOnly && packagePieces && packagePriceCents && quantity >= packagePieces);
+  const packageOrderable = available;
   const displayPrice = !consultationOnly && packagePieces && packagePriceCents
     ? wholesaleReferenceUnitPriceCents(packagePriceCents, packagePieces)
     : product.priceCents;
   const showBrand = shouldDisplayProductBrand(product.brand.name);
-  const priceLabel = consultationOnly
+  const priceLabel = isSourceCatalogConsultationProduct(product)
     ? sourceCatalogPriceLabel(product.wholesalePackage)
     : siteConfig.productConversion.priceLabel;
 
@@ -129,7 +129,7 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
                 }}
                 slug={product.slug}
                 quantity={packagePieces}
-                stockQuantity={quantity}
+                quantityLimit={quantity}
                 label="Adicionar 1 embalagem"
                 disabled={!available}
               />

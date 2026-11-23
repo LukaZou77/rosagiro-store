@@ -21,6 +21,7 @@ import {
 const mojibakePattern = /[莽茫谩贸煤铆玫锚]/;
 
 const sampleProduct = {
+  active: true,
   name: "Batom Duo Lip Twice Ruby Rose HB-L6203",
   slug: "batom-duo-lip-twice-ruby-rose-hb-l6203",
   priceCents: 975,
@@ -85,7 +86,7 @@ test("builds natural product metadata for wholesale product pages", () => {
   const description = productMetaDescription(sampleProduct);
   assert.match(description, /Ruby Rose/i);
   assert.match(description, /R\$\s*9,75 por embalagem/i);
-  assert.match(description, /em estoque/i);
+  assert.match(description, /disponível para pedido/i);
   assert.match(description, /pedido mínimo R\$ 500,00/i);
   assert.doesNotMatch(description, mojibakePattern);
   assert.ok(description.length <= META_DESCRIPTION_MAX_LENGTH);
@@ -128,7 +129,7 @@ test("builds truthful merchant product data without invented reviews", () => {
 
   assert.ok(data);
   assert.equal(data.url, "http://localhost:3000/produto/batom-duo-lip-twice-ruby-rose-hb-l6203");
-  assert.equal(data.offers.availability, "https://schema.org/OutOfStock");
+  assert.equal(data.offers.availability, "https://schema.org/InStock");
   assert.equal(data.offers.price, "9.75");
   assert.equal(
     data.offers.hasMerchantReturnPolicy["@id"],
@@ -154,6 +155,8 @@ test("omits Product structured data for source products that require consultatio
     ...sampleProduct,
     stockStatus: "Sob consulta",
     wholesalePackage: "Unidade de venda: pacote. Caixa sob consulta.",
+    baseBoxPieces: null,
+    baseBoxPriceCents: null,
     inventory: { quantity: 999 }
   } as unknown as Parameters<typeof productJsonLd>[0];
   const data = productJsonLd(product);
@@ -161,11 +164,11 @@ test("omits Product structured data for source products that require consultatio
 
   assert.equal(data, null);
   assert.match(description, /preço por pacote/i);
-  assert.match(description, /estoque e embalagem via WhatsApp/i);
+  assert.match(description, /embalagem e preço via WhatsApp/i);
   assert.doesNotMatch(description, /\.\.\.$/);
 });
 
-test("uses the exact package total and requires stock of a whole package", () => {
+test("uses exact package totals and permits purchase without managed stock", () => {
   const product = {
     ...sampleProduct,
     name: "Batom Ruby Rose",
@@ -177,12 +180,12 @@ test("uses the exact package total and requires stock of a whole package", () =>
   const data = productJsonLd(product);
   assert.ok(data);
   assert.equal(data.offers.price, "10.00");
-  assert.equal(data.offers.availability, "https://schema.org/OutOfStock");
+  assert.equal(data.offers.availability, "https://schema.org/InStock");
   assert.ok(data.additionalProperty.some((entry) => entry.name === "Unidades por embalagem" && entry.value === "3"));
-  assert.match(productMetaDescription(product), /R\$\s*10,00 por embalagem, sem embalagem completa em estoque/i);
+  assert.match(productMetaDescription(product), /R\$\s*10,00 por embalagem.*disponível para pedido/i);
   const available = { ...product, inventory: { quantity: 3 } };
   assert.equal(productJsonLd(available)?.offers.availability, "https://schema.org/InStock");
-  assert.match(productMetaDescription(available), /R\$\s*10,00 por embalagem \(aprox\. R\$\s*3,33\/un\.\), em estoque/i);
+  assert.match(productMetaDescription(available), /R\$\s*10,00 por embalagem \(aprox\. R\$\s*3,33\/un\.\), disponível para pedido/i);
 });
 
 test("omits Product structured data when the package cannot support an offer", () => {

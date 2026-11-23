@@ -43,7 +43,7 @@ export function CartCompletionRecommendations({
     const nextQuantity = addWholesalePackageQuantity(
       existing?.quantity || 0,
       recommendation.packagePieces,
-      recommendation.stockQuantity
+      recommendation.quantityLimit
     );
     if (nextQuantity <= 0 || nextQuantity === existing?.quantity) return;
     if (existing) existing.quantity = nextQuantity;
@@ -78,7 +78,7 @@ export function CartCompletionRecommendations({
                 <Link href={`/produto/${recommendation.slug}`}>
                   <strong>{recommendation.name}</strong>
                 </Link>
-                <small>{recommendation.brandName} / Em estoque</small>
+                <small>{recommendation.brandName} / Disponível</small>
                 <small>Embalagem fechada com {recommendation.packagePieces} {recommendation.packagePieces === 1 ? "unidade" : "unidades"}</small>
                 <div className="completion-price">
                   <b>{money(recommendation.packagePriceCents)} por embalagem</b>

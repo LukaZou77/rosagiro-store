@@ -19,7 +19,7 @@ import { getCategories, getProduct, getProductCanonicalSlug, getRecommendationPr
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
 import { productDetailGalleryState, productDetailPurchaseNotice, productDetailServiceCards } from "@/lib/product-detail-standard";
-import { productQuantity, productStockLabel, productStockTone } from "@/lib/product-conversion";
+import { productOrderQuantityLimit, productStockLabel, productStockTone } from "@/lib/product-conversion";
 import { orderProductDetailImages } from "@/lib/product-package-images";
 import {
   productCommercialSummary,
@@ -30,7 +30,7 @@ import {
 } from "@/lib/product-wholesale";
 import { breadcrumbJsonLd, noIndexMetadata, productJsonLd, productMetaDescription, storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
-import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
+import { isProductStockConsultationRequired, isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { getStoreProfile, storeTrustSignals } from "@/lib/store-profile";
 import { buildProductWhatsAppHref } from "@/lib/whatsapp";
 import { wholesaleReferenceUnitPriceCents } from "@/lib/wholesale-order";
@@ -111,9 +111,8 @@ export default async function ProductPage({ params }: PageProps) {
   if (!product || !product.active) notFound();
   const canonicalSlug = await getProductCanonicalSlug(product);
 
-  const quantity = productQuantity(product);
-  const consultationOnly = isSourceCatalogConsultationProduct(product);
-  const available = !consultationOnly && quantity > 0;
+  const quantity = productOrderQuantityLimit(product);
+  const consultationOnly = isProductStockConsultationRequired(product);
   const stockLabel = productStockLabel(product);
   const stockTone = productStockTone(product);
   const activeSkus = product.skus.filter((sku) => sku.active).sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
@@ -126,13 +125,14 @@ export default async function ProductPage({ params }: PageProps) {
   const wholesaleLines = productWholesaleLines(product);
   const packagePieces = productWholesalePackagePieces(product);
   const packagePriceCents = productWholesalePackagePriceCents(product);
+  const available = Boolean(!consultationOnly && packagePieces && packagePriceCents && quantity >= packagePieces);
   const purchaseNotice = productDetailPurchaseNotice({ consultationOnly, packagePieces, packagePriceCents });
-  const packageOrderable = Boolean(!consultationOnly && packagePieces && quantity >= packagePieces && packagePriceCents);
+  const packageOrderable = available;
   const displayPrice = !consultationOnly && packagePieces && packagePriceCents
     ? wholesaleReferenceUnitPriceCents(packagePriceCents, packagePieces)
     : product.priceCents;
   const showBrand = shouldDisplayProductBrand(product.brand.name);
-  const priceLabel = consultationOnly
+  const priceLabel = isSourceCatalogConsultationProduct(product)
     ? sourceCatalogPriceLabel(product.wholesalePackage)
     : siteConfig.productConversion.priceLabel;
   const editorialDescription = productEditorialDescription(product.descriptionPt);
@@ -219,7 +219,7 @@ export default async function ProductPage({ params }: PageProps) {
                   }}
                   slug={product.slug}
                   quantity={packagePieces}
-                  stockQuantity={quantity}
+                  quantityLimit={quantity}
                   label={`Adicionar 1 embalagem (${packagePieces} un.)`}
                   disabled={!available}
                   wide

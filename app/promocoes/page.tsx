@@ -7,7 +7,7 @@ import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { getCategories, getPromotionCollections } from "@/lib/catalog";
 import { customerDisplayText } from "@/lib/display-text";
 import { money } from "@/lib/money";
-import { productQuantity, productStockLabel } from "@/lib/product-conversion";
+import { productShortStockLabel, productStockLabel } from "@/lib/product-conversion";
 import { storefrontMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile } from "@/lib/store-profile";
@@ -15,7 +15,7 @@ import { buildGeneralWhatsAppHref } from "@/lib/whatsapp";
 
 export const metadata: Metadata = storefrontMetadata({
   title: "Destaques",
-  description: "Produtos em destaque, itens de reposição e opções em estoque para compras de beleza no atacado.",
+  description: "Produtos em destaque, itens de reposição e opções para compras de beleza no atacado.",
   path: "/promocoes"
 });
 
@@ -31,7 +31,6 @@ export default async function PromotionsPage() {
   const promo = siteConfig.promotionsPage;
   const whatsappHref = buildGeneralWhatsAppHref("destaques", storeProfile.whatsapp);
   const heroProduct = hotProducts[0] || lowPriceProducts[0] || stockReadyProducts[0] || products[0];
-  const heroAvailable = heroProduct ? productQuantity(heroProduct) > 0 : false;
   const featuredProducts = [...new Map([...hotProducts, ...stockReadyProducts, ...lowPriceProducts].map((product) => [product.slug, product])).values()].slice(0, 8);
 
   return (
@@ -72,7 +71,7 @@ export default async function PromotionsPage() {
               <strong>{heroProduct.name}</strong>
               <p>{heroProduct.subcategory}</p>
               <small className="promo-feature-stock">
-                {heroAvailable ? "Em estoque" : "Disponibilidade sob consulta"}
+                {productStockLabel(heroProduct)}
               </small>
               <div className="price-line compact">
                 <strong>{displayPriceLabel(heroProduct)}</strong>
@@ -92,7 +91,7 @@ export default async function PromotionsPage() {
           </div>
           <div>
             <dt>{readyStockCount}</dt>
-            <dd>produtos em estoque</dd>
+            <dd>produtos no catálogo</dd>
           </div>
         </dl>
       </section>
@@ -154,7 +153,7 @@ export default async function PromotionsPage() {
               ))
             ) : (
               <div className="empty-state">
-                <p>Nenhum produto em estoque para listar.</p>
+                <p>Nenhum produto para listar.</p>
               </div>
             )}
           </div>
@@ -181,7 +180,7 @@ export default async function PromotionsPage() {
                     <strong>{product.name}</strong>
                     <small>{customerDisplayText(product.badges[0] || product.category.label)} / {productStockLabel(product)}</small>
                   </span>
-                  <b>{productQuantity(product) > 0 ? "Em estoque" : "Consultar"}</b>
+                  <b>{productShortStockLabel(product)}</b>
                 </Link>
               ))
             ) : (

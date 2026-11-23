@@ -89,7 +89,7 @@ export const siteConfig = {
     categoriesTitle: "Entre rápido na prateleira certa",
     brandsEyebrow: "Multimarcas",
     brandsTitle: "Marcas para combinar em kits, vitrines e reposições.",
-    featuredEyebrow: "Em estoque",
+    featuredEyebrow: "No catálogo",
     featuredTitle: "Produtos com boa saída para testar pedidos"
   },
   homePromotions: {
@@ -145,12 +145,12 @@ export const siteConfig = {
     dealShelfBody: "Seleção de itens para reposição, giro de prateleira e composição de pedido no atacado.",
     emptyDealTitle: "Nenhum destaque ativo no momento.",
     emptyDealBody: "Novos produtos entram aqui quando forem selecionados para reposição ou giro de prateleira.",
-    emptyStockTitle: "Nenhum produto em estoque.",
-    emptyStockBody: "Assim que o estoque for atualizado, os itens de reposição voltam para esta prateleira.",
+    emptyStockTitle: "Nenhum produto nesta seleção.",
+    emptyStockBody: "Novos itens de reposição aparecem aqui quando forem publicados no catálogo.",
     lowPriceTitle: "Menor preço para completar pedido",
     hotShelfTitle: "Mais procurados para revenda",
-    stockShelfTitle: "Em estoque para reposição",
-    shelfNote: "Os destaques usam campos atuais do produto: tags, estoque, marca, categoria e organização da vitrine.",
+    stockShelfTitle: "Opções para reposição",
+    shelfNote: "Os destaques usam campos atuais do produto: tags, marca, categoria e organização da vitrine.",
     signals: [
       `Pedido mínimo ${wholesaleMinimumOrderShortLabel}`,
       "Produtos selecionados para reposição",

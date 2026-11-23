@@ -2,7 +2,7 @@ import {
   productWholesaleLineTotalCents,
   productWholesalePackagePieces,
   productWholesalePackagePriceCents,
-  productWholesaleStockQuantity
+  productWholesaleOrderQuantityLimit
 } from "@/lib/product-wholesale";
 import { siteConfig } from "@/lib/site-config";
 
@@ -38,7 +38,7 @@ export type CartCompletionRecommendation = {
   image: string;
   priceCents: number;
   packagePriceCents: number;
-  stockQuantity: number;
+  quantityLimit: number;
   packagePieces: number;
   reason: string;
 };
@@ -56,7 +56,7 @@ function recommendationReason(product: CartCompletionProduct, packagePrice: numb
   if (remainingCents > 0 && packagePrice <= remainingCents) return "Ajuda a fechar o mínimo";
   if (preferredCategories.has(product.category.slug)) return "Combina com sua lista";
   if (/mais vendido|favorito|destaque|novo/i.test(product.badges.join(" "))) return "Boa saída para reposição";
-  return "Em estoque para adicionar";
+  return "Disponível para adicionar";
 }
 
 export function getCartCompletionRecommendations(
@@ -91,8 +91,8 @@ export function getCartCompletionRecommendations(
       if (!product.active || product.slug === options.excludeSlug || cartQuantityBySlug.has(product.slug)) return [];
       const packagePieces = productWholesalePackagePieces(product);
       const packagePrice = productWholesalePackagePriceCents(product);
-      const stock = productWholesaleStockQuantity(product);
-      if (!packagePieces || !packagePrice || stock < packagePieces) return [];
+      const quantityLimit = productWholesaleOrderQuantityLimit(product);
+      if (!packagePieces || !packagePrice || quantityLimit < packagePieces) return [];
 
       const sameCategory = preferredCategories.has(product.category.slug);
       const badgeBoost = /mais vendido|favorito|destaque|novo/i.test(product.badges.join(" ")) ? 1 : 0;
@@ -103,27 +103,27 @@ export function getCartCompletionRecommendations(
         nearGap +
         (sameCategory ? 32 : 0) +
         (badgeBoost ? 18 : 0) +
-        Math.min(stock, 18) +
+        Math.min(quantityLimit, 18) +
         Math.min(product.reviewCount || 0, 20) / 4;
 
       return [{
         product,
         score,
-        stock,
+        quantityLimit,
         packagePieces,
         packagePrice
       }];
     })
     .sort((a, b) => b.score - a.score || a.packagePrice - b.packagePrice || a.product.name.localeCompare(b.product.name))
     .slice(0, limit)
-    .map(({ product, stock, packagePieces, packagePrice }) => ({
+    .map(({ product, quantityLimit, packagePieces, packagePrice }) => ({
       slug: product.slug,
       name: product.name,
       brandName: product.brand.name,
       image: product.image,
       priceCents: product.priceCents,
       packagePriceCents: packagePrice,
-      stockQuantity: stock,
+      quantityLimit,
       packagePieces,
       reason: recommendationReason(product, packagePrice, remainingCents, preferredCategories)
     }));

@@ -156,9 +156,9 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
           lines.map((line) => {
             const packagePieces = line.packagePieces ?? 0;
             const adjustedQuantity = line.active && line.packagePriceCents
-              ? roundUpToWholesalePackage(line.requestedQuantity, packagePieces, line.stockQuantity)
+              ? roundUpToWholesalePackage(line.requestedQuantity, packagePieces, line.quantityLimit)
               : 0;
-            const nextQuantity = addWholesalePackageQuantity(line.requestedQuantity, packagePieces, line.stockQuantity);
+            const nextQuantity = addWholesalePackageQuantity(line.requestedQuantity, packagePieces, line.quantityLimit);
             const canAdjust = (!line.available || !line.packageValid) &&
               adjustedQuantity > 0 && adjustedQuantity !== line.requestedQuantity;
 

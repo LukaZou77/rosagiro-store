@@ -248,9 +248,9 @@ export function QuickPurchaseDrawer() {
                   {summary.lines.map((line) => {
                     const packagePieces = line.packagePieces || 1;
                     const adjustedQuantity = line.active && line.packagePriceCents && (!line.packageValid || !line.available)
-                      ? roundUpToWholesalePackage(line.requestedQuantity, packagePieces, line.stockQuantity)
+                      ? roundUpToWholesalePackage(line.requestedQuantity, packagePieces, line.quantityLimit)
                       : 0;
-                    const nextQuantity = addWholesalePackageQuantity(line.requestedQuantity, packagePieces, line.stockQuantity);
+                    const nextQuantity = addWholesalePackageQuantity(line.requestedQuantity, packagePieces, line.quantityLimit);
 
                     return (
                       <article className={line.available ? "quick-line" : "quick-line muted"} key={cartLineKey(line)}>

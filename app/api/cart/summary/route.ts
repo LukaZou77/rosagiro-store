@@ -1,3 +1,4 @@
+import { INVENTORY_MANAGEMENT_ENABLED } from "@/lib/inventory-policy";
 import { NextResponse } from "next/server";
 import { getCartCompletionRecommendations } from "@/lib/cart-completion";
 import type { CartSummary } from "@/lib/cart-summary";
@@ -6,10 +7,11 @@ import { discountCents, totalCents } from "@/lib/money";
 import {
   productWholesalePackagePieces,
   productWholesalePackagePriceCents,
+  productWholesaleOrderQuantityLimit,
   productWholesaleStockQuantity
 } from "@/lib/product-wholesale";
 import { siteConfig } from "@/lib/site-config";
-import { isSourceCatalogConsultationProduct } from "@/lib/source-catalog-product";
+import { isProductStockConsultationRequired } from "@/lib/source-catalog-product";
 import {
   MAX_WHOLESALE_ORDER_TOTAL_CENTS,
   normalizeWholesaleLineQuantity,
@@ -81,7 +83,9 @@ export async function POST(request: Request) {
           where: {
             active: true,
             deletedAt: null,
-            OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
+            OR: INVENTORY_MANAGEMENT_ENABLED
+              ? [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
+              : undefined
           },
           select: recommendationProductSelect,
           orderBy: { featuredRank: "asc" },
@@ -93,15 +97,16 @@ export async function POST(request: Request) {
     const lines = requestedItems.map((item) => {
       const product = productMap.get(item.slug);
       const stockQuantity = product ? productWholesaleStockQuantity(product) : 0;
+      const quantityLimit = product ? productWholesaleOrderQuantityLimit(product) : 0;
       const packagePieces = product ? productWholesalePackagePieces(product) : null;
       const packagePriceCents = product ? productWholesalePackagePriceCents(product) : null;
       const packageValid = Boolean(packagePieces && item.quantity % packagePieces === 0);
       const packageCount = packagePieces && packageValid ? item.quantity / packagePieces : 0;
       const active = Boolean(product?.active);
       const available = Boolean(active && packagePieces && packagePriceCents &&
-        stockQuantity >= packagePieces && stockQuantity >= item.quantity);
+        quantityLimit >= packagePieces && quantityLimit >= item.quantity);
       const acceptedQuantity = product ? item.quantity : 0;
-      const priceCents = product && !isSourceCatalogConsultationProduct(product) && packagePieces && packagePriceCents
+      const priceCents = product && packagePieces && packagePriceCents
         ? wholesaleReferenceUnitPriceCents(packagePriceCents, packagePieces)
         : product?.priceCents || 0;
       const lineTotalCents = available && packagePriceCents ? packageCount * packagePriceCents : 0;
@@ -109,13 +114,13 @@ export async function POST(request: Request) {
         ? "Produto não encontrado."
         : !active
           ? "Produto indisponível."
-          : isSourceCatalogConsultationProduct(product)
+          : isProductStockConsultationRequired(product)
             ? "Estoque, embalagem e preço sob consulta com o atendimento."
             : !packagePieces || !packagePriceCents
               ? "Embalagem ou preço sob consulta. Fale com o atendimento."
-              : stockQuantity < packagePieces
+              : quantityLimit < packagePieces
                 ? "Sem embalagens completas em estoque."
-                : item.quantity > stockQuantity
+                : item.quantity > quantityLimit
                   ? "Não há embalagens completas suficientes para esta quantidade."
                   : !packageValid
                     ? `Este produto é vendido somente em embalagem fechada com ${packagePieces} unidades.`
@@ -130,6 +135,7 @@ export async function POST(request: Request) {
         requestedQuantity: item.quantity,
         quantity: acceptedQuantity,
         stockQuantity,
+        quantityLimit,
         packagePieces,
         packagePriceCents,
         packageValid,

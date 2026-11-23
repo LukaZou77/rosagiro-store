@@ -9,7 +9,7 @@ import { addWholesalePackageQuantity } from "@/lib/wholesale-order";
 export function AddToCartButton({
   slug,
   quantity,
-  stockQuantity,
+  quantityLimit,
   label = "Adicionar",
   confirmationLabel = "Adicionado",
   unavailableLabel = "Sem estoque",
@@ -19,7 +19,7 @@ export function AddToCartButton({
 }: {
   slug: string;
   quantity: number;
-  stockQuantity: number;
+  quantityLimit: number;
   label?: string;
   confirmationLabel?: string;
   unavailableLabel?: string;
@@ -41,7 +41,7 @@ export function AddToCartButton({
     const cart = readCart();
     const existing = cart.find((item) => sameCartLine(item, slug));
     const currentQuantity = existing?.quantity ?? 0;
-    const nextQuantity = addWholesalePackageQuantity(currentQuantity, quantity, stockQuantity);
+    const nextQuantity = addWholesalePackageQuantity(currentQuantity, quantity, quantityLimit);
     if (nextQuantity > currentQuantity) {
       if (existing) existing.quantity = nextQuantity;
       else cart.push({ slug, quantity: nextQuantity });

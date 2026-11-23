@@ -1,3 +1,4 @@
+import { INVENTORY_MANAGEMENT_ENABLED } from "@/lib/inventory-policy";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -55,6 +56,7 @@ function safeSort(value: string) {
 }
 
 function safeStock(value: string) {
+  if (!INVENTORY_MANAGEMENT_ENABLED) return "all";
   return stockLabels[value] ? value : "all";
 }
 
@@ -146,6 +148,7 @@ function FilterFields({
           ))}
         </select>
       </label>
+      {INVENTORY_MANAGEMENT_ENABLED ? (
       <label>
         Disponibilidade
         <select name="stock" defaultValue={stockFilter}>
@@ -154,6 +157,7 @@ function FilterFields({
           <option value="out">Sem estoque</option>
         </select>
       </label>
+      ) : null}
       <label>
         Ordenar
         <select name="sort" defaultValue={sort}>
@@ -305,16 +309,18 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         <div className="catalog-summary-strip" aria-label="Resumo de compra da categoria">
           <span>
             <strong>{readyCount}</strong>
-            Em estoque
+            {INVENTORY_MANAGEMENT_ENABLED ? "Em estoque" : "Produtos no catálogo"}
           </span>
           <span>
             <strong>{brandOptions.length}</strong>
             Marcas
           </span>
+          {INVENTORY_MANAGEMENT_ENABLED ? (
           <span>
             <strong>{outOfStockCount}</strong>
             Sem estoque
           </span>
+          ) : null}
           <span>
             <strong>{siteConfig.productConversion.cardMinimumHint}</strong>
             Compra mínima

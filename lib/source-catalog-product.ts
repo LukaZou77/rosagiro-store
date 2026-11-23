@@ -1,3 +1,5 @@
+import { INVENTORY_MANAGEMENT_ENABLED } from "./inventory-policy";
+
 export const SOURCE_CATALOG_CONSULTATION_STATUS = "Sob consulta";
 
 export type SourceCatalogMarker = {
@@ -11,6 +13,13 @@ const SALE_UNIT_PATTERN = /^Unidade de venda: (unidade|pacote|kit|conjunto|carte
 
 export function isSourceCatalogConsultationProduct(product: SourceCatalogMarker) {
   return product.stockStatus === SOURCE_CATALOG_CONSULTATION_STATUS;
+}
+
+export function isProductStockConsultationRequired(
+  product: SourceCatalogMarker,
+  inventoryManaged: boolean = INVENTORY_MANAGEMENT_ENABLED
+) {
+  return inventoryManaged && isSourceCatalogConsultationProduct(product);
 }
 
 export function sourceCatalogVerifiedSaleUnit(wholesalePackage?: string | null): VerifiedSaleUnit | null {

@@ -1,3 +1,5 @@
+import { INVENTORY_MANAGEMENT_ENABLED } from "./inventory-policy";
+import { MAX_WHOLESALE_LINE_QUANTITY } from "./wholesale-order";
 import {
   formatPlainBrl,
   formatWholesalePackage,
@@ -115,6 +117,14 @@ export function productWholesaleStockQuantity(product: WholesaleStockInput) {
     (total, sku) => (sku.active ? total + Math.max(0, sku.quantity) : total),
     0
   );
+}
+
+// This is an ordering limit, not a claim about physical inventory.
+export function productWholesaleOrderQuantityLimit(
+  product: WholesaleStockInput,
+  inventoryManaged: boolean = INVENTORY_MANAGEMENT_ENABLED
+) {
+  return inventoryManaged ? productWholesaleStockQuantity(product) : MAX_WHOLESALE_LINE_QUANTITY;
 }
 
 export function wholesalePackageFromLegacyDescription(description: string) {

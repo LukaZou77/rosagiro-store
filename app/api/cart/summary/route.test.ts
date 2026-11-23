@@ -15,6 +15,7 @@ type FindManyArgs = {
 
 const testRoot = resolve(import.meta.dirname, "../../../..");
 const moduleUrl = (relativePath: string) => pathToFileURL(resolve(testRoot, relativePath)).href;
+const ORDER_QUANTITY_LIMIT = 2_147_483_647;
 
 let cartProducts: ProductFixture[] = [];
 let recommendationProducts: ProductFixture[] = [];
@@ -117,7 +118,7 @@ test("starts cart validation and recommendation queries before either query sett
   assert.deepEqual([...started].sort(), ["cart", "recommendations"]);
 });
 
-test("keeps legacy package parsing and active-SKU stock fallback with the reduced projection", async () => {
+test("keeps legacy package parsing and reports raw stock separately from the order quantity limit", async () => {
   cartProducts = [
     productFixture({
       slug: "legado-sku",
@@ -144,8 +145,88 @@ test("keeps legacy package parsing and active-SKU stock fallback with the reduce
   assert.equal(body.lines[0].packagePriceCents, 37_350);
   assert.equal(body.lines[0].priceCents, 1_038);
   assert.equal(body.lines[0].stockQuantity, 36);
+  assert.equal(body.lines[0].quantityLimit, ORDER_QUANTITY_LIMIT);
   assert.equal(body.lines[0].available, true);
   assert.equal(body.lines[0].lineTotalCents, 37_350);
+});
+
+test("allows zero-stock and source-consultation products with verified package terms", async () => {
+  cartProducts = [
+    productFixture({
+      slug: "consulta-com-oferta",
+      name: "Produto Sob Consulta com Oferta",
+      priceCents: 720,
+      baseBoxPieces: 24,
+      baseBoxPriceCents: 14_400,
+      wholesalePackage: "Unidade de venda: pacote. Caixa: 24 unidades; preço da caixa: R$ 144,00.",
+      stockStatus: "Sob consulta",
+      inventory: { quantity: 0 }
+    })
+  ];
+
+  const response = await POST(cartRequest([{ slug: "consulta-com-oferta", quantity: 24 }]));
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.lines[0].available, true);
+  assert.equal(body.lines[0].stockQuantity, 0);
+  assert.equal(body.lines[0].quantityLimit, ORDER_QUANTITY_LIMIT);
+  assert.equal(body.lines[0].packagePieces, 24);
+  assert.equal(body.lines[0].packagePriceCents, 14_400);
+  assert.equal(body.lines[0].priceCents, 600);
+  assert.equal(body.lines[0].lineTotalCents, 14_400);
+  assert.equal(body.lines[0].warning, "");
+  assert.equal(body.packageReady, true);
+});
+
+test("keeps missing, inactive and incomplete package offers out of checkout", async () => {
+  cartProducts = [
+    productFixture({ slug: "inativo", active: false }),
+    productFixture({
+      slug: "consulta-sem-preco",
+      priceCents: 720,
+      baseBoxPieces: 24,
+      baseBoxPriceCents: null,
+      wholesalePackage: "Unidade de venda: pacote. Caixa: 24 unidades; preço da caixa sob consulta.",
+      stockStatus: "Sob consulta",
+      inventory: { quantity: 0 }
+    })
+  ];
+
+  const response = await POST(cartRequest([
+    { slug: "apagado-ou-ausente", quantity: 4 },
+    { slug: "inativo", quantity: 4 },
+    { slug: "consulta-sem-preco", quantity: 24 }
+  ]));
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(body.lines.map((line: { available: boolean; warning: string }) => [line.available, line.warning]), [
+    [false, "Produto não encontrado."],
+    [false, "Produto indisponível."],
+    [false, "Embalagem ou preço sob consulta. Fale com o atendimento."]
+  ]);
+  assert.equal(body.lines[2].packagePriceCents, null);
+  assert.equal(body.subtotalCents, 0);
+  assert.equal(body.packageReady, false);
+});
+
+test("keeps the total cap even when inventory does not cap order quantity", async () => {
+  cartProducts = [productFixture({
+    baseBoxPieces: 1,
+    baseBoxPriceCents: 2_147_483_647,
+    wholesalePackage: null,
+    inventory: { quantity: 0 }
+  })];
+
+  const response = await POST(cartRequest([{ slug: "produto-teste", quantity: 2 }]));
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.lines[0].available, true);
+  assert.equal(body.lines[0].lineTotalCents, 4_294_967_294);
+  assert.match(body.orderLimitNotice, /ultrapassa o limite aceito/i);
+  assert.equal(body.packageReady, false);
 });
 
 test("preserves the complete cart response while selecting only fields used by wholesale and recommendation logic", async () => {
@@ -215,6 +296,7 @@ test("preserves the complete cart response while selecting only fields used by w
         requestedQuantity: 8,
         quantity: 8,
         stockQuantity: 100,
+        quantityLimit: ORDER_QUANTITY_LIMIT,
         packagePieces: 4,
         packagePriceCents: 1_000,
         packageValid: true,
@@ -233,14 +315,15 @@ test("preserves the complete cart response while selecting only fields used by w
         requestedQuantity: 4,
         quantity: 4,
         stockQuantity: 0,
+        quantityLimit: ORDER_QUANTITY_LIMIT,
         packagePieces: 4,
         packagePriceCents: 1_000,
         packageValid: true,
         packageCount: 1,
         active: true,
-        available: false,
-        warning: "Sem embalagens completas em estoque.",
-        lineTotalCents: 0
+        available: true,
+        warning: "",
+        lineTotalCents: 1_000
       },
       {
         slug: "inativo",
@@ -251,6 +334,7 @@ test("preserves the complete cart response while selecting only fields used by w
         requestedQuantity: 4,
         quantity: 4,
         stockQuantity: 100,
+        quantityLimit: ORDER_QUANTITY_LIMIT,
         packagePieces: 4,
         packagePriceCents: 1_000,
         packageValid: true,
@@ -269,13 +353,14 @@ test("preserves the complete cart response while selecting only fields used by w
         requestedQuantity: 10,
         quantity: 10,
         stockQuantity: 0,
+        quantityLimit: ORDER_QUANTITY_LIMIT,
         packagePieces: 10,
         packagePriceCents: null,
         packageValid: true,
         packageCount: 1,
         active: true,
         available: false,
-        warning: "Estoque, embalagem e preço sob consulta com o atendimento.",
+        warning: "Embalagem ou preço sob consulta. Fale com o atendimento.",
         lineTotalCents: 0
       },
       {
@@ -287,6 +372,7 @@ test("preserves the complete cart response while selecting only fields used by w
         requestedQuantity: 6,
         quantity: 6,
         stockQuantity: 100,
+        quantityLimit: ORDER_QUANTITY_LIMIT,
         packagePieces: 4,
         packagePriceCents: 1_000,
         packageValid: false,
@@ -297,11 +383,11 @@ test("preserves the complete cart response while selecting only fields used by w
         lineTotalCents: 0
       }
     ],
-    subtotalCents: 2_000,
+    subtotalCents: 3_000,
     discountCents: 0,
-    totalCents: 2_000,
+    totalCents: 3_000,
     minimumOrderCents: 50_000,
-    remainingToMinimumCents: 48_000,
+    remainingToMinimumCents: 47_000,
     minimumReached: false,
     packageReady: false,
     recommendations: [
@@ -312,7 +398,7 @@ test("preserves the complete cart response while selecting only fields used by w
         image: "/recomendacao-categoria.webp",
         priceCents: 200,
         packagePriceCents: 1_000,
-        stockQuantity: 40,
+        quantityLimit: ORDER_QUANTITY_LIMIT,
         packagePieces: 4,
         reason: "Ajuda a fechar o mínimo"
       },
@@ -323,7 +409,7 @@ test("preserves the complete cart response while selecting only fields used by w
         image: "/recomendacao-destaque.webp",
         priceCents: 100,
         packagePriceCents: 1_000,
-        stockQuantity: 40,
+        quantityLimit: ORDER_QUANTITY_LIMIT,
         packagePieces: 4,
         reason: "Ajuda a fechar o mínimo"
       }

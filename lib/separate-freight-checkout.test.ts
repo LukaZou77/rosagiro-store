@@ -382,12 +382,19 @@ test("createOrder rejects a quantity that is not a complete wholesale package", 
   assert.equal(orderCreateCalls, 0);
 });
 
-test("createOrder rejects insufficient stock", async () => {
-  products = [orderableProduct({ inventory: { quantity: 199 } })];
-
-  await assert.rejects(createOrderForPayload(checkoutPayload()), /não tem estoque suficiente/i);
-  assert.equal(orderCreateCalls, 0);
-});
+for (const state of [
+  { label: "zero stock consultation", stockStatus: "Sob consulta", inventory: { quantity: 0 } },
+  { label: "missing inventory", stockStatus: "Em estoque", inventory: null },
+  { label: "quantity below a complete package", stockStatus: "Em estoque", inventory: { quantity: 199 } }
+]) {
+  test(`createOrder accepts ${state.label} while inventory is not managed`, async () => {
+    products = [orderableProduct(state)];
+    const order = await createOrderForPayload(checkoutPayload());
+    assert.equal(order.totalCents, 50_000);
+    assert.equal(capturedOrderData?.subtotalCents, 50_000);
+    assert.equal(orderCreateCalls, 1);
+  });
+}
 
 test("PIX creates and redirects a new order using product total only", async () => {
   const order = await createOrderForPayload(checkoutPayload("PIX"));

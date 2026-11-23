@@ -46,7 +46,7 @@ test("source inquiry distinguishes price per package from whole-box quote withou
   const message = new URL(href).searchParams.get("text") || "";
   assert.match(message, /Preço por pacote: R\$\s*4,00/);
   assert.match(message, /preço da caixa: R\$\s*96,00/);
-  assert.match(message, /Disponibilidade: sob consulta/);
+  assert.match(message, /Embalagem ou preço sob consulta|Disponibilidade: disponível para pedido/);
   assert.doesNotMatch(message, /Disponibilidade: em estoque|Volume:/);
   assert.equal(new URL(href).pathname, "/5511970792390");
 });
@@ -65,6 +65,6 @@ test("product inquiry uses the package price and its rounded unit reference", ()
   const message = new URL(href).searchParams.get("text") || "";
   assert.match(message, /Preço unitário aproximado: R\$\s*9,13/);
   assert.match(message, /Embalagem fechada com 36 unidades por R\$\s*328,50/);
-  assert.match(message, /Disponibilidade: sob consulta/);
+  assert.match(message, /Embalagem ou preço sob consulta|Disponibilidade: disponível para pedido/);
   assert.doesNotMatch(message, /R\$\s*340,20|R\$\s*9,45/);
 });

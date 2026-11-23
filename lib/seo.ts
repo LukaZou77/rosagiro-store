@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import type { CatalogProduct } from "@/lib/catalog";
 import { money } from "@/lib/money";
-import { productQuantity } from "@/lib/product-conversion";
+import { productOrderQuantityLimit } from "@/lib/product-conversion";
 import { productEditorialDescription, productWholesalePackagePieces, productWholesalePackagePriceCents } from "@/lib/product-wholesale";
 import { productDisplayName, shouldDisplayProductBrand } from "@/lib/display-text";
-import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
+import { isProductStockConsultationRequired, isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { siteConfig, siteUrl } from "@/lib/site-config";
 import type { StoreProfileView } from "@/lib/store-profile-public";
 import { storeSocialLinks } from "@/lib/store-profile-public";
@@ -313,12 +313,12 @@ export function guideArticleJsonLd(article: GuideArticleJsonLdInput) {
 
 export function productJsonLd(product: CatalogProduct, canonicalSlug = product.slug) {
   const url = siteUrl(`/produto/${canonicalSlug}`);
-  const consultationOnly = isSourceCatalogConsultationProduct(product);
+  const consultationOnly = isProductStockConsultationRequired(product);
   const packagePieces = productWholesalePackagePieces(product);
   const packagePrice = productWholesalePackagePriceCents(product);
-  if (consultationOnly || !packagePieces || !packagePrice) return null;
+  if (!product.active || consultationOnly || !packagePieces || !packagePrice) return null;
 
-  const inStock = productQuantity(product) >= packagePieces;
+  const inStock = productOrderQuantityLimit(product) >= packagePieces;
   const images = Array.from(
     new Set(
       [product.image, ...product.gallery, ...product.skus.filter((sku) => sku.active).map((sku) => sku.image)]
@@ -366,7 +366,7 @@ export function productJsonLd(product: CatalogProduct, canonicalSlug = product.s
 }
 
 export function productMetaDescription(product: CatalogProduct) {
-  const consultationOnly = isSourceCatalogConsultationProduct(product);
+  const consultationOnly = isProductStockConsultationRequired(product);
   const displayName = productDisplayName(product.name, product.brand.name);
   const nameIncludesBrand = displayName.toLocaleLowerCase("pt-BR").includes(product.brand.name.toLocaleLowerCase("pt-BR"));
   const productName = nameIncludesBrand || !shouldDisplayProductBrand(product.brand.name) ? displayName : `${displayName} da ${product.brand.name}`;
@@ -381,9 +381,13 @@ export function productMetaDescription(product: CatalogProduct) {
   const packagePieces = productWholesalePackagePieces(product);
   const packagePrice = productWholesalePackagePriceCents(product);
   if (!packagePieces || !packagePrice) {
+    if (isSourceCatalogConsultationProduct(product)) {
+      const priceLabel = sourceCatalogPriceLabel(product.wholesalePackage).toLocaleLowerCase("pt-BR");
+      return compactText(`${productName} no atacado. ${priceLabel}: ${money(product.priceCents)}; embalagem e preço via WhatsApp; mínimo ${siteConfig.wholesale.minimumOrderLabel}.`, META_DESCRIPTION_MAX_LENGTH);
+    }
     return compactText(`${productName} no atacado. Embalagem e preço via WhatsApp. ${minimum}`, META_DESCRIPTION_MAX_LENGTH);
   }
-  const stock = productQuantity(product) >= packagePieces ? "em estoque" : "sem embalagem completa em estoque";
+  const stock = productOrderQuantityLimit(product) >= packagePieces ? "disponível para pedido" : "indisponível para pedido";
   const price = `${money(packagePrice)} por embalagem`;
   const reference = `aprox. ${money(wholesaleReferenceUnitPriceCents(packagePrice, packagePieces))}/un.`;
   const descriptionWithReference = `${productName} no atacado. ${price} (${reference}), ${stock}. ${minimum}`;

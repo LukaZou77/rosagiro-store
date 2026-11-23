@@ -25,9 +25,9 @@ import { recordCreatedOrderProductMetrics, recordPaidOrderProductMetrics } from 
 import {
   productWholesalePackagePieces,
   productWholesalePackagePriceCents,
-  productWholesaleStockQuantity
+  productWholesaleOrderQuantityLimit
 } from "@/lib/product-wholesale";
-import { isSourceCatalogConsultationProduct } from "@/lib/source-catalog-product";
+import { isProductStockConsultationRequired } from "@/lib/source-catalog-product";
 import { hasAcceptedSeparateFreight, separateFreightForOrder } from "@/lib/freight-policy";
 import { getPublicPixPaymentAccount, getStoreProfile } from "@/lib/store-profile";
 import { siteConfig } from "@/lib/site-config";
@@ -204,7 +204,7 @@ export async function createOrder(input: CheckoutInput, attempt: CheckoutAttempt
   const lines = input.items.map((item) => {
     const product = productBySlug.get(item.slug);
     if (!product) throw new OrderError("Um produto do carrinho não está mais disponível.");
-    if (isSourceCatalogConsultationProduct(product)) {
+    if (isProductStockConsultationRequired(product)) {
       throw new OrderError(`${product.name}: confirme estoque, preço e embalagem pelo WhatsApp antes de finalizar.`);
     }
     const packagePieces = productWholesalePackagePieces(product);
@@ -214,7 +214,7 @@ export async function createOrder(input: CheckoutInput, attempt: CheckoutAttempt
     if (!Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity % packagePieces !== 0) {
       throw new OrderError(`${product.name} é vendido em embalagem fechada com ${packagePieces} unidades.`);
     }
-    if (productWholesaleStockQuantity(product) < item.quantity) {
+    if (productWholesaleOrderQuantityLimit(product) < item.quantity) {
       throw new OrderError(`${product.name} não tem estoque suficiente de embalagens completas para esta quantidade.`);
     }
     const packagePriceCents = productWholesalePackagePriceCents(product);

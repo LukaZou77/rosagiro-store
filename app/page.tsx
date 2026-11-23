@@ -100,7 +100,7 @@ export default async function HomePage() {
         </div>
         <div className="hero-commerce-panel" aria-label="Produtos em destaque">
           <div className="panel-heading">
-            <p className="eyebrow">Em estoque</p>
+            <p className="eyebrow">No catálogo</p>
             <strong>Destaques e campeões de venda</strong>
           </div>
           {heroProduct ? (

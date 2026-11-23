@@ -1,3 +1,4 @@
+import { INVENTORY_MANAGEMENT_ENABLED } from "./inventory-policy";
 import "server-only";
 
 import { unstable_cache } from "next/cache";
@@ -114,19 +115,21 @@ function productWhere(options: ProductQueryOptions = {}): Prisma.ProductWhereInp
 
   return {
     deletedAt: null,
+    id: !INVENTORY_MANAGEMENT_ENABLED && stockFilter === "out" ? { in: [] } : undefined,
     active: activeOnly ? true : undefined,
     stockStatus:
-      stockFilter === "ready" || stockFilter === "out"
+      INVENTORY_MANAGEMENT_ENABLED && (stockFilter === "ready" || stockFilter === "out")
         ? { not: SOURCE_CATALOG_CONSULTATION_STATUS }
         : undefined,
     category: categorySlug && categorySlug !== "all" ? { slug: categorySlug } : undefined,
     brand: brandName && brandName !== "all" ? { name: brandName } : undefined,
-    inventory:
-      stockFilter === "ready"
+    inventory: INVENTORY_MANAGEMENT_ENABLED
+      ? stockFilter === "ready"
         ? { quantity: { gt: 0 } }
         : stockFilter === "out"
           ? { quantity: 0 }
-          : undefined,
+          : undefined
+      : undefined,
     OR: query
       ? [
           { name: { contains: query, mode: "insensitive" } },
@@ -385,8 +388,10 @@ const getRecommendationPoolCached = unstable_cache(async function getRecommendat
   const products = await prisma.product.findMany({
     where: {
       ...productWhere({ categorySlug }),
-      stockStatus: { not: SOURCE_CATALOG_CONSULTATION_STATUS },
-      OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
+      stockStatus: INVENTORY_MANAGEMENT_ENABLED ? { not: SOURCE_CATALOG_CONSULTATION_STATUS } : undefined,
+      OR: INVENTORY_MANAGEMENT_ENABLED
+      ? [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
+      : undefined
     },
     select: productCardSelect,
     orderBy: { featuredRank: "asc" },
@@ -413,8 +418,10 @@ export async function getRecommendationProducts(options: {
 export async function getPromotionCollections() {
   const stockWhere = {
     ...productWhere(),
-    stockStatus: { not: SOURCE_CATALOG_CONSULTATION_STATUS },
-    OR: [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
+    stockStatus: INVENTORY_MANAGEMENT_ENABLED ? { not: SOURCE_CATALOG_CONSULTATION_STATUS } : undefined,
+    OR: INVENTORY_MANAGEMENT_ENABLED
+      ? [{ inventory: { quantity: { gt: 0 } } }, { skus: { some: { active: true, quantity: { gt: 0 } } } }]
+      : undefined
   } satisfies Prisma.ProductWhereInput;
   const [readyStockCount, lowPriceProducts, stockReadyProducts, products] = await Promise.all([
     prisma.product.count({ where: stockWhere }),
@@ -438,7 +445,7 @@ export async function getPromotionCollections() {
     })
   ]);
   const displayProducts = products.map(withProductCardDisplayText);
-  const withStock = (product: CatalogCardProduct) => (product.inventory?.quantity || 0) > 0;
+  const withStock = (product: CatalogCardProduct) => !INVENTORY_MANAGEMENT_ENABLED || (product.inventory?.quantity || 0) > 0;
   const hotProducts = [...displayProducts]
     .filter(withStock)
     .sort((a, b) => {

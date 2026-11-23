@@ -1,13 +1,14 @@
+import { INVENTORY_MANAGEMENT_ENABLED } from "./inventory-policy";
 import { money } from "@/lib/money";
 import {
   productWholesalePackagePieces,
   productWholesalePackagePriceCents,
-  productWholesaleStockQuantity,
+  productWholesaleOrderQuantityLimit,
   productWholesaleWhatsAppLines,
   type WholesaleProductDetails
 } from "@/lib/product-wholesale";
 import { siteConfig, siteUrl } from "@/lib/site-config";
-import { isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
+import { isProductStockConsultationRequired, isSourceCatalogConsultationProduct, sourceCatalogPriceLabel } from "@/lib/source-catalog-product";
 import { wholesaleReferenceUnitPriceCents } from "@/lib/wholesale-order";
 
 type ProductContact = {
@@ -99,16 +100,16 @@ export function buildCatalogWhatsAppHref(categoryLabel: string, productCount: nu
 }
 
 export function buildProductWhatsAppHref(product: ProductContact, phone?: string | null) {
-  const consultationOnly = isSourceCatalogConsultationProduct(product);
+  const consultationOnly = isProductStockConsultationRequired(product);
   const packagePieces = consultationOnly ? null : productWholesalePackagePieces(product);
   const packagePriceCents = packagePieces ? productWholesalePackagePriceCents(product) : null;
   const stockQuantity = product.inventory || product.skus
-    ? productWholesaleStockQuantity(product)
+    ? productWholesaleOrderQuantityLimit(product)
     : null;
   const quantity = consultationOnly || (stockQuantity !== null && packagePieces && stockQuantity < packagePieces)
     ? 0
     : stockQuantity;
-  const priceLabel = consultationOnly ? sourceCatalogPriceLabel(product.wholesalePackage) : siteConfig.productConversion.priceLabel;
+  const priceLabel = isSourceCatalogConsultationProduct(product) ? sourceCatalogPriceLabel(product.wholesalePackage) : siteConfig.productConversion.priceLabel;
   const displayedUnitPrice = packagePieces && packagePriceCents
     ? wholesaleReferenceUnitPriceCents(packagePriceCents, packagePieces)
     : product.priceCents;
@@ -122,8 +123,10 @@ export function buildProductWhatsAppHref(product: ProductContact, phone?: string
       `Produto: ${product.name}`,
       `Marca: ${product.brand.name}`,
       `${priceLabel}: ${money(displayedUnitPrice)}`,
-      product.volume ? `${consultationOnly ? "Especificações" : "Volume"}: ${product.volume}` : "",
-      stockAvailabilityLabel(quantity),
+      product.volume ? `${isSourceCatalogConsultationProduct(product) ? "Especificações" : "Volume"}: ${product.volume}` : "",
+      INVENTORY_MANAGEMENT_ENABLED
+        ? stockAvailabilityLabel(quantity)
+        : packagePieces && packagePriceCents ? "Disponibilidade: disponível para pedido" : "Embalagem ou preço sob consulta",
       ...wholesaleLines,
       `Link: ${siteUrl(`/produto/${product.slug}`)}`,
       minimumOrderLine(),

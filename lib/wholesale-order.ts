@@ -1,4 +1,4 @@
-// OrderItem.quantity is a PostgreSQL integer. Stock limits purchase quantity.
+// OrderItem.quantity is a PostgreSQL integer; inventory checks are optional.
 export const MAX_WHOLESALE_LINE_QUANTITY = 2_147_483_647;
 export const MAX_WHOLESALE_ORDER_TOTAL_CENTS = 2_147_483_647;
 export const wholesaleOrderTotalLimitNotice =
