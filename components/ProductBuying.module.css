@@ -47,10 +47,13 @@
 }
 
 .cardUnitPrice strong {
+  min-width: 0;
+  max-width: 100%;
   color: var(--promo-deep);
   font-size: 1.35rem;
   font-weight: 950;
   line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
 .cardUnitPrice span {
@@ -95,6 +98,10 @@
 }
 
 @media (max-width: 679px) {
+  .cardUnitPrice strong {
+    font-size: clamp(1rem, 4.4vw, 1.35rem);
+  }
+
   .packagePrice {
     padding: 10px;
   }

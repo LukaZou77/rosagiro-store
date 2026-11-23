@@ -87,6 +87,18 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
   );
   const whatsappHref = useMemo(() => buildCartWhatsAppHref(whatsappItems, subtotal, whatsappPhone), [whatsappItems, subtotal, whatsappPhone]);
   const hasValidLines = whatsappItems.length > 0;
+  const checkoutDisabled = loading || Boolean(error) || !hasValidLines || !minimumReached || !packageReady;
+  const checkoutLabel = loading
+    ? "Conferindo pedido..."
+    : error
+      ? "Resumo indisponível"
+      : summary?.orderLimitNotice
+        ? "Reduza a quantidade"
+        : !packageReady
+          ? "Ajuste o pedido"
+          : minimumReached
+            ? "Continuar pedido"
+            : "Complete o pedido mínimo";
 
   function update(next: Array<{ slug: string; quantity: number }>) {
     writeCart(cleanCart(next));
@@ -232,6 +244,15 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
           <p>Você paga os produtos no site. O atendimento informa o frete e o prazo pelo WhatsApp; o frete é pago separadamente, após sua aprovação.</p>
           {summary?.orderLimitNotice ? <p role="status">{summary.orderLimitNotice}</p> : null}
         </div>
+        {hasValidLines ? (
+          <CustomerCheckoutButton className="button primary wide" disabled={checkoutDisabled}>
+            {checkoutLabel}
+          </CustomerCheckoutButton>
+        ) : (
+          <Link className="button primary wide disabled" href="/categoria/all">
+            Montar pedido
+          </Link>
+        )}
         <div className="delivery-note">
           <Link href="/entrega">Entrega, retirada e outras opções</Link>
         </div>
@@ -245,20 +266,23 @@ export function CartClient({ trustSignals }: { trustSignals: string[] }) {
           />
         ) : null}
         {hasValidLines ? (
-          <CustomerCheckoutButton className="button primary wide" disabled={!minimumReached || !packageReady}>
-            {summary?.orderLimitNotice ? "Reduza a quantidade" : !packageReady ? "Ajuste o pedido" : minimumReached ? "Continuar pedido" : "Complete o pedido mínimo"}
-          </CustomerCheckoutButton>
-        ) : (
-          <Link className="button primary wide disabled" href="/categoria/all">
-            Montar pedido
-          </Link>
-        )}
-        {hasValidLines ? (
           <WhatsAppLink href={whatsappHref} className="button secondary wide">
             {siteConfig.whatsapp.cartCta}
           </WhatsAppLink>
         ) : null}
       </aside>
+      {cart.length > 0 ? (
+        <div className="mobile-checkout-bar cart-checkout-bar" role="region" aria-label="Continuar pedido de atacado">
+          <div>
+            <span>Total sem frete</span>
+            <strong>{summary ? money(total) : "—"}</strong>
+            <small>Frete pago separadamente</small>
+          </div>
+          <CustomerCheckoutButton className="button primary" disabled={checkoutDisabled}>
+            {checkoutLabel}
+          </CustomerCheckoutButton>
+        </div>
+      ) : null}
     </section>
   );
 }

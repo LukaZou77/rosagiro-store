@@ -1362,22 +1362,6 @@ export function CheckoutClient({
         </fieldset>
       </form>
       <aside className="summary-panel">
-        <MinimumOrderNotice subtotalCents={subtotal} compact />
-        <StoreTrustSignals signals={trustSignals} compact />
-        <CartCompletionRecommendations
-          compact
-          recommendations={recommendations}
-          title={
-            minimumReached
-              ? siteConfig.productConversion.completionReachedTitle
-              : siteConfig.productConversion.completionTitle
-          }
-          body={
-            minimumReached
-              ? siteConfig.productConversion.completionReachedBody
-              : siteConfig.productConversion.completionBody
-          }
-        />
         <div className="summary-block">
           <h2>Resumo</h2>
           {items.map((item) => (
@@ -1405,6 +1389,22 @@ export function CheckoutClient({
             <strong>{money(total)}</strong>
           </div>
         </div>
+        <MinimumOrderNotice subtotalCents={subtotal} compact />
+        <StoreTrustSignals signals={trustSignals} compact />
+        <CartCompletionRecommendations
+          compact
+          recommendations={recommendations}
+          title={
+            minimumReached
+              ? siteConfig.productConversion.completionReachedTitle
+              : siteConfig.productConversion.completionTitle
+          }
+          body={
+            minimumReached
+              ? siteConfig.productConversion.completionReachedBody
+              : siteConfig.productConversion.completionBody
+          }
+        />
         <WhatsAppLink href={checkoutWhatsAppHref} className="button secondary wide">
           {siteConfig.whatsapp.cartCta}
         </WhatsAppLink>

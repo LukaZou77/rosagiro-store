@@ -1383,6 +1383,8 @@ textarea:focus-visible {
 
 .product-card-body {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 7px;
   padding: 12px;
 }
@@ -1489,6 +1491,7 @@ textarea:focus-visible {
 
 .product-card-bottom {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 9px;
   margin-top: 5px;
   padding-top: 10px;
@@ -1497,6 +1500,7 @@ textarea:focus-visible {
 
 .product-card-actions {
   display: grid;
+  min-width: 0;
   gap: 6px;
 }
 
@@ -3673,6 +3677,28 @@ textarea {
   border-radius: 8px;
   font-size: 0.78rem;
   font-weight: 950;
+}
+
+.cart-checkout-bar {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+}
+
+.cart-checkout-bar strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.cart-checkout-bar small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+.cart-checkout-bar button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px;
+  white-space: normal;
+  line-height: 1.25;
 }
 
 .badge-row {
@@ -7675,8 +7701,8 @@ a.readiness-signal:focus-visible {
   }
 
   .product-card-bottom {
-    grid-template-columns: minmax(0, 1fr) minmax(132px, 0.62fr);
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
   }
 
   .product-card button {
