@@ -84,7 +84,7 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
           {showBrand ? <span>{product.brand.name}</span> : null}
           <small className={`stock-chip ${stockTone}`}>{shortStockLabel}</small>
         </div>
-        <Link href={`/produto/${product.slug}`}>
+        <Link href={`/produto/${product.slug}`} className="product-card-title" title={product.name}>
           <h3>{product.name}</h3>
         </Link>
         {infoTags.length ? (
@@ -95,23 +95,17 @@ export function ProductCard({ product, whatsappPhone }: { product: CatalogCardPr
           </div>
         ) : null}
         <div className="product-card-bottom">
-          {!consultationOnly && packagePieces && packagePriceCents ? (
-            <div className={buyingStyles.cardPrice}>
-              <div className={buyingStyles.cardUnitPrice}>
-                <strong>{money(displayPrice)}</strong>
-                <span>/ un. (aprox.)</span>
-              </div>
-              <small>
-                {packagePieces} {packagePieces === 1 ? "unidade" : "unidades"} · {money(packagePriceCents)} por embalagem
-              </small>
-            </div>
-          ) : (
-            <div className="price-stack">
-              <small>{priceLabel}</small>
+          <div className={buyingStyles.cardPrice}>
+            <div className={buyingStyles.cardUnitPrice}>
               <strong>{money(displayPrice)}</strong>
-              <small className="wholesale-package-hint">{productWholesalePackageLabel(product)}</small>
+              <span>{!consultationOnly && packagePieces && packagePriceCents ? "/ un. (aprox.)" : priceLabel}</span>
             </div>
-          )}
+            <small>
+              {!consultationOnly && packagePieces && packagePriceCents
+                ? `${packagePieces} ${packagePieces === 1 ? "unidade" : "unidades"} · ${money(packagePriceCents)} por embalagem`
+                : productWholesalePackageLabel(product)}
+            </small>
+          </div>
           <div className="product-card-actions">
             {consultationOnly ? (
               <button type="button" disabled>

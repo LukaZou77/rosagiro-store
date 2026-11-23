@@ -1318,6 +1318,9 @@ textarea:focus-visible {
 }
 
 .product-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   overflow: hidden;
   border: 1px solid var(--line);
   background: var(--surface);
@@ -1383,7 +1386,9 @@ textarea:focus-visible {
 
 .product-card-body {
   display: grid;
+  flex: 1;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto 1fr;
   min-width: 0;
   gap: 7px;
   padding: 12px;
@@ -1491,6 +1496,7 @@ textarea:focus-visible {
 
 .product-card-bottom {
   display: grid;
+  align-content: end;
   grid-template-columns: minmax(0, 1fr);
   gap: 9px;
   margin-top: 5px;
@@ -1502,6 +1508,76 @@ textarea:focus-visible {
   display: grid;
   min-width: 0;
   gap: 6px;
+}
+
+/* Share content tracks across each product row, including wrapped text. */
+@supports (grid-template-rows: subgrid) {
+  .product-grid > .product-card {
+    display: grid;
+    grid-row: span 7;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+  }
+
+  .product-grid > .product-card > .product-image {
+    grid-row: 1;
+  }
+
+  .product-grid > .product-card > .product-card-body {
+    grid-row: 2 / span 6;
+    grid-template-rows: subgrid;
+  }
+
+  .product-grid .product-card-body > .product-meta-line {
+    grid-row: 1;
+  }
+
+  .product-grid .product-card-body > .product-card-title {
+    grid-row: 2;
+  }
+
+  .product-grid .product-card-body > .product-card-tags {
+    grid-row: 3;
+    align-content: start;
+  }
+
+  .product-grid .product-card-body > .product-card-bottom {
+    grid-row: 4 / span 3;
+    grid-template-rows: subgrid;
+    align-content: normal;
+    align-items: stretch;
+  }
+
+  .product-grid .product-card-bottom > :first-child {
+    grid-row: 1;
+  }
+
+  .product-grid .product-card-bottom > .product-card-actions {
+    grid-row: 2 / span 2;
+    grid-template-rows: subgrid;
+  }
+
+  .product-grid .product-card-actions > :first-child {
+    grid-row: 1;
+    min-height: 44px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .product-grid .product-card-actions > :last-child {
+    grid-row: 2;
+  }
+}
+
+@supports not (grid-template-rows: subgrid) {
+  .product-grid > .product-card > .product-card-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .product-grid .product-card-body > .product-card-bottom {
+    margin-top: auto;
+  }
 }
 
 .whatsapp-inline {

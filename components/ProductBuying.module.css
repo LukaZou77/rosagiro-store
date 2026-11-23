@@ -30,6 +30,7 @@
 
 .cardPrice {
   display: grid;
+  align-content: start;
   gap: 6px;
   min-width: 0;
   padding: 8px 9px;
@@ -40,10 +41,9 @@
 }
 
 .cardUnitPrice {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 3px 5px;
+  display: grid;
+  align-content: start;
+  gap: 3px;
 }
 
 .cardUnitPrice strong {
@@ -53,13 +53,14 @@
   font-size: 1.35rem;
   font-weight: 950;
   line-height: 1.1;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .cardUnitPrice span {
   color: var(--muted);
   font-size: 0.72rem;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .cardPrice > small {
@@ -108,5 +109,15 @@
 
   .purchaseActions :global(.button) {
     min-height: 50px;
+  }
+}
+
+@supports (font-size: 1cqi) {
+  .cardPrice {
+    container-type: inline-size;
+  }
+
+  .cardUnitPrice strong {
+    font-size: clamp(0.875rem, 14cqi, 1.35rem);
   }
 }
