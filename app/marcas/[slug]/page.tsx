@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
+import { CatalogPagePicker } from "@/components/CatalogPagePicker";
 import { StoreShell } from "@/components/StoreShell";
 import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
@@ -77,6 +78,11 @@ function BrandPagination({ slug, page, totalPages }: { slug: string; page: numbe
   const startPage = Math.max(1, page - 2);
   const endPage = Math.min(totalPages, page + 2);
   const pages = Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+  const pageOptions = Array.from({ length: totalPages }, (_, index) => {
+    const targetPage = index + 1;
+    return { href: brandPageHref(slug, targetPage), page: targetPage };
+  });
+  const hasHiddenPages = startPage > 1 || endPage < totalPages;
 
   return (
     <nav className="catalog-pagination" aria-label="Paginação dos produtos da marca">
@@ -86,7 +92,6 @@ function BrandPagination({ slug, page, totalPages }: { slug: string; page: numbe
         <Link href={brandPageHref(slug, page - 1)}>Anterior</Link>
       )}
       <div>
-        {startPage > 1 ? <span>...</span> : null}
         {pages.map((item) => (
           <Link
             className={item === page ? "active" : ""}
@@ -97,7 +102,7 @@ function BrandPagination({ slug, page, totalPages }: { slug: string; page: numbe
             {item}
           </Link>
         ))}
-        {endPage < totalPages ? <span>...</span> : null}
+        {hasHiddenPages ? <CatalogPagePicker currentPage={page} totalPages={totalPages} pages={pageOptions} /> : null}
       </div>
       {page === totalPages ? (
         <span className="disabled">Próxima</span>

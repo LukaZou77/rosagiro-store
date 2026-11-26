@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
+import { CatalogPagePicker } from "@/components/CatalogPagePicker";
 import { StoreShell } from "@/components/StoreShell";
 import { StructuredData } from "@/components/StructuredData";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
@@ -207,6 +208,11 @@ function CatalogPagination({
       sort,
       page: String(targetPage)
     });
+  const pageOptions = Array.from({ length: totalPages }, (_, index) => {
+    const targetPage = index + 1;
+    return { href: hrefForPage(targetPage), page: targetPage };
+  });
+  const hasHiddenPages = startPage > 1 || endPage < totalPages;
 
   return (
     <nav className="catalog-pagination" aria-label="Paginação do catálogo">
@@ -214,7 +220,6 @@ function CatalogPagination({
         Anterior
       </Link>
       <div>
-        {startPage > 1 ? <span>...</span> : null}
         {pages.map((item) => (
           <Link
             className={item === page ? "active" : ""}
@@ -226,7 +231,7 @@ function CatalogPagination({
             {item}
           </Link>
         ))}
-        {endPage < totalPages ? <span>...</span> : null}
+        {hasHiddenPages ? <CatalogPagePicker currentPage={page} totalPages={totalPages} pages={pageOptions} /> : null}
       </div>
       <Link className={page === totalPages ? "disabled" : ""} href={hrefForPage(nextPage)} aria-disabled={page === totalPages}>
         Próxima
