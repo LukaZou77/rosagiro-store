@@ -10,6 +10,8 @@ import { prisma } from "@/lib/db";
 import { BODY_AREA_CATEGORY_ORDER } from "@/lib/category-taxonomy";
 import { customerDisplayText, productDisplayName } from "@/lib/display-text";
 import { productCanonicalAliases, verifiedProductCanonicalSlug } from "@/lib/product-canonical";
+import { matchesCatalogPriceRange, type CatalogPriceRange } from "@/lib/catalog-price-range";
+import { productCardDisplayUnitPriceCents } from "@/lib/product-wholesale";
 
 export type CatalogProduct = {
   id: string;
@@ -152,6 +154,16 @@ function productOrderBy(sort = "featured"): Prisma.ProductOrderByWithRelationInp
           ? { name: "desc" }
           : { featuredRank: "asc" };
 }
+
+const catalogPriceCandidateSelect = {
+  id: true,
+  priceCents: true,
+  baseBoxPriceCents: true,
+  baseBoxPieces: true,
+  wholesalePackage: true,
+  stockStatus: true,
+  descriptionPt: true
+} satisfies Prisma.ProductSelect;
 
 function withProductDisplayText(product: CatalogProduct): CatalogProduct {
   return {
@@ -333,10 +345,57 @@ export async function getProductCount(options: ProductQueryOptions = {}) {
   return prisma.product.count({ where: productWhere(options) });
 }
 
-export async function getProductPage(options: ProductQueryOptions & { page?: number; pageSize?: number } = {}) {
+export async function getProductPage(options: ProductQueryOptions & {
+  page?: number;
+  pageSize?: number;
+  priceRange?: CatalogPriceRange;
+} = {}) {
   const pageSize = Math.max(1, Math.min(96, Math.floor(options.pageSize || CATALOG_PAGE_SIZE)));
   const requestedPage = Math.max(1, Math.floor(options.page || 1));
   const where = productWhere(options);
+  const { priceRange } = options;
+  if (priceRange && priceRange !== "all") {
+    return prisma.$transaction(async (tx) => {
+      const candidates = await tx.product.findMany({
+        where,
+        select: catalogPriceCandidateSelect,
+        orderBy: [productOrderBy(options.sort), { id: "asc" }]
+      });
+      const filteredProducts = candidates.flatMap((product) => {
+        const priceCents = productCardDisplayUnitPriceCents(product);
+        return priceCents !== null && matchesCatalogPriceRange(priceCents, priceRange)
+          ? [{ id: product.id, priceCents }]
+          : [];
+      });
+      if (options.sort === "price-asc" || options.sort === "price-desc") {
+        const direction = options.sort === "price-asc" ? 1 : -1;
+        filteredProducts.sort((a, b) => direction * (a.priceCents - b.priceCents) || a.id.localeCompare(b.id));
+      }
+      const filteredIds = filteredProducts.map((product) => product.id);
+      const total = filteredIds.length;
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      const page = Math.min(requestedPage, totalPages);
+      const pageIds = filteredIds.slice((page - 1) * pageSize, page * pageSize);
+      const pageProducts = pageIds.length
+        ? await tx.product.findMany({ where: { id: { in: pageIds } }, select: productCardSelect })
+        : [];
+      const productById = new Map(pageProducts.map((product) => [product.id, product]));
+      const products = pageIds.flatMap((id) => {
+        const product = productById.get(id);
+        return product ? [withProductCardDisplayText(product)] : [];
+      });
+
+      return {
+        products,
+        total,
+        page,
+        pageSize,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1
+      };
+    }, { isolationLevel: "RepeatableRead" });
+  }
   const [total, products] = await Promise.all([
     prisma.product.count({ where }),
     prisma.product.findMany({

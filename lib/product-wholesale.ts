@@ -9,10 +9,13 @@ import {
 } from "@/lib/product-price-adjustment";
 import {
   isSourceCatalogConsultationProduct,
+  isProductStockConsultationRequired,
   sourceCatalogPackageText,
   sourceCatalogPriceLabel,
+  sourceCatalogVerifiedSaleUnit,
   type SourceCatalogMarker
 } from "@/lib/source-catalog-product";
+import { wholesaleReferenceUnitPriceCents } from "@/lib/wholesale-order";
 
 export type WholesaleProductDetails = {
   baseBoxPieces?: number | null;
@@ -99,6 +102,24 @@ export function productWholesalePackagePriceCents(product: WholesalePackagePrice
   if (storedPrice > 0) return storedPrice;
 
   return Math.max(0, Math.floor(Number(product.priceCents) || 0)) * pieces;
+}
+
+/**
+ * Returns the per-unit price shown by ProductCard when that value is genuinely
+ * a unit price. Source-catalog consultation rows can describe a kit, package,
+ * or other sale unit, so only an explicitly verified `unidade` is eligible for
+ * unit-price filtering.
+ */
+export function productCardDisplayUnitPriceCents(product: WholesalePackagePriceInput) {
+  if (isSourceCatalogConsultationProduct(product)) {
+    if (sourceCatalogVerifiedSaleUnit(product.wholesalePackage) !== "unidade") return null;
+  }
+
+  const packagePieces = productWholesalePackagePieces(product);
+  const packagePriceCents = productWholesalePackagePriceCents(product);
+  return !isProductStockConsultationRequired(product) && packagePieces && packagePriceCents
+    ? wholesaleReferenceUnitPriceCents(packagePriceCents, packagePieces)
+    : product.priceCents;
 }
 
 export function productWholesaleLineTotalCents(product: WholesalePackagePriceInput, quantity: number) {

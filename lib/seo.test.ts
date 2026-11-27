@@ -334,3 +334,22 @@ test("marks out-of-range catalog pages as non-indexable", () => {
     }
   );
 });
+
+test("uses the category canonical and noindex for price range pages", () => {
+  assert.deepEqual(
+    catalogIndexing({
+      path: "/categoria/rosto",
+      page: 2,
+      query: "",
+      brand: "all",
+      stockFilter: "all",
+      priceRange: "5-10",
+      sort: "featured",
+      totalPages: 17
+    }),
+    {
+      canonicalPath: "/categoria/rosto",
+      shouldNoIndex: true
+    }
+  );
+});

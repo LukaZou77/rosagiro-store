@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { CatalogProduct } from "@/lib/catalog";
+import type { CatalogPriceRange } from "@/lib/catalog-price-range";
 import { money } from "@/lib/money";
 import { productOrderQuantityLimit } from "@/lib/product-conversion";
 import { productEditorialDescription, productWholesalePackagePieces, productWholesalePackagePriceCents } from "@/lib/product-wholesale";
@@ -40,6 +41,7 @@ type CatalogIndexingInput = {
   query: string;
   brand: string;
   stockFilter: string;
+  priceRange?: CatalogPriceRange;
   sort: string;
   totalPages: number;
 };
@@ -153,7 +155,8 @@ export function storefrontMetadata(input: {
 
 export function catalogIndexing(input: CatalogIndexingInput) {
   const hasFilters = Boolean(
-    input.query || input.brand !== "all" || input.stockFilter !== "all" || input.sort !== "featured"
+    input.query || input.brand !== "all" || input.stockFilter !== "all" ||
+    (input.priceRange && input.priceRange !== "all") || input.sort !== "featured"
   );
   const pageOutOfRange = input.page > Math.max(1, input.totalPages);
   const canonicalPath = !hasFilters && input.page > 1 && !pageOutOfRange ? `${input.path}?page=${input.page}` : input.path;

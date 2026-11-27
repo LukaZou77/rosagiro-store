@@ -28,6 +28,7 @@ import {
 import { siteConfig } from "@/lib/site-config";
 import { getStoreProfile } from "@/lib/store-profile";
 import { buildCatalogWhatsAppHref } from "@/lib/whatsapp";
+import { catalogPriceRanges, parseCatalogPriceRange, type CatalogPriceRange } from "@/lib/catalog-price-range";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -100,6 +101,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     query: value(queryParams.q) || "",
     brand: value(queryParams.brand) || "all",
     stockFilter: safeStock(value(queryParams.stock) || "all"),
+    priceRange: parseCatalogPriceRange(value(queryParams.price)),
     sort: safeSort(value(queryParams.sort) || "featured"),
     totalPages: Math.ceil(productCount / CATALOG_PAGE_SIZE)
   });
@@ -124,13 +126,15 @@ function FilterFields({
   brandOptions,
   query,
   sort,
-  stockFilter
+  stockFilter,
+  priceRange
 }: {
   brand: string;
   brandOptions: string[];
   query: string;
   sort: string;
   stockFilter: string;
+  priceRange: CatalogPriceRange;
 }) {
   return (
     <>
@@ -146,6 +150,15 @@ function FilterFields({
             <option value={brandName} key={brandName}>
               {brandName}
             </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Preço por unidade
+        <select key={priceRange} name="price" defaultValue={priceRange}>
+          <option value="all">Todas as faixas</option>
+          {Object.entries(catalogPriceRanges).map(([range, { label }]) => (
+            <option key={range} value={range}>{label}</option>
           ))}
         </select>
       </label>
@@ -183,6 +196,7 @@ function CatalogPagination({
   query,
   brand,
   stockFilter,
+  priceRange,
   sort
 }: {
   categorySlug: string;
@@ -191,6 +205,7 @@ function CatalogPagination({
   query: string;
   brand: string;
   stockFilter: string;
+  priceRange: CatalogPriceRange;
   sort: string;
 }) {
   if (totalPages <= 1) return null;
@@ -205,6 +220,7 @@ function CatalogPagination({
       q: query,
       brand,
       stock: stockFilter,
+      price: priceRange,
       sort,
       page: String(targetPage)
     });
@@ -247,11 +263,12 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const query = value(queryParams.q) || "";
   const sort = safeSort(value(queryParams.sort) || "featured");
   const stockFilter = safeStock(value(queryParams.stock) || "all");
+  const priceRange = parseCatalogPriceRange(value(queryParams.price));
   const page = safePage(value(queryParams.page));
   const [categories, brandOptions, productPage, availabilityCounts, storeProfile] = await Promise.all([
     getCategories(),
     getBrandOptionsForCategory(categorySlug),
-    getProductPage({ categorySlug, brandName: brand, query, sort, stockFilter, page, pageSize: CATALOG_PAGE_SIZE }),
+    getProductPage({ categorySlug, brandName: brand, query, sort, stockFilter, priceRange, page, pageSize: CATALOG_PAGE_SIZE }),
     getProductAvailabilityCounts({ categorySlug, brandName: brand, query }),
     getStoreProfile()
   ]);
@@ -265,12 +282,14 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const whatsappHref = buildCatalogWhatsAppHref(categoryLabel, total, storeProfile.whatsapp);
   const sortLabel = sortLabels[sort] || sortLabels.featured;
   const clearHref = catalogHref(categorySlug, {});
-  const filterCount = [query ? "q" : "", brand !== "all" ? "brand" : "", stockFilter !== "all" ? "stock" : ""].filter(Boolean).length;
+  const currentFilters = { q: query, brand, stock: stockFilter, price: priceRange, sort };
   const activeFilters = [
-    query ? { key: "q", label: `Busca: ${query}`, href: catalogHref(categorySlug, { brand, stock: stockFilter, sort }) } : null,
-    brand !== "all" ? { key: "brand", label: `Marca: ${brand}`, href: catalogHref(categorySlug, { q: query, stock: stockFilter, sort }) } : null,
-    stockFilter !== "all" ? { key: "stock", label: stockLabels[stockFilter], href: catalogHref(categorySlug, { q: query, brand, sort }) } : null
+    query ? { key: "q", label: `Busca: ${query}`, href: catalogHref(categorySlug, { ...currentFilters, q: undefined }) } : null,
+    brand !== "all" ? { key: "brand", label: `Marca: ${brand}`, href: catalogHref(categorySlug, { ...currentFilters, brand: undefined }) } : null,
+    stockFilter !== "all" ? { key: "stock", label: stockLabels[stockFilter], href: catalogHref(categorySlug, { ...currentFilters, stock: undefined }) } : null,
+    priceRange !== "all" ? { key: "price", label: catalogPriceRanges[priceRange].label, href: catalogHref(categorySlug, { ...currentFilters, price: undefined }) } : null
   ].filter((item): item is { key: string; label: string; href: string } => Boolean(item));
+  const filterCount = activeFilters.length;
   const readyCount = availabilityCounts.ready;
   const outOfStockCount = availabilityCounts.out;
 
@@ -299,6 +318,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
           />
           <input type="hidden" name="brand" value={brand} />
           <input type="hidden" name="stock" value={stockFilter} />
+          <input type="hidden" name="price" value={priceRange} />
           <input type="hidden" name="sort" value={sort} />
           <button className="button primary" type="submit">
             Buscar
@@ -350,7 +370,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
               </div>
               <p>{siteConfig.mobilePurchase.filterHint}</p>
               <form className="filters" action={`/categoria/${categorySlug}`}>
-                <FilterFields brand={brand} brandOptions={brandOptions} query={query} sort={sort} stockFilter={stockFilter} />
+                <FilterFields brand={brand} brandOptions={brandOptions} query={query} sort={sort} stockFilter={stockFilter} priceRange={priceRange} />
                 <Link className="button secondary wide" href={clearHref}>
                   Limpar
                 </Link>
@@ -361,6 +381,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             <input type="hidden" name="q" value={query} />
             <input type="hidden" name="brand" value={brand} />
             <input type="hidden" name="stock" value={stockFilter} />
+            <input type="hidden" name="price" value={priceRange} />
             <label>
               <span>Ordenar</span>
               <select name="sort" defaultValue={sort}>
@@ -377,7 +398,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
           </form>
         </div>
         <form className="filters desktop-filters" action={`/categoria/${categorySlug}`}>
-          <FilterFields brand={brand} brandOptions={brandOptions} query={query} sort={sort} stockFilter={stockFilter} />
+          <FilterFields brand={brand} brandOptions={brandOptions} query={query} sort={sort} stockFilter={stockFilter} priceRange={priceRange} />
           <Link className="button secondary wide" href={clearHref}>
             Limpar filtros
           </Link>
@@ -407,17 +428,17 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
                 </Link>
               </div>
             ) : (
-              <span className="catalog-result-hint">Use filtros para achar produtos em estoque, marca específica ou menor preço.</span>
+              <span className="catalog-result-hint">Filtre por marca ou preço por unidade.</span>
             )}
           </div>
           <div className="category-pills">
-            <Link className={categorySlug === "all" ? "active" : ""} href="/categoria/all">
+            <Link className={categorySlug === "all" ? "active" : ""} href={catalogHref("all", currentFilters)}>
               Tudo
             </Link>
             {categories.map((category) => (
               <Link
                 className={categorySlug === category.slug ? "active" : ""}
-                href={`/categoria/${category.slug}`}
+                href={catalogHref(category.slug, currentFilters)}
                 key={category.slug}
               >
                 {category.label}
@@ -449,6 +470,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             query={query}
             sort={sort}
             stockFilter={stockFilter}
+            priceRange={priceRange}
             totalPages={totalPages}
           />
         </div>
